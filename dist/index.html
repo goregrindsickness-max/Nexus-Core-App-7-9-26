@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <link rel="manifest" href="/manifest.json">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Nexus Core</title>
+    <script type="module" crossorigin src="/assets/index-CFnFTB4f.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BN0_Wgmj.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    
+    <!-- Core App Initialization Script -->
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('Nexus Pipeline Secure: Service Worker Registered'))
+            .catch(err => console.error('PWA Registration Error: ', err));
+        });
+      }
+    </script>
+  </body>
+</html>
