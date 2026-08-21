@@ -18,8 +18,9 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, ExpressCheckoutElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { getStoredWallets, processWalletPayment, selectWalletCard, UserWalletsState, WalletCard } from '../../../services/digitalWalletService';
 import { WalletOAuthModal } from './WalletOAuthModal';
+import { supabase } from '../../../lib/supabaseClient';
 
-const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY || 'pk_test_51TfwzZA5e7qgTyokirZWVa11YM5Rvu1Ed0X4wPF0oMIch7dK99IP7Fqi5ETt1WgSs69y2P27Djo5tHim9ZWlWpn200HjmhACTR';
 const isRealStripeKey = typeof stripePublicKey === 'string' && stripePublicKey.startsWith('pk_') && !stripePublicKey.includes('placeholder');
 const stripePromise = isRealStripeKey ? loadStripe(stripePublicKey) : null;
 
@@ -76,18 +77,20 @@ export function StripeCartCheckoutModal({
   useEffect(() => {
     if (isRealStripeKey && totalAmount > 0) {
       setIsLoading(true);
-      fetch('/api/checkout/create-intent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: totalAmount, currency: 'usd' })
+      
+      // Call the Supabase Edge Function directly
+      supabase.functions.invoke('create-payment-intent', {
+        body: { amount: totalAmount, currency: 'usd' }
       })
-        .then((res) => res.json())
-        .then((data) => {
+        .then(({ data, error }) => {
+          if (error) throw error;
           if (data && data.clientSecret) {
             setClientSecret(data.clientSecret);
           }
         })
-        .catch(() => {})
+        .catch((err) => {
+          console.error("Failed to create payment intent:", err);
+        })
         .finally(() => {
           setIsLoading(false);
         });
@@ -738,11 +741,13 @@ export function StripeCartCheckoutModal({
       {/* Embedded Digital Wallet OAuth Authentication Modal */}
       {activeOAuthProvider && (
         <WalletOAuthModal
+          isOpen={true}
           provider={activeOAuthProvider}
           userProfile={userProfile}
           onClose={() => setActiveOAuthProvider(null)}
-          onSuccess={(updatedWallets) => {
-            setWalletsState(updatedWallets);
+          onSuccess={() => {
+            const updated = getStoredWallets(userProfile);
+            setWalletsState(updated);
             setActiveOAuthProvider(null);
           }}
         />

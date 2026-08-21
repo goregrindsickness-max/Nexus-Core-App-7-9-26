@@ -410,6 +410,8 @@ export interface UserProfile {
   sub_tier?: SubscriptionTier;
   stripe_customer_id?: string | null;
   stripe_merchant_id?: string | null;
+  stripe_account_id?: string | null;
+  payout_method?: string | null;
   paypal_email?: string | null;
   cashapp_tag?: string | null;
   subscription_status?: 'active' | 'trailing_trial' | 'past_due' | 'inactive';

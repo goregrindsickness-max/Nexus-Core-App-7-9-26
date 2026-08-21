@@ -26,8 +26,9 @@ import { Elements, ExpressCheckoutElement, useStripe, useElements } from '@strip
 import { enrichTicketData } from '../../utils/socialFeedUtils';
 import { getStoredWallets, processWalletPayment, selectWalletCard, UserWalletsState, WalletCard } from '../../services/digitalWalletService';
 import { WalletOAuthModal } from './modals/WalletOAuthModal';
+import { supabase } from '../../lib/supabaseClient';
 
-const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY || 'pk_test_51TfwzZA5e7qgTyokirZWVa11YM5Rvu1Ed0X4wPF0oMIch7dK99IP7Fqi5ETt1WgSs69y2P27Djo5tHim9ZWlWpn200HjmhACTR';
 const isRealStripeKey = typeof stripePublicKey === 'string' && stripePublicKey.startsWith('pk_') && !stripePublicKey.includes('placeholder');
 const stripePromise = isRealStripeKey ? loadStripe(stripePublicKey) : null;
 
@@ -189,20 +190,31 @@ export function StripeCheckoutModal({
 
   // Stripe Client Secret for Live Element if available
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const totalAmount = grandTotal;
+
   useEffect(() => {
-    if (isRealStripeKey) {
-      fetch('/api/checkout/create-intent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: grandTotal, currency: 'usd' })
+    if (isRealStripeKey && totalAmount > 0) {
+      setIsLoading(true);
+      
+      // Call the Supabase Edge Function directly
+      supabase.functions.invoke('create-payment-intent', {
+        body: { amount: totalAmount, currency: 'usd' }
       })
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.clientSecret) setClientSecret(data.clientSecret);
+        .then(({ data, error }) => {
+          if (error) throw error;
+          if (data && data.clientSecret) {
+            setClientSecret(data.clientSecret);
+          }
         })
-        .catch(() => {});
+        .catch((err) => {
+          console.error("Failed to create payment intent:", err);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
     }
-  }, [grandTotal]);
+  }, [totalAmount]);
 
   const validateCustomAddress = (): boolean => {
     if (!requiresShipping || useWalletAddress) return true;
@@ -1213,16 +1225,18 @@ export function StripeCheckoutModal({
       {/* Embedded Digital Wallet OAuth Authentication Modal */}
       {activeOAuthProvider && (
         <WalletOAuthModal
+          isOpen={true}
           provider={activeOAuthProvider}
           userProfile={userProfile}
           onClose={() => setActiveOAuthProvider(null)}
-          onSuccess={(updatedWallets) => {
-            setWalletsState(updatedWallets);
+          onSuccess={(provider) => {
+            const updated = getStoredWallets(userProfile);
+            setWalletsState(updated);
             setActiveOAuthProvider(null);
             if (triggerNotification) {
               triggerNotification(
                 'Wallet Connected',
-                `Successfully authenticated and secured your ${activeOAuthProvider.toUpperCase()} wallet!`,
+                `Successfully authenticated and secured your ${provider.toUpperCase()} wallet!`,
                 '🔐'
               );
             }
