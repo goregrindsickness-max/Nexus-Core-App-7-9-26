@@ -12,6 +12,7 @@ import HelpDeskView from '../../HelpDeskView';
 import TermsOfServiceView from '../../TermsOfServiceView';
 import PromoterSettings from './PromoterSettings';
 import BillingSettingsView from '../../BillingSettingsView';
+import StripeConnectPayoutSection from '../../StripeConnectPayoutSection';
 import { getSupabase, uploadBase64ToStorage } from '../../../supabase';
 
 // Helper to compress uploaded images to avoid LocalStorage quota overflow
@@ -1047,130 +1048,17 @@ export default function PromoterSettingsTab({
             onToggle={() => toggleSection('profile_f')}
           >
             <div className="p-5 space-y-6 text-left">
-              <div className="space-y-1 text-left">
-                <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-lime-400 block">Fulfillment Gateway Configuration</span>
-                <p className="text-[10.5px] text-zinc-400 font-sans leading-normal">
-                  Configure external payment processing channels. Invoices submitted via workspace automatically route settlements through your linked credentials.
-                </p>
-              </div>
+              <StripeConnectPayoutSection
+                userProfile={userProfile}
+                setUserProfile={setUserProfile}
+                triggerNotification={(msg) => showLocalToast(msg)}
+                showLocalToast={showLocalToast}
+                role="promoter"
+                theme="green"
+                clearanceLevel={5}
+              />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1 font-mono">
-                {/* Stripe Merchant Node */}
-                <div className="p-4 bg-zinc-950/45 border border-zinc-900 rounded-xl space-y-3 relative overflow-hidden flex flex-col justify-between">
-                  <div className="space-y-1.5 text-left">
-                    <span className="text-[9px] text-zinc-500 uppercase font-black tracking-wider block">Stripe Processing Node</span>
-                    <h5 className="text-xs font-black text-white flex items-center gap-1.5">
-                      <CreditCard className="w-4 h-4 text-[#635bff]" />
-                      STRIPE CONNECT
-                    </h5>
-                    {payoutMethod === 'stripe' && (
-                      <span className="text-[9px] bg-[#635BFF]/20 text-[#635BFF] font-black uppercase px-1.5 py-0.5 rounded tracking-wide inline-block mt-1">
-                        Active Method
-                      </span>
-                    )}
-                  </div>
-
-                  {stripeAccountId && stripeAccountId.startsWith('acct_') ? (
-                    <div className="space-y-2">
-                      <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-lg p-2.5 flex items-center justify-between">
-                        <div className="flex flex-col text-left">
-                          <span className="text-[8px] uppercase font-black text-emerald-400 tracking-wider">Node Verified</span>
-                          <span className="text-[10.5px] text-[#635BFF] font-mono font-bold truncate max-w-[150px]">{stripeAccountId}</span>
-                        </div>
-                        <div className="flex flex-col gap-1 items-end">
-                          {payoutMethod !== 'stripe' && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPayoutMethod('stripe');
-                                handleSaveProfile({ payout_method: 'stripe' });
-                                showLocalToast('✓ Switched active payout method to Stripe Connect.');
-                              }}
-                              className="text-[8.5px] bg-zinc-900 hover:bg-zinc-850 text-zinc-300 font-bold px-2 py-1 rounded border border-zinc-800 transition-colors cursor-pointer uppercase"
-                            >
-                              Activate
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (confirm('Are you sure you want to disconnect your Stripe account?')) {
-                                setStripeAccountId('');
-                                setIsSuccessfullyConnected(false);
-                                let nextMethod: 'stripe' | 'paypal' | 'none' = 'none';
-                                if (paypalEmail && paypalEmail.includes('@')) {
-                                  nextMethod = 'paypal';
-                                }
-                                setPayoutMethod(nextMethod);
-                                handleSaveProfile({
-                                  stripe_account_id: '',
-                                  payout_method: nextMethod
-                                });
-                                showLocalToast('Stripe account disconnected.');
-                              }
-                            }}
-                            className="text-[8px] text-zinc-500 hover:text-red-400 font-bold px-1 transition-colors cursor-pointer uppercase"
-                          >
-                            Disconnect
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <button 
-                      type="button"
-                      onClick={async () => {
-                        setIsConnectingStripe(true);
-                        try {
-                          const res = await fetch('/api/payments/create-connect-account', { method: 'POST' });
-                          const data = await res.json();
-                          if (data.url) {
-                            const newAccountId = data.accountId;
-
-                            const supabase = getSupabase();
-                            if (supabase && userProfile?.id) {
-                              try {
-                                await supabase
-                                  .from('profiles')
-                                  .update({ stripe_connect_id: newAccountId })
-                                  .eq('id', userProfile?.id);
-                              } catch (sErr) {
-                                console.error('Immediate database save failed, proceed with state updates:', sErr);
-                              }
-                            }
-
-                            setStripeAccountId(newAccountId);
-                            setPayoutMethod('stripe');
-                            setIsSuccessfullyConnected(true);
-                            handleSaveProfile({
-                              stripe_account_id: newAccountId,
-                              payout_method: 'stripe'
-                            });
-                            window.location.href = data.url;
-                          }
-                        } catch (err) {
-                          showLocalToast('Failed to initialize Stripe connection.');
-                        } finally {
-                          setIsConnectingStripe(false);
-                        }
-                      }}
-                      disabled={isConnectingStripe}
-                      className="w-full py-2 bg-[#635BFF] hover:bg-[#5249E5] text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-[0_0_15px_rgba(99,91,255,0.2)] flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      {isConnectingStripe ? (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          <span>Connecting...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Zap className="w-3.5 h-3.5 animate-pulse" />
-                          <span>Connect Stripe Express</span>
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
 
                 {/* PayPal Merchant Node */}
                 <div className="p-4 bg-zinc-950/45 border border-zinc-900 rounded-xl space-y-3 relative overflow-hidden flex flex-col justify-between">

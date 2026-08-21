@@ -2,7 +2,8 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ShoppingBag, X, Search, Filter, Tag, Check, ArrowRight, Sparkles, Plus,
-  Minus, ShoppingCart, Heart, ShieldCheck, Truck, RefreshCw, Star, Flame, Package, Upload, MessageSquare
+  Minus, ShoppingCart, Heart, ShieldCheck, Truck, RefreshCw, Star, Flame, Package, Upload, MessageSquare,
+  Zap, CreditCard
 } from 'lucide-react';
 import { mockShopItems } from '../../data/shopMockData';
 
@@ -808,13 +809,22 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
                       <div className="flex flex-col gap-2">
                         <button
                           onClick={() => {
-                            const itemToCheckout = { ...selectedShopItem };
+                            const itemToCheckout = {
+                              ...selectedShopItem,
+                              name: selectedShopItem.name,
+                              price: selectedShopItem.price || 0,
+                              thumbnail: selectedShopItem.thumbnail || selectedShopItem.image || (selectedShopItem.fallbackThumbnail && !selectedShopItem.fallbackThumbnail.includes('cyjnpuneruonskfzpmqo') ? selectedShopItem.fallbackThumbnail : getShopCategoryFallback(selectedShopItem)),
+                              bandName: selectedShopItem.seller || 'Gear Seller',
+                              seller: selectedShopItem.seller || 'Gear Seller',
+                              category: 'gear',
+                              is_real_account: selectedShopItem.is_real_account
+                            };
                             setSelectedShopItem(null);
                             openCheckout('merch', itemToCheckout);
                           }}
-                          className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-rose-955/45"
+                          className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-rose-950/45"
                         >
-                          <ShoppingCart className="w-4 h-4" /> Purchase Now
+                          <Zap className="w-4 h-4 fill-white" /> Buy with Stripe Escrow
                         </button>
                         <button
                           onClick={() => {
@@ -849,31 +859,57 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
                               };
                               setChats(prev => [newChat, ...prev]);
                             }
-                          window.dispatchEvent(new CustomEvent('nexus_open_chat', { detail: { profile_id: sellerId, name: sellerName, username: sellerName, avatar_url: matchedProf?.avatar_url } }));
-                          window.dispatchEvent(new CustomEvent('nexus_open_chat_thread', { detail: { profile_id: sellerId, name: sellerName, username: sellerName, avatar_url: matchedProf?.avatar_url } }));
+                            window.dispatchEvent(new CustomEvent('nexus_open_chat', { detail: { profile_id: sellerId, name: sellerName, username: sellerName, avatar_url: matchedProf?.avatar_url } }));
+                            window.dispatchEvent(new CustomEvent('nexus_open_chat_thread', { detail: { profile_id: sellerId, name: sellerName, username: sellerName, avatar_url: matchedProf?.avatar_url } }));
                             setSelectedShopItem(null);
-                        }}
-                        className="w-full py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-200 flex items-center justify-center gap-2 border border-zinc-700"
-                      >
-                        <MessageSquare className="w-4 h-4" /> Message Seller
-                      </button>
+                          }}
+                          className="w-full py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-200 flex items-center justify-center gap-2 border border-zinc-700"
+                        >
+                          <MessageSquare className="w-4 h-4" /> Message Seller
+                        </button>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => {
-                          if (selectedShopItem.sizes && selectedShopItem.sizes.length > 0 && !selectedSize) {
-                            triggerNotification?.("Please select a size first.");
-                            return;
-                          }
-                          const itemToCheckout = { ...selectedShopItem };
-                          setSelectedShopItem(null);
-                          addToCart(itemToCheckout, selectedSize || undefined);
-                          setSelectedSize('');
-                        }}
-                        className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-rose-950/45"
-                      >
-                        <ShoppingCart className="w-4 h-4" /> Purchase Now
-                      </button>
+                      <div className="flex flex-col gap-2">
+                        <button
+                          onClick={() => {
+                            if (selectedShopItem.sizes && selectedShopItem.sizes.length > 0 && !selectedSize) {
+                              triggerNotification?.("Please select a size first.");
+                              return;
+                            }
+                            const chosenSize = selectedSize || (selectedShopItem.sizes?.[0] || 'L');
+                            const itemToCheckout = {
+                              ...selectedShopItem,
+                              size: chosenSize,
+                              sizes: selectedShopItem.sizes || [chosenSize],
+                              name: selectedShopItem.name,
+                              price: selectedShopItem.price || 25,
+                              thumbnail: selectedShopItem.thumbnail || selectedShopItem.image || (selectedShopItem.fallbackThumbnail && !selectedShopItem.fallbackThumbnail.includes('cyjnpuneruonskfzpmqo') ? selectedShopItem.fallbackThumbnail : getShopCategoryFallback(selectedShopItem)),
+                              bandName: selectedShopItem.seller || selectedShopItem.brand || 'Artist / Label',
+                              seller: selectedShopItem.seller || selectedShopItem.brand || 'Artist / Label'
+                            };
+                            setSelectedShopItem(null);
+                            openCheckout('merch', itemToCheckout);
+                          }}
+                          className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-rose-950/45"
+                        >
+                          <Zap className="w-4 h-4 fill-white" /> 1-Tap Stripe Checkout
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (selectedShopItem.sizes && selectedShopItem.sizes.length > 0 && !selectedSize) {
+                              triggerNotification?.("Please select a size first.");
+                              return;
+                            }
+                            const itemToCheckout = { ...selectedShopItem };
+                            setSelectedShopItem(null);
+                            addToCart(itemToCheckout, selectedSize || undefined);
+                            setSelectedSize('');
+                          }}
+                          className="w-full py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-200 flex items-center justify-center gap-2 border border-zinc-800"
+                        >
+                          <ShoppingCart className="w-4 h-4" /> Add to Cart
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>

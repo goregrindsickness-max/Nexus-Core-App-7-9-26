@@ -61,6 +61,7 @@ import { InteractiveCropperModal } from './InteractiveCropperModal';
 import RoutingBeaconForm from './portals/Promoter/RoutingBeaconForm';
 import { ReceiptByteBuilder, serializeSaleToReceiptBytes } from '../ReceiptByteBuilder';
 import DevSandboxFanDeck from './DevSandboxFanDeck';
+import StripeConnectPayoutSection from './StripeConnectPayoutSection';
 
 interface SettingsViewProps {
   userProfile: UserProfile;
@@ -769,67 +770,6 @@ export default function SettingsView({
     triggerNotification("Profile configuration updated successfully.");
     setIsEditModalOpen(false);
   };
-
-  // Collapsible: Payment Processors State
-  const [processors, setProcessors] = useState(() => [
-    { id: 'paypal', name: 'PayPal', rate: '2.9% + $0.30', connected: !!userProfile?.paypal_email },
-    { id: 'venmo', name: 'Venmo', rate: '1.9% + $0.10', connected: false },
-    { id: 'cashapp', name: 'Cash App', rate: '2.75%', connected: !!userProfile?.cashapp_tag },
-    { id: 'stripe', name: 'Stripe', rate: '2.9% + $0.30', connected: !!userProfile?.stripe_merchant_id },
-    { id: 'square', name: 'Square', rate: '2.6% + $0.10', connected: false },
-  ]);
-
-  React.useEffect(() => {
-    setProcessors(prev => prev.map(p => {
-      if (p.id === 'stripe') {
-        return { ...p, connected: !!userProfile?.stripe_merchant_id };
-      }
-      if (p.id === 'paypal') {
-        return { ...p, connected: !!userProfile?.paypal_email };
-      }
-      if (p.id === 'cashapp') {
-        return { ...p, connected: !!userProfile?.cashapp_tag };
-      }
-      return p;
-    }));
-  }, [userProfile?.stripe_merchant_id, userProfile?.paypal_email, userProfile?.cashapp_tag]);
-
-  const [mockOAuthProcessor, setMockOAuthProcessor] = useState<{ id: string; name: string } | null>(null);
-  const [mockOAuthStep, setMockOAuthStep] = useState(0);
-
-  const handleToggleProcessor = (id: string) => {
-    const existing = processors.find(p => p.id === id);
-    if (!existing) return;
-
-    if (existing.connected) {
-      setProcessors(prev => prev.map(p => p.id === id ? { ...p, connected: false } : p));
-      
-      // Sync back disconnect to userProfile!
-      if (id === 'stripe') {
-        setUserProfile(prev => ({ ...prev, stripe_merchant_id: '' }));
-      } else if (id === 'paypal') {
-        setUserProfile(prev => ({ ...prev, paypal_email: '' }));
-      } else if (id === 'cashapp') {
-        setUserProfile(prev => ({ ...prev, cashapp_tag: '' }));
-      }
-
-      triggerNotification(`${existing.name} connection disconnected.`);
-      addLog(`Settlement channel unlink configured: ${existing.name} connectivity status set to [inactive].`);
-    } else {
-      setMockOAuthProcessor({ id, name: existing.name });
-      setMockOAuthStep(0);
-    }
-  };
-
-  const handleConnectAll = () => {
-    setProcessors(prev => prev.map(p => ({ ...p, connected: true })));
-    triggerNotification("All 5 Payment processors connected!");
-    addLog("Roster processors authorized concurrently.");
-  };
-
-  const connectedCount = useMemo(() => {
-    return processors.filter(p => p.connected).length;
-  }, [processors]);
 
   // Collapsible: Team Management State
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -1874,43 +1814,17 @@ Powered by NEXUS CORE
   if (onlyShowSection === 'processors') {
     return (
       <div className="bg-[#0c0e12] text-zinc-100 flex flex-col font-sans select-none p-1">
-        <div className="p-1 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {processors.map((p) => (
-              <div key={p.id} className="bg-[#111319]/50 border border-zinc-850 p-4 rounded-xl flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${p.connected ? 'bg-emerald-500/10 text-emerald-400' : 'bg-zinc-800/50 text-zinc-500'}`}>
-                    <CreditCard className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-white">{p.name}</span>
-                    <span className="block text-[9px] font-mono text-zinc-500">{p.rate} Processing</span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleToggleProcessor(p.id)}
-                  className={`px-3 py-1.5 rounded-lg text-[9px] font-mono uppercase font-bold tracking-wider transition-colors ${p.connected ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25' : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:bg-zinc-800'}`}
-                >
-                  {p.connected ? 'Connected' : 'Connect'}
-                </button>
-              </div>
-            ))}
-          </div>
-          
-          {connectedCount < processors.length && (
-            <button
-              type="button"
-              onClick={handleConnectAll}
-              className="w-full bg-[#111319]/80 hover:bg-zinc-900 border border-zinc-800 py-2.5 rounded-xl text-[10px] font-mono text-amber-400 font-bold uppercase tracking-wider transition-colors cursor-pointer"
-            >
-              ⚡ Link All Processor Channels (Sandbox Shortcut)
-            </button>
-          )}
-        </div>
-    </div>
-  );
-}
+        <StripeConnectPayoutSection
+          userProfile={userProfile}
+          setUserProfile={setUserProfile}
+          triggerNotification={triggerNotification}
+          role="band"
+          theme="purple"
+          clearanceLevel={userProfile.clearance_level || 5}
+        />
+      </div>
+    );
+  }
 
   if (onlyShowSection === 'tools') {
     return (
@@ -2242,16 +2156,17 @@ ALTER TABLE public.nexus_posts ADD COLUMN IF NOT EXISTS data JSONB;`}
         {!hideSectionProcessors && (
         <div className="bg-[#090b0e]/80 border-y border-zinc-900 w-full overflow-hidden transition-all duration-300">
           <button 
+            type="button"
             onClick={() => toggleSection('processors')}
             className="w-full flex items-center justify-between p-5 text-left border-b border-zinc-900/60 hover:bg-zinc-900/30 transition-colors"
           >
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-                <Coins className="w-5 h-5 text-amber-400" />
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+                <Coins className="w-5 h-5 text-purple-400" />
               </div>
               <div>
-                <h3 className="text-xs font-mono font-bold tracking-widest text-zinc-200 uppercase">1. PAYMENT PROCESSORS</h3>
-                <p className="text-[11px] text-zinc-400 font-sans mt-0.5">Establish settlement channels, configure rates, and link merchants.</p>
+                <h3 className="text-xs font-mono font-bold tracking-widest text-zinc-200 uppercase">1. STRIPE CONNECT & VENDOR PAYOUTS</h3>
+                <p className="text-[11px] text-zinc-400 font-sans mt-0.5">Establish verified merchant payout channels and receive direct settlements.</p>
               </div>
             </div>
             {expandedSections.processors ? <ChevronDown className="w-4 h-4 text-zinc-500" /> : <ChevronRight className="w-4 h-4 text-zinc-550" />}
@@ -2265,37 +2180,15 @@ ALTER TABLE public.nexus_posts ADD COLUMN IF NOT EXISTS data JSONB;`}
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden"
               >
-                <div className="p-5 space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {processors.map((p) => (
-                      <div key={p.id} className="bg-[#111319]/50 border border-zinc-850 p-4 rounded-xl flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${p.connected ? 'bg-emerald-500/10 text-emerald-400' : 'bg-zinc-800/50 text-zinc-500'}`}>
-                            <CreditCard className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <span className="text-xs font-bold text-white">{p.name}</span>
-                            <span className="block text-[9px] font-mono text-zinc-500">{p.rate} Processing</span>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => handleToggleProcessor(p.id)}
-                          className={`px-3 py-1.5 rounded-lg text-[9px] font-mono uppercase font-bold tracking-wider transition-colors ${p.connected ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25' : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:bg-zinc-800'}`}
-                        >
-                          {p.connected ? 'Connected' : 'Connect'}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {connectedCount < processors.length && (
-                    <button
-                      onClick={handleConnectAll}
-                      className="w-full bg-[#111319]/80 hover:bg-zinc-900 border border-zinc-800 py-2.5 rounded-xl text-[10px] font-mono text-amber-400 font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                    >
-                      ⚡ Link All Processor Channels (Sandbox Shortcut)
-                    </button>
-                  )}
+                <div className="p-5">
+                  <StripeConnectPayoutSection
+                    userProfile={userProfile}
+                    setUserProfile={setUserProfile}
+                    triggerNotification={triggerNotification}
+                    role="band"
+                    theme="purple"
+                    clearanceLevel={userProfile.clearance_level || 5}
+                  />
                 </div>
               </motion.div>
             )}
@@ -3254,119 +3147,6 @@ ALTER TABLE public.nexus_posts ADD COLUMN IF NOT EXISTS data JSONB;`}
                 >
                   Save Changes
                 </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-
-      {/* MOCK OAUTH MODAL OVERLAY */}
-      <AnimatePresence>
-        {mockOAuthProcessor && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 10 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              className="bg-[#0e1015] border border-zinc-800 rounded-3xl p-6 w-full max-w-sm relative shadow-2xl overflow-hidden"
-            >
-              <div className="absolute top-4 right-4">
-                <button
-                  type="button"
-                  onClick={() => setMockOAuthProcessor(null)}
-                  className="p-2 bg-zinc-900/80 hover:bg-zinc-800 rounded-full text-zinc-400 hover:text-white transition"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="text-center space-y-4 mt-2">
-                <div className="w-16 h-16 bg-black border border-zinc-800 rounded-2xl mx-auto flex items-center justify-center text-2xl shadow-lg">
-                  <CreditCard className="w-8 h-8 text-[#00ffcc]" />
-                </div>
-                
-                {mockOAuthStep === 0 && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-white font-display tracking-wide">
-                      Connect {mockOAuthProcessor.name}
-                    </h3>
-                    <p className="text-xs text-zinc-400 leading-relaxed px-4">
-                      Nexus Core uses secure OAuth integration. You will be redirected to {mockOAuthProcessor.name}'s official portal to log in. <br/><br/>
-                      <strong className="text-emerald-400">No API keys required.</strong> You just need your {mockOAuthProcessor.name} login credentials.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setMockOAuthStep(1)}
-                      className="w-full mt-4 bg-white text-black py-3 rounded-xl text-sm font-bold shadow-lg hover:bg-gray-100 transition"
-                    >
-                      Continue to {mockOAuthProcessor.name}
-                    </button>
-                  </div>
-                )}
-
-                {mockOAuthStep === 1 && (
-                  <div className="space-y-5 animate-pulse min-h-[160px] flex flex-col justify-center items-center">
-                    <RefreshCw className="w-8 h-8 text-amber-400 animate-spin" />
-                    <p className="text-xs font-mono text-zinc-400 uppercase tracking-widest font-extrabold">
-                      Awaiting Authentication...
-                    </p>
-                    <p className="text-[10px] text-zinc-500 max-w-[200px]">
-                      (Pretending user is logging into {mockOAuthProcessor.name} in a pop-up window)
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setMockOAuthStep(2)}
-                      className="text-[10px] font-mono text-[#00ffcc] uppercase tracking-widest border border-[#00ffcc]/30 px-3 py-1.5 rounded-lg hover:bg-[#00ffcc]/10 transition"
-                    >
-                      [Simulate Successful Login]
-                    </button>
-                  </div>
-                )}
-
-                {mockOAuthStep === 2 && (
-                  <div className="space-y-4 min-h-[160px] flex flex-col justify-center items-center">
-                    <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-2 relative">
-                       <CheckCircle2 className="w-6 h-6 text-emerald-400 absolute" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-white uppercase tracking-wider font-display">
-                        Connection Established
-                      </h3>
-                      <p className="text-[11px] text-zinc-400 mt-1">
-                        Secure token successfully acquired and saved.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const pid = mockOAuthProcessor.id;
-                        setProcessors(prev => prev.map(p => p.id === pid ? { ...p, connected: true } : p));
-                        
-                        // Sync secure properties back to the core userProfile object!
-                        if (pid === 'stripe') {
-                          setUserProfile(prev => ({ ...prev, stripe_merchant_id: 'acct_sandbox_' + Math.random().toString(36).substring(2, 6).toUpperCase() }));
-                        } else if (pid === 'paypal') {
-                          setUserProfile(prev => ({ ...prev, paypal_email: 'sandbox_paypal_connected@nexus.core' }));
-                        } else if (pid === 'cashapp') {
-                          setUserProfile(prev => ({ ...prev, cashapp_tag: '$SANDBOX_TAG' }));
-                        }
-
-                        triggerNotification(`${mockOAuthProcessor.name} officially connected!`);
-                        addLog(`OAuth handshake complete. Active settlement token acquired for ${mockOAuthProcessor.name}.`);
-                        setMockOAuthProcessor(null);
-                      }}
-                      className="w-full mt-4 bg-[#00ffcc] text-black py-2.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-lg shadow-[#00ffcc]/20 hover:brightness-110 transition"
-                    >
-                      Return to Settings
-                    </button>
-                  </div>
-                )}
               </div>
             </motion.div>
           </motion.div>

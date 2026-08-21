@@ -420,6 +420,7 @@ export interface UserProfile {
   is_internal_admin?: boolean;
   user_metadata?: { clearance_tier: 'FAN' | 'PRO' };
   clearance_tier?: 'FAN' | 'PRO';
+  clearance_level?: number;
   
   // Custom user fields
   bio?: string;

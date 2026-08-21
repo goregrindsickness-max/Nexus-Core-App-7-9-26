@@ -472,11 +472,20 @@ if (!leftDrawerOpen) return null;
                       <User className="w-4 h-4 text-zinc-500" /> Profile Settings
                     </button>
 
-                    {!isEmbedded && (
-                      <button onClick={() => setDrawerCurrentView('payment')} className="w-full flex items-center gap-3 px-3 py-3.5 text-sm font-bold text-zinc-300 hover:text-white hover:bg-zinc-900/80 rounded-lg transition-colors">
-                        <CreditCard className="w-4 h-4 text-zinc-500" /> Saved Payment Methods
-                      </button>
-                    )}
+                    <button 
+                      onClick={() => setDrawerCurrentView('payment')} 
+                      className="w-full flex items-center justify-between px-3 py-3.5 text-sm font-bold text-zinc-300 hover:text-white hover:bg-zinc-900/80 rounded-xl transition-colors group cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:border-purple-500/40">
+                          <CreditCard className="w-4 h-4" />
+                        </div>
+                        <span>Saved Payment Methods</span>
+                      </div>
+                      <span className="text-[8px] font-mono font-bold uppercase tracking-wider text-purple-300 bg-purple-950/60 border border-purple-800/40 px-1.5 py-0.5 rounded">
+                        1-Tap Ready
+                      </span>
+                    </button>
 
                     {!isEmbedded && (
                       <button onClick={() => setDrawerCurrentView('vip')} className="w-full flex items-center gap-3 px-3 py-3.5 text-sm font-bold text-zinc-300 hover:text-white hover:bg-zinc-900/80 rounded-lg transition-colors">

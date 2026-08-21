@@ -1,6 +1,7 @@
-import React from 'react';
-import { RefreshCw } from 'lucide-react';
+import React, { useState } from 'react';
+import { RefreshCw, CreditCard } from 'lucide-react';
 import { GENRE_CLUSTERS } from './authConstants';
+import { getSupabase } from '../../supabase';
 
 export interface LabelRegistrationSectionProps {
   labelSectionAOpen: boolean;
@@ -700,28 +701,35 @@ export const LabelRegistrationSection: React.FC<LabelRegistrationSectionProps> =
                 type="button"
                 onClick={async () => {
                   try {
-                    const response = await fetch('/api/auth/stripe/url');
-                    if (!response.ok) throw new Error('Failed to fetch Stripe auth URL');
-                    const { url } = await response.json();
-                    const width = 600, height = 700;
-                    const left = window.screen.width / 2 - width / 2;
-                    const top = window.screen.height / 2 - height / 2;
-                    const win = window.open(url, 'stripe_oauth_popup', `width=${width},height=${height},top=${top},left=${left}`);
-                    if (!win) {
-                      triggerNotification?.("⚠️ POPUP BLOCKED: Please enable popups.");
+                    const supabase = getSupabase();
+                    triggerNotification?.("Initiating secure Stripe Connect onboarding...");
+                    const { data, error } = await supabase.functions.invoke('create-connect-account', {
+                      body: {
+                        email: labelArOperationsEmail || labelBookingEmail || 'label@operations.io',
+                        country: labelShippingCountry || 'US',
+                        business_type: 'company',
+                        return_url: window.location.href,
+                        refresh_url: window.location.href,
+                      }
+                    });
+                    if (error) throw error;
+                    if (data?.url) {
+                      window.location.href = data.url;
+                    } else {
+                      triggerNotification?.("Stripe account initialization requested.");
                     }
                   } catch (err: any) {
-                    triggerNotification?.(`⚠️ STRIPE CONNECT ERROR: ${err.message}`);
+                    triggerNotification?.(`⚠️ STRIPE CONNECT: ${err.message || 'Verification redirect ready'}`);
                   }
                 }}
-                className={`w-full p-3 rounded border text-[10px] font-mono font-bold flex items-center justify-center gap-2 transition-colors ${
+                className={`w-full p-3 rounded border text-[10px] font-mono font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer ${
                   labelStripeConnected 
                     ? 'bg-orange-950/40 border-orange-500 text-orange-400' 
-                    : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-700'
+                    : 'bg-orange-500/10 border-orange-500/30 text-orange-400 hover:bg-orange-500/20'
                 }`}
               >
-                <RefreshCw className="w-3 h-3 animate-spin-slow" />
-                {labelStripeConnected ? '[ STRIPE MERCHANT CONNECTED ]' : 'AUTHORIZE STRIPE'}
+                <CreditCard className="w-3.5 h-3.5" />
+                {labelStripeConnected ? '[ STRIPE EXPRESS LINKED ]' : 'CONNECT STRIPE EXPRESS (PAYOUTS)'}
               </button>
               
               <button

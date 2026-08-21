@@ -467,6 +467,15 @@ export const FeedViewRouter: React.FC<any> = (props) => {
         userProfile={userProfile}
         triggerNotification={triggerNotification}
         getSupabase={getSupabase}
+        openCheckout={props.openCheckout}
+        addToCart={props.addToCart}
+        cartItems={props.cartItems}
+        setCartItems={props.setCartItems}
+        isCartOpen={props.isCartOpen}
+        setIsCartOpen={props.setIsCartOpen}
+        chats={props.chats}
+        setChats={props.setChats}
+        allProfiles={allProfiles}
       />
 
       {/* FORUM VIEW */}

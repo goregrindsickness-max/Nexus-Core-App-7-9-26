@@ -4352,6 +4352,14 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
   getProfileForUser={getProfileForUser}
   getPostAuthorDisplayName={getPostAuthorDisplayName}
   handleFollowProfile={handleFollowProfile}
+  openCheckout={openCheckout}
+  addToCart={addToCart}
+  cartItems={cartItems}
+  setCartItems={setCartItems}
+  isCartOpen={isCartOpen}
+  setIsCartOpen={setIsCartOpen}
+  chats={chats}
+  setChats={setChats}
 />
 
       )}

@@ -1,56 +1,36 @@
 import React from 'react';
 import { CreditCard, Globe, ExternalLink, Copy } from 'lucide-react';
+import { UserProfile } from '../../../types';
+import StripeConnectPayoutSection from '../../StripeConnectPayoutSection';
 
 interface PromoterSettingsProps {
   ticketingEventId?: string;
   triggerNotification?: (msg: string) => void;
   playLocalBeep?: (freq?: number, type?: OscillatorType, duration?: number) => void;
+  userProfile?: UserProfile | null;
+  setUserProfile?: React.Dispatch<React.SetStateAction<UserProfile | null>>;
 }
 
 export default function PromoterSettings({
   ticketingEventId = 'demo-sandbox',
   triggerNotification = (msg) => console.log(msg),
   playLocalBeep = () => {},
+  userProfile = null,
+  setUserProfile
 }: PromoterSettingsProps) {
   const shopLink = `${window.location.origin}/pay?show_id=${ticketingEventId}`;
 
   return (
     <div className="space-y-6 p-4 bg-zinc-950/40 border border-zinc-900/60 rounded-xl font-mono text-zinc-300">
-      {/* Payment Processors */}
-      <div className="space-y-3">
-        <span className="text-[10px] text-yellow-500 font-bold uppercase tracking-wider block">
-          💳 Live Payment Processor Connections
-        </span>
-        <p className="text-[11px] text-zinc-400 font-sans leading-normal">
-          Securely link your merchant gateway to receive automatic event payouts, process split ticketing sales, and run real-time box office registers.
-        </p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <button 
-            type="button"
-            onClick={() => {
-              if (triggerNotification) triggerNotification('✓ Stripe Express connected!');
-              if (playLocalBeep) playLocalBeep(880, 'sine', 0.05);
-            }}
-            className="w-full justify-center text-[10px] bg-[#635BFF]/15 hover:bg-[#635BFF]/25 border border-[#635BFF]/45 text-white px-3 py-3 rounded-xl font-mono font-bold uppercase tracking-wider flex items-center shadow transition-all duration-200 cursor-pointer gap-2"
-          >
-            <img src="https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/public-assets/Stripe-logo.png" className="h-[18px] w-auto object-contain shrink-0" referrerPolicy="no-referrer" alt="Stripe" />
-            <span>Connect Stripe</span>
-          </button>
-          
-          <button 
-            type="button"
-            onClick={() => {
-              if (triggerNotification) triggerNotification('✓ PayPal Account connected!');
-              if (playLocalBeep) playLocalBeep(880, 'sine', 0.05);
-            }}
-            className="w-full justify-center text-[10px] bg-[#00457C]/20 hover:bg-[#00457C]/35 border border-[#0079C1]/45 text-white px-3 py-3 rounded-xl font-mono font-bold uppercase tracking-wider flex items-center shadow transition-all duration-200 cursor-pointer gap-2"
-          >
-            <img src="https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/public-assets/paypal_logo.png" className="h-[18px] w-auto object-contain shrink-0" referrerPolicy="no-referrer" alt="PayPal" />
-            <span>Connect PayPal</span>
-          </button>
-        </div>
-      </div>
+      {/* Stripe Connect Payouts */}
+      <StripeConnectPayoutSection
+        userProfile={userProfile}
+        setUserProfile={setUserProfile}
+        triggerNotification={triggerNotification}
+        role="promoter"
+        theme="green"
+        clearanceLevel={5}
+      />
 
       {/* Public Storefront URI */}
       <div className="space-y-3 border-t border-zinc-900/80 pt-4">

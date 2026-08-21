@@ -12,6 +12,7 @@ import { V2ExpandableCard } from '../../V2ExpandableCard';
 import SettingsView from '../../SettingsView';
 import HelpDeskView from '../../HelpDeskView';
 import TermsOfServiceView from '../../TermsOfServiceView';
+import StripeConnectPayoutSection from '../../StripeConnectPayoutSection';
 
 // Helper to compress uploaded images to avoid LocalStorage quota overflow
 function compressImage(base64Str: string, maxWidth = 800, maxHeight = 800, quality = 0.7): Promise<string> {
@@ -930,62 +931,15 @@ export default function TeamBillingTab({
                   
                   <div className="space-y-4 pt-2">
                     {/* Stripe Area */}
-                    <div className="p-4 bg-[#090b0e] border border-zinc-900 rounded-xl space-y-3">
-                      <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
-                        <div className="flex items-center gap-1.5">
-                          <CreditCard className="w-4 h-4 text-[#00ffcc]" />
-                          <span className="text-[10px] font-mono text-white font-bold uppercase">Stripe Processing Node</span>
-                        </div>
-                        <span className={`px-2 py-0.5 rounded font-mono text-[8.5px] font-bold ${
-                          userProfile.label_stripe_connected && userProfile.stripe_customer_id
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' 
-                            : 'bg-zinc-950 text-zinc-550 border border-zinc-900'
-                        }`}>
-                          {userProfile.label_stripe_connected && userProfile.stripe_customer_id ? '● LIVE SYNCED' : '○ DISCONNECTED'}
-                        </span>
-                      </div>
-
-                      {userProfile.stripe_customer_id ? (
-                        <div className="space-y-2.5 pt-1">
-                          <div className="flex items-center justify-between bg-black border border-zinc-900 p-3 rounded-lg text-left">
-                            <div className="min-w-0">
-                              <span className="text-[8.5px] font-mono text-zinc-550 uppercase tracking-wider block">Connected Merchant Account</span>
-                              <span className="text-xs font-mono text-[#00ffcc] font-bold truncate block">{userProfile.stripe_customer_id}</span>
-                            </div>
-                            <button
-                              type="button"
-                              disabled={activeClearanceLevel < 5}
-                              onClick={() => {
-                                setUserProfile({
-                                  ...userProfile,
-                                  stripe_customer_id: '',
-                                  label_stripe_connected: false
-                                });
-                                showLocalToast("Stripe Connect account disconnected.");
-                              }}
-                              className="text-[9.5px] font-mono text-red-400 hover:text-red-300 font-bold px-2.5 py-1.5 bg-red-950/20 border border-red-950/40 rounded transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                            >
-                              Disconnect
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="pt-2">
-                          <button
-                            type="button"
-                            disabled={activeClearanceLevel < 5}
-                            onClick={() => {
-                              setLabelOAuthProcessor({ id: 'stripe', name: 'Stripe Connect' });
-                              setLabelOAuthStep(0);
-                            }}
-                            className="w-full py-2.5 bg-[#00ffcc] hover:bg-[#0fd9ae] text-black font-mono font-bold uppercase text-[9.5px] tracking-widest rounded-lg flex items-center justify-center gap-1.5 transition duration-150 cursor-pointer shadow-md shadow-[#00ffcc]/10 disabled:bg-zinc-800 disabled:text-zinc-550 disabled:cursor-not-allowed disabled:shadow-none"
-                          >
-                            <CreditCard className="w-3.5 h-3.5" />
-                            Connect Stripe via OAuth
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    <StripeConnectPayoutSection
+                      userProfile={userProfile}
+                      setUserProfile={setUserProfile}
+                      triggerNotification={(msg) => showLocalToast(msg)}
+                      showLocalToast={showLocalToast}
+                      role="label"
+                      theme="orange"
+                      clearanceLevel={activeClearanceLevel}
+                    />
 
                     {/* PayPal Area */}
                     <div className="p-4 bg-[#090b0e] border border-zinc-900 rounded-xl space-y-3">
