@@ -1,0 +1,171 @@
+      }
+    }
+  }, []);
+
+  const handleNextSong = () => {
+    if (playlistVideos.length === 0) return;
+    setCurrentVideoIndex(prevIndex => (prevIndex + 1) % playlistVideos.length);
+  };
+
+  const handlePrevSong = () => {
+    if (playlistVideos.length === 0) return;
+    setCurrentVideoIndex(prevIndex => (prevIndex - 1 + playlistVideos.length) % playlistVideos.length);
+  };
+
+  const initYoutubePlayer = (videoId: string) => {
+    const win = window as any;
+    if (!win.YT || !win.YT.Player) {
+      setTimeout(() => initYoutubePlayer(videoId), 500);
+      return;
+    }
+
+    if (ytPlayerRef.current) {
+      try {
+        if (typeof ytPlayerRef.current.loadVideoById === 'function') {
+          if (sceneRadioPlaying) {
+            ytPlayerRef.current.loadVideoById(videoId);
+          } else {
+            ytPlayerRef.current.cueVideoById(videoId);
+          }
+          return;
+        }
+      } catch (err) {
+        console.warn("[RADIO PLAYER] Reusing player failed, recreating...", err);
+      }
+    }
+
+    try {
+      ytPlayerRef.current = new win.YT.Player('youtube-radio-player', {
+        height: '100%',
+        width: '100%',
+        videoId: videoId,
+        playerVars: {
+          autoplay: sceneRadioPlaying ? 1 : 0,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          rel: 0,
+          modestbranding: 1,
+          iv_load_policy: 3,
+        },
+        events: {
+          onReady: () => {
+            console.log("[RADIO PLAYER] YT Player is Ready.");
+            if (sceneRadioPlaying && ytPlayerRef.current && typeof ytPlayerRef.current.playVideo === 'function') {
+              ytPlayerRef.current.playVideo();
+            }
+          },
+          onStateChange: (event: any) => {
+            if (event.data === 1) {
+              setSceneRadioPlaying(true);
+              setRadioPlayerError(null);
+            } else if (event.data === 2) {
+              setSceneRadioPlaying(false);
+            } else if (event.data === 0) {
+              handleNextSong();
+            }
+          },
+          onError: (event: any) => {
+            console.warn("[RADIO PLAYER] Error code:", event.data);
+            let errorMsg = "Playback error. Skipping...";
+            if (event.data === 101 || event.data === 150) {
+              errorMsg = "Age-restricted or embedding blocked by owner. Auto-skipping...";
+            } else if (event.data === 100) {
+              errorMsg = "Video not found. Skipping...";
+            }
+            setRadioPlayerError(errorMsg);
+            
+            setTimeout(() => {
+              handleNextSong();
+            }, 2500);
+          }
+        }
+      });
+    } catch (e) {
+      console.error("[RADIO PLAYER] Error initializing YT Player:", e);
+    }
+  };
+
+  const togglePlayPause = () => {
+    if (!ytPlayerRef.current || typeof ytPlayerRef.current.playVideo !== 'function') {
+      if (playlistVideos.length > 0) {
+        const activeVideo = playlistVideos[currentVideoIndex];
+        if (activeVideo) {
+          setSceneRadioPlaying(true);
+          initYoutubePlayer(activeVideo.videoId);
+        }
+      }
+      return;
+    }
+
+    try {
+      if (sceneRadioPlaying) {
+        ytPlayerRef.current.pauseVideo();
+        setSceneRadioPlaying(false);
+      } else {
+        ytPlayerRef.current.playVideo();
+        setSceneRadioPlaying(true);
+      }
+    } catch (err) {
+      console.error("[RADIO PLAYER] Error calling play/pause on YT player:", err);
+    }
+  };
+
+  useEffect(() => {
+    let active = true;
+    const fetchPlaylist = async () => {
+      const playlistId = RADIO_PLAYLISTS[selectedRadioGenre].playlistId;
+      setIsLoadingPlaylist(true);
+      setRadioPlayerError(null);
+      try {
+        const response = await fetch(`/api/playlist/${playlistId}`);
+        if (!response.ok) throw new Error("Could not fetch playlist feed");
+        const data = await response.json();
+        if (active && data && data.videos && data.videos.length > 0) {
+          setPlaylistVideos(data.videos);
+          setCurrentVideoIndex(0);
+        }
+      } catch (err: any) {
+        console.error("[RADIO PLAYER] Error loading playlist:", err);
+        if (active) {
+          setRadioPlayerError("Failed to load playlist tracks.");
+        }
+      } finally {
+        if (active) setIsLoadingPlaylist(false);
+      }
+    };
+
+    fetchPlaylist();
+    return () => {
+      active = false;
+    };
+  }, [selectedRadioGenre]);
+
+  useEffect(() => {
+    if (playlistVideos.length > 0 && currentVideoIndex < playlistVideos.length) {
+      const activeVideo = playlistVideos[currentVideoIndex];
+      if (activeVideo && activeVideo.videoId) {
+        initYoutubePlayer(activeVideo.videoId);
+      }
+    }
+  }, [playlistVideos, currentVideoIndex]);
+  
+  // Cart State
+  const [cartItems, setCartItems] = useState<{ id: string; productId: string; name: string; price: number; image: string; bandName: string; quantity: number; size?: string; }[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  const addToCart = (product: any, size?: string) => {
+    setCartItems(prev => {
+      const existing = prev.find(item => item.productId === product.id && item.size === size);
+      if (existing) {
+        return prev.map(item => item.id === existing.id ? { ...item, quantity: item.quantity + 1 } : item);
+      }
+      return [...prev, {
+        id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        image: product.thumbnail || product.image,
+        bandName: product.seller || product.brand || 'Nexus Merchant',
+        quantity: 1,
+        size

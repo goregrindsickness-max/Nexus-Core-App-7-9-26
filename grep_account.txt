@@ -1,0 +1,29 @@
+6004:      (isLoggedOut && loginInitialTab === 'signup') || userProfile?.account_type === 'label'
+6009:              : (userProfile?.account_type === 'creative' || userProfile?.account_type === 'promoter') 
+6011:                : userProfile?.account_type === 'fan'
+6032:      {(userProfile?.account_type !== 'creative' && (activeTab as string) !== 'pay-portal') && (
+6037:      {(userProfile?.account_type === 'creative' || userProfile?.account_type === 'promoter') && (
+6106:        ) : (!showSplash && !isLoggedOut && userProfile?.account_type === 'creative') ? (
+6127:                  account_type: 'band'
+6143:        ) : (!showSplash && !isLoggedOut && userProfile?.account_type === 'label') ? (
+6156:                account_type: 'band'
+6162:        ) : (!showSplash && !isLoggedOut && FLAGS.ENABLE_PROMOTER_PORTAL && userProfile?.account_type === 'promoter') ? (
+6190:        ) : (!showSplash && !isLoggedOut && userProfile?.account_type === 'fan') ? (
+11177:              portalRole={userProfile?.account_type || 'band'} 
+11427:                          account_type: 'band'
+11435:                        userProfile?.account_type === 'band'
+11444:                      {userProfile?.account_type === 'band' && (
+11456:                          account_type: 'creative',
+11476:                        userProfile?.account_type === 'creative'
+11485:                      {userProfile?.account_type === 'creative' && (
+11496:                          account_type: 'promoter'
+11504:                        userProfile?.account_type === 'promoter'
+11513:                      {userProfile?.account_type === 'promoter' && (
+11524:                          account_type: 'label'
+11532:                        userProfile?.account_type === 'label'
+11541:                      {userProfile?.account_type === 'label' && (
+11552:                          account_type: 'fan'
+11560:                        userProfile?.account_type === 'fan'
+11569:                      {userProfile?.account_type === 'fan' && (
+11580:                          account_type: 'fan'
+11653:                          account_type: 'fan'

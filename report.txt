@@ -1,0 +1,2 @@
+Duplicate states: inventory, editingItem, stagedDistroItems, inventoryAudits, offers, blockedPromoters, messages, unreadMessageIds, bands, activeBandId, editingBand, deletingBandId, bandLineup, crewMembers, bandLogoUrl, bandCoverUrl, selectedMicroGenres, bandJoinRequests
+Orphaned modal imports in App.tsx: BrutalistModal (124), EditableChecklistModal (138), PTTRadioModal (25), FlightTrackerModal (140), VanToTableTransferModal (143), WillCallIsolationModal (163)

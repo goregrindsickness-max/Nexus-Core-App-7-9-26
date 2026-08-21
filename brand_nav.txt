@@ -1,0 +1,481 @@
+
+        {/* BRAND NAVIGATION HEADER */}
+        {activeTab !== 'social' && (
+          <div className="pl-2 pr-5 py-3 flex items-center justify-between border-b border-[#1b1e25] bg-black">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setActiveTab('home-v2');
+                setDashboardV2ActiveNav('EVENTS');
+                triggerNotification('Navigated to Home Dashboard');
+              }}
+              className="flex items-center select-none shrink-0 cursor-pointer hover:opacity-85 active:scale-98 transition-all focus:outline-none"
+              title="Return to Home Dashboard"
+            >
+              <img 
+                src="https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/public-assets/Nexus%20Core%20Long%20Logo%20copy.png" 
+                alt="Nexus Core" 
+                className="object-contain"
+                style={{ width: '154.791px', height: '57.9957px' }}
+                referrerPolicy="no-referrer"
+              />
+            </button>          </div>
+
+          <div className="flex items-center gap-2">
+            {pendingSyncCount > 0 && (
+              <button
+                onClick={() => {
+                  triggerNotification(`Retrying sync for ${pendingSyncCount} operations...`);
+                  processOfflineQueue().then();
+                }}
+                className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2.5 py-1.5 flex items-center gap-1.5 transition text-[10px] font-mono font-bold uppercase tracking-wider cursor-pointer shadow-sm shadow-amber-500/5 active:scale-95 animate-pulse"
+              >
+                <Repeat className="w-3 h-3 text-amber-400 animate-spin" />
+                <span>Syncing: {pendingSyncCount}</span>
+              </button>            )}
+
+            <button
+              onClick={() => {
+                setActiveTab('plans');
+                if (!isRosterOwner) {
+                  triggerNotification('Viewing organization active sponsorship plan details.');
+                } else {
+                  triggerNotification('Opening subscription & billing plans...');
+                }
+              }}
+              className={`rounded-xl px-3 py-1 flex items-center gap-2 transition cursor-pointer shadow-sm active:scale-95 shrink-0 ${
+                !isRosterOwner
+                  ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-white border border-emerald-500/30 shadow-emerald-500/5'
+                  : activePlan === 'touring-pro-plus'
+                    ? 'bg-purple-500/10 hover:bg-purple-500/20 text-white border border-purple-500/30 shadow-purple-500/5'
+                    : activePlan === 'touring-pro'
+                      ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-white border border-emerald-500/30 shadow-emerald-500/5'
+                      : getTrialCountdownStr() === 'Expired'
+                        ? 'bg-rose-500/10 hover:bg-rose-500/20 text-white border border-rose-500/30 shadow-rose-500/5 animate-pulse'
+                        : 'bg-amber-500/10 hover:bg-amber-500/20 text-white border border-amber-500/30 shadow-amber-500/5'
+              }`}
+            >
+              <div className="flex flex-col text-left select-none">
+                <span className="text-[10px] font-bold text-white leading-tight font-sans">
+                  {(activeSimulatedMember?.name || userProfile?.name || 'Artist').trim().split(/\s+/)[0]}
+                </span>
+                <span className={`text-[8px] font-mono font-bold uppercase tracking-wider leading-none mt-0.5 ${
+                  !isRosterOwner
+                    ? 'text-[#00ffcc]'
+                    : activePlan === 'touring-pro-plus'
+                      ? 'text-purple-400'
+                      : activePlan === 'touring-pro'
+                        ? 'text-emerald-400'
+                        : getTrialCountdownStr() === 'Expired'
+                          ? 'text-rose-400'
+                          : 'text-amber-400'
+                }`}>
+                  Level {activeClearanceLevel} Access
+                </span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setIsNotificationDrawerOpen(true)}
+              className="p-1.5 rounded-full hover:bg-zinc-850 text-zinc-400 hover:text-white transition-all cursor-pointer focus:outline-none active:scale-95 flex items-center justify-center shrink-0"
+              title="Notifications Center"
+            >
+              <div className="relative">
+                <Bell className="w-5 h-5" />
+                {notifications.filter((n: any) => !n.is_read).length > 0 && (
+                  <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                )}
+              </div>
+            </button>
+
+          <div className="relative">
+            <button
+              onClick={() => setV2RoleMenuOpen(!v2RoleMenuOpen)}
+              className="w-10 h-10 rounded-full bg-zinc-900 border border-zinc-700 flex items-center justify-center font-black text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all active:scale-95 overflow-hidden shadow-md cursor-pointer hover:border-emerald-400 ml-2"
+            >
+              {(() => {
+                const r = userProfile?.account_type || 'band';
+                if (r === 'band') return activeBand?.logo_url || null;
+                if (r === 'creative') return userProfile?.creative_avatar || null;
+                if (r === 'label') return userProfile?.label_avatar || null;
+                if (r === 'promoter') return userProfile?.promoter_logo || null;
+                return userProfile?.avatar_url || null;
+              })() ? (
+                <img 
+                  src={(() => {
+                    const r = userProfile?.account_type || 'band';
+                    if (r === 'band') return activeBand?.logo_url;
+                    if (r === 'creative') return userProfile?.creative_avatar;
+                    if (r === 'label') return userProfile?.label_avatar;
+                    if (r === 'promoter') return userProfile?.promoter_logo;
+                    return userProfile?.avatar_url;
+                  })() || ""} 
+                  className="w-full h-full object-cover" 
+                  alt="" 
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <span className="text-emerald-400 text-sm font-bold font-mono">
+                  {(() => {
+                    const r = userProfile?.account_type || 'band';
+                    if (r === 'band') return activeBand?.name;
+                    if (r === 'creative') return userProfile?.creative_metadata?.business_name;
+                    if (r === 'label') return userProfile?.label_company_name;
+                    if (r === 'promoter') return userProfile?.promoter_metadata?.brand_name;
+                    return userProfile?.name;
+                  })()?.charAt(0).toUpperCase() || 'U'}
+                </span>
+              )}
+            </button>
+            <AnimatePresence>
+              {v2RoleMenuOpen && (
+                <motion.div key="v2-role-menu-wrapper" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <div className="fixed inset-0 z-[1000] bg-black/40 backdrop-blur-[1px]" onClick={() => setV2RoleMenuOpen(false)} />
+                  <div className="absolute right-0 mt-3 w-80 bg-[#09090b] border border-zinc-800 rounded-2xl p-4 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.95)] z-[1010] text-left animate-in fade-in slide-in-from-top-3 duration-200">
+                    <button onClick={() => setV2RoleMenuOpen(false)} className="absolute top-4 right-4 w-6 h-6 flex items-center justify-center bg-black/40 hover:bg-rose-900/40 border border-zinc-800 hover:border-rose-500/50 text-zinc-500 hover:text-rose-400 rounded-full transition-all cursor-pointer"><X className="w-3.5 h-3.5" /></button>
+                    
+                    {/* Active Profile Header */}
+                    <div className="flex items-center gap-3 pb-3 border-b border-zinc-800/80">
+                      <div className="w-10 h-10 rounded-full bg-rose-950/40 border border-rose-500/40 flex items-center justify-center font-black text-rose-400 shrink-0 overflow-hidden">
+                        {(() => {
+                          const r = userProfile?.account_type || 'band';
+                          if (r === 'band') return activeBand?.logo_url || null;
+                          if (r === 'creative') return userProfile?.creative_avatar || null;
+                          if (r === 'label') return userProfile?.label_avatar || null;
+                          if (r === 'promoter') return userProfile?.promoter_logo || null;
+                          return userProfile?.avatar_url || null;
+                        })() ? (
+                          <img 
+                            src={(() => {
+                              const r = userProfile?.account_type || 'band';
+                              if (r === 'band') return activeBand?.logo_url;
+                              if (r === 'creative') return userProfile?.creative_avatar;
+                              if (r === 'label') return userProfile?.label_avatar;
+                              if (r === 'promoter') return userProfile?.promoter_logo;
+                              return userProfile?.avatar_url;
+                            })() || ""} 
+                            className="w-full h-full object-cover" 
+                            alt="" 
+                            referrerPolicy="no-referrer" 
+                          />
+                        ) : (
+                          <div className="font-mono text-sm">
+                            {(() => {
+                              const r = userProfile?.account_type || 'band';
+                              if (r === 'band') return activeBand?.name;
+                              if (r === 'creative') return userProfile?.creative_metadata?.business_name;
+                              if (r === 'label') return userProfile?.label_company_name;
+                              if (r === 'promoter') return userProfile?.promoter_metadata?.brand_name;
+                              return userProfile?.name;
+                            })()?.charAt(0).toUpperCase() || 'U'}
+                          </div>
+                        )}
+                      </div>
+                      <div className="overflow-hidden flex-1">
+                        <h4 className="text-sm font-black text-white truncate flex items-center gap-1.5">
+                          {(() => {
+                            const r = userProfile?.account_type || 'band';
+                            if (r === 'industry_pro') return 'Industry Pro';
+                            if (r === 'fan_only') return 'Fan Only';
+                            if (r === 'promoter') return userProfile?.promoter_metadata?.brand_name || 'Promoter Gateway';
+                            if (r === 'creative') return userProfile?.creative_metadata?.business_name || 'Creative Hub';
+                            if (r === 'label') return userProfile?.label_company_name || 'Pro Label';
+                            return activeBand?.name || userProfile?.bandName || 'Artist';
+                          })()}
+                          <span className="text-[7px] font-black tracking-widest uppercase bg-emerald-500/25 border border-emerald-500/45 text-emerald-400 px-1 py-0.5 rounded">
+                            {activeClearanceLevel === 5 ? 'OWNER' : `LVL ${activeClearanceLevel}`}
+                          </span>
+                        </h4>
+                        <p className="text-[9px] text-zinc-400 font-mono uppercase truncate mt-0.5">
+                          {userProfile?.account_type === 'industry_pro' ? 'Professional' : userProfile?.account_type === 'fan_only' ? 'Fan' : (activeSimulatedMember?.role || userProfile?.role || 'Manager')} • LEVEL {activeClearanceLevel} CLEARANCE
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Simulation Member Switcher */}
+                    <div className="py-2 px-2.5 bg-zinc-950 border border-zinc-900 rounded-xl mt-2.5 mb-2">
+                      <span className="text-[8px] font-mono uppercase text-zinc-500 block mb-1 tracking-wider font-bold">Acting simulated identity</span>
+                      <select
+                        value={simulatedMemberId}
+                        onChange={(e) => {
+                          const targetId = e.target.value;
+                          setSimulatedMemberId(targetId);
+                          const combined = [
+                            ...(Array.isArray(bandLineup) ? bandLineup : []),
+                            ...(Array.isArray(crewMembers) ? crewMembers : [])
+                          ];
+                          const foundName = combined.find((m: any) => m.id === targetId)?.name || 'Member';
+                          triggerNotification?.(`⚡ Switched simulated identity to ${foundName}`);
+                        }}
+                        className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#00ffcc]/50 rounded-lg px-2 py-1.5 text-xs text-white font-mono focus:outline-none cursor-pointer"
+                      >
+                        {[
+                          ...(Array.isArray(bandLineup) ? bandLineup : []).map((m: any) => ({ ...m, type: 'Lineup', lvl: m.clearanceLevel || 5 })),
+                          ...(Array.isArray(crewMembers) ? crewMembers : []).map((c: any) => ({ ...c, type: 'Crew', lvl: c.clearanceLevel || 1 }))
+                        ].map((member: any) => (
+                          <option key={member.id} value={member.id}>
+                            [{member.type}] {member?.name || 'Unnamed'} ({member.role || 'Crew'}) - Lvl {member.lvl}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* View My Profile Button */}
+                    <button 
+                      onClick={() => {
+                        setV2RoleMenuOpen(false);
+                        handleOpenMyProfile();
+                      }}
+                      className="w-full flex items-center justify-center gap-2 mt-2 mb-3 py-2 bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-colors cursor-pointer shadow-md"
+                    >
+                      <User className="w-3.5 h-3.5" />
+                      View My Profile
+                    </button>
+
+                    {/* Default Band/Artist Tab Section */}
+                    <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-3 mb-3">
+                      <div className="flex items-center gap-2.5 pb-2 border-b border-zinc-800/60">
+                        <div className="w-8 h-8 rounded-full overflow-hidden border border-[#00ffcc]/30 bg-zinc-950 shrink-0">
+                          {activeBand?.logo_url ? (
+                            <img src={activeBand.logo_url} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[#00ffcc] font-mono text-xs font-bold">
+                              {activeBand?.name?.charAt(0).toUpperCase() || 'B'}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-grow min-w-0">
+                          <span className="block text-[7px] font-mono font-bold text-zinc-500 uppercase tracking-widest leading-none mb-0.5">ACTIVE BAND / ARTIST</span>
+                          <h4 className="text-[11px] font-bold text-white truncate uppercase tracking-tight leading-tight">
+                            {activeBand?.name || 'No Band Name'}
+                          </h4>
+                          <p className="text-[8px] font-mono text-[#00ffcc] leading-none mt-0.5">
+                            {activeBand?.genre || 'Genre unspecified'}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Add Another Band/Artist Button with dynamic slots count */}
+                      {(() => {
+                        const currentLimit = 
+                          userProfile?.sub_tier === 'touring_pro_plus' || activePlan === 'touring-pro-plus' ? 5 :
+                          userProfile?.sub_tier === 'touring_pro' || activePlan === 'touring-pro' ? 2 :
+                          userProfile?.sub_tier === 'enterprise_circuit' ? 999 :
+                          userProfile?.sub_tier === 'power_user_pro' ? 2 : 1;
+                        
+                        return (
+                          <button
+                            onClick={() => {
+                              setV2RoleMenuOpen(false);
+                              setActiveTab('plans');
+                              triggerNotification('Opening band roster manager. Register another band/artist here.');
+                            }}
+                            className="w-full mt-2.5 flex items-center justify-center gap-1.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-500/50 text-[#00ffcc] hover:text-white rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider transition-all cursor-pointer"
+                          >
+                            <Plus className="w-3 h-3 text-[#00ffcc]" />
+                            <span>Add Another Band/Artist ({bands.length}/{currentLimit})</span>
+                          </button>
+                        );
+                      })()}
+                    </div>
+
+                    <div className="space-y-2">
+                      <span className="block text-[8px] font-mono font-black text-zinc-500 tracking-wider uppercase mb-1.5">SWITCH ACTIVE PORTAL</span>
+                      <div className="space-y-1">
+                        {[
+                          { key: 'industry_pro', icon: '🎟️', name: 'Industry Pro', desc: 'Active social environment', bg: 'bg-violet-950/40', border: 'border-violet-500/30', text: 'text-violet-400', dot: 'bg-violet-700 shadow-[0_0_8px_#6d28d9]' },
+                          { key: 'fan_only', icon: '💙', name: 'Fan Only', desc: 'Royal Blue fan community', bg: 'bg-cyan-950/40', border: 'border-cyan-500/30', text: 'text-cyan-400', dot: 'bg-cyan-500 shadow-[0_0_8px_#06b6d4]' },
+                          { key: 'band', icon: '🎸', name: 'Band / Artist Workspace', desc: 'Lineup, repertoire & presets', bg: 'bg-emerald-950/40', border: 'border-emerald-500/30', text: 'text-emerald-400', dot: 'bg-emerald-500 shadow-[0_0_8px_#10b981]' },
+                          { key: 'promoter', icon: '🏟️', name: 'Venue Promoter Gateway', desc: 'Calendars, lineups & finance', bg: 'bg-yellow-950/40', border: 'border-yellow-500/30', text: 'text-yellow-400', dot: 'bg-yellow-500 shadow-[0_0_8px_#eab308]' },
+                          { key: 'creative', icon: '🛠️', name: 'Creative Hub & Crew', desc: 'Contracts, portfolio & sound crew', bg: 'bg-fuchsia-950/40', border: 'border-fuchsia-500/30', text: 'text-fuchsia-400', dot: 'bg-fuchsia-500 shadow-[0_0_8px_#d946ef]' },
+                          { key: 'label', icon: '💿', name: 'Record Label Console', desc: 'Oversee rosters & releases', bg: 'bg-orange-950/40', border: 'border-orange-500/30', text: 'text-orange-400', dot: 'bg-orange-500 shadow-[0_0_8px_#f97316]' }
+                        ].map((portal) => {
+                          const portalRole = userProfile?.account_type || 'band';
+                          const isActive = portalRole === portal.key;
+                          const registeredWorkspaces = userProfile?.registered_workspaces || [];
+                          const allowedWorkspaces = userProfile?.allowed_workspaces || [];
+                          const isIndustryPro = userProfile?.account_type === 'industry_pro' || (registeredWorkspaces || []).some(w => ['band', 'promoter', 'creative', 'label'].includes(w)) || (allowedWorkspaces || []).some(w => ['band', 'promoter', 'creative', 'label'].includes(w));
+                          
+                          // If user is already active industry_pro, fan_only is locked out/not clickable (downgrade blocked)
+                          if (portal.key === 'fan_only' && isIndustryPro) {
+                            return (
+                              <div key={portal.key} className="w-full flex items-center justify-between p-2 rounded-xl bg-zinc-950/20 border border-zinc-900/30 text-zinc-650 opacity-40 select-none cursor-not-allowed">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs">{portal.icon}</span>
+                                  <div className="text-left">
+                                    <p className="text-[10px] font-black uppercase tracking-wider">{portal.name}</p>
+                                    <p className="text-[8px] font-mono leading-none">Downgrade Unavailable</p>
+                                  </div>
+                                </div>
+                                <span className="text-[9px] font-mono text-zinc-700">LOCKED</span>
+                              </div>
+                            );
+                          }
+
+                          const isAllowed = (portal.key === 'industry_pro' || (portal.key === 'fan_only' && !isIndustryPro)) || (
+                            registeredWorkspaces.includes(portal.key)
+                          );
+
+                          if (isActive) {
+                            return (
+                              <div key={portal.key} className={`w-full flex items-center justify-between p-2 rounded-xl ${portal.bg} border ${portal.border} ${portal.text}`}>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs">{portal.icon}</span>
+                                  <div className="text-left">
+                                    <p className="text-[10px] font-black uppercase tracking-wider">{portal.name}</p>
+                                    <p className="text-[8px] opacity-80 font-mono leading-none">Active Environment</p>
+                                  </div>
+                                </div>
+                                <span className={`w-1.5 h-1.5 rounded-full ${portal.dot} animate-pulse`} />
+                              </div>
+                            );
+                          }
+
+                          if (isAllowed) {
+                            return (
+                              <button
+                                key={portal.key}
+                                onClick={() => {
+                                  setV2RoleMenuOpen(false);
+                                  const updated = { ...userProfile, account_type: portal.key };
+                                  setUserProfile(updated);
+                                  localStorage.setItem('nexus_core_user_profile', JSON.stringify(updated));
+                                  if (portal.key === 'industry_pro' || portal.key === 'fan_only') {
+                                    setActiveTab('social');
+                                  } else {
+                                    setActiveTab('home-v2');
+                                    setDashboardV2ActiveNav('EVENTS');
+                                  }
+                                  triggerNotification?.(`⚡ Switched to ${portal.name}.`);
+                                }}
+                                className="w-full flex items-center justify-between p-2 rounded-xl bg-zinc-900/50 hover:bg-zinc-800 border border-transparent hover:border-zinc-700 text-zinc-400 hover:text-white transition-all cursor-pointer group"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs opacity-50 group-hover:opacity-100 transition-opacity">{portal.icon}</span>
+                                  <div className="text-left">
+                                    <p className="text-[10px] font-black uppercase tracking-wider group-hover:text-white transition-colors">{portal.name}</p>
+                                    <p className="text-[8px] opacity-50 font-mono leading-none">{portal.desc}</p>
+                                  </div>
+                                </div>
+                                <div className="w-5 h-5 rounded-full bg-zinc-800 group-hover:bg-zinc-700 flex items-center justify-center transition-colors">
+                                  <ArrowRight className="w-3 h-3 text-zinc-500 group-hover:text-white" />
+                                </div>
+                              </button>
+                            );
+                          }
+
+                          // Locked portal button - routes directly to the multi-portal signup wizard to force registration
+                          return (
+                            <button
+                              key={portal.key}
+                              onClick={() => {
+                                setV2RoleMenuOpen(false);
+                                if (typeof window !== 'undefined') {
+                                  localStorage.setItem('nexus_target_register_workspace', portal.key);
+                                }
+                                triggerNotification?.(`Opening secure registration gateway for ${portal.name}...`);
+                                setShowWorkspaceRegistration(true);
+                              }}
+                              className="w-full flex items-center justify-between p-2 rounded-xl bg-zinc-950/40 border border-zinc-900/50 text-zinc-650 hover:text-zinc-500 transition-all cursor-pointer group"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs opacity-40">{portal.icon}</span>
+                                <div className="text-left">
+                                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600 group-hover:text-zinc-500">{portal.name} 🔒</p>
+                                  <p className="text-[8px] opacity-40 font-mono leading-none">Registration Required</p>
+                                </div>
+                              </div>
+                              <div className="w-5 h-5 rounded-full bg-zinc-950 flex items-center justify-center">
+                                <span className="text-[10px]">🔒</span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* ACTIONS */}
+                    <div className="mt-3 pt-3 border-t border-zinc-800/80 space-y-1.5">
+                      <button 
+                        onClick={() => {
+                          setV2RoleMenuOpen(false);
+                          setActiveTab('plans');
+                          triggerNotification('Opening upgrade and profile settings...');
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-zinc-300 hover:text-white hover:bg-zinc-900/60 rounded-xl transition-colors text-left cursor-pointer"
+                      >
+                        <Settings className="w-3.5 h-3.5 text-zinc-500" />
+                        <span>Profile & Upgrade Settings</span>
+                      </button>
+                      
+                      <button 
+                        onClick={() => {
+                          setV2RoleMenuOpen(false);
+                          localStorage.removeItem('nexus_core_user_profile'); setUserProfile(null); window.location.reload();
+                          triggerNotification?.("Session terminated. Signed out successfully.");
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-rose-500 hover:text-rose-400 hover:bg-rose-950/20 rounded-xl transition-colors text-left cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5 text-rose-500" />
+                        <span>Log Out from Terminal</span>
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          </div>
+        </div>
+        )}
+
+        {isTabRestricted(activeTab, activeClearanceLevel) ? (
+          <div className="flex-grow flex flex-col items-center justify-center p-8 text-center min-h-[70vh] bg-[#030303] text-zinc-300">
+            <div className="max-w-md w-full bg-[#09090b] border border-zinc-800 p-8 rounded-2xl shadow-[0_10px_50px_-12px_rgba(0,0,0,0.8)] relative overflow-hidden group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-rose-500/10 via-red-500/10 to-amber-500/10 rounded-2xl blur opacity-65" />
+              <div className="relative z-10 flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full bg-rose-950/20 border border-rose-500/30 flex items-center justify-center mb-5 text-rose-500">
+                  <Lock className="w-8 h-8" />
+                </div>
+                <h3 className="text-lg font-black text-white uppercase tracking-wider font-display">
+                  Access Restricted
+                </h3>
+                <p className="text-xs text-zinc-500 font-mono mt-2">
+                  SECURE PORTAL INTERCEPTED • LEVEL {activeClearanceLevel}
+                </p>
+                <div className="bg-black/40 border border-zinc-900 rounded-xl p-4 my-6 text-left w-full space-y-2 text-xs">
+                  <p className="text-zinc-400 font-sans leading-relaxed">
+                    The requested portal <span className="font-mono text-rose-400 font-bold uppercase">{activeTab}</span> is restricted for your active simulated user.
+                  </p>
+                  <p className="text-zinc-500 font-sans leading-relaxed text-[11px]">
+                    To view this tab, you require a higher security clearance level than your current <span className="font-mono text-zinc-300 font-semibold">Level {activeClearanceLevel}</span>.
+                  </p>
+                </div>
+                
+                <div className="w-full space-y-3 text-left">
+                  <span className="text-[8px] font-mono uppercase text-zinc-500 block mb-1 tracking-wider font-bold">Temporarily elevate simulated identity</span>
+                  <select
+                    value={simulatedMemberId}
+                    onChange={(e) => {
+                      const targetId = e.target.value;
+                      setSimulatedMemberId(targetId);
+                      const combined = [
+                        ...(Array.isArray(bandLineup) ? bandLineup : []),
+                        ...(Array.isArray(crewMembers) ? crewMembers : [])
+                      ];
+                      const foundName = combined.find((m: any) => m.id === targetId)?.name || 'Member';
+                      triggerNotification?.(`⚡ Simulating ${foundName}`);
+                    }}
+                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-[#00ffcc]/50 rounded-lg px-2.5 py-2 text-xs text-white font-mono focus:outline-none cursor-pointer"
+                  >
+                    {[
+                      ...(Array.isArray(bandLineup) ? bandLineup : []).map((m: any) => ({ ...m, type: 'Lineup', lvl: m.clearanceLevel || 5 })),
+                      ...(Array.isArray(crewMembers) ? crewMembers : []).map((c: any) => ({ ...c, type: 'Crew', lvl: c.clearanceLevel || 1 }))
+                    ].map((member: any) => (
+                      <option key={member.id} value={member.id}>
+                        [{member.type}] {member?.name || 'Unnamed'} ({member.role || 'Crew'}) - Lvl {member.lvl}
+                      </option>
+                    ))}
+                  </select>
+                  
+                  <button

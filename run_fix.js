@@ -1,0 +1,11 @@
+const fs = require('fs');
+const file = 'src/components/PromoterPortalView.tsx';
+const content = fs.readFileSync(file, 'utf8');
+const lines = content.split('\n');
+const block = lines.slice(6229, 6367).join('\n');
+const newLines = [...lines.slice(0, 6229), ...lines.slice(6367)];
+let newContent = newLines.join('\n');
+const insertPos = newContent.indexOf('        </motion.div>\n      ) : activePortalTab === \'sales\'');
+newContent = newContent.substring(0, insertPos) + block + '\n' + newContent.substring(insertPos);
+fs.writeFileSync(file, newContent);
+console.log('SUCCESS');

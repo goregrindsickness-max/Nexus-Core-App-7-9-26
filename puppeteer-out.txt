@@ -1,0 +1,94 @@
+BROWSER CONSOLE: debug [vite] connecting...
+BROWSER CONSOLE: debug [vite] connected.
+BROWSER CONSOLE: info %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+BROWSER CONSOLE: warn GoTrueClient@sb-cyjnpuneruonskfzpmqo-auth-token:1 (2.106.1) 2026-07-06T20:25:07.843Z Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+BROWSER CONSOLE: warn Geolocation failed or permission denied: [object GeolocationPositionError]
+BROWSER CONSOLE: warn Geolocation failed or permission denied: [object GeolocationPositionError]
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 404 (Not Found)
+BROWSER CONSOLE: error WebSocket connection to 'wss://cyjnpuneruonskfzpmqo.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5am5wdW5lcnVvbnNrZnpwbXFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NTA1NjIsImV4cCI6MjA5NTQyNjU2Mn0.94h4Ao-cpLXwU8xxJsKln0iud2wOw746yZlAdFP2gDM&vsn=2.0.0' failed: Error during WebSocket handshake: Unexpected response code: 402
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: warn Diagnostic connection test bypassed/warning: [object Object]
+BROWSER CONSOLE: log Diagnostic test completed: [object Object]
+BROWSER CONSOLE: log Diagnostic test success: Bypassed connection check: sandbox offline/failover mode is active. (Error: )
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: warn Diagnostic connection test bypassed/warning: [object Object]
+BROWSER CONSOLE: log Diagnostic test completed: [object Object]
+BROWSER CONSOLE: log Diagnostic test success: Bypassed connection check: sandbox offline/failover mode is active. (Error: )
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error WebSocket connection to 'wss://cyjnpuneruonskfzpmqo.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5am5wdW5lcnVvbnNrZnpwbXFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NTA1NjIsImV4cCI6MjA5NTQyNjU2Mn0.94h4Ao-cpLXwU8xxJsKln0iud2wOw746yZlAdFP2gDM&vsn=2.0.0' failed: Error during WebSocket handshake: Unexpected response code: 402
+BROWSER CONSOLE: log Supabase Realtime subscription current status [sales]: CHANNEL_ERROR
+BROWSER CONSOLE: log Supabase Realtime subscription current status [shows]: CHANNEL_ERROR
+BROWSER CONSOLE: log Supabase Realtime subscription current status [notes]: CHANNEL_ERROR
+BROWSER CONSOLE: log Supabase Realtime subscription current status [flights]: CHANNEL_ERROR
+BROWSER CONSOLE: log Supabase Realtime subscription current status [user_reviews]: CHANNEL_ERROR
+BROWSER CONSOLE: log Supabase Realtime subscription current status [inventory_audits]: CHANNEL_ERROR
+BROWSER CONSOLE: log Supabase Realtime subscription current status [loyalty_members]: CHANNEL_ERROR
+BROWSER CONSOLE: debug [vite] connecting...
+BROWSER CONSOLE: debug [vite] connected.
+BROWSER CONSOLE: info %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+BROWSER CONSOLE: warn GoTrueClient@sb-cyjnpuneruonskfzpmqo-auth-token:1 (2.106.1) 2026-07-06T20:25:10.980Z Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+BROWSER CONSOLE: log [NotificationCenter] Initializing realtime channel listening on notifications_v1 table.
+BROWSER CONSOLE: log [NotificationCenter] Initializing realtime channel listening on notifications_v1 table.
+BROWSER CONSOLE: warn Geolocation failed or permission denied: [object GeolocationPositionError]
+BROWSER CONSOLE: warn Geolocation failed or permission denied: [object GeolocationPositionError]
+BROWSER CONSOLE: error WebSocket connection to 'wss://cyjnpuneruonskfzpmqo.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5am5wdW5lcnVvbnNrZnpwbXFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NTA1NjIsImV4cCI6MjA5NTQyNjU2Mn0.94h4Ao-cpLXwU8xxJsKln0iud2wOw746yZlAdFP2gDM&vsn=2.0.0' failed: Error during WebSocket handshake: Unexpected response code: 402
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: warn Diagnostic connection test bypassed/warning: [object Object]
+BROWSER CONSOLE: log Diagnostic test completed: [object Object]
+BROWSER CONSOLE: log Diagnostic test success: Bypassed connection check: sandbox offline/failover mode is active. (Error: )
+BROWSER CONSOLE: warn Diagnostic connection test bypassed/warning: [object Object]
+BROWSER CONSOLE: log Diagnostic test completed: [object Object]
+BROWSER CONSOLE: log Diagnostic test success: Bypassed connection check: sandbox offline/failover mode is active. (Error: )
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error Failed to load resource: the server responded with a status of 402 ()
+BROWSER CONSOLE: error WebSocket connection to 'wss://cyjnpuneruonskfzpmqo.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5am5wdW5lcnVvbnNrZnpwbXFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NTA1NjIsImV4cCI6MjA5NTQyNjU2Mn0.94h4Ao-cpLXwU8xxJsKln0iud2wOw746yZlAdFP2gDM&vsn=2.0.0' failed: Error during WebSocket handshake: Unexpected response code: 402
+BROWSER CONSOLE: log Supabase Realtime subscription current status [sales]: CHANNEL_ERROR
+BROWSER CONSOLE: log Supabase Realtime subscription current status [shows]: CHANNEL_ERROR
+BROWSER CONSOLE: log Supabase Realtime subscription current status [notes]: CHANNEL_ERROR
+BROWSER CONSOLE: log Supabase Realtime subscription current status [flights]: CHANNEL_ERROR
+BROWSER CONSOLE: log Supabase Realtime subscription current status [user_reviews]: CHANNEL_ERROR
+BROWSER CONSOLE: log Supabase Realtime subscription current status [inventory_audits]: CHANNEL_ERROR
+BROWSER CONSOLE: log Supabase Realtime subscription current status [loyalty_members]: CHANNEL_ERROR
+BROWSER CONSOLE: error WebSocket connection to 'wss://cyjnpuneruonskfzpmqo.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5am5wdW5lcnVvbnNrZnpwbXFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NTA1NjIsImV4cCI6MjA5NTQyNjU2Mn0.94h4Ao-cpLXwU8xxJsKln0iud2wOw746yZlAdFP2gDM&vsn=2.0.0' failed: Error during WebSocket handshake: Unexpected response code: 402

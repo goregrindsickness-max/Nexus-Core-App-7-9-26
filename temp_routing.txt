@@ -1,0 +1,468 @@
+          {activeTab === 'ROUTING' && (
+            <div className="space-y-6">
+              {/* MOBILE ONLY PROFILE HEADER */}
+              <div className="block lg:hidden yellow-chase-border-mobile w-full shadow-2xl mb-6">
+                <div className="backdrop-blur-md rounded-[calc(1rem-2px)] bg-[#090b0e]/95 flex flex-col items-center sm:items-stretch justify-between gap-5 relative overflow-hidden p-5 sm:p-6 w-full shadow-2xl border border-zinc-800/10" id="label-profile-card-mobile-v2">
+                  {/* Optional Cover Image in Top Half with bottom fade-out */}
+                  {userProfile.banner_url && (
+                    <div className="absolute top-0 left-0 right-0 h-1/2 overflow-hidden pointer-events-none z-0">
+                      <img 
+                        src={userProfile.banner_url} 
+                        alt="Label Banner" 
+                        className="w-full h-full object-cover opacity-35" 
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#090b0e]/50 to-[#090b0e]" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-[radial-gradient(#ccff0007_1.5px,transparent_1.5px)] [background-size:12px_12px] opacity-75 pointer-events-none" id="label-tonal-mobile" />
+                  <div className="absolute top-0 right-1/4 w-[200px] h-[200px] rounded-full bg-[#ccff00]/5 blur-[70px] pointer-events-none" />
+
+                  {/* Upper Action Buttons - Administration Tools */}
+                  <div className="absolute top-4 right-4 flex items-center gap-1.5 z-20">
+                    <label className="bg-zinc-950/60 hover:bg-zinc-850 border border-zinc-800 hover:border-[#ccff00] text-[#ccff00]/90 hover:text-white p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center shadow-md shadow-black">
+                      <Upload className="w-4 h-4" />
+                      <input type="file" accept="image/*" className="hidden" onChange={handleCoverImageUpload} />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsSpecsDrawerOpen(!isSpecsDrawerOpen)}
+                      className="bg-zinc-950/60 hover:bg-zinc-850 border border-zinc-800 hover:border-[#ccff00] text-zinc-450 hover:text-white p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center shadow-md shadow-black group"
+                      title="REDEFINE LABEL SPECS"
+                    >
+                      <Settings className="w-4 h-4 text-zinc-400 group-hover:rotate-90 transition-transform duration-300" />
+                    </button>
+                  </div>
+
+                  {/* Profile Avatar & Primary Identification */}
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left relative z-10 w-full mb-1 mt-6">
+                    {/* Profile Picture Upload Indicator */}
+                    <label className="relative group shrink-0 cursor-pointer mx-auto sm:mx-0">
+                      <div className="absolute -inset-0.5 bg-gradient-to-r from-[#ccff00] via-[#fdba74] to-[#ffedd5] rounded-full blur opacity-65 group-hover:opacity-100 transition duration-300 lime-pulse-glow" />
+                      <div className="relative w-32 h-32 rounded-full bg-zinc-950 overflow-hidden border border-zinc-900/80 flex items-center justify-center shadow-lg group-hover:border-[#ccff00] transition-colors lime-pulse-glow">
+                        {userProfile.avatar_url ? (
+                          <img 
+                            src={userProfile.avatar_url} 
+                            alt="Logo" 
+                            className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300" 
+                            referrerPolicy="no-referrer" 
+                          />
+                        ) : (
+                          <Globe className="w-12 h-12 text-[#ccff00] group-hover:scale-110 transition-transform duration-300" />
+                        )}
+                        {/* Invisible file input */}
+                        <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                        <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="text-[8px] font-mono font-bold text-white uppercase bg-black/80 px-1 py-0.5 rounded border border-[#ccff00]/30">Edit</span>
+                        </div>
+                      </div>
+                    </label>
+
+                    {/* Company Details Stack */}
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <h1 className="text-xl sm:text-2xl font-black font-mono uppercase tracking-tight text-white flex items-center justify-center sm:justify-start gap-2">
+                        <span>{(userProfile.promoter_metadata?.business_name) || 'PROMOTER HQ'}</span>
+                      </h1>
+                      
+                      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-[10px] sm:text-xs text-zinc-450 font-mono leading-relaxed">
+                        <span className="lowercase text-zinc-400 bg-zinc-950/60 px-2.5 py-1 rounded-xl border border-zinc-850 font-sans">
+                          nexus-core.app/{userProfile.console_handle || 'hq'}
+                        </span>
+                        <span className="text-zinc-800">•</span>
+                        <span className="text-[#ccff00] uppercase tracking-wider font-extrabold flex items-center gap-1">
+                          🛡️ LLC VERIFIED SECURE NODE
+                        </span>
+                        <span className="text-zinc-805">•</span>
+                        <span className="text-[#00ffcc] font-black flex items-center gap-1 uppercase tracking-wide animate-pulse">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00ffcc] opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00ffcc]"></span>
+                          </span>
+                          ONLINE
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Centered Subscription/Roster details for mobile view */}
+                  <div className="flex flex-wrap items-center justify-center gap-4 mt-2 w-full text-[10px] font-mono tracking-wider uppercase z-10">
+                    <div className="flex flex-col items-center">
+                      <span className="text-[#ccff00] font-bold">{'PRO PROMOTER'}</span>
+                      <span className="text-zinc-500 text-[8px]">SUBSCRIPTION TIER</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <span className="text-zinc-300 font-bold">UNLIMITED</span>
+                      <span className="text-zinc-500 text-[8px]">ROSTER CAP</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <span className="text-zinc-300 font-bold">{30} DAYS REMAINING</span>
+                      <span className="text-zinc-500 text-[8px]">TRIAL PERIOD</span>
+                    </div>
+                  </div>
+
+                  {/* Real-time Message Center Card (Mobile) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsInboxOpen(true);
+                      setInboxSubTab('conversations');
+                    }}
+                    className="w-full mt-2 py-3 px-4 rounded-xl border border-lime-500/25 hover:border-lime-500/55 bg-lime-950/20 hover:bg-lime-950/40 flex items-center justify-between text-left font-mono text-xs text-zinc-300 active:scale-98 transition-all relative z-10 select-none group focus:outline-none cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <MessageSquare className="w-4 h-4 text-[#ccff00] group-hover:scale-110 group-hover:rotate-6 transition-transform duration-250 animate-pulse" />
+                      <div>
+                        <span className="block font-bold text-white text-[10px] tracking-wider uppercase">Label Message Center</span>
+                        <span className="text-[8.5px] text-zinc-500 block uppercase font-bold mt-0.5">💬 View and reply to direct band discussions</span>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded text-[10px] uppercase font-black tracking-wider transition-all shadow-md bg-lime-950/80 text-lime-400 border border-lime-500/40 animate-pulse">
+                      Active
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* DESKTOP ONLY PROFILE HEADER */}
+              <div className="hidden lg:block yellow-chase-border w-full shadow-2xl relative mb-6">
+                <div className="backdrop-blur-md rounded-[calc(1.5rem-2.2px)] bg-[#090b0e]/95 flex flex-col items-center justify-between gap-6 relative overflow-hidden p-8 w-full animate-fade-in" id="label-profile-card-desktop-v2">
+                  {/* Optional Cover Image in Top Half with bottom fade-out */}
+                  {userProfile.banner_url && (
+                    <div className="absolute top-0 left-0 right-0 h-1/2 overflow-hidden pointer-events-none z-0">
+                      <img 
+                        src={userProfile.banner_url} 
+                        alt="Label Banner" 
+                        className="w-full h-full object-cover opacity-35" 
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#090b0e]/50 to-[#090b0e]" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-[radial-gradient(#ccff0007_1.5px,transparent_1.5px)] [background-size:12px_12px] opacity-75 pointer-events-none" id="label-tonal-desktop" />
+                  <div className="absolute top-0 right-1/4 w-[300px] h-[300px] rounded-full bg-[#ccff00]/5 blur-[90px] pointer-events-none" />
+
+                  {/* Action buttons - Administration Tools */}
+                  <div className="absolute top-4 right-4 flex items-center gap-2.5 z-20">
+                    <label className="bg-zinc-950/60 hover:bg-zinc-850 border border-zinc-800 hover:border-[#ccff00] text-[#ccff00]/90 hover:text-white p-2.5 rounded-xl transition-all cursor-pointer shadow-md shadow-black flex items-center gap-1.5 text-[10px] font-mono font-bold tracking-wider uppercase">
+                      <Upload className="w-4 h-4" />
+                      <span>CHANGE BANNER</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleCoverImageUpload} />
+                    </label>
+
+                    <button 
+                      type="button"
+                      onClick={() => setIsSpecsDrawerOpen(!isSpecsDrawerOpen)}
+                      className="bg-zinc-950/60 hover:bg-zinc-850 border border-zinc-800 hover:border-[#ccff00] text-[#ccff00]/90 hover:text-white p-2.5 rounded-xl transition-all cursor-pointer shadow-md shadow-black group"
+                      title="REDEFINE LABEL SPECS"
+                    >
+                      <Settings className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90" />
+                    </button>
+                  </div>
+
+                  {/* Central Column Profile Avatar & Visual details */}
+                  <div className="flex max-w-7xl flex-col items-center gap-5 text-center relative z-10 w-full animate-fade-in mt-2">
+                    <label className="relative group shrink-0 cursor-pointer mx-auto" title="Click to upload/change corporate corporate avatar">
+                      <div className="absolute -inset-0.5 bg-gradient-to-r from-[#ccff00] via-[#fdba74] to-[#ffedd5] rounded-full blur opacity-65 group-hover:opacity-100 transition duration-300 lime-pulse-glow" />
+                      <div className="relative w-48 h-48 rounded-full bg-zinc-950 overflow-hidden border border-zinc-900/85 flex items-center justify-center shadow-lg group-hover:border-[#ccff00] transition-colors lime-pulse-glow">
+                        {userProfile.avatar_url ? (
+                          <img 
+                            src={userProfile.avatar_url} 
+                            alt="Logo" 
+                            className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-350" 
+                            referrerPolicy="no-referrer" 
+                          />
+                        ) : (
+                          <Globe className="w-16 h-16 text-[#ccff00] group-hover:scale-110 transition-transform duration-300" />
+                        )}
+                        {/* Real file upload input triggers on label click */}
+                        <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                        <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="text-[8px] font-mono font-bold text-white uppercase bg-black/80 px-1.5 py-1 rounded border border-[#ccff00]/30">Upload</span>
+                        </div>
+                      </div>
+                    </label>
+
+                    {/* Label Specifications Stack */}
+                    <div className="flex flex-col items-center text-center space-y-3 w-full">
+                      <h1 className="text-2xl sm:text-3xl font-black font-mono uppercase tracking-tight text-white flex items-center justify-center gap-2">
+                        <span>{(userProfile.promoter_metadata?.business_name) || 'PROMOTER HQ'}</span>
+                      </h1>
+
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-xs font-mono w-full">
+                        <div className="lowercase bg-zinc-950/60 px-3.5 py-1.5 rounded-xl border border-zinc-900/50 font-bold text-zinc-400 font-sans">
+                          nexus-core.app/{userProfile.console_handle || 'hq'}
+                        </div>
+
+                        <span className="hidden sm:inline text-zinc-800 font-black">•</span>
+
+                        <div className="text-xs text-zinc-350 font-mono flex items-center justify-center gap-1.5 p-1.5 px-3 bg-[#101319]/80 border border-zinc-900/80 rounded-xl shrink-0">
+                          <span className="text-[#ccff00] uppercase tracking-wider font-extrabold flex items-center gap-1">
+                            🛡️ LLC VERIFIED SECURE NODE
+                          </span>
+                        </div>
+
+                        <span className="hidden sm:inline text-zinc-800 font-black">•</span>
+
+                        <div className="flex items-center gap-1.5 text-zinc-450 bg-zinc-950/40 px-3 py-1.5 rounded-xl border border-zinc-900/50">
+                          <span className="text-[#00ffcc] font-black flex items-center gap-1.5 uppercase tracking-wide animate-pulse">
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00ffcc] opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00ffcc]"></span>
+                            </span>
+                            ONLINE
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Custom Subscription caps & metadata */}
+                  <div className="flex flex-wrap items-center justify-center gap-6 mt-2 text-[11px] font-mono tracking-widest uppercase z-10 w-full">
+                    <div className="flex flex-col items-center">
+                      <span className="text-[#ccff00] font-extrabold">{'PRO PROMOTER'}</span>
+                      <span className="text-zinc-500 text-[9px] mt-0.5">SUBSCRIPTION TIER</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <span className="text-zinc-300 font-bold">UNLIMITED</span>
+                      <span className="text-zinc-500 text-[9px] mt-0.5">ROSTER CAP</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <span className="text-zinc-300 font-bold">{30} DAYS REMAINING</span>
+                      <span className="text-zinc-500 text-[9px] mt-0.5">TRIAL PERIOD</span>
+                    </div>
+                  </div>
+
+                  {/* Real-time Message Center Card (Desktop) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsInboxOpen(true);
+                      setInboxSubTab('conversations');
+                    }}
+                    className="w-full max-w-2xl mx-auto mt-2 py-3.5 px-5 rounded-2xl border border-lime-500/20 hover:border-lime-500/55 bg-lime-950/20 hover:bg-lime-950/35 flex items-center justify-between text-left font-mono text-xs text-zinc-300 active:scale-98 transition-all relative z-10 select-none group cursor-pointer focus:outline-none"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <MessageSquare className="w-5 h-5 text-lime-400 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-250 animate-pulse" />
+                      <div>
+                        <span className="block font-bold text-white text-[11px] tracking-wider uppercase">Label Message Center</span>
+                        <span className="text-[9px] text-[#ccff00] block uppercase font-bold mt-0.5">💬 Access direct discussions and booking inquiries with signed bands</span>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1.5 rounded-lg text-[10px] uppercase font-black tracking-wider transition-all shadow-md bg-lime-950/80 text-lime-400 border border-lime-500/40 animate-pulse">
+                      Active
+                    </span>
+                  </button>
+
+                </div>
+              </div>
+
+              {/* TWO COLUMN INTERACTIVE LAYOUT (REPLACED WITH HIGH-DENSITY COMMAND DECK) */}
+              <div className="w-full mt-6 space-y-4">
+                {/* High-Velocity Launcher Deck */}
+                <div className="grid grid-cols-4 gap-2 mb-4">
+                  <button className="bg-zinc-900 border border-zinc-800 text-zinc-300 font-mono text-[11px] py-2.5 rounded-md hover:border-yellow-500/40 hover:text-white text-center font-bold transition-all truncate px-1">
+                    📅 EVENT WORKSPACE
+                  </button>
+                  <button className="bg-zinc-900 border border-zinc-800 text-zinc-300 font-mono text-[11px] py-2.5 rounded-md hover:border-yellow-500/40 hover:text-white text-center font-bold transition-all truncate px-1">
+                    📝 CONTRACTS HUB
+                  </button>
+                  <button className="bg-zinc-900 border border-zinc-800 text-zinc-300 font-mono text-[11px] py-2.5 rounded-md hover:border-yellow-500/40 hover:text-white text-center font-bold transition-all truncate px-1">
+                    📊 SALES MANAGER
+                  </button>
+                  <button className="bg-zinc-900 border border-zinc-800 text-zinc-300 font-mono text-[11px] py-2.5 rounded-md hover:border-yellow-500/40 hover:text-white text-center font-bold transition-all truncate px-1">
+                    🎟️ DOOR TERMINAL
+                  </button>
+                </div>
+
+                {/* Tab Switcher Ribbon */}
+                <div className="flex items-center gap-2 border-b border-zinc-900 pb-2">
+                  <button 
+                    onClick={() => setSubTab('calendar')}
+                    className={`px-4 py-2 font-mono text-xs uppercase font-bold tracking-wider rounded-t-md transition-all ${(!subTab || subTab === 'calendar') ? 'text-lime-400 border-b-2 border-lime-400 bg-lime-950/20' : 'text-zinc-500 hover:text-zinc-300'}`}
+                  >
+                    Tab 1: Calendar & Show Itineraries
+                  </button>
+                  <button 
+                    onClick={() => setSubTab('regional')}
+                    className={`px-4 py-2 font-mono text-xs uppercase font-bold tracking-wider rounded-t-md transition-all ${(subTab === 'regional') ? 'text-lime-400 border-b-2 border-lime-400 bg-lime-950/20' : 'text-zinc-500 hover:text-zinc-300'}`}
+                  >
+                    Tab 2: Regional Routing Control
+                  </button>
+                </div>
+
+                {/* Tab 1: Calendar & Show Itineraries */}
+                {(!subTab || subTab === 'calendar') && (
+                  <div className="space-y-4">
+                    {/* Top Component (Full-Width Calendar Matrix) */}
+                    <div className="w-full max-w-full mb-4">
+                      <div className="grid grid-cols-7 gap-1 bg-zinc-950 p-3 border border-zinc-900 rounded-xl font-mono text-xs text-center text-zinc-400">
+                        {/* Days of week header */}
+                        <div className="font-bold text-zinc-500 pb-2 border-b border-zinc-900 mb-2">SUN</div>
+                        <div className="font-bold text-zinc-500 pb-2 border-b border-zinc-900 mb-2">MON</div>
+                        <div className="font-bold text-zinc-500 pb-2 border-b border-zinc-900 mb-2">TUE</div>
+                        <div className="font-bold text-zinc-500 pb-2 border-b border-zinc-900 mb-2">WED</div>
+                        <div className="font-bold text-zinc-500 pb-2 border-b border-zinc-900 mb-2">THU</div>
+                        <div className="font-bold text-zinc-500 pb-2 border-b border-zinc-900 mb-2">FRI</div>
+                        <div className="font-bold text-zinc-500 pb-2 border-b border-zinc-900 mb-2">SAT</div>
+                        {/* Empty cells for June */}
+                        <div className="p-2 border border-zinc-900/50 rounded bg-zinc-950/30"></div>
+                        <div className="p-2 border border-zinc-900/50 rounded bg-zinc-950/30"></div>
+                        <div className="p-2 border border-zinc-900/50 rounded bg-zinc-950/30"></div>
+                        {/* Days 1-10 */}
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">1</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">2</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">3</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900 text-lime-400 border-lime-500/30">4</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">5</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">6</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">7</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">8</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900 text-[#00ffcc] border-[#00ffcc]/30">9</div>
+                        <div className="p-2 border border-lime-500 rounded bg-lime-950/40 text-white font-bold animate-pulse shadow-[0_0_10px_rgba(132,204,22,0.2)]">10</div>
+                        {/* More Days */}
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">11</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">12</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">13</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">14</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900 text-yellow-400 border-yellow-500/30">15</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">16</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">17</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">18</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">19</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">20</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">21</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">22</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">23</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">24</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">25</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">26</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">27</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">28</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">29</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">30</div>
+                        <div className="p-2 border border-zinc-800 rounded bg-zinc-900">31</div>
+                        <div className="p-2 border border-zinc-900/50 rounded bg-zinc-950/30"></div>
+                      </div>
+                    </div>
+
+                    {/* Bottom Component (Active Shows & Drafts Directory) */}
+                    <div className="w-full bg-zinc-900/30 border border-zinc-900 rounded-xl p-3.5 space-y-2">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-zinc-950/80 border border-zinc-800 p-2.5 rounded-lg font-mono text-[11px]">
+                        <div className="flex items-center gap-3">
+                          <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
+                          <span className="text-zinc-200 font-bold uppercase truncate">Texas Chainsaw Fest</span>
+                          <span className="text-zinc-500">//</span>
+                          <span className="text-lime-400 font-bold">July 10, 2026</span>
+                        </div>
+                        <div className="mt-2 sm:mt-0 flex items-center gap-2">
+                          <span className="text-zinc-500 uppercase tracking-widest text-[9px] font-black">Status:</span>
+                          <span className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Draft</span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-zinc-950/80 border border-zinc-800 p-2.5 rounded-lg font-mono text-[11px]">
+                        <div className="flex items-center gap-3">
+                          <span className="w-2 h-2 rounded-full bg-lime-500"></span>
+                          <span className="text-zinc-200 font-bold uppercase truncate">Neon Desert Night</span>
+                          <span className="text-zinc-500">//</span>
+                          <span className="text-lime-400 font-bold">July 15, 2026</span>
+                        </div>
+                        <div className="mt-2 sm:mt-0 flex items-center gap-2">
+                          <span className="text-zinc-500 uppercase tracking-widest text-[9px] font-black">Status:</span>
+                          <span className="bg-lime-500/20 text-lime-400 border border-lime-500/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Confirmed</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tab 2: Regional Routing Control Room */}
+                {subTab === 'regional' && (
+                  <div className="space-y-4">
+                    {/* Upper Tier: Talent Availability Tracker */}
+                    <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-3.5 flex flex-col md:flex-row gap-3 items-center">
+                      <div className="flex-1 w-full">
+                        <label className="text-[9px] font-mono font-black text-zinc-500 uppercase tracking-widest mb-1 block">Band Lookup</label>
+                        <input type="text" placeholder="Search touring acts..." className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-lime-500" />
+                      </div>
+                      <div className="flex-1 w-full">
+                        <label className="text-[9px] font-mono font-black text-zinc-500 uppercase tracking-widest mb-1 block">Schedule Range</label>
+                        <input type="date" defaultValue="2026-07-09" className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs font-mono text-zinc-300 focus:outline-none focus:border-lime-500" />
+                      </div>
+                      <div className="flex-1 w-full">
+                        <label className="text-[9px] font-mono font-black text-zinc-500 uppercase tracking-widest mb-1 block">Geo Filter</label>
+                        <select className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs font-mono text-zinc-300 focus:outline-none focus:border-lime-500">
+                          <option>Las Vegas, NV</option>
+                          <option>Los Angeles, CA</option>
+                          <option>Phoenix, AZ</option>
+                          <option>Denver, CO</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Lower Tier: Active Routing Dock */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                      {/* Left Panel: Regional Tracking List */}
+                      <div className="bg-zinc-900/30 border border-zinc-800 rounded-xl p-3.5 h-[300px] overflow-y-auto space-y-2">
+                        <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 mt-1">
+                          <div className="flex justify-between items-start mb-2">
+                            <h5 className="text-white font-mono font-bold text-xs uppercase tracking-wide truncate">Vibrant Fraction</h5>
+                            <span className="bg-purple-900/30 text-purple-400 border border-purple-500/30 px-2 py-0.5 rounded text-[9px] font-bold uppercase whitespace-nowrap">Touring</span>
+                          </div>
+                          <div className="text-[10px] font-mono text-zinc-500 space-y-1">
+                            <div className="flex justify-between"><span className="uppercase font-bold">Range:</span> <span className="text-zinc-300">Jul 12 - Jul 18</span></div>
+                            <div className="flex justify-between"><span className="uppercase font-bold">Geo:</span> <span className="text-lime-400">Las Vegas Route</span></div>
+                          </div>
+                          <button className="w-full mt-2 bg-lime-950/30 border border-lime-500/40 hover:bg-lime-900/50 text-lime-400 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest transition-all">
+                            Send Booking Proposal
+                          </button>
+                        </div>
+
+                        <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-3">
+                          <div className="flex justify-between items-start mb-2">
+                            <h5 className="text-white font-mono font-bold text-xs uppercase tracking-wide truncate">Neon Abyss</h5>
+                            <span className="bg-lime-900/30 text-lime-400 border border-lime-500/30 px-2 py-0.5 rounded text-[9px] font-bold uppercase whitespace-nowrap">Available</span>
+                          </div>
+                          <div className="text-[10px] font-mono text-zinc-500 space-y-1">
+                            <div className="flex justify-between"><span className="uppercase font-bold">Range:</span> <span className="text-zinc-300">Jul 20 - Jul 25</span></div>
+                            <div className="flex justify-between"><span className="uppercase font-bold">Geo:</span> <span className="text-lime-400">Las Vegas Route</span></div>
+                          </div>
+                          <button className="w-full mt-2 bg-lime-950/30 border border-lime-500/40 hover:bg-lime-900/50 text-lime-400 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest transition-all">
+                            Send Booking Proposal
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Right Panel: Localized Vector Mapping */}
+                      <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3.5 h-[300px] relative overflow-hidden flex flex-col">
+                        <div className="flex-1 relative rounded-lg border border-zinc-800 overflow-hidden bg-[#0c0e12]">
+                           {/* Vector Map Background pattern */}
+                           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LCAyNTUsIDI1NSwgMC4wNSkiLz48L3N2Zz4=')] opacity-50" />
+                           
+                           {/* Map Lines and Nodes */}
+                           <svg className="absolute inset-0 w-full h-full">
+                             <path d="M 50 150 Q 150 100 250 180 T 400 120" fill="none" stroke="#a3e635" strokeWidth="2" strokeDasharray="4 4" className="animate-pulse" />
+                             
+                             <circle cx="50" cy="150" r="4" fill="#a3e635" className="animate-ping" />
+                             <circle cx="50" cy="150" r="3" fill="#bef264" />
+                             <text x="40" y="140" fill="#a3e635" fontSize="10" fontFamily="monospace" fontWeight="bold">LAX</text>
+
+                             <circle cx="250" cy="180" r="5" fill="#d946ef" className="animate-pulse" />
+                             <circle cx="250" cy="180" r="3" fill="#f0abfc" />
+                             <text x="235" y="170" fill="#d946ef" fontSize="10" fontFamily="monospace" fontWeight="bold">LAS VEGAS (HQ)</text>
+
+                             <circle cx="400" cy="120" r="4" fill="#a3e635" />
+                             <text x="390" y="110" fill="#a3e635" fontSize="10" fontFamily="monospace" fontWeight="bold">PHX</text>
+                           </svg>
+                           
+                           {/* Map Overlay Text */}
+                           <div className="absolute bottom-3 left-3 text-[9px] font-mono uppercase font-black text-lime-400 bg-black/60 px-2 py-1 rounded border border-lime-500/30 backdrop-blur">
+                             Live Network: NV / CA / AZ
+                           </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>

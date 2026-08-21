@@ -1,0 +1,87 @@
+                          </div>
+
+                          {/* Genre and Micro-Genre Clusters Section */}
+                          <div className="space-y-3.5 pt-2">
+                            <div>
+                              <span className="text-[10px] font-mono uppercase text-[#00ffcc] tracking-widest block font-bold">Genre Clusters & Micro-Genres</span>
+                              <span className="text-[8px] font-mono text-zinc-500 uppercase mt-0.5 block">Select up to two micro-genres to define your sound profile.</span>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {GENRE_CLUSTERS.map((cluster, clusterIdx) => (
+                                <div key={clusterIdx} className="bg-zinc-950/50 border border-zinc-900 rounded-xl p-3.5 space-y-2">
+                                  <span className="text-[8.5px] font-mono font-bold tracking-wider text-emerald-400 block uppercase border-b border-zinc-900 pb-1">
+                                    {cluster.name}
+                                  </span>
+                                  <div className="flex flex-wrap gap-1.5 pt-1">
+                                    {cluster.genres.map((g, gIdx) => {
+                                      const isSelected = selectedMicroGenres.includes(g);
+                                      return (
+                                        <button
+                                          key={gIdx}
+                                          type="button"
+                                          onClick={() => {
+                                            if (isSelected) {
+                                              setSelectedMicroGenres(prev => prev.filter(item => item !== g));
+                                            } else {
+                                              if (selectedMicroGenres.length < 2) {
+                                                setSelectedMicroGenres(prev => [...prev, g]);
+                                              } else {
+                                                triggerNotification?.("⚠️ You can select up to two micro-genres max.");
+                                              }
+                                            }
+                                          }}
+                                          className={`px-2.5 py-1 rounded-lg text-[9px] font-mono font-medium tracking-wide uppercase transition-all border cursor-pointer ${
+                                            isSelected 
+                                              ? "bg-emerald-500/15 border-[#00ffcc] text-[#00ffcc] font-extrabold shadow-sm" 
+                                              : "bg-zinc-900/60 border-zinc-850 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                                          }`}
+                                        >
+                                          {g}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Save Button */}
+                          <div className="pt-3 border-t border-zinc-900/60">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!activeBand) return;
+                                if (!bandInfoName.trim()) {
+                                  triggerNotification?.("⚠️ Artist / Band Name is required.");
+                                  return;
+                                }
+                                
+                                const finalLogo = bandLogoUrl || activeBand.logo_url || '';
+                                const finalCover = bandCoverUrl || activeBand.cover_url || '';
+
+                                setBands(prev => prev.map(b => b.id === activeBand.id ? {
+                                  ...b,
+                                  name: bandInfoName,
+                                  homebase: bandInfoHomebase,
+                                  genre: selectedMicroGenres.join(" / "),
+                                  logo_url: finalLogo,
+                                  cover_url: finalCover
+                                } : b));
+                                
+                                setUserProfile(uPrev => uPrev ? {
+                                  ...uPrev,
+                                  name: bandInfoName,
+                                  bandName: bandInfoName,
+                                  avatar_url: finalLogo || uPrev?.avatar_url,
+                                  banner_url: finalCover || uPrev?.banner_url
+                                } : null);
+
+                                triggerNotification?.("✨ Band Information updated successfully!");
+                              }}
+                              className="w-full py-2.5 bg-[#00ffcc] hover:bg-emerald-450 text-black font-mono font-bold uppercase text-[10px] tracking-widest rounded-xl shadow-lg transition-all cursor-pointer"
+                            >
+                              🚀 Save Band Information
+                            </button>
+                          </div>

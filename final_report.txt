@@ -1,0 +1,32 @@
+I have scanned `src/App.tsx` and the `src/components/` directory as requested. Here is the list of remaining bloat and duplication that can be cleanly purged:
+
+### Orphaned/Dead Modal Imports in `src/App.tsx`:
+- `PTTRadioModal` imported at line 25, but never rendered directly in the `App.tsx` tree (these were successfully moved to `GlobalModalsContainer.tsx`).
+- `BrutalistModal` imported at line 124, but never rendered directly in the `App.tsx` tree (these were successfully moved to `GlobalModalsContainer.tsx`).
+- `EditableChecklistModal` imported at line 138, but never rendered directly in the `App.tsx` tree (these were successfully moved to `GlobalModalsContainer.tsx`).
+- `FlightTrackerModal` imported at line 140, but never rendered directly in the `App.tsx` tree (these were successfully moved to `GlobalModalsContainer.tsx`).
+- `VanToTableTransferModal` imported at line 143, but never rendered directly in the `App.tsx` tree (these were successfully moved to `GlobalModalsContainer.tsx`).
+- `WillCallIsolationModal` imported at line 163, but never rendered directly in the `App.tsx` tree (these were successfully moved to `GlobalModalsContainer.tsx`).
+
+### Duplicated State Migrated to Custom Hooks but Still Lingering in `src/App.tsx`:
+The following states are destructured from hooks (e.g., `useBandState`, `useInventoryState`, `useOffersManagement`) but still have residual unused variable declarations or are being shadowed in `App.tsx`:
+- `inventory` (and its setter)
+- `editingItem` (and its setter)
+- `stagedDistroItems` (and its setter)
+- `inventoryAudits` (and its setter)
+- `offers` (and its setter)
+- `blockedPromoters` (and its setter)
+- `messages` (and its setter)
+- `unreadMessageIds` (and its setter)
+- `bands` (and its setter)
+- `activeBandId` (and its setter)
+- `editingBand` (and its setter)
+- `deletingBandId` (and its setter)
+- `bandLineup` (and its setter)
+- `crewMembers` (and its setter)
+- `bandLogoUrl` (and its setter)
+- `bandCoverUrl` (and its setter)
+- `selectedMicroGenres` (and its setter)
+- `bandJoinRequests` (and its setter)
+
+These items can be safely removed to reduce bloat in `App.tsx`.

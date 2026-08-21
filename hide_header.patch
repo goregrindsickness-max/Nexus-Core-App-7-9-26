@@ -1,0 +1,13 @@
+--- src/components/UniversalSocialFeed.tsx
++++ src/components/UniversalSocialFeed.tsx
+@@ -4563,7 +4563,8 @@
+         }
+       `}</style>
+       <div className={`transition-all duration-300 ${(showSongModal || showUploadClipModal) ? 'opacity-30 pointer-events-none select-none filter blur-[1px]' : 'opacity-100'}`}>
+-      {/* Header Container (Top Navbar & Live Tonight Combined) */}
+-      <div className="bg-[#030303]/90 backdrop-blur-md border-b border-zinc-900/85 flex flex-col">
++      {!isEmbedded && (
++        <>
++        {/* Header Container (Top Navbar & Live Tonight Combined) */}
++        <div className="bg-[#030303]/90 backdrop-blur-md border-b border-zinc-900/85 flex flex-col">
+         {/* Top Navbar */}

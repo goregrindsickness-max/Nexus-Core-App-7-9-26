@@ -1,0 +1,110 @@
+const fs = require('fs');
+
+let labelFile = fs.readFileSync('src/components/LabelDashboardViewV2.tsx', 'utf-8');
+
+// Find return block
+let returnStart = labelFile.indexOf('return (');
+if (returnStart === -1) {
+    console.error("Could not find 'return ('");
+    process.exit(1);
+}
+
+// Find Roster & Production Calendar Toggle under the Profile Card
+let toggleStart = labelFile.indexOf('{/* Roster & Production Calendar Toggle under the Profile Card */}');
+if (toggleStart === -1) {
+    console.error("Could not find end of profile card");
+    process.exit(1);
+}
+
+let jsxTop = labelFile.substring(returnStart, toggleStart);
+
+let newJsx = jsxTop
+    .replace(/orange-500/g, 'fuchsia-500')
+    .replace(/#f97316/g, '#d946ef')
+    .replace(/orange-400/g, 'fuchsia-400')
+    .replace(/orange-950/g, 'fuchsia-950')
+    .replace(/label_company_name/g, 'creative_metadata?.business_name')
+    .replace(/label_avatar/g, 'avatar_url')
+    .replace(/label_banner/g, 'banner_url')
+    .replace(/label_url_slug/g, 'console_handle')
+    .replace(/NEXUS LABEL HQ/g, 'NEXUS CREATIVE HQ')
+    .replace(/LABELS HQ:/g, 'CREATIVE HQ:')
+    .replace(/labelRosterData\.length BANDS/g, '0 ACTIVE GIGS')
+    .replace(/{userProfile\.label_roster_count \|\| labelRosterData\.length} BANDS/g, 'ACTIVE GIGS')
+    .replace(/LabelDashboardViewV2/g, 'CreativeDashboardViewV2')
+    .replace(/activeTab === 'ROSTER'/g, "activeTab === 'JOBS'");
+
+let code = `
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { UserProfile } from '../types';
+import { Power, Globe, Users, User, DollarSign, Database, Activity, RefreshCw, Settings, X, Home, Lock, Sparkles, Layers, LogOut, Bell, Building, MapPin, MessageSquare, ArrowLeft, Send, CheckSquare, Check, Plus, AlertTriangle, TrendingUp, Shield, BarChart3, Radio, Heart, MessageCircle, Play, Pause, Square, SkipBack, SkipForward, Disc, Volume2, Truck, Tag, Edit, Trash2, Upload, ShoppingBag, ShoppingCart, CreditCard, Calendar, ArrowRightLeft, Package, Box, Banknote, ChevronDown, Calculator, Palette, Info, Search, Pin, Flame, Rocket, ThumbsUp, Menu } from 'lucide-react';
+import MarqueeText from './MarqueeText';
+
+interface CreativeDashboardViewV2Props {
+  userProfile: UserProfile;
+  setUserProfile: (profile: UserProfile) => void;
+  onLogout: () => void;
+  notifications?: any[];
+  onOpenNotifications?: () => void;
+  onBack: () => void;
+}
+
+export default function CreativeDashboardViewV2({
+   userProfile,
+   setUserProfile,
+   onLogout,
+   notifications,
+   onOpenNotifications,
+   onBack
+}: CreativeDashboardViewV2Props) {
+  const [activeTab, setActiveTab] = useState<'JOBS'|'BOOKINGS'|'PORTFOLIO'|'TEAMS'|'SOCIAL'|'SETTINGS'>('JOBS');
+  const [subTab, setSubTab] = useState<string>('');
+  const [v2RoleMenuOpen, setV2RoleMenuOpen] = useState(false);
+  const [isSpecsDrawerOpen, setIsSpecsDrawerOpen] = useState(false);
+  const [isInboxOpen, setIsInboxOpen] = useState(false);
+  const [inboxSubTab, setInboxSubTab] = useState('');
+
+  const allowedWorkspaces = userProfile.allowed_workspaces || [];
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      // Stub
+  };
+  const handleCoverImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      // Stub
+  };
+
+  // Replace tab items
+  const tabItemsReplacement = \`
+          {[
+            { id: 'JOBS', label: 'Jobs', icon: Briefcase },
+            { id: 'BOOKINGS', label: 'Bookings', icon: Calendar },
+            { id: 'PORTFOLIO', label: 'Portfolio', icon: Palette },
+            { id: 'TEAMS', label: 'Teams', icon: Users },
+            { id: 'SOCIAL', label: 'Social', icon: Globe },
+            { id: 'SETTINGS', label: 'Settings', icon: Settings },
+          ].map((item) => {
+\`;
+
+  // Fix the tabs array
+  let fixedJsx = newJsx.replace(/\\{\\s*\\[\\s*\\{ id: 'ROSTER'.*[\\s\\S]*?\\.map\\(\\(item\\) => \\{/g, tabItemsReplacement);
+
+  // Add the closing tags
+  fixedJsx += \`
+              {/* CONTENT AREA FOR TABS */}
+              {activeTab === 'JOBS' && (
+                  <div className="w-full h-40 bg-zinc-900/40 rounded-xl border border-zinc-800/60 flex items-center justify-center font-mono text-zinc-500 mt-6">
+                      JOB BOARD WILL RENDER HERE
+                  </div>
+              )}
+            </div>
+          )}
+        </section>
+      </main>
+    </div>
+  );
+}
+\`;
+
+fs.writeFileSync('src/components/CreativeDashboardViewV2.tsx', code + fixedJsx);
+console.log("Created CreativeDashboardViewV2.tsx");

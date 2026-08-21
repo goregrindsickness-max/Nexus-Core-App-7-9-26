@@ -1,0 +1,16 @@
+                        })}
+                      </div>
+
+                      {/* Reply Helpers / Replying To Context */}order border-zinc-800 rounded-full px-1.5 py-0.5 flex items-center gap-0.5 shadow-md`}>
+                                      {Array.from(new Set(msg.reactions.map((r: any) => r.emoji))).map((emoji: any) => (
+                                        <span key={emoji} className="text-[10px]">{emoji}</span>
+                                      ))}
+                                      {msg.reactions.length > 1 && (
+                                        <span className="text-[9px] font-bold text-zinc-400 ml-0.5">{msg.reactions.length}</span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div                      {/* Reply Helpers / Replying To Context */}
+                      <div className="sticky bottom-0 z-20 flex flex-col w-full">
+                        {replyingToMessage && (
+                          <div className="px-4 py-2 bg-zinc-900 border-t border-zinc-800 flex items-center justify-between shadow-[0_-4px_12px_rgba(0,0,0,0.5)]">

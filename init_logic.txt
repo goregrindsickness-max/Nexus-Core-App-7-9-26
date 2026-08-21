@@ -1,0 +1,250 @@
+
+        defaultCover = portalRole === 'label' ? (userProfile?.label_banner || null)
+          : portalRole === 'creative' ? (userProfile?.creative_banner || null)
+          : portalRole === 'promoter' ? ((userProfile as any)?.promoter_cover_image || null)
+          : portalRole === 'band' ? (activeBand ? localStorage.getItem(`nexus_core_band_cover_${activeBand.id}`) : null) || activeBand?.cover_url || null
+          : (userProfile?.banner_url || null);
+
+        defaultLocation = portalRole === 'label' && userProfile?.label_headquarters ? userProfile.label_headquarters : 'Detroit, MI';
+      }
+
+      setProfileFullLegalName(defaultName);
+      setProfileHandle(defaultHandle);
+      setProfileAvatarUrl(defaultAvatar);
+      setProfileCoverUrl(defaultCover);
+      setProfileLocation(defaultLocation);
+      setProfileGenres(defaultGenres);
+      setProfileFavoriteSong(defaultFavoriteSong);
+      setProfileBlurb(defaultBlurb);
+      setProfileStealthMode(defaultStealthMode);
+      setFilterHideTicketPresales(defaultHideTicketPresales);
+      setFilterShowMerchDropsOnlyFromFollowed(defaultShowMerchDropsOnlyFromFollowed);
+      setFilterShowFollowedOnly(defaultShowFollowedOnly);
+      setPrefPushNotifications(defaultPushNotifications);
+      setPrefLocationServices(defaultLocationServices);
+
+      const profileCacheKey = (portalRole === 'fan_only' ? 'nexus_fan_only_profile_v1' : (portalRole === 'industry_pro' ? 'nexus_fan_profile_v1' : 'nexus_professional_profile_v1')) + `_${userProfile?.id || 'guest'}`;
+
+      // Initial load sequence
+      let loadedFromLocalStorage = false;
+      try {
+        const stored = localStorage.getItem(profileCacheKey);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (portalRole !== 'industry_pro' && portalRole !== 'fan_only') {
+            // Keep live parent values instead of overriding with stale localStorage cache
+            const parentName = portalRole === 'band' ? userProfile?.bandName 
+              : portalRole === 'creative' ? userProfile?.creative_metadata?.business_name 
+              : portalRole === 'promoter' ? userProfile?.promoter_metadata?.brand_name 
+              : portalRole === 'label' ? userProfile?.label_company_name 
+              : userProfile?.name;
+            
+            setProfileFullLegalName(parentName || parsed.profileFullLegalName || 'Pro Account');
+
+            const parentHandle = portalRole === 'band' ? userProfile?.bandName?.toLowerCase().replace(/\s+/g, '')
+              : portalRole === 'creative' ? userProfile?.creative_metadata?.business_name?.toLowerCase().replace(/\s+/g, '')
+              : portalRole === 'promoter' ? userProfile?.promoter_metadata?.brand_name?.toLowerCase().replace(/\s+/g, '')
+              : portalRole === 'label' ? userProfile?.label_url_slug
+              : null;
+
+            setProfileHandle(parentHandle || parsed.profileHandle || 'pro_account');
+
+            const parentAvatar = portalRole === 'label' ? userProfile?.label_avatar 
+              : portalRole === 'creative' ? userProfile?.creative_avatar 
+              : portalRole === 'promoter' ? (userProfile as any)?.promoter_logo 
+              : userProfile?.avatar_url;
+            
+            setProfileAvatarUrl(parentAvatar || parsed.profileAvatarUrl || null);
+
+            const parentCover = portalRole === 'label' ? userProfile?.label_banner 
+              : portalRole === 'creative' ? userProfile?.creative_banner 
+              : portalRole === 'promoter' ? (userProfile as any)?.promoter_cover_image 
+              : userProfile?.banner_url;
+            
+            setProfileCoverUrl(parentCover || parsed.profileCoverUrl || null);
+          } else {
+            const uName = userProfile?.full_name || userProfile?.legal_name || userProfile?.name || userProfile?.screen_name;
+            if (uName && uName !== 'New User' && uName !== '') {
+              setProfileFullLegalName(uName);
+            } else if (parsed.profileFullLegalName) {
+              setProfileFullLegalName(parsed.profileFullLegalName);
+            }
+
+            const uAvatar = userProfile?.avatar_url;
+            if (uAvatar && uAvatar !== '/Nexus Icon brackets.png') {
+              setProfileAvatarUrl(uAvatar);
+            } else if (parsed.profileAvatarUrl) {
+              setProfileAvatarUrl(parsed.profileAvatarUrl);
+            }
+
+            const uCover = userProfile?.banner_url;
+            if (uCover) {
+              setProfileCoverUrl(uCover);
+            } else if (parsed.profileCoverUrl) {
+              setProfileCoverUrl(parsed.profileCoverUrl);
+            }
+          }
+
+          const uHandle = userProfile?.console_handle || userProfile?.screen_name?.toLowerCase().replace(/\s+/g, '');
+          if (uHandle && uHandle !== '') {
+            setProfileHandle(uHandle);
+          } else if (parsed.profileHandle) {
+            setProfileHandle(parsed.profileHandle);
+          }
+
+          const uEmail = userProfile?.email;
+          if (uEmail && uEmail !== '') {
+            setProfileEmail(uEmail);
+          } else if (parsed.profileEmail) {
+            setProfileEmail(parsed.profileEmail);
+          }
+
+          if (parsed.profilePassword) setProfilePassword(parsed.profilePassword);
+
+          const uPin = (userProfile as any)?.pin;
+          if (uPin && uPin !== '') {
+            setProfilePin(uPin);
+          } else if (parsed.profilePin) {
+            setProfilePin(parsed.profilePin);
+          }
+
+          const uLoc = userProfile?.location_code;
+          if (uLoc && uLoc !== '') {
+            setProfileLocation(uLoc);
+          } else if (parsed.profileLocation) {
+            setProfileLocation(parsed.profileLocation);
+          }
+
+          if (parsed.profileGenres) setProfileGenres(parsed.profileGenres);
+          if (parsed.profileFavoriteSong) setProfileFavoriteSong(parsed.profileFavoriteSong);
+          if (parsed.profileSceneRoles) {
+            let roles = parsed.profileSceneRoles;
+            if (portalRole === 'label') {
+              roles = roles.filter((r: string) => r !== 'Musician' && r !== 'Artist');
+              if (!roles.includes('Record Label')) roles.push('Record Label');
+            }
+            setProfileSceneRoles(roles);
+          }
+          if (parsed.profileBlurb) setProfileBlurb(parsed.profileBlurb);
+          if (parsed.profileStealthMode !== undefined) setProfileStealthMode(parsed.profileStealthMode);
+          if (parsed.filterHideTicketPresales !== undefined) setFilterHideTicketPresales(parsed.filterHideTicketPresales);
+          if (parsed.filterShowMerchDropsOnlyFromFollowed !== undefined) setFilterShowMerchDropsOnlyFromFollowed(parsed.filterShowMerchDropsOnlyFromFollowed);
+          if (parsed.filterShowFollowedOnly !== undefined) setFilterShowFollowedOnly(parsed.filterShowFollowedOnly);
+          if (parsed.prefPushNotifications !== undefined) setPrefPushNotifications(parsed.prefPushNotifications);
+          if (parsed.prefLocationServices !== undefined) setPrefLocationServices(parsed.prefLocationServices);
+          
+          loadedFromLocalStorage = true;
+          isLoadedRef.current = true;
+          
+          // Update parental state ONLY for the regular fan role on mount (fan_only represents a simulated profile, portal roles use live state)
+          if (portalRole === 'industry_pro' && setUserProfile) {
+            setUserProfile((prev: any) => {
+              if (!prev) return prev;
+              const targetEmail = parsed.profileEmail || prev.email;
+              const targetName = parsed.profileFullLegalName || prev.name;
+              if (targetEmail === prev.email && targetName === prev.name) {
+                return prev;
+              }
+              return {
+                ...prev,
+                email: targetEmail,
+                name: targetName
+              };
+            });
+          }
+        }
+      } catch (e) {
+        console.error("Error loading offline profile cache", e);
+      }
+
+      // Try IndexedDB as secondary robust backup
+      profileStore.getItem(`active_${portalRole}_${userProfile?.id || 'guest'}`).then((data: any) => {
+        if (data) {
+          // Always restore avatar and cover urls from IndexedDB since they are excluded from localStorage (portal roles prefer live prop state)
+              if (portalRole !== 'industry_pro' && portalRole !== 'fan_only') {
+                const parentAvatar = portalRole === 'label' ? userProfile?.label_avatar 
+                  : portalRole === 'creative' ? userProfile?.creative_avatar 
+                  : portalRole === 'promoter' ? (userProfile as any)?.promoter_logo 
+                  : portalRole === 'band' ? activeBand?.logo_url
+                  : userProfile?.avatar_url;
+                setProfileAvatarUrl(parentAvatar || data.profileAvatarUrl || null);
+
+                const parentCover = portalRole === 'label' ? userProfile?.label_banner 
+                  : portalRole === 'creative' ? userProfile?.creative_banner 
+                  : portalRole === 'promoter' ? (userProfile as any)?.promoter_cover_image 
+                  : portalRole === 'band' ? activeBand?.cover_url || userProfile?.banner_url
+                  : userProfile?.banner_url;
+                setProfileCoverUrl(parentCover || data.profileCoverUrl || null);
+              } else {
+                if (data.profileAvatarUrl) setProfileAvatarUrl(data.profileAvatarUrl);
+                if (data.profileCoverUrl) setProfileCoverUrl(data.profileCoverUrl);
+              }
+
+              if (!loadedFromLocalStorage) {
+                if (portalRole !== 'industry_pro' && portalRole !== 'fan_only') {
+                  const parentName = portalRole === 'band' ? userProfile?.bandName 
+                    : portalRole === 'creative' ? userProfile?.creative_metadata?.business_name 
+                    : portalRole === 'promoter' ? userProfile?.promoter_metadata?.brand_name 
+                    : portalRole === 'label' ? userProfile?.label_company_name 
+                    : userProfile?.name;
+                  setProfileFullLegalName(parentName || data.profileFullLegalName || 'Pro Account');
+
+                  const parentHandle = portalRole === 'band' ? userProfile?.bandName?.toLowerCase().replace(/\s+/g, '')
+                    : portalRole === 'creative' ? userProfile?.creative_metadata?.business_name?.toLowerCase().replace(/\s+/g, '')
+                    : portalRole === 'promoter' ? userProfile?.promoter_metadata?.brand_name?.toLowerCase().replace(/\s+/g, '')
+                    : portalRole === 'label' ? userProfile?.label_url_slug
+                    : null;
+                  setProfileHandle(parentHandle || data.profileHandle || 'pro_account');
+                } else {
+                  setProfileFullLegalName(data.profileFullLegalName || userProfile?.full_name || userProfile?.legal_name || userProfile?.name || userProfile?.screen_name || 'Fan Listener');
+                  if (data.profileHandle) setProfileHandle(data.profileHandle);
+                }
+
+                if (data.profileEmail) setProfileEmail(data.profileEmail);
+                if (data.profilePassword) setProfilePassword(data.profilePassword);
+                if (data.profilePin) setProfilePin(data.profilePin);
+                if (portalRole === 'label' && userProfile?.label_headquarters) {
+                  setProfileLocation(userProfile.label_headquarters);
+                } else if (data.profileLocation) {
+                  setProfileLocation(data.profileLocation);
+                }
+                if (data.profileGenres) setProfileGenres(data.profileGenres);
+                if (data.profileFavoriteSong) setProfileFavoriteSong(data.profileFavoriteSong);
+                if (data.profileSceneRoles) {
+                  let roles = data.profileSceneRoles;
+                  if (portalRole === 'label') {
+                    roles = roles.filter((r: string) => r !== 'Musician' && r !== 'Artist');
+                    if (!roles.includes('Record Label')) roles.push('Record Label');
+                  }
+                  setProfileSceneRoles(roles);
+                }
+                if (data.profileBlurb) setProfileBlurb(data.profileBlurb);
+                if (data.profileStealthMode !== undefined) setProfileStealthMode(data.profileStealthMode);
+                if (data.filterHideTicketPresales !== undefined) setFilterHideTicketPresales(data.filterHideTicketPresales);
+                if (data.filterShowMerchDropsOnlyFromFollowed !== undefined) setFilterShowMerchDropsOnlyFromFollowed(data.filterShowMerchDropsOnlyFromFollowed);
+                if (data.filterShowFollowedOnly !== undefined) setFilterShowFollowedOnly(data.filterShowFollowedOnly);
+                if (data.prefPushNotifications !== undefined) setPrefPushNotifications(data.prefPushNotifications);
+                if (data.prefLocationServices !== undefined) setPrefLocationServices(data.prefLocationServices);
+              }
+              
+              if (portalRole === 'industry_pro' && setUserProfile) {
+                setUserProfile((prev: any) => {
+                  if (!prev) return prev;
+                  const targetEmail = (!loadedFromLocalStorage ? data.profileEmail : null) || prev.email;
+                  const targetName = !loadedFromLocalStorage ? (data.profileFullLegalName || prev.name) : prev.name;
+                  if (targetEmail === prev.email && targetName === prev.name) {
+                    return prev;
+                  }
+                  return {
+                    ...prev,
+                    email: targetEmail,
+                    name: targetName
+                  };
+                });
+              }
+            }
+            isLoadedRef.current = true;
+      }).catch(err => {
+        console.warn("IndexedDB connection failed, falling back:", err);
+        isLoadedRef.current = true;
+      });

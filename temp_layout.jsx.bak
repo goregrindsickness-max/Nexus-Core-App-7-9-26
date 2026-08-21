@@ -1,0 +1,445 @@
+  return (
+    <div className="min-h-screen bg-[#050505] font-sans text-zinc-100 flex flex-col items-center selection:bg-orange-500/30 selection:text-orange-400">
+      {/* STICKY TOP HEADER ROW */}
+      <div className="sticky top-0 z-40 bg-[#0c0e12]/95 backdrop-blur-md border-b border-zinc-900 w-full shadow-[0_10px_30px_rgba(0,0,0,0.9)] flex flex-col">
+        {/* Row 1: BRAND NAVIGATION HEADER */}
+        <div className="px-5 py-3 flex items-center justify-between border-b border-[#1b1e25] bg-black">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setActiveTab('ROSTER');
+                setSubTab('');
+              }}
+              className="flex items-center select-none shrink-0 cursor-pointer hover:opacity-85 active:scale-98 transition-all focus:outline-none"
+              title="Return to Home Dashboard"
+            >
+              <img 
+                src="/Nexus Core Long Logo copy.png" 
+                alt="Nexus Core" 
+                className="object-contain"
+                style={{ width: '154.791px', height: '57.9957px' }}
+                referrerPolicy="no-referrer"
+              />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setActiveTab('SETTINGS');
+                setSubTab('team_subscription');
+              }}
+              className="rounded-full px-2 py-0.5 flex items-center gap-1.5 transition text-[7.5px] sm:text-[8px] font-mono font-bold uppercase tracking-wider cursor-pointer shadow-sm active:scale-95 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 shadow-orange-500/5 shadow-[0_0_6px_rgba(249,115,22,0.1)]"
+            >
+              <span className="w-1 h-1 rounded-full animate-pulse bg-orange-500 shadow-[0_0_4px_rgba(249,115,22,0.8)] shrink-0" />
+              <span className="hidden sm:inline">Owner</span>
+              <span className="sm:hidden font-mono">OWNER</span>
+              <span className="text-orange-500/40 text-[7.5px]">•</span>
+              <span className="text-orange-400">LEVEL 5 CLEARANCE</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Row 2: V2 Header Row */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-900/60">
+          {/* Active stats pill */}
+          <button
+            type="button"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-800 text-[8.5px] font-bold uppercase tracking-wider font-mono shrink-0 transition-all cursor-pointer bg-zinc-900 hover:bg-zinc-850 hover:border-zinc-700 text-zinc-300 shadow-md"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse shadow-[0_0_8px_#f97316]" />
+            <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-widest leading-none mr-0.5">LABELS HQ:</span>
+            <span className="truncate max-w-[150px] text-orange-400 font-black uppercase">
+              {userProfile.label_roster_count || labelRosterData.length} BANDS
+            </span>
+          </button>
+          
+          <div className="flex items-center gap-3">
+            {/* Notifications Button */}
+            {onOpenNotifications && (
+              <button
+                type="button"
+                onClick={onOpenNotifications}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-all text-[8.5px] font-mono font-bold uppercase tracking-wider cursor-pointer"
+              >
+                <div className="relative">
+                  <Bell className="w-3.5 h-3.5" />
+                  {notifications && notifications.some(n => !n.is_read) && (
+                    <span className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse shadow-[0_0_8px_#f97316]" />
+                  )}
+                </div>
+                <span>NOTICES</span>
+              </button>
+            )}
+            
+            {/* Interactive Profile Avatar Button */}
+            <div className="relative">
+              <button 
+                type="button"
+                onClick={() => setV2RoleMenuOpen(!v2RoleMenuOpen)}
+                className="w-8 h-8 rounded-full bg-orange-950/40 border border-orange-500/50 flex items-center justify-center font-black text-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all active:scale-95 overflow-hidden shadow-md cursor-pointer hover:border-orange-400"
+              >
+                {userProfile.label_avatar ? (
+                  <img src={userProfile.label_avatar} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+                ) : (
+                  <Globe className="w-4 h-4 text-orange-500" />
+                )}
+              </button>
+
+              <AnimatePresence>
+                {v2RoleMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px]" onClick={() => setV2RoleMenuOpen(false)} />
+                    <div className="absolute right-0 mt-3 w-80 bg-[#09090b] border border-zinc-800 rounded-2xl p-4 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.95)] z-50 text-left animate-in fade-in slide-in-from-top-3 duration-200">
+                      <button onClick={() => setV2RoleMenuOpen(false)} className="absolute top-4 right-4 w-6 h-6 flex items-center justify-center bg-black/40 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-500 hover:text-zinc-300 rounded-full transition-all cursor-pointer z-10"><X className="w-3.5 h-3.5" /></button>
+                      
+                      <div className="flex items-center gap-3 pb-3 border-b border-zinc-800/80">
+                        <label className="relative shrink-0 cursor-pointer group">
+                          <div className="w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900/90 overflow-hidden flex items-center justify-center font-bold text-orange-500 text-sm font-mono uppercase relative">
+                            {userProfile.label_avatar ? (
+                              <img src={userProfile.label_avatar} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+                            ) : (
+                              <Globe className="w-4 h-4 text-orange-500" />
+                            )}
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => { handleImageUpload(e); setV2RoleMenuOpen(false); }} />
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-[7px] uppercase font-bold text-orange-400">
+                              Edit
+                            </div>
+                          </div>
+                        </label>
+                        <div className="flex-grow min-w-0">
+                          <p className="text-xs font-black text-zinc-100 truncate uppercase tracking-tight">
+                            {userProfile.label_company_name || 'NEXUS LABEL HQ'}
+                          </p>
+                          <p className="text-[8.5px] text-zinc-500 font-mono truncate">
+                            slug: {userProfile.label_url_slug || 'hq'}
+                          </p>
+                        </div>
+                        <span className="bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[8px] px-2 py-0.5 rounded-full font-mono font-bold uppercase tracking-wider shrink-0">
+                          SECURE NODE
+                        </span>
+                      </div>
+
+                      <div className="pt-3 pb-3 border-b border-zinc-800/80">
+                        <span className="block text-[8px] font-mono font-black text-zinc-500 tracking-wider uppercase mb-1.5">CONSOLE ARCHITECTURE</span>
+                        <div className="grid grid-cols-1 gap-2">
+                          <button
+                            type="button"
+                            disabled
+                            className="flex items-center justify-center py-2 rounded-xl bg-orange-950/20 border border-orange-500/50 text-orange-400 font-black font-mono tracking-wider text-[9px]"
+                          >
+                            ⚙️ V2 CONSOLE
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 pb-3 border-b border-zinc-800/80 space-y-2">
+                        <span className="block text-[8px] font-mono font-black text-zinc-500 tracking-wider uppercase">SWITCH ACTIVE PORTAL</span>
+                        <div className="grid grid-cols-1 gap-1.5">
+                          {[
+                            { key: 'fan', icon: '🎟️', name: 'Fan Portal', desc: 'Social environment', bgClass: 'bg-rose-950/10 text-rose-300 border-rose-950/40', allowed: true },
+                            { key: 'band', icon: '🎸', name: 'Artist Workspace', desc: 'Lineup & repertoire', bgClass: 'bg-emerald-950/10 text-emerald-300 border-emerald-950/40', allowed: allowedWorkspaces.includes('band') },
+                            { key: 'promoter', icon: '🏟️', name: 'Promoter Gateway', desc: 'Calendars & finance', bgClass: 'bg-purple-950/10 text-purple-300 border-purple-950/40', allowed: allowedWorkspaces.includes('promoter') },
+                            { key: 'creative', icon: '🛠️', name: 'Creative Hub', desc: 'Contracts & portfolio', bgClass: 'bg-violet-950/10 text-violet-305 border-violet-950/40', allowed: allowedWorkspaces.includes('creative') },
+                          ].map((role) => {
+                            if (!role.allowed) return null;
+                            return (
+                              <button
+                                key={role.key}
+                                type="button"
+                                onClick={() => {
+                                  setV2RoleMenuOpen(false);
+                                  setUserProfile({ ...userProfile, account_type: role.key as any });
+                                }}
+                                className={`w-full flex items-center justify-between p-2 rounded-xl border text-left transition-all cursor-pointer ${role.bgClass} hover:opacity-80`}
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="text-sm shrink-0">{role.icon}</span>
+                                  <div className="min-w-0">
+                                    <span className="block font-black text-[9px] uppercase tracking-wider">{role.name}</span>
+                                    <span className="block text-[8px] text-zinc-500 truncate lowercase">{role.desc}</span>
+                                  </div>
+                                </div>
+                                <ChevronDown className="w-3.5 h-3.5 -rotate-90 opacity-30 group-hover:opacity-100 shrink-0" />
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="pt-3">
+                        <button
+                          onClick={onLogout}
+                          className="w-full py-2.5 rounded-xl border border-rose-500/20 bg-rose-950/10 hover:bg-rose-950/20 text-rose-400 font-bold hover:text-white text-center transition-all cursor-pointer active:scale-98"
+                        >
+                          LOGOUT CORE SESSION
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
+
+        {/* Glowing Icon Navigation Bar */}
+        <div className="flex items-center justify-around px-2 py-1 relative w-full bg-[#0c0e12]">
+          {[
+            { id: 'ROSTER', label: 'Roster', icon: Users },
+            { id: 'CATALOG', label: 'Catalog', icon: Database },
+            { id: 'SALES', label: 'Sales', icon: ShoppingCart },
+            { id: 'FINANCE', label: 'Finance', icon: TrendingUp },
+            { id: 'SOCIAL', label: 'Social', icon: Globe },
+            { id: 'SETTINGS', label: 'Settings', icon: Settings },
+          ].map((item) => {
+            const IconComponent = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  setActiveTab(item.id as any);
+                  setSubTab('');
+                }}
+                className="flex flex-col items-center justify-center w-full py-2 group relative transition-colors cursor-pointer"
+              >
+                {isActive && (
+                  <div className="absolute inset-0 bg-orange-500/10 blur-xl rounded-full w-10 h-10 mx-auto -z-10 animate-pulse" />
+                )}
+                <IconComponent className={`w-5 h-5 mb-1 transition-all ${
+                  isActive
+                    ? 'text-orange-500 drop-shadow-[0_0_8px_rgba(249,115,22,0.8)] scale-110'
+                    : 'text-zinc-500 group-hover:text-zinc-300'
+                }`} />
+                <span className={`text-[8.5px] font-bold tracking-wider uppercase transition-colors ${
+                  isActive ? 'text-orange-500 font-black' : 'text-zinc-500 group-hover:text-zinc-300'
+                }`}>
+                  {item.label}
+                </span>
+                {isActive && (
+                  <div className="w-8 h-[3px] bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.8)] rounded-t-full absolute bottom-0" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Row 4: ACTIVE LABEL CONSOLE BLOCK */}
+      <div 
+        className="w-full max-w-[1480px] mx-auto px-4 sm:px-6 py-2"
+      >
+        <div className="flex items-center gap-3 w-full min-w-0 border-b border-zinc-900/60 pb-2">
+          <div className="min-w-0 max-w-[calc(100%-140px)] flex-grow">
+            <MarqueeText 
+              text={userProfile.label_company_name || 'NEXUS LABEL HQ'}
+              className="font-display font-black tracking-wider text-orange-500 drop-shadow-[0_0_10px_rgba(249,115,22,0.65)] uppercase font-sans text-[18px]"
+            />
+          </div>
+          
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-orange-500/20 bg-orange-950/15 text-orange-400 text-[8.5px] font-bold uppercase tracking-wider font-mono shadow-[0_0_12px_rgba(249,115,22,0.15)] select-none">
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse bg-orange-500 shadow-[0_0_8px_#f97316]" />
+              <span>LIVE CLOUD SYNC</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <main className={`w-full mx-auto flex-1 flex flex-col gap-6 ${
+        activeTab === 'SETTINGS'
+          ? 'max-w-full p-0 sm:p-0 pb-2'
+          : (activeTab === 'SOCIAL') 
+            ? 'max-w-full p-0 sm:p-0 pb-16' 
+            : 'max-w-[1480px] p-4 sm:p-6 pb-16'
+      }`}>
+        {/* Content Viewport */}
+        
+      {/* Sub-Navigation for active primary tab */}
+      {(activeTab === 'SALES' || activeTab === 'FINANCE') && (
+        <div className="w-full flex justify-center mt-2 mb-4">
+          <div className="bg-zinc-900/50 p-1 rounded-lg border border-zinc-800/80 inline-flex items-center gap-1">
+            {activeTab === 'SALES' && (
+              <>
+                <button
+                  onClick={() => setSubTab('storefront')}
+                  className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${(!subTab || subTab === 'storefront') ? 'bg-orange-500 text-white shadow-md' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >
+                  Storefront
+                </button>
+                <button
+                  onClick={() => setSubTab('warehouse')}
+                  className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${subTab === 'warehouse' ? 'bg-orange-500 text-white shadow-md' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >
+                  Master Warehouse
+                </button>
+                <button
+                  onClick={() => setSubTab('merchandise-printers')}
+                  className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${subTab === 'merchandise-printers' ? 'bg-orange-500 text-white shadow-md' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >
+                  Merch Printers
+                </button>
+              </>
+            )}
+            {activeTab === 'FINANCE' && (
+              <>
+                <button
+                  onClick={() => setSubTab('royalties')}
+                  className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${(!subTab || subTab === 'royalties') ? 'bg-orange-500 text-white shadow-md' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >
+                  Revenue Ledger
+                </button>
+                <button
+                  onClick={() => setSubTab('analytics')}
+                  className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${subTab === 'analytics' ? 'bg-orange-500 text-white shadow-md' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >
+                  Global Telemetry
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      
+      <section className="min-h-[500px] w-full">
+
+          {activeTab === 'ROSTER' && (
+            <div className="space-y-6">
+              {/* MOBILE ONLY PROFILE HEADER */}
+              <div className="block lg:hidden orange-chase-border-mobile w-full shadow-2xl mb-6">
+                <div className="backdrop-blur-md rounded-[calc(1rem-2px)] bg-[#090b0e]/95 flex flex-col items-center sm:items-stretch justify-between gap-5 relative overflow-hidden p-5 sm:p-6 w-full shadow-2xl border border-zinc-800/10" id="label-profile-card-mobile-v2">
+                  {/* Optional Cover Image in Top Half with bottom fade-out */}
+                  {userProfile.label_banner && (
+                    <div className="absolute top-0 left-0 right-0 h-1/2 overflow-hidden pointer-events-none z-0">
+                      <img 
+                        src={userProfile.label_banner} 
+                        alt="Label Banner" 
+                        className="w-full h-full object-cover opacity-35" 
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#090b0e]/50 to-[#090b0e]" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-[radial-gradient(#f9731607_1.5px,transparent_1.5px)] [background-size:12px_12px] opacity-75 pointer-events-none" id="label-tonal-mobile" />
+                  <div className="absolute top-0 right-1/4 w-[200px] h-[200px] rounded-full bg-[#f97316]/5 blur-[70px] pointer-events-none" />
+
+                  {/* Upper Action Buttons - Administration Tools */}
+                  <div className="absolute top-4 right-4 flex items-center gap-1.5 z-20">
+                    <label className="bg-zinc-950/60 hover:bg-zinc-850 border border-zinc-800 hover:border-[#f97316] text-[#f97316]/90 hover:text-white p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center shadow-md shadow-black">
+                      <Upload className="w-4 h-4" />
+                      <input type="file" accept="image/*" className="hidden" onChange={handleCoverImageUpload} />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsSpecsDrawerOpen(!isSpecsDrawerOpen)}
+                      className="bg-zinc-950/60 hover:bg-zinc-850 border border-zinc-800 hover:border-[#f97316] text-zinc-450 hover:text-white p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center shadow-md shadow-black group"
+                      title="REDEFINE LABEL SPECS"
+                    >
+                      <Settings className="w-4 h-4 text-zinc-400 group-hover:rotate-90 transition-transform duration-300" />
+                    </button>
+                  </div>
+
+                  {/* Profile Avatar & Primary Identification */}
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left relative z-10 w-full mb-1 mt-6">
+                    {/* Profile Picture Upload Indicator */}
+                    <label className="relative group shrink-0 cursor-pointer mx-auto sm:mx-0">
+                      <div className="absolute -inset-0.5 bg-gradient-to-r from-[#f97316] via-[#fdba74] to-[#ffedd5] rounded-full blur opacity-65 group-hover:opacity-100 transition duration-300 orange-pulse-glow" />
+                      <div className="relative w-32 h-32 rounded-full bg-zinc-950 overflow-hidden border border-zinc-900/80 flex items-center justify-center shadow-lg group-hover:border-[#f97316] transition-colors orange-pulse-glow">
+                        {userProfile.label_avatar ? (
+                          <img 
+                            src={userProfile.label_avatar} 
+                            alt="Logo" 
+                            className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300" 
+                            referrerPolicy="no-referrer" 
+                          />
+                        ) : (
+                          <Globe className="w-12 h-12 text-[#f97316] group-hover:scale-110 transition-transform duration-300" />
+                        )}
+                        {/* Invisible file input */}
+                        <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                        <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="text-[8px] font-mono font-bold text-white uppercase bg-black/80 px-1 py-0.5 rounded border border-[#f97316]/30">Edit</span>
+                        </div>
+                      </div>
+                    </label>
+
+                    {/* Company Details Stack */}
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <h1 className="text-xl sm:text-2xl font-black font-mono uppercase tracking-tight text-white flex items-center justify-center sm:justify-start gap-2">
+                        <span>{userProfile.label_company_name || 'NEXUS LABEL HQ'}</span>
+                      </h1>
+                      
+                      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-[10px] sm:text-xs text-zinc-450 font-mono leading-relaxed">
+                        <span className="lowercase text-zinc-400 bg-zinc-950/60 px-2.5 py-1 rounded-xl border border-zinc-850 font-sans">
+                          nexus-core.app/{userProfile.label_url_slug || 'hq'}
+                        </span>
+                        <span className="text-zinc-800">•</span>
+                        <span className="text-[#f97316] uppercase tracking-wider font-extrabold flex items-center gap-1">
+                          🛡️ LLC VERIFIED SECURE NODE
+                        </span>
+                        <span className="text-zinc-805">•</span>
+                        <span className="text-[#00ffcc] font-black flex items-center gap-1 uppercase tracking-wide animate-pulse">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00ffcc] opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00ffcc]"></span>
+                          </span>
+                          ONLINE
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Centered Subscription/Roster details for mobile view */}
+                  <div className="flex flex-wrap items-center justify-center gap-4 mt-2 w-full text-[10px] font-mono tracking-wider uppercase z-10">
+                    <div className="flex flex-col items-center">
+                      <span className="text-[#f97316] font-bold">{userProfile.label_plan_tier === 'APEX' ? 'APEX COMMAND' : userProfile.label_plan_tier === 'SYNDICATE' ? 'SYNDICATE FLEET' : 'DISTRO SEED'}</span>
+                      <span className="text-zinc-500 text-[8px]">SUBSCRIPTION TIER</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <span className="text-zinc-300 font-bold">{labelRosterData.length} / {userProfile.label_plan_tier === 'APEX' ? 'UNLIMITED' : userProfile.label_plan_tier === 'SYNDICATE' ? '20' : '5'}</span>
+                      <span className="text-zinc-500 text-[8px]">ROSTER CAP</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <span className="text-zinc-300 font-bold">{userProfile.label_trial_period_days || 30} DAYS REMAINING</span>
+                      <span className="text-zinc-500 text-[8px]">TRIAL PERIOD</span>
+                    </div>
+                  </div>
+
+                  {/* Real-time Message Center Card (Mobile) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsInboxOpen(true);
+                      setInboxSubTab('conversations');
+                    }}
+                    className="w-full mt-2 py-3 px-4 rounded-xl border border-orange-500/25 hover:border-orange-500/55 bg-orange-950/20 hover:bg-orange-950/40 flex items-center justify-between text-left font-mono text-xs text-zinc-300 active:scale-98 transition-all relative z-10 select-none group focus:outline-none cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <MessageSquare className="w-4 h-4 text-[#f97316] group-hover:scale-110 group-hover:rotate-6 transition-transform duration-250 animate-pulse" />
+                      <div>
+                        <span className="block font-bold text-white text-[10px] tracking-wider uppercase">Label Message Center</span>
+                        <span className="text-[8.5px] text-zinc-500 block uppercase font-bold mt-0.5">💬 View and reply to direct band discussions</span>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded text-[10px] uppercase font-black tracking-wider transition-all shadow-md bg-orange-950/80 text-orange-400 border border-orange-500/40 animate-pulse">
+                      Active
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* DESKTOP ONLY PROFILE HEADER */}
+              <div className="hidden lg:block orange-chase-border w-full shadow-2xl relative mb-6">
+                <div className="backdrop-blur-md rounded-[calc(1.5rem-2.2px)] bg-[#090b0e]/95 flex flex-col items-center justify-between gap-6 relative overflow-hidden p-8 w-full animate-fade-in" id="label-profile-card-desktop-v2">
+                  {/* Optional Cover Image in Top Half with bottom fade-out */}
+                  {userProfile.label_banner && (
+                    <div className="absolute top-0 left-0 right-0 h-1/2 overflow-hidden pointer-events-none z-0">
+                      <img 
+                        src={userProfile.label_banner} 
+                        alt="Label Banner" 
+                        className="w-full h-full object-cover opacity-35" 
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#090b0e]/50 to-[#090b0e]" />

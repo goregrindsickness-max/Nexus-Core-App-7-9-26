@@ -1,0 +1,14 @@
+I have scanned `src/App.tsx` and the `src/components/` directory as requested. Here is the list of additional elements that can be modularized or refactored into separate components to reduce bloat:
+
+### 1. Brand Navigation Header (Lines ~5055–5530)
+This massive inline block renders the top sticky navigation bar, the user profile avatar popover (`v2RoleMenuOpen`), organization plan indicators, offline sync status, and the workspace/role switcher. It spans nearly 500 lines inside `App.tsx` and can easily be extracted into a `<BrandNavigationHeader />` component.
+
+### 2. Inline Render Wrapper Functions (Lines ~4560–4780)
+There are numerous inline functions like `renderDecoupledLiveInventorySection`, `renderDecoupledLiveTeamActivitySection`, `renderCashDrawerLedgerSection`, and `renderRecentSalesFeed`. These functions do nothing but return already-imported components with a hardcoded list of props. This is unnecessary bloat; these components can be instantiated directly in the JSX tree, and the wrapper functions can be deleted.
+
+### 3. Massive Prop Drilling into Top-Level Views (Lines ~5550–6000)
+Currently, `<HomeV2DashboardView />` and `<MainTabRouter />` each accept well over 100 props. Because a lot of this state has already been cleanly migrated to custom hooks (like `useBandState`, `useInventoryState`, and `useOffersManagement`), we can stop lifting all of this state up to `App.tsx`. We should call these hooks *directly inside* the view components, eliminating massive prop-drilling.
+
+### 4. Legacy Metrics Carousel (Lines ~4486–4550)
+The `renderLegacyMetricsCarousel` block is a highly complex inline render function with its own local animations, pagination dots, and hover pause logic. This should be extracted to a distinct `<LegacyMetricsCarousel />` component.
+

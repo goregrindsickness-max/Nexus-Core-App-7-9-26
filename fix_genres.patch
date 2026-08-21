@@ -1,0 +1,17 @@
+--- src/App.tsx
++++ src/App.tsx
+@@ -10710,7 +10710,13 @@
+     if (activeBand) {
+       setBandInfoName(activeBand.name || '');
+       setBandInfoHomebase(activeBand.homebase || '');
+-      const parsedGenres = activeBand.genre ? activeBand.genre.split(' / ') : [];
++      let parsedGenres = activeBand.genre ? activeBand.genre.split(' / ') : [];
++      
++      // Filter out any 'Alternative' fallback if it's the only thing there
++      if (parsedGenres.length === 1 && parsedGenres[0] === 'Alternative') {
++        parsedGenres = [];
++      }
++      
+       setSelectedMicroGenres(parsedGenres);
+     }
+   }, [activeBand]);

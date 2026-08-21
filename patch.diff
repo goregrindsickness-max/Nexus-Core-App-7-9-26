@@ -1,0 +1,2596 @@
+248a249,2843
+>   const [bandSubGenres, setBandSubGenres] = useState<string[]>([]);
+>   const [bandBookingEmail, setBandBookingEmail] = useState('');
+>   const [bandBookingPhone, setBandBookingPhone] = useState('');
+>   const [bandTechRider, setBandTechRider] = useState('');
+>   const [bandHeadcount, setBandHeadcount] = useState(1);
+>   const [bandRoster, setBandRoster] = useState<{name: string, role: string, access: string}[]>([]);
+>   const [newRosterName, setNewRosterName] = useState('');
+>   const [newRosterRole, setNewRosterRole] = useState('');
+>   const [newRosterAccess, setNewRosterAccess] = useState('Level 1');
+>   const [bandStripeConnected, setBandStripeConnected] = useState(false);
+>   const [bandPaypalConnected, setBandPaypalConnected] = useState(false);
+> 
+> 
+>   // Promoter specifics
+>   const [promoterAgency, setPromoterAgency] = useState('');
+>   const [promoterPhone, setPromoterPhone] = useState('');
+>   const [promoterRegion, setPromoterRegion] = useState('');
+>   const [promoterAdminEmail, setPromoterAdminEmail] = useState('');
+>   const [promoterBookingEmail, setPromoterBookingEmail] = useState('');
+>   const [promoterTitle, setPromoterTitle] = useState('TALENT BUYER');
+>   const [promoterGenres, setPromoterGenres] = useState<string[]>([]);
+>   const [promoterStripeConnected, setPromoterStripeConnected] = useState(false);
+>   const [promoterPaypalConnected, setPromoterPaypalConnected] = useState(false);
+>   const [promoterVenueClass, setPromoterVenueClass] = useState('Club');
+>   const [promoterDeferTechSpecs, setPromoterDeferTechSpecs] = useState(true);
+>   const [promoterLogo, setPromoterLogo] = useState('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=300');
+>   const [promoterCoverImage, setPromoterCoverImage] = useState('');
+>   const [promoterCapacity, setPromoterCapacity] = useState('350');
+>   const [promoterSecurityMap, setPromoterSecurityMap] = useState('');
+>   const [promoterTechRider, setPromoterTechRider] = useState('');
+>   const [promoterLegalFirstName, setPromoterLegalFirstName] = useState('');
+>   const [promoterLegalLastName, setPromoterLegalLastName] = useState('');
+>   const [promoterLegalEntityType, setPromoterLegalEntityType] = useState('SOLE_PROPRIETORSHIP');
+>   const [promoterTaxId, setPromoterTaxId] = useState('');
+>   const [promoterInstagram, setPromoterInstagram] = useState('');
+>   const [promoterTwitter, setPromoterTwitter] = useState('');
+>   const [promoterWebsite, setPromoterWebsite] = useState('');
+>   
+>   // Promoter collapsible sub-sections
+>   const [promoterSectionAOpen, setPromoterSectionAOpen] = useState(true);
+>   const [promoterSocialOpen, setPromoterSocialOpen] = useState(false);
+>   const [promoterSectionBOpen, setPromoterSectionBOpen] = useState(false);
+>   const [promoterSectionCOpen, setPromoterSectionCOpen] = useState(false);
+>   const [promoterLegalFullName, setPromoterLegalFullName] = useState('');
+>   const [promoterSetupPaymentLater, setPromoterSetupPaymentLater] = useState(false);
+>   const [isPromoterGenresExpanded, setIsPromoterGenresExpanded] = useState(false);
+>   
+>   const [nexusConsentChecked, setNexusConsentChecked] = useState(false);
+>   
+>   // Label specifics
+>   const [labelCompanyName, setLabelCompanyName] = useState(() => isUpgradeMode ? userProfile?.label_company_name || '' : '');
+>   const [labelBookingEmail, setLabelBookingEmail] = useState(() => isUpgradeMode ? userProfile?.label_booking_email || '' : '');
+>   const [labelRosterCount, setLabelRosterCount] = useState(() => isUpgradeMode ? userProfile?.label_roster_count || '' : '');
+>   const [labelHeadquarters, setLabelHeadquarters] = useState(() => isUpgradeMode ? userProfile?.label_headquarters || '' : '');
+>   const [labelFoundedYear, setLabelFoundedYear] = useState(() => isUpgradeMode ? userProfile?.label_founded_year || '' : '');
+>   const [labelVerificationId, setLabelVerificationId] = useState(() => isUpgradeMode ? userProfile?.label_verification_id || '' : '');
+>   const [labelUrlSlug, setLabelUrlSlug] = useState(() => isUpgradeMode ? userProfile?.label_url_slug || '' : '');
+>   const [labelGenres, setLabelGenres] = useState<string[]>(() => isUpgradeMode ? userProfile?.label_genres || [] : []);
+>   const [labelBandRoster, setLabelBandRoster] = useState(() => isUpgradeMode ? (userProfile?.label_band_roster || []).join(', ') : '');
+>   const [labelSubLabels, setLabelSubLabels] = useState(() => isUpgradeMode ? (userProfile?.label_sub_labels || []).join(', ') : '');
+>   const [labelLegalEntityType, setLabelLegalEntityType] = useState(() => isUpgradeMode ? userProfile?.label_legal_entity_type || 'LLC' : 'LLC');
+>   const [labelTaxRegistrationNumber, setLabelTaxRegistrationNumber] = useState(() => isUpgradeMode ? userProfile?.label_tax_registration_number || '' : '');
+>   const [labelMasterDistroModel, setLabelMasterDistroModel] = useState(() => isUpgradeMode ? userProfile?.label_master_distro_model || 'IN_HOUSE_FULFILLMENT' : 'IN_HOUSE_FULFILLMENT');
+>   const [labelShippingPostalCode, setLabelShippingPostalCode] = useState(() => isUpgradeMode ? userProfile?.label_shipping_postal_code || '' : '');
+>   const [labelShippingCountry, setLabelShippingCountry] = useState(() => isUpgradeMode ? userProfile?.label_shipping_country || 'US' : 'US');
+>   const [labelDefaultContractSplit, setLabelDefaultContractSplit] = useState(() => isUpgradeMode ? userProfile?.label_default_contract_split ?? 50 : 50);
+>   const [labelDigitalAccreditationScheme, setLabelDigitalAccreditationScheme] = useState(() => isUpgradeMode ? userProfile?.label_digital_accreditation_scheme || 'LABEL_PROVIDES_INDEPENDENT_CODES' : 'LABEL_PROVIDES_INDEPENDENT_CODES');
+>   const [labelStripeConnected, setLabelStripeConnected] = useState(() => isUpgradeMode ? !!userProfile?.label_stripe_connected : false);
+>   const [labelPaypalConnected, setLabelPaypalConnected] = useState(() => isUpgradeMode ? !!userProfile?.label_paypal_connected : false);
+>   const [labelSetupPaymentLater, setLabelSetupPaymentLater] = useState(() => isUpgradeMode ? !!userProfile?.label_setup_payment_later : false);
+>   const [labelAvatar, setLabelAvatar] = useState(() => isUpgradeMode ? userProfile?.label_avatar || '' : '');
+>   const [labelBanner, setLabelBanner] = useState(() => isUpgradeMode ? userProfile?.label_banner || '' : '');
+>   const [labelIsAnnualBilling, setLabelIsAnnualBilling] = useState(() => isUpgradeMode ? userProfile?.label_billing_cycle === 'ANNUAL' : false);
+>   const [labelPlanTier, setLabelPlanTier] = useState(() => isUpgradeMode ? userProfile?.label_plan_tier || 'independent_imprint' : 'independent_imprint');
+> 
+>   // Label checkout modal states
+>   const [showLabelCheckoutModal, setShowLabelCheckoutModal] = useState(false);
+>   const [checkoutCardName, setCheckoutCardName] = useState('');
+>   const [checkoutCardNumber, setCheckoutCardNumber] = useState('');
+>   const [checkoutCardExpiry, setCheckoutCardExpiry] = useState('');
+>   const [checkoutCardCvc, setCheckoutCardCvc] = useState('');
+>   const [checkoutCardZip, setCheckoutCardZip] = useState('');
+>   const [checkoutError, setCheckoutError] = useState('');
+>   const [checkoutLoading, setCheckoutLoading] = useState(false);
+>   const [stagedSignupData, setStagedSignupData] = useState<{ newProfile: any, newBand: any, newBandId: any } | null>(null);
+> 
+>   // Label collapsible sub-sections
+>   const [labelSectionAOpen, setLabelSectionAOpen] = useState(true);
+>   const [labelSectionBOpen, setLabelSectionBOpen] = useState(false);
+>   const [labelSectionCOpen, setLabelSectionCOpen] = useState(false);
+>   const [isLabelGenresExpanded, setIsLabelGenresExpanded] = useState(false);
+> 
+>   // Creative specifics
+>   const [creativeBusinessName, setCreativeBusinessName] = useState('');
+>   const [creativeBaseLocation, setCreativeBaseLocation] = useState('');
+>   const [creativeBookingEmail, setCreativeBookingEmail] = useState('');
+>   const [creativePrimarySpecialty, setCreativePrimarySpecialty] = useState('GRAPHIC_DESIGN');
+>   const [creativeCoreSkill, setCreativeCoreSkill] = useState('MERCH_DESIGN');
+>   const [creativeSecondarySpecialty, setCreativeSecondarySpecialty] = useState('PHOTOGRAPHY');
+>   const [creativeSecondaryCoreSkill, setCreativeSecondaryCoreSkill] = useState('LIVE_MUSIC_PHOTO');
+>   const [creativePrimaryGear, setCreativePrimaryGear] = useState('');
+>   const [creativeGenres, setCreativeGenres] = useState<string[]>([]);
+>   const [creativeHandle, setCreativeHandle] = useState('');
+>   const [creativeBiography, setCreativeBiography] = useState('');
+>   const [creativeInstagram, setCreativeInstagram] = useState('');
+>   const [creativeArtStation, setCreativeArtStation] = useState('');
+>   const [creativeWebsite, setCreativeWebsite] = useState('');
+> 
+>   // Collapsible sub-sections
+>   const [creativeSectionAOpen, setCreativeSectionAOpen] = useState(true);
+>   const [creativeSocialOpen, setCreativeSocialOpen] = useState(false);
+>   const [creativeSectionBOpen, setCreativeSectionBOpen] = useState(false);
+>   const [creativeSectionCOpen, setCreativeSectionCOpen] = useState(false);
+> 
+>   // Tax Hygiene & billing
+>   const [creativeLegalFirstName, setCreativeLegalFirstName] = useState('');
+>   const [creativeLegalLastName, setCreativeLegalLastName] = useState('');
+>   const [creativeLegalFullName, setCreativeLegalFullName] = useState('');
+>   const [creativeLegalEntityType, setCreativeLegalEntityType] = useState('SOLE_PROPRIETORSHIP');
+>   const [creativeTaxId, setCreativeTaxId] = useState('');
+>   const [creativeBaseRateSetup, setCreativeBaseRateSetup] = useState('DAY_RATE');
+>   const [creativeBaseRateValue, setCreativeBaseRateValue] = useState(350);
+>   const [creativeBroadcastBulletin, setCreativeBroadcastBulletin] = useState('');
+> 
+>   // Payment Connectors
+>   const [creativeStripeConnected, setCreativeStripeConnected] = useState(false);
+>   const [creativePaypalConnected, setCreativePaypalConnected] = useState(false);
+>   const [creativeSetupPaymentLater, setCreativeSetupPaymentLater] = useState(false);
+> 
+>   // Profile Media Uploaders
+>   const [creativeAvatar, setCreativeAvatar] = useState('');
+>   const [creativeBanner, setCreativeBanner] = useState('');
+>   const [isDragOverCreativeAvatar, setIsDragOverCreativeAvatar] = useState(false);
+>   const [isDragOverCreativeBanner, setIsDragOverCreativeBanner] = useState(false);
+> 
+>   const [isLoading, setIsLoading] = useState(false);
+>   const [isStagedCacheInFlight, setIsStagedCacheInFlight] = useState(false);
+>   const [statusMessage, setStatusMessage] = useState('');
+>   const [viewingTerms, setViewingTerms] = useState(false);
+> 
+>   const toggleCreativeGenre = (genre: string) => {
+>     setCreativeGenres(prev => 
+>       prev.includes(genre)
+>         ? prev.filter(g => g !== genre)
+>         : [...prev, genre]
+>     );
+>   };
+> 
+>   const toggleLabelGenre = (genre: string) => {
+>     setLabelGenres(prev => 
+>       prev.includes(genre)
+>         ? prev.filter(g => g !== genre)
+>         : [...prev, genre]
+>     );
+>   };
+> 
+>   const toggleRole = (role: string) => {
+>     setError('');
+>     if (isUpgradeMode && role === 'FAN') return;
+> 
+>     setActiveUserRoles(prev => {
+>        if (role === 'FAN') {
+>           if (prev.includes('FAN')) return [];
+>           return ['FAN']; // Exclusive isolation
+>        }
+>        
+>        let updated = prev.filter(r => r !== 'FAN'); // removing fan if we select another
+>        if (updated.includes(role)) {
+>           updated = updated.filter(r => r !== role);
+>        } else {
+>           updated = [...updated, role];
+>        }
+>        return updated;
+>     });
+>   };
+> 
+>   const handleUnlock = async (e: React.FormEvent) => {
+>     e.preventDefault();
+>     setError('');
+>     setIsLoading(true);
+>     setStatusMessage('Authenticating operator credentials...');
+>     
+>     try {
+>       const supabase = getSupabase();
+>       if (!supabase || !navigator.onLine) {
+>         // Fallback for offline mode if profile exists locally
+>         if (userProfile && userProfile.email === email && (userProfile as any).pin === pin) {
+>           onLogin(userProfile);
+>         } else {
+>           throw new Error('Database offline. Enter exact local cached credentials.');
+>         }
+>         return;
+>       }
+>       
+>       const { data, error: dbError } = await supabase
+>         .from('profiles')
+>         .select('*')
+>         .eq('email', email)
+>         .single();
+>         
+>       if (dbError || !data) {
+>         throw new Error('Invalid credentials or account not found.');
+>       }
+>       
+>       const normalizedProfile = normalizeLoadedProfile(data);
+>       const dbPin = normalizedProfile.pin || '0000';
+>       if (dbPin !== pin) {
+>         throw new Error('Invalid credentials or account not found.');
+>       }
+>       
+>       onLogin(normalizedProfile);
+>     } catch (err: any) {
+>       setError(err.message || 'Authentication failed');
+>       setIsLoading(false);
+>     }
+>   };
+> 
+>   const handleFileChange = (file: File | undefined, type: 'avatar' | 'banner' | 'promoter_logo' | 'promoter_cover' | 'creative_avatar' | 'creative_banner' | 'label_avatar' | 'label_banner' | 'band_logo' | 'band_banner') => {
+>     if (file) {
+>       if (file.size > 3 * 1024 * 1024) {
+>         triggerNotification?.("⚠️ FILE SIZE EXCEEDS LIMIT. KEEP SOUNDS/GRAPHICS UNDER 3MB.");
+>         setError("FILE SIZE TOO LARGE. GRAPHICS LIMIT IS 3MB.");
+>         return;
+>       }
+>       setError("");
+>       const reader = new FileReader();
+>       reader.onload = async (event) => {
+>         const result = event.target?.result as string;
+>         if (type === 'avatar') {
+>           const compressed = await compressImageAtModuleLevel(result, 256, 256, 0.75);
+>           setProfileAvatar(compressed);
+>           triggerNotification?.("🟢 PROFILE AVATAR OPTIMIZED & ENCODED.");
+>         } else if (type === 'banner') {
+>           const compressed = await compressImageAtModuleLevel(result, 800, 450, 0.75);
+>           setProfileBanner(compressed);
+>           triggerNotification?.("🟢 BANNER OPTIMIZED & ENCODED.");
+>         } else if (type === 'promoter_logo') {
+>           const compressed = await compressImageAtModuleLevel(result, 256, 256, 0.75);
+>           setPromoterLogo(compressed);
+>           triggerNotification?.("🟢 PROMOTER LOGO OPTIMIZED & ENCODED.");
+>         } else if (type === 'promoter_cover') {
+>           const compressed = await compressImageAtModuleLevel(result, 800, 450, 0.75);
+>           setPromoterCoverImage(compressed);
+>           triggerNotification?.("🟢 VENUE COVER OPTIMIZED & ENCODED.");
+>         } else if (type === 'creative_avatar') {
+>           const compressed = await compressImageAtModuleLevel(result, 256, 256, 0.75);
+>           setCreativeAvatar(compressed);
+>           triggerNotification?.("🟢 CREATIVE PROFILE AVATAR OPTIMIZED & ENCODED.");
+>         } else if (type === 'creative_banner') {
+>           const compressed = await compressImageAtModuleLevel(result, 800, 450, 0.75);
+>           setCreativeBanner(compressed);
+>           triggerNotification?.("🟢 CREATIVE BANNER OPTIMIZED & ENCODED.");
+>         } else if (type === 'label_avatar') {
+>           const compressed = await compressImageAtModuleLevel(result, 256, 256, 0.75);
+>           setLabelAvatar(compressed);
+>           triggerNotification?.("🟢 CORPORATE LOGO OPTIMIZED & ENCODED.");
+>         } else if (type === 'label_banner') {
+>           const compressed = await compressImageAtModuleLevel(result, 800, 450, 0.75);
+>           setLabelBanner(compressed);
+>           triggerNotification?.("🟢 DISTRIBUTION BANNER OPTIMIZED & ENCODED.");
+>         } else if (type === 'band_logo') {
+>           const compressed = await compressImageAtModuleLevel(result, 256, 256, 0.75);
+>           setBandLogo(compressed);
+>           triggerNotification?.("🟢 BAND LOGO OPTIMIZED & ENCODED.");
+>         } else if (type === 'band_banner') {
+>           const compressed = await compressImageAtModuleLevel(result, 800, 450, 0.75);
+>           setBandBanner(compressed);
+>           triggerNotification?.("🟢 BAND BANNER OPTIMIZED & ENCODED.");
+>         }
+>       };
+>       reader.readAsDataURL(file);
+>     }
+>   };
+> 
+>   const validatePromoCode = () => {
+>     setPromoValidationError('');
+>     setPromoSuccessMsg('');
+>     const code = signUpPromoCode.trim().toUpperCase();
+>     if (!code) {
+>       setPromoValidationError('⚠️ PLEASE ENTER A SECURE PROMO CODE VALUE.');
+>       return;
+>     }
+>     const validCodes = ['TOURINGPRO365', 'NEXUSPRO365', 'TOURPRO2026', 'COREGATOR365', 'FREEPROYEAR', 'TOURINGPRO'];
+>     const matchesPattern = /^PRO-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code);
+>     if (validCodes.includes(code) || matchesPattern || code.includes('PRO365') || code.includes('TOURING')) {
+>       setIsPromoYearApplied(true);
+>       setPromoSuccessMsg('🟢 GATED PROMO SECURED: 365 DAYS TOURING PRO ACCOUNT ACTIVE!');
+>       triggerNotification?.('🟢 GATED PROMO SECURED: 365 DAYS TOURING PRO PLAN APPLIED!');
+>     } else {
+>       setPromoValidationError('⚠️ INVALID OR EXPIRED CODE. VERIFY WITH CORE OPERATORS.');
+>     }
+>   };
+> 
+>   const handleSignup = async (e: React.FormEvent) => {
+>     const uProfile: any = userProfile;
+>     e.preventDefault();
+>     if (!nexusConsentChecked) {
+>       setError("YOU MUST RECONCILE AND AGREE TO THE NEXUS CORE PLATFORM TERMS AND FEES AGREEMENT BEFORE COMMITTING REGISTRATION.");
+>       return;
+>     }
+>     if (activeUserRoles.length === 0) {
+>       setError("NO ROLE SELECTED.");
+>       return;
+>     }
+>   
+>     if (activeUserRoles.includes('LABEL')) {
+>       if (!labelCompanyName.trim()) { setError('RECORD LABEL COMPANY NAME IS REQUIRED.'); return; }
+>       if (!labelBookingEmail.trim()) { setError('PRIMARY BOOKING EMAIL IS REQUIRED.'); return; }
+>       if (!labelRosterCount.trim()) { setError('LABEL ROSTER COUNT IS REQUIRED.'); return; }
+>       if (!labelHeadquarters.trim()) { setError('HEADQUARTERS / LOCATION IS REQUIRED.'); return; }
+>       if (!labelFoundedYear.trim()) { setError('FOUNDED YEAR IS REQUIRED.'); return; }
+>       if (!labelUrlSlug.trim()) { setError('LABEL PORTAL URL SLUG IS REQUIRED.'); return; }
+>       if (!/^[a-zA-Z0-9-_]+$/.test(labelUrlSlug)) { setError('PROFILE SLUG SYNTAX INVALID: ALPHANUMERIC & DASHES ONLY.'); return; }
+>       const isPaymentConfigured = labelSetupPaymentLater || labelStripeConnected || labelPaypalConnected;
+>       if (!isPaymentConfigured) {
+>         setError('FINANCIAL CONFIGURATION REQUIRED FOR RECORD LABEL, OR CHOOSE TO SETUP PAYMENT LATER.');
+>         return;
+>       }
+>     }
+> 
+>     setIsLoading(true);
+>     setStatusMessage('Constructing workspace schema...');
+> 
+>     try {
+>       const rootFullName = fullName.trim() || creativeBusinessName.trim() || 'New User';
+>       const rootEmail = signupEmail.trim() || 'operator@nexus.core';
+> 
+>       // Verify email address uniqueness before committing a new account registration
+>       const supabase = getSupabase();
+>       if (supabase && navigator.onLine && !isUpgradeMode) {
+>         setStatusMessage('Verifying credentials uniqueness...');
+>         const { data: existingProfile, error: checkError } = await supabase
+>           .from('profiles')
+>           .select('id, email, full_name')
+>           .eq('email', rootEmail)
+>           .maybeSingle();
+> 
+>         if (checkError) {
+>           console.warn("Uniqueness check warning:", checkError);
+>         }
+> 
+>         if (existingProfile) {
+>           setError(`An account with the email ${rootEmail} already exists. Please log in instead or use a different email address.`);
+>           setIsLoading(false);
+>           return;
+>         }
+>       }
+> 
+>       // Multi-role flags mapped to account roles and allowed workspaces
+>       const hasFan = activeUserRoles.includes('FAN');
+>       const hasBand = activeUserRoles.includes('BAND');
+>       const hasPromoter = activeUserRoles.includes('PROMOTER');
+>       const hasCreative = activeUserRoles.includes('CREATIVE');
+>       const hasLabel = activeUserRoles.includes('LABEL');
+>       
+>       const allowedWorkspaces = activeUserRoles.map(r => r.toLowerCase());
+> 
+>       const finalGenre = bandGenre === 'Other' ? (customGenre.trim() || 'Other') : (bandSubGenre !== 'ALL' ? bandSubGenre : bandGenre);
+> 
+>       const newBandId = hasBand ? generateUUID() : undefined;
+>       const newBand: Band | undefined = hasBand ? {
+>         id: newBandId!,
+>         name: bandName.trim() || 'Active Band',
+>         logo_url: bandLogo,
+>         genre: finalGenre,
+>         homebase: bandHomebase.trim() || undefined,
+>         music_link: deferMusicUpload ? undefined : (bandYoutubeVideo.trim() || undefined)
+>       } : undefined;
+> 
+>       const nonFanRoles = activeUserRoles.filter(r => r !== 'FAN');
+>       const defaultPrimary = nonFanRoles.length > 0 ? 'fan' : 'fan_only';
+> 
+>       const newProfileId = (isUpgradeMode && userProfile?.id) ? userProfile.id : generateUUID();
+>       const finalScreenName = screenName.trim() || creativeHandle.trim() || 'user';
+>       const finalLegalName = legalName.trim() || creativeLegalFullName.trim() || rootFullName;
+>       const finalAvatar = hasCreative ? (creativeAvatar || profileAvatar) : profileAvatar;
+>       const finalBanner = hasCreative ? (creativeBanner || profileBanner || undefined) : (profileBanner || undefined);
+> 
+>       const finalAccountType = activeUserRoles.includes('BAND')
+>         ? 'band'
+>         : activeUserRoles.includes('LABEL')
+>           ? 'label'
+>           : activeUserRoles.includes('CREATIVE')
+>             ? 'creative'
+>             : activeUserRoles.includes('PROMOTER')
+>               ? 'promoter'
+>               : defaultPrimary;
+> 
+>       const newProfile: any = {
+>         ...(isUpgradeMode ? userProfile : {}), // base
+>         id: newProfileId,
+>         name: isUpgradeMode ? (userProfile?.name || rootFullName.trim() || finalScreenName.trim() || 'Fan Listener') : (rootFullName.trim() || finalScreenName.trim() || 'Fan Listener'),
+>         email: rootEmail,
+>         pin: signUpUnlockPin.trim() || signUpPassword.trim() || '0000',
+>         role: nonFanRoles.length > 0 ? 'Director' : 'Fan Listener',
+>         avatar_url: finalAvatar,
+>         banner_url: finalBanner,
+>         account_type: finalAccountType,
+>         console_handle: finalScreenName.trim() || consoleHandle.trim() || (isUpgradeMode ? userProfile?.console_handle : undefined),
+>         allowed_workspaces: isUpgradeMode 
+>           ? Array.from(new Set([...(userProfile?.allowed_workspaces || []), ...allowedWorkspaces]))
+>           : allowedWorkspaces,
+>         registered_workspaces: isUpgradeMode 
+>           ? Array.from(new Set([...(userProfile?.registered_workspaces || []), ...allowedWorkspaces]))
+>           : allowedWorkspaces,
+>         legal_name: finalLegalName.trim() || undefined,
+>         screen_name: finalScreenName.trim() || undefined,
+>         location_code: cityState.trim() || undefined,
+>         city_state: cityState.trim() || undefined,
+>         zip_code: zipCode.trim() || undefined,
+>         genre_tags: customGenre ? customGenre.split(',').map(g => g.trim()).filter(Boolean) : (finalGenre ? [finalGenre] : []),
+>         sub_tier: isPromoYearApplied ? 'power_user_pro' : undefined,
+>         subscription_status: isPromoYearApplied ? 'active' : undefined,
+>         current_period_end: isPromoYearApplied ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() : undefined,
+>         
+>         // Staged Artist/Band specific blocks
+>         label_managed_rights: hasBand ? labelManagedRights : (isUpgradeMode ? uProfile?.label_managed_rights : undefined),
+>         independent_upload_deferred: hasBand ? deferMusicUpload : (isUpgradeMode ? uProfile?.independent_upload_deferred : undefined),
+>         payment_configured: hasBand ? !setupPaymentLater : (isUpgradeMode ? uProfile?.payment_configured : undefined),
+>         stripe_merchant_id: hasLabel ? stripeMerchantId.trim() : (hasBand ? stripeMerchantId.trim() : (isUpgradeMode ? uProfile?.stripe_merchant_id : undefined)),
+>         paypal_email: hasLabel ? paypalEmail.trim() : (hasBand ? paypalEmail.trim() : (isUpgradeMode ? uProfile?.paypal_email : undefined)),
+>         cashapp_tag: hasBand ? cashAppTag.trim() : (isUpgradeMode ? uProfile?.cashapp_tag : undefined),
+>         profile_slug: hasBand ? profileSlug.trim() : (isUpgradeMode ? uProfile?.profile_slug : undefined),
+>         apparel_sizes: hasBand ? selectedApparelSizes : (isUpgradeMode ? uProfile?.apparel_sizes : undefined),
+>         touring_vehicle: hasBand ? touringVehicle : (isUpgradeMode ? uProfile?.touring_vehicle : undefined),
+> 
+>         // Staged Promoter specific blocks
+>         promoter_agency: hasPromoter ? promoterAgency.trim() : (isUpgradeMode ? uProfile?.promoter_agency : undefined),
+>         promoter_phone: hasPromoter ? promoterPhone.trim() : (isUpgradeMode ? uProfile?.promoter_phone : undefined),
+>         promoter_region: hasPromoter ? promoterRegion.trim() : (isUpgradeMode ? uProfile?.promoter_region : undefined),
+>         promoter_admin_email: hasPromoter ? promoterAdminEmail.trim() : (isUpgradeMode ? uProfile?.promoter_admin_email : undefined),
+>         promoter_booking_email: hasPromoter ? promoterBookingEmail.trim() : (isUpgradeMode ? uProfile?.promoter_booking_email : undefined),
+>         promoter_title: hasPromoter ? promoterTitle : (isUpgradeMode ? uProfile?.promoter_title : undefined),
+>         promoter_genres: hasPromoter ? promoterGenres : (isUpgradeMode ? uProfile?.promoter_genres : undefined),
+>         promoter_stripe_connected: hasPromoter ? promoterStripeConnected : (isUpgradeMode ? uProfile?.promoter_stripe_connected : undefined),
+>         promoter_paypal_connected: hasPromoter ? promoterPaypalConnected : (isUpgradeMode ? uProfile?.promoter_paypal_connected : undefined),
+>         promoter_venue_class: hasPromoter ? promoterVenueClass : (isUpgradeMode ? uProfile?.promoter_venue_class : undefined),
+>         promoter_defer_tech_specs: hasPromoter ? promoterDeferTechSpecs : (isUpgradeMode ? uProfile?.promoter_defer_tech_specs : undefined),
+>         promoter_logo: hasPromoter ? promoterLogo : (isUpgradeMode ? uProfile?.promoter_logo : undefined),
+>         promoter_cover_image: hasPromoter ? promoterCoverImage || undefined : (isUpgradeMode ? uProfile?.promoter_cover_image : undefined),
+>         promoter_capacity: hasPromoter ? promoterCapacity : (isUpgradeMode ? uProfile?.promoter_capacity : undefined),
+>         promoter_security_map: hasPromoter ? promoterSecurityMap || undefined : (isUpgradeMode ? uProfile?.promoter_security_map : undefined),
+>         promoter_tech_rider: hasPromoter ? promoterTechRider || undefined : (isUpgradeMode ? uProfile?.promoter_tech_rider : undefined),
+>         promoter_legal_first_name: hasPromoter ? promoterLegalFirstName.trim() : (isUpgradeMode ? uProfile?.promoter_legal_first_name : undefined),
+>         promoter_legal_last_name: hasPromoter ? promoterLegalLastName.trim() : (isUpgradeMode ? uProfile?.promoter_legal_last_name : undefined),
+>         promoter_legal_entity_type: hasPromoter ? promoterLegalEntityType : (isUpgradeMode ? uProfile?.promoter_legal_entity_type : undefined),
+>         promoter_tax_id: hasPromoter ? promoterTaxId.trim() : (isUpgradeMode ? uProfile?.promoter_tax_id : undefined),
+>         promoter_instagram: hasPromoter ? promoterInstagram.trim() : (isUpgradeMode ? uProfile?.promoter_instagram : undefined),
+>         promoter_twitter: hasPromoter ? promoterTwitter.trim() : (isUpgradeMode ? uProfile?.promoter_twitter : undefined),
+>         promoter_website: hasPromoter ? promoterWebsite.trim() : (isUpgradeMode ? uProfile?.promoter_website : undefined),
+> 
+>         // Staged Creative specific blocks
+>         creative_business_name: hasCreative ? creativeBusinessName.trim() : (isUpgradeMode ? uProfile?.creative_business_name : undefined),
+>         creative_base_location: hasCreative ? creativeBaseLocation.trim() : (isUpgradeMode ? uProfile?.creative_base_location : undefined),
+>         creative_booking_email: hasCreative ? creativeBookingEmail.trim() : (isUpgradeMode ? uProfile?.creative_booking_email : undefined),
+>         creative_primary_specialty: hasCreative ? creativePrimarySpecialty : (isUpgradeMode ? uProfile?.creative_primary_specialty : undefined),
+>         creative_core_skill: hasCreative ? creativeCoreSkill : (isUpgradeMode ? uProfile?.creative_core_skill : undefined),
+>         creative_secondary_specialty: hasCreative ? creativeSecondarySpecialty : (isUpgradeMode ? uProfile?.creative_secondary_specialty : undefined),
+>         creative_secondary_core_skill: hasCreative ? creativeSecondaryCoreSkill : (isUpgradeMode ? uProfile?.creative_secondary_core_skill : undefined),
+>         creative_primary_gear: hasCreative ? creativePrimaryGear.split(',').map(g => g.trim()).filter(Boolean) : (isUpgradeMode ? uProfile?.creative_primary_gear : undefined),
+>         creative_genres: hasCreative ? creativeGenres : (isUpgradeMode ? uProfile?.creative_genres : undefined),
+>         creative_handle: hasCreative ? creativeHandle.trim() : (isUpgradeMode ? uProfile?.creative_handle : undefined),
+>         creative_biography: hasCreative ? creativeBiography.trim() : (isUpgradeMode ? uProfile?.creative_biography : undefined),
+>         creative_instagram: hasCreative ? creativeInstagram.trim() : (isUpgradeMode ? uProfile?.creative_instagram : undefined),
+>         creative_artstation: hasCreative ? creativeArtStation.trim() : (isUpgradeMode ? uProfile?.creative_artstation : undefined),
+>         creative_website: hasCreative ? creativeWebsite.trim() : (isUpgradeMode ? uProfile?.creative_website : undefined),
+>         creative_legal_first_name: hasCreative ? (creativeLegalFirstName.trim() || creativeLegalFullName.trim().split(' ')[0] || '') : (isUpgradeMode ? uProfile?.creative_legal_first_name : undefined),
+>         creative_legal_last_name: hasCreative ? (creativeLegalLastName.trim() || creativeLegalFullName.trim().split(' ').slice(1).join(' ') || '') : (isUpgradeMode ? uProfile?.creative_legal_last_name : undefined),
+>         creative_legal_full_name: hasCreative ? creativeLegalFullName.trim() : (isUpgradeMode ? uProfile?.creative_legal_full_name : undefined),
+>         creative_legal_entity_type: hasCreative ? creativeLegalEntityType : (isUpgradeMode ? uProfile?.creative_legal_entity_type : undefined),
+>         creative_tax_id: hasCreative ? creativeTaxId.trim() : (isUpgradeMode ? uProfile?.creative_tax_id : undefined),
+>         creative_base_rate_setup: hasCreative ? creativeBaseRateSetup : (isUpgradeMode ? uProfile?.creative_base_rate_setup : undefined),
+>         creative_base_rate_value: hasCreative ? Number(creativeBaseRateValue) : (isUpgradeMode ? uProfile?.creative_base_rate_value : undefined),
+>         creative_broadcast_bulletin: hasCreative ? creativeBroadcastBulletin.trim() : (isUpgradeMode ? uProfile?.creative_broadcast_bulletin : undefined),
+>         creative_stripe_connected: hasCreative ? creativeStripeConnected : (isUpgradeMode ? uProfile?.creative_stripe_connected : undefined),
+>         creative_paypal_connected: hasCreative ? creativePaypalConnected : (isUpgradeMode ? uProfile?.creative_paypal_connected : undefined),
+>         creative_setup_payment_later: hasCreative ? creativeSetupPaymentLater : (isUpgradeMode ? uProfile?.creative_setup_payment_later : undefined),
+>         creative_avatar: hasCreative ? creativeAvatar : (isUpgradeMode ? uProfile?.creative_avatar : undefined),
+>         creative_banner: hasCreative ? creativeBanner : (isUpgradeMode ? uProfile?.creative_banner : undefined),
+> 
+>         // Staged Label specific blocks
+>         label_company_name: hasLabel ? labelCompanyName.trim() : (isUpgradeMode ? uProfile?.label_company_name : undefined),
+>         label_booking_email: hasLabel ? labelBookingEmail.trim() : (isUpgradeMode ? uProfile?.label_booking_email : undefined),
+>         label_roster_count: hasLabel ? labelRosterCount.trim() : (isUpgradeMode ? uProfile?.label_roster_count : undefined),
+>         label_headquarters: hasLabel ? labelHeadquarters.trim() : (isUpgradeMode ? uProfile?.label_headquarters : undefined),
+>         label_founded_year: hasLabel ? labelFoundedYear.trim() : (isUpgradeMode ? uProfile?.label_founded_year : undefined),
+>         label_verification_id: hasLabel ? labelVerificationId.trim() : (isUpgradeMode ? uProfile?.label_verification_id : undefined),
+>         label_url_slug: hasLabel ? labelUrlSlug.trim() : (isUpgradeMode ? uProfile?.label_url_slug : undefined),
+>         label_genres: hasLabel ? labelGenres : (isUpgradeMode ? uProfile?.label_genres : undefined),
+>         label_band_roster: hasLabel ? labelBandRoster.split(',').map(g => g.trim()).filter(Boolean) : (isUpgradeMode ? uProfile?.label_band_roster : undefined),
+>         label_sub_labels: hasLabel ? labelSubLabels.split(',').map(g => g.trim()).filter(Boolean) : (isUpgradeMode ? uProfile?.label_sub_labels : undefined),
+>         label_legal_entity_type: hasLabel ? labelLegalEntityType : (isUpgradeMode ? uProfile?.label_legal_entity_type : undefined),
+>         label_tax_registration_number: hasLabel ? labelTaxRegistrationNumber.trim() : (isUpgradeMode ? uProfile?.label_tax_registration_number : undefined),
+>         label_master_distro_model: hasLabel ? labelMasterDistroModel : (isUpgradeMode ? uProfile?.label_master_distro_model : undefined),
+>         label_shipping_postal_code: hasLabel ? labelShippingPostalCode.trim() : (isUpgradeMode ? uProfile?.label_shipping_postal_code : undefined),
+>         label_shipping_country: hasLabel ? labelShippingCountry : (isUpgradeMode ? uProfile?.label_shipping_country : undefined),
+>         label_default_contract_split: hasLabel ? labelDefaultContractSplit : (isUpgradeMode ? uProfile?.label_default_contract_split : undefined),
+>         label_digital_accreditation_scheme: hasLabel ? labelDigitalAccreditationScheme : (isUpgradeMode ? uProfile?.label_digital_accreditation_scheme : undefined),
+>         label_stripe_connected: hasLabel ? labelStripeConnected : (isUpgradeMode ? uProfile?.label_stripe_connected : undefined),
+>         label_paypal_connected: hasLabel ? labelPaypalConnected : (isUpgradeMode ? uProfile?.label_paypal_connected : undefined),
+>         label_setup_payment_later: hasLabel ? labelSetupPaymentLater : (isUpgradeMode ? uProfile?.label_setup_payment_later : undefined),
+>         label_avatar: hasLabel ? labelAvatar : (isUpgradeMode ? uProfile?.label_avatar : undefined),
+>         label_banner: hasLabel ? labelBanner : (isUpgradeMode ? uProfile?.label_banner : undefined),
+>         label_plan_tier: hasLabel ? labelPlanTier : (isUpgradeMode ? uProfile?.label_plan_tier : undefined),
+>         label_billing_cycle: hasLabel ? (labelIsAnnualBilling ? 'ANNUAL' : 'MONTHLY') : (isUpgradeMode ? uProfile?.label_billing_cycle : undefined),
+>         label_trial_period_days: hasLabel ? 30 : (isUpgradeMode ? uProfile?.label_trial_period_days : undefined),
+> 
+>         // Rich metadata for dashboards
+>         creative_metadata: hasCreative ? {
+>           business_name: creativeBusinessName.trim(),
+>           booking_email: creativeBookingEmail.trim(),
+>           base_location: creativeBaseLocation.trim(),
+>           portfolio_link: creativeWebsite.trim(),
+>           bio: creativeBiography.trim(),
+>           day_rate: creativeBaseRateValue ? `$${creativeBaseRateValue} / Day` : '$350 / Day',
+>           pricing_notes: creativeBaseRateSetup || 'Rates available upon request',
+>           gear: creativePrimaryGear.split(',').map(g => g.trim()).filter(Boolean),
+>         } : (isUpgradeMode ? uProfile?.creative_metadata : undefined),
+> 
+>         promoter_metadata: hasPromoter ? {
+>           business_name: promoterAgency.trim(),
+>           booking_email: promoterBookingEmail.trim() || promoterAdminEmail.trim(),
+>           base_location: promoterRegion.trim(),
+>           portfolio_link: promoterWebsite.trim(),
+>           bio: `Booking Agent / Production Manager at ${promoterAgency.trim()}`,
+>           payout_method: promoterStripeConnected ? 'stripe' : (promoterPaypalConnected ? 'paypal' : 'none'),
+>           paypal_email: promoterPaypalConnected ? promoterAdminEmail.trim() : '',
+>           stripe_account_id: promoterStripeConnected ? 'acct_mock' : '',
+>           genre_tags: promoterGenres,
+>         } : (isUpgradeMode ? uProfile?.promoter_metadata : undefined),
+> 
+>         nexus_consent_checked: nexusConsentChecked
+>       };
+> 
+>       if (hasLabel) {
+>         setStagedSignupData({ newProfile, newBand, newBandId });
+>         setShowLabelCheckoutModal(true);
+>         setIsLoading(false);
+>         return;
+>       }
+> 
+>       // Mock Local Index DB Store
+>       if (typeof window !== 'undefined') {
+>          localStorage.setItem('user_auth_store', JSON.stringify({ 
+>            activePermissions: isUpgradeMode 
+>              ? Array.from(new Set([...(uProfile?.allowed_workspaces || []), ...allowedWorkspaces]))
+>              : allowedWorkspaces,
+>            legal_name: legalName.trim() || undefined,
+>            screen_name: screenName.trim() || undefined,
+>            location_code: cityState.trim() || undefined,
+>            city_state: cityState.trim() || undefined,
+>            zip_code: zipCode.trim() || undefined,
+>            console_handle: screenName.trim() || consoleHandle.trim() || undefined,
+>            avatar_url: hasCreative ? (creativeAvatar || profileAvatar) : profileAvatar,
+>            banner_url: hasCreative ? (creativeBanner || profileBanner || undefined) : (profileBanner || undefined),
+>            
+>            label_managed_rights: hasBand ? labelManagedRights : (isUpgradeMode ? uProfile?.label_managed_rights : undefined),
+>            independent_upload_deferred: hasBand ? deferMusicUpload : (isUpgradeMode ? uProfile?.independent_upload_deferred : undefined),
+>            payment_configured: hasBand ? !setupPaymentLater : (isUpgradeMode ? uProfile?.payment_configured : undefined),
+>            stripe_merchant_id: hasBand ? stripeMerchantId.trim() : (isUpgradeMode ? uProfile?.stripe_merchant_id : undefined),
+>            paypal_email: hasBand ? paypalEmail.trim() : (isUpgradeMode ? uProfile?.paypal_email : undefined),
+>            cashapp_tag: hasBand ? cashAppTag.trim() : (isUpgradeMode ? uProfile?.cashapp_tag : undefined),
+>            profile_slug: hasBand ? profileSlug.trim() : (isUpgradeMode ? uProfile?.profile_slug : undefined),
+>            apparel_sizes: hasBand ? selectedApparelSizes : (isUpgradeMode ? uProfile?.apparel_sizes : undefined),
+>            touring_vehicle: hasBand ? touringVehicle : (isUpgradeMode ? uProfile?.touring_vehicle : undefined),
+> 
+>            promoter_agency: hasPromoter ? promoterAgency.trim() : (isUpgradeMode ? uProfile?.promoter_agency : undefined),
+>            promoter_phone: hasPromoter ? promoterPhone.trim() : (isUpgradeMode ? uProfile?.promoter_phone : undefined),
+>            promoter_region: hasPromoter ? promoterRegion.trim() : (isUpgradeMode ? uProfile?.promoter_region : undefined),
+>            promoter_admin_email: hasPromoter ? promoterAdminEmail.trim() : (isUpgradeMode ? uProfile?.promoter_admin_email : undefined),
+>            promoter_booking_email: hasPromoter ? promoterBookingEmail.trim() : (isUpgradeMode ? uProfile?.promoter_booking_email : undefined),
+>            promoter_title: hasPromoter ? promoterTitle : (isUpgradeMode ? uProfile?.promoter_title : undefined),
+>            promoter_genres: hasPromoter ? promoterGenres : (isUpgradeMode ? uProfile?.promoter_genres : undefined),
+>            promoter_stripe_connected: hasPromoter ? promoterStripeConnected : (isUpgradeMode ? uProfile?.promoter_stripe_connected : undefined),
+>            promoter_paypal_connected: hasPromoter ? promoterPaypalConnected : (isUpgradeMode ? uProfile?.promoter_paypal_connected : undefined),
+>            promoter_venue_class: hasPromoter ? promoterVenueClass : (isUpgradeMode ? uProfile?.promoter_venue_class : undefined),
+>            promoter_defer_tech_specs: hasPromoter ? promoterDeferTechSpecs : (isUpgradeMode ? uProfile?.promoter_defer_tech_specs : undefined),
+>            promoter_logo: hasPromoter ? promoterLogo : (isUpgradeMode ? uProfile?.promoter_logo : undefined),
+>            promoter_cover_image: hasPromoter ? promoterCoverImage || undefined : (isUpgradeMode ? uProfile?.promoter_cover_image : undefined),
+>            promoter_capacity: hasPromoter ? promoterCapacity : (isUpgradeMode ? uProfile?.promoter_capacity : undefined),
+>            promoter_security_map: hasPromoter ? promoterSecurityMap || undefined : (isUpgradeMode ? uProfile?.promoter_security_map : undefined),
+>            promoter_tech_rider: hasPromoter ? promoterTechRider || undefined : (isUpgradeMode ? uProfile?.promoter_tech_rider : undefined),
+>            promoter_legal_first_name: hasPromoter ? promoterLegalFirstName.trim() : (isUpgradeMode ? uProfile?.promoter_legal_first_name : undefined),
+>            promoter_legal_last_name: hasPromoter ? promoterLegalLastName.trim() : (isUpgradeMode ? uProfile?.promoter_legal_last_name : undefined),
+>            promoter_legal_entity_type: hasPromoter ? promoterLegalEntityType : (isUpgradeMode ? uProfile?.promoter_legal_entity_type : undefined),
+>            promoter_tax_id: hasPromoter ? promoterTaxId.trim() : (isUpgradeMode ? uProfile?.promoter_tax_id : undefined),
+>            promoter_instagram: hasPromoter ? promoterInstagram.trim() : (isUpgradeMode ? uProfile?.promoter_instagram : undefined),
+>            promoter_twitter: hasPromoter ? promoterTwitter.trim() : (isUpgradeMode ? uProfile?.promoter_twitter : undefined),
+>            promoter_website: hasPromoter ? promoterWebsite.trim() : (isUpgradeMode ? uProfile?.promoter_website : undefined),
+>            nexus_consent_checked: nexusConsentChecked
+>          }));
+> 
+>          if (isPromoYearApplied) {
+>            localStorage.setItem('nexus_core_active_plan', 'touring-pro');
+>            localStorage.setItem('nexus_core_promo_gated', 'true');
+>            localStorage.setItem('tally_trial_start_time', Date.now().toString());
+>          }
+> 
+>          if (profileBanner) {
+>            localStorage.setItem('distro_db_banner_url', `url(${profileBanner}));`);
+>          }
+>       }
+> 
+>       // Sync/insert the constructed workspace schema and accounts to Supabase database
+>       if (supabase) {
+>         setStatusMessage('Syncing core security credentials to database server...');
+>         const { error: profileError } = await executeWithSchemaResilience(
+>           async (payload) => {
+>             return await supabase.from('profiles').upsert(payload);
+>           },
+>           newProfile
+>         );
+>         if (profileError) {
+>           console.error("Supabase profile syncing failure:", profileError);
+>         } else {
+>           console.log("Successfully synchronized profile to Supabase database.");
+>         }
+> 
+>         if (hasBand && newBand) {
+>           setStatusMessage('Registering new Artist credentials to server database...');
+>           const { error: bandError } = await executeWithSchemaResilience(
+>             async (payload) => {
+>               return await supabase.from('bands').upsert(payload);
+>             },
+>             newBand
+>           );
+>           if (bandError) {
+>             console.error("Supabase band syncing failure:", bandError);
+>           } else {
+>             console.log("Successfully synchronized band/artist profile to Supabase database.");
+>           }
+>         }
+>       }
+> 
+>       // Complete login
+>       setTimeout(() => {
+>         if (typeof window !== 'undefined') {
+>           localStorage.removeItem('nexus_target_register_workspace');
+>           localStorage.removeItem('nexus_wizard_roles');
+>         }
+>         onLogin(newProfile, newBand, newBandId);
+>       }, 1000);
+> 
+>     } catch (err: any) {
+>       console.error(err);
+>       setError(err.message || 'Signup failed');
+>       setIsLoading(false);
+>     }
+>   };
+> 
+>   const handleCompleteLabelCheckout = async () => {
+>     if (!stagedSignupData) return;
+>     setCheckoutLoading(true);
+>     setCheckoutError('');
+> 
+>     try {
+>       if (!checkoutCardName.trim()) {
+>         setCheckoutError('CARDHOLDER NAME IS REQUIRED.');
+>         setCheckoutLoading(false);
+>         return;
+>       }
+>       if (!checkoutCardNumber.trim() || checkoutCardNumber.replace(/\s/g, '').length < 16) {
+>         setCheckoutError('INVALID CARD NUMBER. ENTER A VALID 16-DIGIT CARD NUMBER.');
+>         setCheckoutLoading(false);
+>         return;
+>       }
+>       if (!checkoutCardExpiry.trim() || !/^\d{2}\/\d{2}$/.test(checkoutCardExpiry)) {
+>         setCheckoutError('INVALID EXPIRY DATE. USE MM/YY FORMAT.');
+>         setCheckoutLoading(false);
+>         return;
+>       }
+>       if (!checkoutCardCvc.trim() || checkoutCardCvc.length < 3) {
+>         setCheckoutError('INVALID CVC. ENTER 3 OR 4 DIGIT SECURITY CODE.');
+>         setCheckoutLoading(false);
+>         return;
+>       }
+>       if (!checkoutCardZip.trim()) {
+>         setCheckoutError('BILLING POSTAL CODE IS REQUIRED.');
+>         setCheckoutLoading(false);
+>         return;
+>       }
+> 
+>       setCheckoutLoading(true);
+>       const { newProfile, newBand, newBandId } = stagedSignupData;
+> 
+>       if (typeof window !== 'undefined') {
+>          localStorage.setItem('user_auth_store', JSON.stringify({ 
+>            activePermissions: isUpgradeMode 
+>              ? Array.from(new Set([...(userProfile?.allowed_workspaces || []), ...newProfile.allowed_workspaces]))
+>              : newProfile.allowed_workspaces,
+>            legal_name: newProfile.legal_name,
+>            screen_name: newProfile.screen_name,
+>            location_code: newProfile.location_code,
+>            city_state: newProfile.location_code,
+>            zip_code: newProfile.zip_code,
+>            console_handle: newProfile.console_handle,
+>            avatar_url: newProfile.avatar_url,
+>            banner_url: newProfile.banner_url,
+>            
+>            label_managed_rights: newProfile.label_managed_rights,
+>            independent_upload_deferred: newProfile.independent_upload_deferred,
+>            payment_configured: newProfile.payment_configured,
+>            stripe_merchant_id: newProfile.stripe_merchant_id,
+>            paypal_email: newProfile.paypal_email,
+>            cashapp_tag: newProfile.cashapp_tag,
+>            profile_slug: newProfile.profile_slug,
+>            apparel_sizes: newProfile.apparel_sizes,
+>            touring_vehicle: newProfile.touring_vehicle,
+> 
+>            label_company_name: newProfile.label_company_name,
+>            label_booking_email: newProfile.label_booking_email,
+>            label_roster_count: newProfile.label_roster_count,
+>            label_headquarters: newProfile.label_headquarters,
+>            label_founded_year: newProfile.label_founded_year,
+>            label_plan_tier: newProfile.label_plan_tier,
+>            label_billing_cycle: newProfile.label_billing_cycle,
+> 
+>            nexus_consent_checked: true
+>          }));
+> 
+>          if (isPromoYearApplied) {
+>            localStorage.setItem('nexus_core_active_plan', 'touring-pro');
+>            localStorage.setItem('nexus_core_promo_gated', 'true');
+>            localStorage.setItem('tally_trial_start_time', Date.now().toString());
+>          }
+> 
+>          if (newProfile.banner_url) {
+>            localStorage.setItem('distro_db_banner_url', `url(${newProfile.banner_url}));`);
+>          }
+>       }
+> 
+>       const supabase = getSupabase();
+>       if (supabase) {
+>         const { error: profileError } = await executeWithSchemaResilience(
+>           async (payload) => {
+>             return await supabase.from('profiles').upsert(payload);
+>           },
+>           newProfile
+>         );
+>         if (profileError) {
+>           console.error("Supabase profile syncing failure in label checkout:", profileError);
+>         }
+> 
+>         if (activeUserRoles.includes('BAND') && newBand) {
+>           const { error: bandError } = await executeWithSchemaResilience(
+>             async (payload) => {
+>               return await supabase.from('bands').upsert(payload);
+>             },
+>             newBand
+>           );
+>           if (bandError) {
+>             console.error("Supabase band syncing failure:", bandError);
+>           }
+>         }
+>       }
+> 
+>       setCheckoutLoading(false);
+>       setShowLabelCheckoutModal(false);
+> 
+>       setTimeout(() => {
+>         if (typeof window !== 'undefined') {
+>           localStorage.removeItem('nexus_target_register_workspace');
+>           localStorage.removeItem('nexus_wizard_roles');
+>         }
+>         onLogin(newProfile, newBand, newBandId);
+>       }, 1000);
+> 
+>     } catch (err: any) {
+>       console.error(err);
+>       setCheckoutError(err.message || 'Payment authorization failed');
+>       setCheckoutLoading(false);
+>     }
+>   };
+> 
+>   const isSectionStaged = (role: string) => {
+>     if (role === 'BAND') {
+>       const parsedSlug = profileSlug.trim();
+>       const isSlugValid = parsedSlug.length > 0 && /^[a-zA-Z0-9-_]+$/.test(parsedSlug);
+>       const isPaymentConfigured = setupPaymentLater || stripeMerchantId.trim() !== '' || paypalEmail.trim() !== '' || cashAppTag.trim() !== '';
+>       return bandName.trim() !== '' && bandHomebase.trim() !== '' && isSlugValid && isPaymentConfigured;
+>     }
+>     if (role === 'LABEL') {
+>       const isPaymentConfigured = labelSetupPaymentLater || labelStripeConnected || labelPaypalConnected;
+>       return (
+>         labelCompanyName.trim() !== '' && 
+>         labelUrlSlug.trim() !== '' && 
+>         labelBookingEmail.trim() !== '' && 
+>         labelRosterCount.trim() !== '' && 
+>         labelHeadquarters.trim() !== '' && 
+>         labelFoundedYear.trim() !== '' && 
+>         isPaymentConfigured
+>       );
+>     }
+>     if (role === 'PROMOTER') {
+>       const isPaymentConfigured = promoterSetupPaymentLater || promoterStripeConnected || promoterPaypalConnected;
+>       return promoterAgency.trim() !== '' && promoterRegion.trim() !== '' && isPaymentConfigured;
+>     }
+>     if (role === 'CREATIVE') {
+>       const isPaymentConfigured = creativeSetupPaymentLater || creativeStripeConnected || creativePaypalConnected;
+>       return creativeBusinessName.trim() !== '' && isPaymentConfigured;
+>     }
+>     if (role === 'FAN') {
+>       return locationCode.trim() !== '';
+>     }
+>     return false;
+>   };
+> 
+>   const handleStageRole = async (roleCode: string) => {
+>     if (roleCode === 'BAND') {
+>       if (!bandName.trim()) { setError('BAND NAME REQUIRES VALID DATA.'); return; }
+>       if (!bandHomebase.trim()) { setError('HOMETOWN LOCATION REQUIRES VALID DATA.'); return; }
+>       if (!profileSlug.trim()) { setError('PROFILE CUSTOM SLUG IS REQUIRED.'); return; }
+>       if (!/^[a-zA-Z0-9-_]+$/.test(profileSlug)) { setError('PROFILE SLUG SYNTAX INVALID: ALPHANUMERIC & DASHES ONLY.'); return; }
+>       if (!setupPaymentLater) {
+>         if (!stripeMerchantId.trim() && !paypalEmail.trim() && !cashAppTag.trim()) {
+>           setError('FINANCIAL CONFIGURATION REQUIRED, OR SELECT LATER OPTION.');
+>           return;
+>         }
+>       }
+>     } else if (roleCode === 'LABEL') {
+>       if (!labelCompanyName.trim()) { setError('CORPORATE LABEL NAME IS REQUIRED.'); return; }
+>       if (!labelUrlSlug.trim()) { setError('LABEL URL SLUG IS REQUIRED.'); return; }
+>       if (!/^[a-zA-Z0-9-_]+$/.test(labelUrlSlug)) { setError('PROFILE SLUG SYNTAX INVALID: ALPHANUMERIC & DASHES ONLY.'); return; }
+>       if (!labelSetupPaymentLater && !labelStripeConnected && !labelPaypalConnected) {
+>         setError('FINANCIAL CONFIGURATION REQUIRED, OR SELECT LATER OPTION.');
+>         return;
+>       }
+>     } else if (roleCode === 'PROMOTER') {
+>       if (!promoterAgency.trim()) { setError('BOOKING AGENCY OR PRODUCTION NAME IS REQUIRED.'); return; }
+>       if (!promoterRegion.trim()) { setError('PROMOTING JURISDICTION OR REGION IS REQUIRED.'); return; }
+>       if (!promoterSetupPaymentLater && !promoterStripeConnected && !promoterPaypalConnected) {
+>         setError('FINANCIAL CONFIGURATION REQUIRED, OR SELECT LATER OPTION.');
+>         return;
+>       }
+>     } else if (roleCode === 'CREATIVE') {
+>       if (!creativeBusinessName.trim()) { setError('CREATIVE STUDIO ALIAS / WORK NAME IS REQUIRED.'); return; }
+>       if (!creativeSetupPaymentLater && !creativeStripeConnected && !creativePaypalConnected) {
+>         setError('FINANCIAL CONFIGURATION REQUIRED, OR SELECT LATER OPTION.');
+>         return;
+>       }
+>     } else if (roleCode === 'FAN') {
+>       if (!cityState.trim()) { setError('REGIONAL GEOGRAPHIC CITY, STATE IS REQUIRED.'); return; }
+>       if (!zipCode.trim()) { setError('POSTAL ZIP CODE IS REQUIRED.'); return; }
+>     }
+>     
+>     setError('');
+>     setIsStagedCacheInFlight(true);
+>     setStatusMessage(`SYNCING CHANNELS FOR [${roleCode}] STAGE PAYLOAD...`);
+>     
+>     try {
+>       const payload = {
+>         fullName,
+>         legalName,
+>         screenName,
+>         locationCode,
+>         bandName,
+>         bandGenre,
+>         bandSubGenre,
+>         bandYoutubeVideo,
+>         deferMusicUpload,
+>         labelManagedRights,
+>         stripeMerchantId,
+>         stripeConnected,
+>         paypalEmail,
+>         cashAppTag,
+>         setupPaymentLater,
+>         profileSlug,
+>         selectedApparelSizes,
+>         touringVehicle,
+>         labelCompanyName,
+>         labelVerificationId,
+>         promoterAgency,
+>         promoterPhone,
+>         promoterRegion,
+>         promoterAdminEmail,
+>         promoterBookingEmail,
+>         promoterTitle,
+>         promoterGenres,
+>         promoterStripeConnected,
+>         promoterPaypalConnected,
+>         promoterVenueClass,
+>         promoterDeferTechSpecs,
+>         promoterLogo,
+>         promoterCoverImage,
+>         promoterCapacity,
+>         promoterSecurityMap,
+>         promoterTechRider,
+>         promoterLegalFirstName,
+>         promoterLegalLastName,
+>         promoterLegalEntityType,
+>         promoterTaxId,
+>         promoterInstagram,
+>         promoterTwitter,
+>         promoterWebsite,
+>         nexusConsentChecked,
+>         creativeBusinessName,
+>         stagedRoles: activeUserRoles,
+>         timestamp: Date.now()
+>       };
+>       
+>       await registrationStagingStore.setItem(`draft_${signupEmail || 'anonymous'}`, payload);
+>       
+>       // Advance to next active section if there is one
+>       const currentIndex = activeUserRoles.indexOf(roleCode);
+>       if (currentIndex !== -1 && currentIndex < activeUserRoles.length - 1) {
+>         const nextRole = activeUserRoles[currentIndex + 1];
+>         setActiveAccordionSection(nextRole);
+>         setStatusMessage(`STAGED ACTIVE CELL FOR ${roleCode}. REDIRECTING FRAME TO ${nextRole}...`);
+>       } else {
+>         setStatusMessage(`ALL SECTION DATA SECURELY STAGED TO OFFLINE RECORD CACHE`);
+>       }
+>     } catch (ex: any) {
+>       setError(`STAGING ERROR: ${ex?.message || 'INDEXED_DB_FAILED_TO_COMMIT'}`);
+>     } finally {
+>       setIsStagedCacheInFlight(false);
+>     }
+>   };
+> 
+>     if (activeTab === 'signup') {
+>       const targetWorkspace = typeof window !== 'undefined' ? localStorage.getItem('nexus_target_register_workspace') : null;
+>       return (
+>         <div className="w-full min-h-screen bg-[#07080a] text-zinc-100 font-sans p-0 select-none overflow-y-auto">
+>           <div className="w-full min-h-screen bg-[#0c0e12] p-1.5 sm:p-4 md:p-6 relative">
+>             <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-emerald-500 via-[#00ffcc] to-purple-500" />
+>             
+>             <div className="w-full max-w-md mx-auto mt-10">
+>               <form onSubmit={handleSignup} className="w-full flex flex-col items-stretch space-y-5" autoComplete="off">
+>                 {/* Tier 1: Profile Scope Configuration (Primary Toggle) - Hidden in Upgrade Mode */}
+>                 {!isUpgradeMode && (
+>                 <div className="w-full space-y-2">
+>                   <h4 className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase mb-1">
+>                     Select Profile Classification Profile
+>                   </h4>
+>                   <div className="grid grid-cols-2 gap-3">
+>                     <div className="flex flex-col justify-end h-full">
+>                       <span className="text-[9px] font-sans text-zinc-500 leading-tight text-center mb-2 flex-1 flex items-end justify-center">
+>                         I am joining Nexus Core purely as a music supporter and fan only, but I can upgrade later if needed.
+>                       </span>
+>                       <button
+>                         type="button"
+>                         disabled={!!targetWorkspace && ['BAND', 'PROMOTER', 'CREATIVE', 'LABEL'].includes(targetWorkspace.toUpperCase())}
+>                         onClick={() => setActiveUserRoles(['FAN'])}
+>                         className={`p-3 rounded-lg border text-xs font-bold transition-all w-full h-[42px] flex items-center justify-center ${
+>                           activeUserRoles.length === 1 && activeUserRoles.includes('FAN') 
+>                             ? 'bg-[#000000] border-emerald-500 text-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.35)]' 
+>                             : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed'
+>                         }`}
+>                       >
+>                         [ 🎧 FAN / SUPPORTER ]
+>                       </button>
+>                     </div>
+>                     <div className="flex flex-col justify-end h-full">
+>                       <span className="text-[9px] font-sans text-zinc-500 leading-tight text-center mb-2 flex-1 flex items-end justify-center">
+>                         I am currently an active artist/ band member, venue promoter, creative pro or part of a record label
+>                       </span>
+>                       <button
+>                         type="button"
+>                         onClick={() => {
+>                           const targetRole = targetWorkspace?.toUpperCase();
+>                           if (targetRole && ['BAND', 'PROMOTER', 'CREATIVE', 'LABEL'].includes(targetRole)) {
+>                             setActiveUserRoles([targetRole]);
+>                           } else {
+>                             setActiveUserRoles(['CREATIVE', 'BAND', 'PROMOTER', 'LABEL']);
+>                           }
+>                         }}
+>                         className={`p-3 rounded-lg border text-xs font-bold transition-all w-full h-[42px] flex items-center justify-center ${
+>                           activeUserRoles.length > 1 || (!activeUserRoles.includes('FAN') && activeUserRoles.length > 0)
+>                             ? 'bg-[#000000] border-purple-500 text-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.35)]' 
+>                             : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-600'
+>                         }`}
+>                       >
+>                         [ ⚡ INDUSTRY PROFESSIONAL ]
+>                       </button>
+>                     </div>
+>                   </div>
+> 
+>                   {/* Sub-selector for specific workspace enrollments */}
+>                   {(!activeUserRoles.includes('FAN') && activeUserRoles.length > 0) && (
+>                     <div className="mt-4 p-3 bg-zinc-950/60 border border-zinc-900 rounded-xl space-y-3">
+>                       <div className="flex items-center justify-between">
+>                         <span className="block text-[9.5px] font-mono font-bold text-zinc-400 uppercase tracking-wider">
+>                           SELECT WORKSPACE ENROLLMENTS:
+>                         </span>
+>                         {targetWorkspace && (
+>                           <span className="text-[8px] font-mono text-amber-500 animate-pulse font-bold">
+>                             ⚠️ TARGET PORTAL REQUIRED
+>                           </span>
+>                         )}
+>                       </div>
+>                       <div className="grid grid-cols-2 gap-2">
+>                         {[
+>                           { key: 'BAND', name: '🎸 Band / Artist', desc: 'Lineup, presets & shows' },
+>                           { key: 'PROMOTER', name: '🏟️ Venue Promoter', desc: 'Schedules & lineups' },
+>                           { key: 'CREATIVE', name: '🛠️ Creative Hub', desc: 'Contracts & portfolio' },
+>                           { key: 'LABEL', name: '💿 Record Label', desc: 'Roster & releases' },
+>                         ].map((item) => {
+>                           const isTarget = targetWorkspace?.toUpperCase() === item.key;
+>                           const isChecked = activeUserRoles.includes(item.key);
+>                           const isAlreadyUnlocked = userProfile?.registered_workspaces?.includes(item.key.toLowerCase());
+>                           
+>                           return (
+>                             <button
+>                               key={item.key}
+>                               type="button"
+>                               disabled={isTarget || isAlreadyUnlocked}
+>                               onClick={() => {
+>                                 toggleRole(item.key);
+>                               }}
+>                               className={`p-2.5 rounded-lg border text-[11px] font-bold text-left transition-all relative flex flex-col justify-between h-[64px] ${
+>                                 isChecked
+>                                   ? 'bg-[#000000] border-purple-500/80 text-purple-400 shadow-[0_0_6px_rgba(168,85,247,0.2)]'
+>                                   : 'bg-zinc-900/40 border-zinc-850 text-zinc-500 hover:border-zinc-700 disabled:opacity-60 disabled:cursor-not-allowed'
+>                               }`}
+>                             >
+>                               <div className="flex items-center justify-between w-full">
+>                                 <span>{item.name}</span>
+>                                 {isTarget && (
+>                                   <span className="text-[7.5px] bg-amber-950/80 text-amber-400 border border-amber-900 px-1.5 py-0.5 rounded font-mono font-black uppercase">REQUIRED</span>
+>                                 )}
+>                                 {isAlreadyUnlocked && (
+>                                   <span className="text-[7.5px] bg-emerald-950/80 text-emerald-400 border border-emerald-900 px-1.5 py-0.5 rounded font-mono font-black uppercase">ACTIVE</span>
+>                                 )}
+>                               </div>
+>                               <span className="text-[7.5px] font-mono text-zinc-600 leading-tight">{item.desc}</span>
+>                             </button>
+>                           );
+>                         })}
+>                       </div>
+>                     </div>
+>                   )}
+>                 </div>
+>                 )}
+> 
+>               {/* ROLE ACCORDIONS (BAND / ARTIST PORTAL) */}
+>               {activeUserRoles.includes('BAND') && (
+>                 <div className="border border-red-900 rounded-xl overflow-hidden mb-4 transition-all">
+>                   <div 
+>                     className="bg-red-950/20 p-4 border-b border-red-900 flex justify-between items-center cursor-pointer hover:bg-red-950/30 transition-colors"
+>                     onClick={() => setActiveAccordionSection(activeAccordionSection === 'BAND' ? '' : 'BAND')}
+>                   >
+>                     <div className="flex items-center gap-3">
+>                       <span className="text-2xl drop-shadow-md">🎸</span>
+>                       <div>
+>                         import React, { useState, useEffect, useRef } from 'react';
+> import { 
+>   Radio, Lock, UserPlus, RefreshCw, CheckCircle, Sparkles, Clock, Check, ChevronRight, 
+>   Eye, EyeOff, User, Upload, Building, AlertTriangle, Disc, Tag, LogIn, ChevronLeft, Calendar, Ticket, ChevronDown,
+>   Image as ImageIcon
+> } from 'lucide-react';
+> import { motion, AnimatePresence } from 'motion/react';
+> 
+> import { MASTER_GENRES } from '../constants/genres';
+> import { BAND_PORTAL_BILLING } from '../config/billingMatrix';
+> import TermsOfServiceView from './TermsOfServiceView';
+> import { registrationStagingStore } from '../utils/indexedDB';
+> import { wipeAllLocalData } from "../utils/resetApp";
+> 
+> function compressImageAtModuleLevel(base64Str: string, maxWidth = 800, maxHeight = 800, quality = 0.7): Promise<string> {
+>   return new Promise((resolve) => {
+>     const img = document.createElement('img');
+>     img.src = base64Str;
+>     img.onload = () => {
+>       let width = img.width;
+>       let height = img.height;
+>       if (width <= 0 || height <= 0) {
+>         resolve(base64Str);
+>         return;
+>       }
+>       if (width > maxWidth || height > maxHeight) {
+>         if (width > height) {
+>           height = Math.round((height * maxWidth) / width);
+>           width = maxWidth;
+>         } else {
+>           width = Math.round((width * maxHeight) / height);
+>           height = maxHeight;
+>         }
+>       }
+>       const canvas = document.createElement('canvas');
+>       canvas.width = width;
+>       canvas.height = height;
+>       const ctx = canvas.getContext('2d');
+>       if (ctx) {
+>         ctx.drawImage(img, 0, 0, width, height);
+>         resolve(canvas.toDataURL('image/jpeg', quality));
+>       } else {
+>         resolve(base64Str);
+>       }
+>     };
+>     img.onerror = () => resolve(base64Str);
+>   });
+> }
+> 
+> const CREATIVE_CORE_SKILLS: Record<string, string[]> = {
+>   GRAPHIC_DESIGN: ['MERCH_DESIGN', 'ALBUM_ART', 'TOUR_POSTERS', 'BRAND_IDENTITY', 'SOCIAL_ASSETS'],
+>   PHOTOGRAPHY: ['LIVE_MUSIC_PHOTO', 'PRESS_SHOTS', 'TOUR_DOCUMENTARY', 'STUDIO_SESSIONS'],
+>   VIDEO_PRODUCTION: ['MUSIC_VIDEOS', 'TOUR_RECAPS', 'LIVE_VISUALS', 'DOCUMENTARY', 'SHORT_FORM_CONTENT'],
+>   AUDIO_ENGINEERING: ['FOH_ENGINEER', 'MONITOR_ENGINEER', 'STUDIO_MIXING', 'MASTERING', 'POST_PRODUCTION'],
+>   SESSION_MUSICIAN_TECHS: ['TOUR_MANAGEMENT', 'SESSION_MUSICIAN', 'LIGHTING_DIRECTOR', 'STAGE_DESIGN', 'BOOKING_AGENT']
+> };
+> 
+> const GENRE_CLUSTERS = [
+>   {
+>     name: 'CLUSTER 01: EXTREME METAL',
+>     genres: ['DEATH METAL', 'SLAMMING BDM', 'BRUTAL DEATH METAL', 'BRUTAL DEATHCORE', 'TECHNICAL BDM', 'DEATH N\' ROLL', 'TECH DEATH', 'BLASTING BDM', 'GRINDCORE', 'DEATHGRIND', 'GOREGRIND/PORNOGRIND', 'THRASH METAL', 'DEATH THRASH', 'MELODIC DEATH', 'OSDM', 'DOOM', 'BLACK METAL', 'BLACKENED DEATH', 'SYMPHONIC BLACK', 'DEATHCORE', 'PROGRESSIVE DEATH']
+>   },
+>   {
+>     name: 'CLUSTER 02: ROCK/HEAVY METAL',
+>     genres: ['TRADITIONAL HEAVY METAL', 'DOOM METAL', 'STONER METAL', 'SLUDGE METAL', 'STONER ROCK', 'PROG METAL', 'POWER METAL', 'ALTERNATIVE ROCK', 'GOTHIC ROCK', 'HARD ROCK', 'NEW WAVE', 'FOLK METAL', 'AVANT-GARDE', 'DJENT', 'MATHCORE', 'MATH ROCK', 'SHOE GAZE', 'NOISE ROCK', 'INDIE ROCK', 'NU METAL']
+>   },
+>   {
+>     name: 'CLUSTER 03: HARDCORE',
+>     genres: ['TRADITIONAL HARDCORE', 'METALCORE', 'BEATDOWN', 'YOUTH CREW', 'FASTCORE', 'POST HARDCORE', 'MELODIC HARDCORE', 'SKRAMZ/SCREAMO', 'POWER VIOLENCE', 'MINCECORE']
+>   },
+>   {
+>     name: 'CLUSTER 04: PUNK/ALTERNATIVE',
+>     genres: ['PUNK ROCK', 'POP PUNK', 'MATH ROCK', 'MIDWEST EMO', 'SKATE PUNK', 'MELODIC PUNK', 'INDIE PUNK', 'POST PUNK', 'GRUNGE']
+>   },
+>   {
+>     name: 'CLUSTER 05: INDUSTRIAL/EDM',
+>     genres: ['EBM', 'SYNTHWAVE', 'DARKWAVE/COLD WAVE', 'AGGROTECH/TERROR EBM', 'TECHNO', 'INDUSTRIAL METAL', 'DUBSTEP', 'DRUM & BASS', 'GABBER/HARDSTYLE', 'BREAKCORE', 'HARSH NOISE WALL', 'WITCH HOUSE']
+>   },
+>   {
+>     name: 'CLUSTER 06: HIP HOP/RAP',
+>     genres: ['UNDERGROUND RAP', 'TRAP', 'BOOM BAP', 'PHONK', 'DRILL', 'CLOUD RAP', 'EXPERIMENTAL', 'GRIME']
+>   }
+> ];
+> 
+> import { executeWithSchemaResilience, getSupabase, generateUUID, normalizeLoadedProfile, resolveZipCode } from '../supabase';
+> import { Band, UserProfile, Show } from '../types';
+> 
+> interface LoginViewProps {
+>   onLogin: (customProfile?: UserProfile, customBand?: Band, selectBandId?: string) => void;
+>   userProfile?: UserProfile;
+>   initialTab?: 'unlock' | 'signup';
+>   onTabChange?: (tab: 'unlock' | 'signup') => void;
+>   triggerNotification?: (msg: string) => void;
+>   isUpgradeMode?: boolean;
+> }
+> 
+> const LoginView: React.FC<LoginViewProps> = ({ onLogin, userProfile, initialTab = 'unlock', onTabChange, triggerNotification, isUpgradeMode = false }) => {
+>   const [activeTab, setActiveTab] = useState<'unlock' | 'signup'>(initialTab);
+>   
+>   // Conditionally rendered gateway state
+>   const [isRoleGatewayPassed, setIsRoleGatewayPassed] = useState(isUpgradeMode);
+>   const [activeUserRoles, setActiveUserRoles] = useState<string[]>(() => {
+>     if (typeof window !== 'undefined') {
+>       const wizardRolesRaw = localStorage.getItem('nexus_wizard_roles');
+>       if (wizardRolesRaw) {
+>         try {
+>           const roles = JSON.parse(wizardRolesRaw);
+>           if (Array.isArray(roles) && roles.length > 0) {
+>             return roles;
+>           }
+>         } catch (e) {
+>           console.error('Failed to parse wizard roles', e);
+>         }
+>       }
+>     }
+> 
+>     const targetWorkspace = typeof window !== 'undefined' ? localStorage.getItem('nexus_target_register_workspace') : null;
+>     if (targetWorkspace) {
+>       const role = targetWorkspace.toUpperCase();
+>       if (['BAND', 'PROMOTER', 'CREATIVE', 'LABEL'].includes(role)) {
+>         return [role];
+>       }
+>     }
+>     return isUpgradeMode ? ['FAN'] : [];
+>   });
+>   
+>   const selectTab = (tab: 'unlock' | 'signup') => {
+>     setActiveTab(tab);
+>     onTabChange?.(tab);
+>   };
+>   
+>   // Tab 1: Session Unlock
+>   const [email, setEmail] = useState(() => {
+>     const params = new URLSearchParams(window.location.search);
+>     return params.get('email') || userProfile?.email || 'admin@example.com';
+>   });
+>   const [pin, setPin] = useState('');
+>   const [error, setError] = useState('');
+> 
+>   // Form Fields
+>   const [fullName, setFullName] = useState(() => isUpgradeMode ? userProfile?.name || '' : '');
+>   const [legalName, setLegalName] = useState(() => isUpgradeMode ? userProfile?.name || '' : '');
+>   const [screenName, setScreenName] = useState(() => isUpgradeMode ? userProfile?.screen_name || userProfile?.console_handle || '' : '');
+>   const [locationCode, setLocationCode] = useState(() => isUpgradeMode ? userProfile?.location_code || '' : '');
+>   const [cityState, setCityState] = useState(() => isUpgradeMode ? userProfile?.city_state || userProfile?.location_code || '' : '');
+>   const [zipCode, setZipCode] = useState(() => isUpgradeMode ? userProfile?.zip_code || '' : '');
+>   const [consoleHandle, setConsoleHandle] = useState(() => isUpgradeMode ? userProfile?.console_handle || '' : '');
+>   const [signupEmail, setSignupEmail] = useState(() => {
+>     if (isUpgradeMode && userProfile?.email) return userProfile?.email;
+>     const params = new URLSearchParams(window.location.search);
+>     return params.get('email') || '';
+>   });
+>   const [signUpPassword, setSignUpPassword] = useState(() => isUpgradeMode ? userProfile?.pin || '' : '');
+>   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
+>   const [signUpUnlockPin, setSignUpUnlockPin] = useState(() => isUpgradeMode ? userProfile?.pin || '' : '');
+>   const [signUpIs24Hour, setSignUpIs24Hour] = useState<boolean>(true);
+>   const [signUpPromoCode, setSignUpPromoCode] = useState('');
+>   
+>   const [profileAvatar, setProfileAvatar] = useState(() => isUpgradeMode ? userProfile?.avatar_url || '/Nexus Icon brackets.png' : '/Nexus Icon brackets.png');
+>   const [profileBanner, setProfileBanner] = useState(() => isUpgradeMode ? userProfile?.banner_url || '' : '');
+>   const [showCoverImageUploader, setShowCoverImageUploader] = useState(false);
+>   const [isPromoYearApplied, setIsPromoYearApplied] = useState(false);
+>   const [isDragOverAvatar, setIsDragOverAvatar] = useState(false);
+>   const [isDragOverBanner, setIsDragOverBanner] = useState(false);
+>   const [promoValidationError, setPromoValidationError] = useState('');
+>   const [promoSuccessMsg, setPromoSuccessMsg] = useState('');
+>   const [isBandPromoExpanded, setIsBandPromoExpanded] = useState(false);
+>   
+>   // Staging / Accordion States
+>   const [activeAccordionSection, setActiveAccordionSection] = useState<string>('');
+>   const [labelManagedRights, setLabelManagedRights] = useState<boolean>(false);
+>   const [stripeMerchantId, setStripeMerchantId] = useState<string>('');
+>   const [stripeConnected, setStripeConnected] = useState<boolean>(false);
+>   const [paypalEmail, setPaypalEmail] = useState<string>('');
+>   const [paypalConnected, setPaypalConnected] = useState<boolean>(false);
+>   const [cashAppTag, setCashAppTag] = useState<string>('');
+>   const [setupPaymentLater, setSetupPaymentLater] = useState<boolean>(false);
+>   const [profileSlug, setProfileSlug] = useState<string>('');
+>   const [selectedApparelSizes, setSelectedApparelSizes] = useState<string[]>(['M', 'L', 'XL']);
+>   const [touringVehicle, setTouringVehicle] = useState<string>('Van');
+> 
+>   // Auto-initialize active accordion section based on chosen roles
+>   useEffect(() => {
+>     if (activeTab === 'signup' && !isUpgradeMode && !isRoleGatewayPassed) {
+>       setActiveUserRoles(['FAN']);
+>       setIsRoleGatewayPassed(true);
+>       setActiveAccordionSection('FAN');
+>     }
+>   }, [activeTab, isUpgradeMode, isRoleGatewayPassed]);
+> 
+>   useEffect(() => {
+>     if (isRoleGatewayPassed && activeUserRoles.length > 0) {
+>       // Choose the first role as the active open accordion section by default
+>       const defaultRole = activeUserRoles[0];
+>       setActiveAccordionSection(defaultRole);
+>     }
+>   }, [isRoleGatewayPassed, activeUserRoles]);
+> 
+>   useEffect(() => {
+>     const handleOAuthMessage = (event: MessageEvent) => {
+>       const origin = event.origin;
+>       if (!origin.endsWith('.run.app') && !origin.includes('localhost') && !origin.includes('127.0.0.1')) {
+>         return;
+>       }
+>       
+>       if (event.data?.type === 'STRIPE_AUTH_SUCCESS') {
+>         const stripeId = event.data.stripeUserId;
+>         setStripeMerchantId(stripeId);
+>         setStripeConnected(true);
+>         setLabelStripeConnected(true);
+>         triggerNotification?.(`✔️ STRIPE REGISTERED: Account ${stripeId} successfully synced!`);
+>       }
+>       
+>       if (event.data?.type === 'PAYPAL_AUTH_SUCCESS') {
+>         const email = event.data.email;
+>         setPaypalEmail(email);
+>         setPaypalConnected(true);
+>         setLabelPaypalConnected(true);
+>         triggerNotification?.(`✔️ PAYPAL REGISTERED: Account ${email} successfully linked!`);
+>       }
+>     };
+>     
+>     window.addEventListener('message', handleOAuthMessage);
+>     return () => window.removeEventListener('message', handleOAuthMessage);
+>   }, [triggerNotification]);
+>   
+>   // Band Details
+>   const [bandName, setBandName] = useState(() => {
+>     const params = new URLSearchParams(window.location.search);
+>     return params.get('band') || '';
+>   });
+>   const [bandGenre, setBandGenre] = useState('Extreme Metal');
+>   const [bandSubGenre, setBandSubGenre] = useState('ALL');
+>   const [isMicroGenresExpanded, setIsMicroGenresExpanded] = useState(false);
+>   const [isCreativeGenresExpanded, setIsCreativeGenresExpanded] = useState(false);
+>   const [customGenre, setCustomGenre] = useState('');
+>   const [bandHomebase, setBandHomebase] = useState('');
+>   const [bandYoutubeVideo, setBandYoutubeVideo] = useState('');
+>   const [bandAudioHub, setBandAudioHub] = useState('');
+>   const [deferMusicUpload, setDeferMusicUpload] = useState(true);
+>   const [bandLogo, setBandLogo] = useState('https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=300');
+>   const [bandBanner, setBandBanner] = useState('');
+> 
+>   // Band collapsible sub-sections
+>   const [bandSectionAOpen, setBandSectionAOpen] = useState(true);
+>   const [bandSectionBOpen, setBandSectionBOpen] = useState(false);
+>   const [bandSectionCOpen, setBandSectionCOpen] = useState(false);
+> 
+>   const [bandSubGenres, setBandSubGenres] = useState<string[]>([]);
+>   const [bandBookingEmail, setBandBookingEmail] = useState('');
+>   const [bandBookingPhone, setBandBookingPhone] = useState('');
+>   const [bandTechRider, setBandTechRider] = useState('');
+>   const [bandHeadcount, setBandHeadcount] = useState(1);
+>   const [bandRoster, setBandRoster] = useState<{name: string, role: string, access: string}[]>([]);
+>   const [newRosterName, setNewRosterName] = useState('');
+>   const [newRosterRole, setNewRosterRole] = useState('');
+>   const [newRosterAccess, setNewRosterAccess] = useState('Level 1');
+>   const [bandStripeConnected, setBandStripeConnected] = useState(false);
+>   const [bandPaypalConnected, setBandPaypalConnected] = useState(false);
+> 
+> 
+>   // Promoter specifics
+>   const [promoterAgency, setPromoterAgency] = useState('');
+>   const [promoterPhone, setPromoterPhone] = useState('');
+>   const [promoterRegion, setPromoterRegion] = useState('');
+>   const [promoterAdminEmail, setPromoterAdminEmail] = useState('');
+>   const [promoterBookingEmail, setPromoterBookingEmail] = useState('');
+>   const [promoterTitle, setPromoterTitle] = useState('TALENT BUYER');
+>   const [promoterGenres, setPromoterGenres] = useState<string[]>([]);
+>   const [promoterStripeConnected, setPromoterStripeConnected] = useState(false);
+>   const [promoterPaypalConnected, setPromoterPaypalConnected] = useState(false);
+>   const [promoterVenueClass, setPromoterVenueClass] = useState('Club');
+>   const [promoterDeferTechSpecs, setPromoterDeferTechSpecs] = useState(true);
+>   const [promoterLogo, setPromoterLogo] = useState('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=300');
+>   const [promoterCoverImage, setPromoterCoverImage] = useState('');
+>   const [promoterCapacity, setPromoterCapacity] = useState('350');
+>   const [promoterSecurityMap, setPromoterSecurityMap] = useState('');
+>   const [promoterTechRider, setPromoterTechRider] = useState('');
+>   const [promoterLegalFirstName, setPromoterLegalFirstName] = useState('');
+>   const [promoterLegalLastName, setPromoterLegalLastName] = useState('');
+>   const [promoterLegalEntityType, setPromoterLegalEntityType] = useState('SOLE_PROPRIETORSHIP');
+>   const [promoterTaxId, setPromoterTaxId] = useState('');
+>   const [promoterInstagram, setPromoterInstagram] = useState('');
+>   const [promoterTwitter, setPromoterTwitter] = useState('');
+>   const [promoterWebsite, setPromoterWebsite] = useState('');
+>   
+>   // Promoter collapsible sub-sections
+>   const [promoterSectionAOpen, setPromoterSectionAOpen] = useState(true);
+>   const [promoterSocialOpen, setPromoterSocialOpen] = useState(false);
+>   const [promoterSectionBOpen, setPromoterSectionBOpen] = useState(false);
+>   const [promoterSectionCOpen, setPromoterSectionCOpen] = useState(false);
+>   const [promoterLegalFullName, setPromoterLegalFullName] = useState('');
+>   const [promoterSetupPaymentLater, setPromoterSetupPaymentLater] = useState(false);
+>   const [isPromoterGenresExpanded, setIsPromoterGenresExpanded] = useState(false);
+>   
+>   const [nexusConsentChecked, setNexusConsentChecked] = useState(false);
+>   
+>   // Label specifics
+>   const [labelCompanyName, setLabelCompanyName] = useState(() => isUpgradeMode ? userProfile?.label_company_name || '' : '');
+>   const [labelBookingEmail, setLabelBookingEmail] = useState(() => isUpgradeMode ? userProfile?.label_booking_email || '' : '');
+>   const [labelRosterCount, setLabelRosterCount] = useState(() => isUpgradeMode ? userProfile?.label_roster_count || '' : '');
+>   const [labelHeadquarters, setLabelHeadquarters] = useState(() => isUpgradeMode ? userProfile?.label_headquarters || '' : '');
+>   const [labelFoundedYear, setLabelFoundedYear] = useState(() => isUpgradeMode ? userProfile?.label_founded_year || '' : '');
+>   const [labelVerificationId, setLabelVerificationId] = useState(() => isUpgradeMode ? userProfile?.label_verification_id || '' : '');
+>   const [labelUrlSlug, setLabelUrlSlug] = useState(() => isUpgradeMode ? userProfile?.label_url_slug || '' : '');
+>   const [labelGenres, setLabelGenres] = useState<string[]>(() => isUpgradeMode ? userProfile?.label_genres || [] : []);
+>   const [labelBandRoster, setLabelBandRoster] = useState(() => isUpgradeMode ? (userProfile?.label_band_roster || []).join(', ') : '');
+>   const [labelSubLabels, setLabelSubLabels] = useState(() => isUpgradeMode ? (userProfile?.label_sub_labels || []).join(', ') : '');
+>   const [labelLegalEntityType, setLabelLegalEntityType] = useState(() => isUpgradeMode ? userProfile?.label_legal_entity_type || 'LLC' : 'LLC');
+>   const [labelTaxRegistrationNumber, setLabelTaxRegistrationNumber] = useState(() => isUpgradeMode ? userProfile?.label_tax_registration_number || '' : '');
+>   const [labelMasterDistroModel, setLabelMasterDistroModel] = useState(() => isUpgradeMode ? userProfile?.label_master_distro_model || 'IN_HOUSE_FULFILLMENT' : 'IN_HOUSE_FULFILLMENT');
+>   const [labelShippingPostalCode, setLabelShippingPostalCode] = useState(() => isUpgradeMode ? userProfile?.label_shipping_postal_code || '' : '');
+>   const [labelShippingCountry, setLabelShippingCountry] = useState(() => isUpgradeMode ? userProfile?.label_shipping_country || 'US' : 'US');
+>   const [labelDefaultContractSplit, setLabelDefaultContractSplit] = useState(() => isUpgradeMode ? userProfile?.label_default_contract_split ?? 50 : 50);
+>   const [labelDigitalAccreditationScheme, setLabelDigitalAccreditationScheme] = useState(() => isUpgradeMode ? userProfile?.label_digital_accreditation_scheme || 'LABEL_PROVIDES_INDEPENDENT_CODES' : 'LABEL_PROVIDES_INDEPENDENT_CODES');
+>   const [labelStripeConnected, setLabelStripeConnected] = useState(() => isUpgradeMode ? !!userProfile?.label_stripe_connected : false);
+>   const [labelPaypalConnected, setLabelPaypalConnected] = useState(() => isUpgradeMode ? !!userProfile?.label_paypal_connected : false);
+>   const [labelSetupPaymentLater, setLabelSetupPaymentLater] = useState(() => isUpgradeMode ? !!userProfile?.label_setup_payment_later : false);
+>   const [labelAvatar, setLabelAvatar] = useState(() => isUpgradeMode ? userProfile?.label_avatar || '' : '');
+>   const [labelBanner, setLabelBanner] = useState(() => isUpgradeMode ? userProfile?.label_banner || '' : '');
+>   const [labelIsAnnualBilling, setLabelIsAnnualBilling] = useState(() => isUpgradeMode ? userProfile?.label_billing_cycle === 'ANNUAL' : false);
+>   const [labelPlanTier, setLabelPlanTier] = useState(() => isUpgradeMode ? userProfile?.label_plan_tier || 'independent_imprint' : 'independent_imprint');
+> 
+>   // Label checkout modal states
+>   const [showLabelCheckoutModal, setShowLabelCheckoutModal] = useState(false);
+>   const [checkoutCardName, setCheckoutCardName] = useState('');
+>   const [checkoutCardNumber, setCheckoutCardNumber] = useState('');
+>   const [checkoutCardExpiry, setCheckoutCardExpiry] = useState('');
+>   const [checkoutCardCvc, setCheckoutCardCvc] = useState('');
+>   const [checkoutCardZip, setCheckoutCardZip] = useState('');
+>   const [checkoutError, setCheckoutError] = useState('');
+>   const [checkoutLoading, setCheckoutLoading] = useState(false);
+>   const [stagedSignupData, setStagedSignupData] = useState<{ newProfile: any, newBand: any, newBandId: any } | null>(null);
+> 
+>   // Label collapsible sub-sections
+>   const [labelSectionAOpen, setLabelSectionAOpen] = useState(true);
+>   const [labelSectionBOpen, setLabelSectionBOpen] = useState(false);
+>   const [labelSectionCOpen, setLabelSectionCOpen] = useState(false);
+>   const [isLabelGenresExpanded, setIsLabelGenresExpanded] = useState(false);
+> 
+>   // Creative specifics
+>   const [creativeBusinessName, setCreativeBusinessName] = useState('');
+>   const [creativeBaseLocation, setCreativeBaseLocation] = useState('');
+>   const [creativeBookingEmail, setCreativeBookingEmail] = useState('');
+>   const [creativePrimarySpecialty, setCreativePrimarySpecialty] = useState('GRAPHIC_DESIGN');
+>   const [creativeCoreSkill, setCreativeCoreSkill] = useState('MERCH_DESIGN');
+>   const [creativeSecondarySpecialty, setCreativeSecondarySpecialty] = useState('PHOTOGRAPHY');
+>   const [creativeSecondaryCoreSkill, setCreativeSecondaryCoreSkill] = useState('LIVE_MUSIC_PHOTO');
+>   const [creativePrimaryGear, setCreativePrimaryGear] = useState('');
+>   const [creativeGenres, setCreativeGenres] = useState<string[]>([]);
+>   const [creativeHandle, setCreativeHandle] = useState('');
+>   const [creativeBiography, setCreativeBiography] = useState('');
+>   const [creativeInstagram, setCreativeInstagram] = useState('');
+>   const [creativeArtStation, setCreativeArtStation] = useState('');
+>   const [creativeWebsite, setCreativeWebsite] = useState('');
+> 
+>   // Collapsible sub-sections
+>   const [creativeSectionAOpen, setCreativeSectionAOpen] = useState(true);
+>   const [creativeSocialOpen, setCreativeSocialOpen] = useState(false);
+>   const [creativeSectionBOpen, setCreativeSectionBOpen] = useState(false);
+>   const [creativeSectionCOpen, setCreativeSectionCOpen] = useState(false);
+> 
+>   // Tax Hygiene & billing
+>   const [creativeLegalFirstName, setCreativeLegalFirstName] = useState('');
+>   const [creativeLegalLastName, setCreativeLegalLastName] = useState('');
+>   const [creativeLegalFullName, setCreativeLegalFullName] = useState('');
+>   const [creativeLegalEntityType, setCreativeLegalEntityType] = useState('SOLE_PROPRIETORSHIP');
+>   const [creativeTaxId, setCreativeTaxId] = useState('');
+>   const [creativeBaseRateSetup, setCreativeBaseRateSetup] = useState('DAY_RATE');
+>   const [creativeBaseRateValue, setCreativeBaseRateValue] = useState(350);
+>   const [creativeBroadcastBulletin, setCreativeBroadcastBulletin] = useState('');
+> 
+>   // Payment Connectors
+>   const [creativeStripeConnected, setCreativeStripeConnected] = useState(false);
+>   const [creativePaypalConnected, setCreativePaypalConnected] = useState(false);
+>   const [creativeSetupPaymentLater, setCreativeSetupPaymentLater] = useState(false);
+> 
+>   // Profile Media Uploaders
+>   const [creativeAvatar, setCreativeAvatar] = useState('');
+>   const [creativeBanner, setCreativeBanner] = useState('');
+>   const [isDragOverCreativeAvatar, setIsDragOverCreativeAvatar] = useState(false);
+>   const [isDragOverCreativeBanner, setIsDragOverCreativeBanner] = useState(false);
+> 
+>   const [isLoading, setIsLoading] = useState(false);
+>   const [isStagedCacheInFlight, setIsStagedCacheInFlight] = useState(false);
+>   const [statusMessage, setStatusMessage] = useState('');
+>   const [viewingTerms, setViewingTerms] = useState(false);
+> 
+>   const toggleCreativeGenre = (genre: string) => {
+>     setCreativeGenres(prev => 
+>       prev.includes(genre)
+>         ? prev.filter(g => g !== genre)
+>         : [...prev, genre]
+>     );
+>   };
+> 
+>   const toggleLabelGenre = (genre: string) => {
+>     setLabelGenres(prev => 
+>       prev.includes(genre)
+>         ? prev.filter(g => g !== genre)
+>         : [...prev, genre]
+>     );
+>   };
+> 
+>   const toggleRole = (role: string) => {
+>     setError('');
+>     if (isUpgradeMode && role === 'FAN') return;
+> 
+>     setActiveUserRoles(prev => {
+>        if (role === 'FAN') {
+>           if (prev.includes('FAN')) return [];
+>           return ['FAN']; // Exclusive isolation
+>        }
+>        
+>        let updated = prev.filter(r => r !== 'FAN'); // removing fan if we select another
+>        if (updated.includes(role)) {
+>           updated = updated.filter(r => r !== role);
+>        } else {
+>           updated = [...updated, role];
+>        }
+>        return updated;
+>     });
+>   };
+> 
+>   const handleUnlock = async (e: React.FormEvent) => {
+>     e.preventDefault();
+>     setError('');
+>     setIsLoading(true);
+>     setStatusMessage('Authenticating operator credentials...');
+>     
+>     try {
+>       const supabase = getSupabase();
+>       if (!supabase || !navigator.onLine) {
+>         // Fallback for offline mode if profile exists locally
+>         if (userProfile && userProfile.email === email && (userProfile as any).pin === pin) {
+>           onLogin(userProfile);
+>         } else {
+>           throw new Error('Database offline. Enter exact local cached credentials.');
+>         }
+>         return;
+>       }
+>       
+>       const { data, error: dbError } = await supabase
+>         .from('profiles')
+>         .select('*')
+>         .eq('email', email)
+>         .single();
+>         
+>       if (dbError || !data) {
+>         throw new Error('Invalid credentials or account not found.');
+>       }
+>       
+>       const normalizedProfile = normalizeLoadedProfile(data);
+>       const dbPin = normalizedProfile.pin || '0000';
+>       if (dbPin !== pin) {
+>         throw new Error('Invalid credentials or account not found.');
+>       }
+>       
+>       onLogin(normalizedProfile);
+>     } catch (err: any) {
+>       setError(err.message || 'Authentication failed');
+>       setIsLoading(false);
+>     }
+>   };
+> 
+>   const handleFileChange = (file: File | undefined, type: 'avatar' | 'banner' | 'promoter_logo' | 'promoter_cover' | 'creative_avatar' | 'creative_banner' | 'label_avatar' | 'label_banner' | 'band_logo' | 'band_banner') => {
+>     if (file) {
+>       if (file.size > 3 * 1024 * 1024) {
+>         triggerNotification?.("⚠️ FILE SIZE EXCEEDS LIMIT. KEEP SOUNDS/GRAPHICS UNDER 3MB.");
+>         setError("FILE SIZE TOO LARGE. GRAPHICS LIMIT IS 3MB.");
+>         return;
+>       }
+>       setError("");
+>       const reader = new FileReader();
+>       reader.onload = async (event) => {
+>         const result = event.target?.result as string;
+>         if (type === 'avatar') {
+>           const compressed = await compressImageAtModuleLevel(result, 256, 256, 0.75);
+>           setProfileAvatar(compressed);
+>           triggerNotification?.("🟢 PROFILE AVATAR OPTIMIZED & ENCODED.");
+>         } else if (type === 'banner') {
+>           const compressed = await compressImageAtModuleLevel(result, 800, 450, 0.75);
+>           setProfileBanner(compressed);
+>           triggerNotification?.("🟢 BANNER OPTIMIZED & ENCODED.");
+>         } else if (type === 'promoter_logo') {
+>           const compressed = await compressImageAtModuleLevel(result, 256, 256, 0.75);
+>           setPromoterLogo(compressed);
+>           triggerNotification?.("🟢 PROMOTER LOGO OPTIMIZED & ENCODED.");
+>         } else if (type === 'promoter_cover') {
+>           const compressed = await compressImageAtModuleLevel(result, 800, 450, 0.75);
+>           setPromoterCoverImage(compressed);
+>           triggerNotification?.("🟢 VENUE COVER OPTIMIZED & ENCODED.");
+>         } else if (type === 'creative_avatar') {
+>           const compressed = await compressImageAtModuleLevel(result, 256, 256, 0.75);
+>           setCreativeAvatar(compressed);
+>           triggerNotification?.("🟢 CREATIVE PROFILE AVATAR OPTIMIZED & ENCODED.");
+>         } else if (type === 'creative_banner') {
+>           const compressed = await compressImageAtModuleLevel(result, 800, 450, 0.75);
+>           setCreativeBanner(compressed);
+>           triggerNotification?.("🟢 CREATIVE BANNER OPTIMIZED & ENCODED.");
+>         } else if (type === 'label_avatar') {
+>           const compressed = await compressImageAtModuleLevel(result, 256, 256, 0.75);
+>           setLabelAvatar(compressed);
+>           triggerNotification?.("🟢 CORPORATE LOGO OPTIMIZED & ENCODED.");
+>         } else if (type === 'label_banner') {
+>           const compressed = await compressImageAtModuleLevel(result, 800, 450, 0.75);
+>           setLabelBanner(compressed);
+>           triggerNotification?.("🟢 DISTRIBUTION BANNER OPTIMIZED & ENCODED.");
+>         } else if (type === 'band_logo') {
+>           const compressed = await compressImageAtModuleLevel(result, 256, 256, 0.75);
+>           setBandLogo(compressed);
+>           triggerNotification?.("🟢 BAND LOGO OPTIMIZED & ENCODED.");
+>         } else if (type === 'band_banner') {
+>           const compressed = await compressImageAtModuleLevel(result, 800, 450, 0.75);
+>           setBandBanner(compressed);
+>           triggerNotification?.("🟢 BAND BANNER OPTIMIZED & ENCODED.");
+>         }
+>       };
+>       reader.readAsDataURL(file);
+>     }
+>   };
+> 
+>   const validatePromoCode = () => {
+>     setPromoValidationError('');
+>     setPromoSuccessMsg('');
+>     const code = signUpPromoCode.trim().toUpperCase();
+>     if (!code) {
+>       setPromoValidationError('⚠️ PLEASE ENTER A SECURE PROMO CODE VALUE.');
+>       return;
+>     }
+>     const validCodes = ['TOURINGPRO365', 'NEXUSPRO365', 'TOURPRO2026', 'COREGATOR365', 'FREEPROYEAR', 'TOURINGPRO'];
+>     const matchesPattern = /^PRO-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code);
+>     if (validCodes.includes(code) || matchesPattern || code.includes('PRO365') || code.includes('TOURING')) {
+>       setIsPromoYearApplied(true);
+>       setPromoSuccessMsg('🟢 GATED PROMO SECURED: 365 DAYS TOURING PRO ACCOUNT ACTIVE!');
+>       triggerNotification?.('🟢 GATED PROMO SECURED: 365 DAYS TOURING PRO PLAN APPLIED!');
+>     } else {
+>       setPromoValidationError('⚠️ INVALID OR EXPIRED CODE. VERIFY WITH CORE OPERATORS.');
+>     }
+>   };
+> 
+>   const handleSignup = async (e: React.FormEvent) => {
+>     const uProfile: any = userProfile;
+>     e.preventDefault();
+>     if (!nexusConsentChecked) {
+>       setError("YOU MUST RECONCILE AND AGREE TO THE NEXUS CORE PLATFORM TERMS AND FEES AGREEMENT BEFORE COMMITTING REGISTRATION.");
+>       return;
+>     }
+>     if (activeUserRoles.length === 0) {
+>       setError("NO ROLE SELECTED.");
+>       return;
+>     }
+>   
+>     if (activeUserRoles.includes('LABEL')) {
+>       if (!labelCompanyName.trim()) { setError('RECORD LABEL COMPANY NAME IS REQUIRED.'); return; }
+>       if (!labelBookingEmail.trim()) { setError('PRIMARY BOOKING EMAIL IS REQUIRED.'); return; }
+>       if (!labelRosterCount.trim()) { setError('LABEL ROSTER COUNT IS REQUIRED.'); return; }
+>       if (!labelHeadquarters.trim()) { setError('HEADQUARTERS / LOCATION IS REQUIRED.'); return; }
+>       if (!labelFoundedYear.trim()) { setError('FOUNDED YEAR IS REQUIRED.'); return; }
+>       if (!labelUrlSlug.trim()) { setError('LABEL PORTAL URL SLUG IS REQUIRED.'); return; }
+>       if (!/^[a-zA-Z0-9-_]+$/.test(labelUrlSlug)) { setError('PROFILE SLUG SYNTAX INVALID: ALPHANUMERIC & DASHES ONLY.'); return; }
+>       const isPaymentConfigured = labelSetupPaymentLater || labelStripeConnected || labelPaypalConnected;
+>       if (!isPaymentConfigured) {
+>         setError('FINANCIAL CONFIGURATION REQUIRED FOR RECORD LABEL, OR CHOOSE TO SETUP PAYMENT LATER.');
+>         return;
+>       }
+>     }
+> 
+>     setIsLoading(true);
+>     setStatusMessage('Constructing workspace schema...');
+> 
+>     try {
+>       const rootFullName = fullName.trim() || creativeBusinessName.trim() || 'New User';
+>       const rootEmail = signupEmail.trim() || 'operator@nexus.core';
+> 
+>       // Verify email address uniqueness before committing a new account registration
+>       const supabase = getSupabase();
+>       if (supabase && navigator.onLine && !isUpgradeMode) {
+>         setStatusMessage('Verifying credentials uniqueness...');
+>         const { data: existingProfile, error: checkError } = await supabase
+>           .from('profiles')
+>           .select('id, email, full_name')
+>           .eq('email', rootEmail)
+>           .maybeSingle();
+> 
+>         if (checkError) {
+>           console.warn("Uniqueness check warning:", checkError);
+>         }
+> 
+>         if (existingProfile) {
+>           setError(`An account with the email ${rootEmail} already exists. Please log in instead or use a different email address.`);
+>           setIsLoading(false);
+>           return;
+>         }
+>       }
+> 
+>       // Multi-role flags mapped to account roles and allowed workspaces
+>       const hasFan = activeUserRoles.includes('FAN');
+>       const hasBand = activeUserRoles.includes('BAND');
+>       const hasPromoter = activeUserRoles.includes('PROMOTER');
+>       const hasCreative = activeUserRoles.includes('CREATIVE');
+>       const hasLabel = activeUserRoles.includes('LABEL');
+>       
+>       const allowedWorkspaces = activeUserRoles.map(r => r.toLowerCase());
+> 
+>       const finalGenre = bandGenre === 'Other' ? (customGenre.trim() || 'Other') : (bandSubGenre !== 'ALL' ? bandSubGenre : bandGenre);
+> 
+>       const newBandId = hasBand ? generateUUID() : undefined;
+>       const newBand: Band | undefined = hasBand ? {
+>         id: newBandId!,
+>         name: bandName.trim() || 'Active Band',
+>         logo_url: bandLogo,
+>         genre: finalGenre,
+>         homebase: bandHomebase.trim() || undefined,
+>         music_link: deferMusicUpload ? undefined : (bandYoutubeVideo.trim() || undefined)
+>       } : undefined;
+> 
+>       const nonFanRoles = activeUserRoles.filter(r => r !== 'FAN');
+>       const defaultPrimary = nonFanRoles.length > 0 ? 'fan' : 'fan_only';
+> 
+>       const newProfileId = (isUpgradeMode && userProfile?.id) ? userProfile.id : generateUUID();
+>       const finalScreenName = screenName.trim() || creativeHandle.trim() || 'user';
+>       const finalLegalName = legalName.trim() || creativeLegalFullName.trim() || rootFullName;
+>       const finalAvatar = hasCreative ? (creativeAvatar || profileAvatar) : profileAvatar;
+>       const finalBanner = hasCreative ? (creativeBanner || profileBanner || undefined) : (profileBanner || undefined);
+> 
+>       const finalAccountType = activeUserRoles.includes('BAND')
+>         ? 'band'
+>         : activeUserRoles.includes('LABEL')
+>           ? 'label'
+>           : activeUserRoles.includes('CREATIVE')
+>             ? 'creative'
+>             : activeUserRoles.includes('PROMOTER')
+>               ? 'promoter'
+>               : defaultPrimary;
+> 
+>       const newProfile: any = {
+>         ...(isUpgradeMode ? userProfile : {}), // base
+>         id: newProfileId,
+>         name: isUpgradeMode ? (userProfile?.name || rootFullName.trim() || finalScreenName.trim() || 'Fan Listener') : (rootFullName.trim() || finalScreenName.trim() || 'Fan Listener'),
+>         email: rootEmail,
+>         pin: signUpUnlockPin.trim() || signUpPassword.trim() || '0000',
+>         role: nonFanRoles.length > 0 ? 'Director' : 'Fan Listener',
+>         avatar_url: finalAvatar,
+>         banner_url: finalBanner,
+>         account_type: finalAccountType,
+>         console_handle: finalScreenName.trim() || consoleHandle.trim() || (isUpgradeMode ? userProfile?.console_handle : undefined),
+>         allowed_workspaces: isUpgradeMode 
+>           ? Array.from(new Set([...(userProfile?.allowed_workspaces || []), ...allowedWorkspaces]))
+>           : allowedWorkspaces,
+>         registered_workspaces: isUpgradeMode 
+>           ? Array.from(new Set([...(userProfile?.registered_workspaces || []), ...allowedWorkspaces]))
+>           : allowedWorkspaces,
+>         legal_name: finalLegalName.trim() || undefined,
+>         screen_name: finalScreenName.trim() || undefined,
+>         location_code: cityState.trim() || undefined,
+>         city_state: cityState.trim() || undefined,
+>         zip_code: zipCode.trim() || undefined,
+>         genre_tags: customGenre ? customGenre.split(',').map(g => g.trim()).filter(Boolean) : (finalGenre ? [finalGenre] : []),
+>         sub_tier: isPromoYearApplied ? 'power_user_pro' : undefined,
+>         subscription_status: isPromoYearApplied ? 'active' : undefined,
+>         current_period_end: isPromoYearApplied ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() : undefined,
+>         
+>         // Staged Artist/Band specific blocks
+>         label_managed_rights: hasBand ? labelManagedRights : (isUpgradeMode ? uProfile?.label_managed_rights : undefined),
+>         independent_upload_deferred: hasBand ? deferMusicUpload : (isUpgradeMode ? uProfile?.independent_upload_deferred : undefined),
+>         payment_configured: hasBand ? !setupPaymentLater : (isUpgradeMode ? uProfile?.payment_configured : undefined),
+>         stripe_merchant_id: hasLabel ? stripeMerchantId.trim() : (hasBand ? stripeMerchantId.trim() : (isUpgradeMode ? uProfile?.stripe_merchant_id : undefined)),
+>         paypal_email: hasLabel ? paypalEmail.trim() : (hasBand ? paypalEmail.trim() : (isUpgradeMode ? uProfile?.paypal_email : undefined)),
+>         cashapp_tag: hasBand ? cashAppTag.trim() : (isUpgradeMode ? uProfile?.cashapp_tag : undefined),
+>         profile_slug: hasBand ? profileSlug.trim() : (isUpgradeMode ? uProfile?.profile_slug : undefined),
+>         apparel_sizes: hasBand ? selectedApparelSizes : (isUpgradeMode ? uProfile?.apparel_sizes : undefined),
+>         touring_vehicle: hasBand ? touringVehicle : (isUpgradeMode ? uProfile?.touring_vehicle : undefined),
+> 
+>         // Staged Promoter specific blocks
+>         promoter_agency: hasPromoter ? promoterAgency.trim() : (isUpgradeMode ? uProfile?.promoter_agency : undefined),
+>         promoter_phone: hasPromoter ? promoterPhone.trim() : (isUpgradeMode ? uProfile?.promoter_phone : undefined),
+>         promoter_region: hasPromoter ? promoterRegion.trim() : (isUpgradeMode ? uProfile?.promoter_region : undefined),
+>         promoter_admin_email: hasPromoter ? promoterAdminEmail.trim() : (isUpgradeMode ? uProfile?.promoter_admin_email : undefined),
+>         promoter_booking_email: hasPromoter ? promoterBookingEmail.trim() : (isUpgradeMode ? uProfile?.promoter_booking_email : undefined),
+>         promoter_title: hasPromoter ? promoterTitle : (isUpgradeMode ? uProfile?.promoter_title : undefined),
+>         promoter_genres: hasPromoter ? promoterGenres : (isUpgradeMode ? uProfile?.promoter_genres : undefined),
+>         promoter_stripe_connected: hasPromoter ? promoterStripeConnected : (isUpgradeMode ? uProfile?.promoter_stripe_connected : undefined),
+>         promoter_paypal_connected: hasPromoter ? promoterPaypalConnected : (isUpgradeMode ? uProfile?.promoter_paypal_connected : undefined),
+>         promoter_venue_class: hasPromoter ? promoterVenueClass : (isUpgradeMode ? uProfile?.promoter_venue_class : undefined),
+>         promoter_defer_tech_specs: hasPromoter ? promoterDeferTechSpecs : (isUpgradeMode ? uProfile?.promoter_defer_tech_specs : undefined),
+>         promoter_logo: hasPromoter ? promoterLogo : (isUpgradeMode ? uProfile?.promoter_logo : undefined),
+>         promoter_cover_image: hasPromoter ? promoterCoverImage || undefined : (isUpgradeMode ? uProfile?.promoter_cover_image : undefined),
+>         promoter_capacity: hasPromoter ? promoterCapacity : (isUpgradeMode ? uProfile?.promoter_capacity : undefined),
+>         promoter_security_map: hasPromoter ? promoterSecurityMap || undefined : (isUpgradeMode ? uProfile?.promoter_security_map : undefined),
+>         promoter_tech_rider: hasPromoter ? promoterTechRider || undefined : (isUpgradeMode ? uProfile?.promoter_tech_rider : undefined),
+>         promoter_legal_first_name: hasPromoter ? promoterLegalFirstName.trim() : (isUpgradeMode ? uProfile?.promoter_legal_first_name : undefined),
+>         promoter_legal_last_name: hasPromoter ? promoterLegalLastName.trim() : (isUpgradeMode ? uProfile?.promoter_legal_last_name : undefined),
+>         promoter_legal_entity_type: hasPromoter ? promoterLegalEntityType : (isUpgradeMode ? uProfile?.promoter_legal_entity_type : undefined),
+>         promoter_tax_id: hasPromoter ? promoterTaxId.trim() : (isUpgradeMode ? uProfile?.promoter_tax_id : undefined),
+>         promoter_instagram: hasPromoter ? promoterInstagram.trim() : (isUpgradeMode ? uProfile?.promoter_instagram : undefined),
+>         promoter_twitter: hasPromoter ? promoterTwitter.trim() : (isUpgradeMode ? uProfile?.promoter_twitter : undefined),
+>         promoter_website: hasPromoter ? promoterWebsite.trim() : (isUpgradeMode ? uProfile?.promoter_website : undefined),
+> 
+>         // Staged Creative specific blocks
+>         creative_business_name: hasCreative ? creativeBusinessName.trim() : (isUpgradeMode ? uProfile?.creative_business_name : undefined),
+>         creative_base_location: hasCreative ? creativeBaseLocation.trim() : (isUpgradeMode ? uProfile?.creative_base_location : undefined),
+>         creative_booking_email: hasCreative ? creativeBookingEmail.trim() : (isUpgradeMode ? uProfile?.creative_booking_email : undefined),
+>         creative_primary_specialty: hasCreative ? creativePrimarySpecialty : (isUpgradeMode ? uProfile?.creative_primary_specialty : undefined),
+>         creative_core_skill: hasCreative ? creativeCoreSkill : (isUpgradeMode ? uProfile?.creative_core_skill : undefined),
+>         creative_secondary_specialty: hasCreative ? creativeSecondarySpecialty : (isUpgradeMode ? uProfile?.creative_secondary_specialty : undefined),
+>         creative_secondary_core_skill: hasCreative ? creativeSecondaryCoreSkill : (isUpgradeMode ? uProfile?.creative_secondary_core_skill : undefined),
+>         creative_primary_gear: hasCreative ? creativePrimaryGear.split(',').map(g => g.trim()).filter(Boolean) : (isUpgradeMode ? uProfile?.creative_primary_gear : undefined),
+>         creative_genres: hasCreative ? creativeGenres : (isUpgradeMode ? uProfile?.creative_genres : undefined),
+>         creative_handle: hasCreative ? creativeHandle.trim() : (isUpgradeMode ? uProfile?.creative_handle : undefined),
+>         creative_biography: hasCreative ? creativeBiography.trim() : (isUpgradeMode ? uProfile?.creative_biography : undefined),
+>         creative_instagram: hasCreative ? creativeInstagram.trim() : (isUpgradeMode ? uProfile?.creative_instagram : undefined),
+>         creative_artstation: hasCreative ? creativeArtStation.trim() : (isUpgradeMode ? uProfile?.creative_artstation : undefined),
+>         creative_website: hasCreative ? creativeWebsite.trim() : (isUpgradeMode ? uProfile?.creative_website : undefined),
+>         creative_legal_first_name: hasCreative ? (creativeLegalFirstName.trim() || creativeLegalFullName.trim().split(' ')[0] || '') : (isUpgradeMode ? uProfile?.creative_legal_first_name : undefined),
+>         creative_legal_last_name: hasCreative ? (creativeLegalLastName.trim() || creativeLegalFullName.trim().split(' ').slice(1).join(' ') || '') : (isUpgradeMode ? uProfile?.creative_legal_last_name : undefined),
+>         creative_legal_full_name: hasCreative ? creativeLegalFullName.trim() : (isUpgradeMode ? uProfile?.creative_legal_full_name : undefined),
+>         creative_legal_entity_type: hasCreative ? creativeLegalEntityType : (isUpgradeMode ? uProfile?.creative_legal_entity_type : undefined),
+>         creative_tax_id: hasCreative ? creativeTaxId.trim() : (isUpgradeMode ? uProfile?.creative_tax_id : undefined),
+>         creative_base_rate_setup: hasCreative ? creativeBaseRateSetup : (isUpgradeMode ? uProfile?.creative_base_rate_setup : undefined),
+>         creative_base_rate_value: hasCreative ? Number(creativeBaseRateValue) : (isUpgradeMode ? uProfile?.creative_base_rate_value : undefined),
+>         creative_broadcast_bulletin: hasCreative ? creativeBroadcastBulletin.trim() : (isUpgradeMode ? uProfile?.creative_broadcast_bulletin : undefined),
+>         creative_stripe_connected: hasCreative ? creativeStripeConnected : (isUpgradeMode ? uProfile?.creative_stripe_connected : undefined),
+>         creative_paypal_connected: hasCreative ? creativePaypalConnected : (isUpgradeMode ? uProfile?.creative_paypal_connected : undefined),
+>         creative_setup_payment_later: hasCreative ? creativeSetupPaymentLater : (isUpgradeMode ? uProfile?.creative_setup_payment_later : undefined),
+>         creative_avatar: hasCreative ? creativeAvatar : (isUpgradeMode ? uProfile?.creative_avatar : undefined),
+>         creative_banner: hasCreative ? creativeBanner : (isUpgradeMode ? uProfile?.creative_banner : undefined),
+> 
+>         // Staged Label specific blocks
+>         label_company_name: hasLabel ? labelCompanyName.trim() : (isUpgradeMode ? uProfile?.label_company_name : undefined),
+>         label_booking_email: hasLabel ? labelBookingEmail.trim() : (isUpgradeMode ? uProfile?.label_booking_email : undefined),
+>         label_roster_count: hasLabel ? labelRosterCount.trim() : (isUpgradeMode ? uProfile?.label_roster_count : undefined),
+>         label_headquarters: hasLabel ? labelHeadquarters.trim() : (isUpgradeMode ? uProfile?.label_headquarters : undefined),
+>         label_founded_year: hasLabel ? labelFoundedYear.trim() : (isUpgradeMode ? uProfile?.label_founded_year : undefined),
+>         label_verification_id: hasLabel ? labelVerificationId.trim() : (isUpgradeMode ? uProfile?.label_verification_id : undefined),
+>         label_url_slug: hasLabel ? labelUrlSlug.trim() : (isUpgradeMode ? uProfile?.label_url_slug : undefined),
+>         label_genres: hasLabel ? labelGenres : (isUpgradeMode ? uProfile?.label_genres : undefined),
+>         label_band_roster: hasLabel ? labelBandRoster.split(',').map(g => g.trim()).filter(Boolean) : (isUpgradeMode ? uProfile?.label_band_roster : undefined),
+>         label_sub_labels: hasLabel ? labelSubLabels.split(',').map(g => g.trim()).filter(Boolean) : (isUpgradeMode ? uProfile?.label_sub_labels : undefined),
+>         label_legal_entity_type: hasLabel ? labelLegalEntityType : (isUpgradeMode ? uProfile?.label_legal_entity_type : undefined),
+>         label_tax_registration_number: hasLabel ? labelTaxRegistrationNumber.trim() : (isUpgradeMode ? uProfile?.label_tax_registration_number : undefined),
+>         label_master_distro_model: hasLabel ? labelMasterDistroModel : (isUpgradeMode ? uProfile?.label_master_distro_model : undefined),
+>         label_shipping_postal_code: hasLabel ? labelShippingPostalCode.trim() : (isUpgradeMode ? uProfile?.label_shipping_postal_code : undefined),
+>         label_shipping_country: hasLabel ? labelShippingCountry : (isUpgradeMode ? uProfile?.label_shipping_country : undefined),
+>         label_default_contract_split: hasLabel ? labelDefaultContractSplit : (isUpgradeMode ? uProfile?.label_default_contract_split : undefined),
+>         label_digital_accreditation_scheme: hasLabel ? labelDigitalAccreditationScheme : (isUpgradeMode ? uProfile?.label_digital_accreditation_scheme : undefined),
+>         label_stripe_connected: hasLabel ? labelStripeConnected : (isUpgradeMode ? uProfile?.label_stripe_connected : undefined),
+>         label_paypal_connected: hasLabel ? labelPaypalConnected : (isUpgradeMode ? uProfile?.label_paypal_connected : undefined),
+>         label_setup_payment_later: hasLabel ? labelSetupPaymentLater : (isUpgradeMode ? uProfile?.label_setup_payment_later : undefined),
+>         label_avatar: hasLabel ? labelAvatar : (isUpgradeMode ? uProfile?.label_avatar : undefined),
+>         label_banner: hasLabel ? labelBanner : (isUpgradeMode ? uProfile?.label_banner : undefined),
+>         label_plan_tier: hasLabel ? labelPlanTier : (isUpgradeMode ? uProfile?.label_plan_tier : undefined),
+>         label_billing_cycle: hasLabel ? (labelIsAnnualBilling ? 'ANNUAL' : 'MONTHLY') : (isUpgradeMode ? uProfile?.label_billing_cycle : undefined),
+>         label_trial_period_days: hasLabel ? 30 : (isUpgradeMode ? uProfile?.label_trial_period_days : undefined),
+> 
+>         // Rich metadata for dashboards
+>         creative_metadata: hasCreative ? {
+>           business_name: creativeBusinessName.trim(),
+>           booking_email: creativeBookingEmail.trim(),
+>           base_location: creativeBaseLocation.trim(),
+>           portfolio_link: creativeWebsite.trim(),
+>           bio: creativeBiography.trim(),
+>           day_rate: creativeBaseRateValue ? `$${creativeBaseRateValue} / Day` : '$350 / Day',
+>           pricing_notes: creativeBaseRateSetup || 'Rates available upon request',
+>           gear: creativePrimaryGear.split(',').map(g => g.trim()).filter(Boolean),
+>         } : (isUpgradeMode ? uProfile?.creative_metadata : undefined),
+> 
+>         promoter_metadata: hasPromoter ? {
+>           business_name: promoterAgency.trim(),
+>           booking_email: promoterBookingEmail.trim() || promoterAdminEmail.trim(),
+>           base_location: promoterRegion.trim(),
+>           portfolio_link: promoterWebsite.trim(),
+>           bio: `Booking Agent / Production Manager at ${promoterAgency.trim()}`,
+>           payout_method: promoterStripeConnected ? 'stripe' : (promoterPaypalConnected ? 'paypal' : 'none'),
+>           paypal_email: promoterPaypalConnected ? promoterAdminEmail.trim() : '',
+>           stripe_account_id: promoterStripeConnected ? 'acct_mock' : '',
+>           genre_tags: promoterGenres,
+>         } : (isUpgradeMode ? uProfile?.promoter_metadata : undefined),
+> 
+>         nexus_consent_checked: nexusConsentChecked
+>       };
+> 
+>       if (hasLabel) {
+>         setStagedSignupData({ newProfile, newBand, newBandId });
+>         setShowLabelCheckoutModal(true);
+>         setIsLoading(false);
+>         return;
+>       }
+> 
+>       // Mock Local Index DB Store
+>       if (typeof window !== 'undefined') {
+>          localStorage.setItem('user_auth_store', JSON.stringify({ 
+>            activePermissions: isUpgradeMode 
+>              ? Array.from(new Set([...(uProfile?.allowed_workspaces || []), ...allowedWorkspaces]))
+>              : allowedWorkspaces,
+>            legal_name: legalName.trim() || undefined,
+>            screen_name: screenName.trim() || undefined,
+>            location_code: cityState.trim() || undefined,
+>            city_state: cityState.trim() || undefined,
+>            zip_code: zipCode.trim() || undefined,
+>            console_handle: screenName.trim() || consoleHandle.trim() || undefined,
+>            avatar_url: hasCreative ? (creativeAvatar || profileAvatar) : profileAvatar,
+>            banner_url: hasCreative ? (creativeBanner || profileBanner || undefined) : (profileBanner || undefined),
+>            
+>            label_managed_rights: hasBand ? labelManagedRights : (isUpgradeMode ? uProfile?.label_managed_rights : undefined),
+>            independent_upload_deferred: hasBand ? deferMusicUpload : (isUpgradeMode ? uProfile?.independent_upload_deferred : undefined),
+>            payment_configured: hasBand ? !setupPaymentLater : (isUpgradeMode ? uProfile?.payment_configured : undefined),
+>            stripe_merchant_id: hasBand ? stripeMerchantId.trim() : (isUpgradeMode ? uProfile?.stripe_merchant_id : undefined),
+>            paypal_email: hasBand ? paypalEmail.trim() : (isUpgradeMode ? uProfile?.paypal_email : undefined),
+>            cashapp_tag: hasBand ? cashAppTag.trim() : (isUpgradeMode ? uProfile?.cashapp_tag : undefined),
+>            profile_slug: hasBand ? profileSlug.trim() : (isUpgradeMode ? uProfile?.profile_slug : undefined),
+>            apparel_sizes: hasBand ? selectedApparelSizes : (isUpgradeMode ? uProfile?.apparel_sizes : undefined),
+>            touring_vehicle: hasBand ? touringVehicle : (isUpgradeMode ? uProfile?.touring_vehicle : undefined),
+> 
+>            promoter_agency: hasPromoter ? promoterAgency.trim() : (isUpgradeMode ? uProfile?.promoter_agency : undefined),
+>            promoter_phone: hasPromoter ? promoterPhone.trim() : (isUpgradeMode ? uProfile?.promoter_phone : undefined),
+>            promoter_region: hasPromoter ? promoterRegion.trim() : (isUpgradeMode ? uProfile?.promoter_region : undefined),
+>            promoter_admin_email: hasPromoter ? promoterAdminEmail.trim() : (isUpgradeMode ? uProfile?.promoter_admin_email : undefined),
+>            promoter_booking_email: hasPromoter ? promoterBookingEmail.trim() : (isUpgradeMode ? uProfile?.promoter_booking_email : undefined),
+>            promoter_title: hasPromoter ? promoterTitle : (isUpgradeMode ? uProfile?.promoter_title : undefined),
+>            promoter_genres: hasPromoter ? promoterGenres : (isUpgradeMode ? uProfile?.promoter_genres : undefined),
+>            promoter_stripe_connected: hasPromoter ? promoterStripeConnected : (isUpgradeMode ? uProfile?.promoter_stripe_connected : undefined),
+>            promoter_paypal_connected: hasPromoter ? promoterPaypalConnected : (isUpgradeMode ? uProfile?.promoter_paypal_connected : undefined),
+>            promoter_venue_class: hasPromoter ? promoterVenueClass : (isUpgradeMode ? uProfile?.promoter_venue_class : undefined),
+>            promoter_defer_tech_specs: hasPromoter ? promoterDeferTechSpecs : (isUpgradeMode ? uProfile?.promoter_defer_tech_specs : undefined),
+>            promoter_logo: hasPromoter ? promoterLogo : (isUpgradeMode ? uProfile?.promoter_logo : undefined),
+>            promoter_cover_image: hasPromoter ? promoterCoverImage || undefined : (isUpgradeMode ? uProfile?.promoter_cover_image : undefined),
+>            promoter_capacity: hasPromoter ? promoterCapacity : (isUpgradeMode ? uProfile?.promoter_capacity : undefined),
+>            promoter_security_map: hasPromoter ? promoterSecurityMap || undefined : (isUpgradeMode ? uProfile?.promoter_security_map : undefined),
+>            promoter_tech_rider: hasPromoter ? promoterTechRider || undefined : (isUpgradeMode ? uProfile?.promoter_tech_rider : undefined),
+>            promoter_legal_first_name: hasPromoter ? promoterLegalFirstName.trim() : (isUpgradeMode ? uProfile?.promoter_legal_first_name : undefined),
+>            promoter_legal_last_name: hasPromoter ? promoterLegalLastName.trim() : (isUpgradeMode ? uProfile?.promoter_legal_last_name : undefined),
+>            promoter_legal_entity_type: hasPromoter ? promoterLegalEntityType : (isUpgradeMode ? uProfile?.promoter_legal_entity_type : undefined),
+>            promoter_tax_id: hasPromoter ? promoterTaxId.trim() : (isUpgradeMode ? uProfile?.promoter_tax_id : undefined),
+>            promoter_instagram: hasPromoter ? promoterInstagram.trim() : (isUpgradeMode ? uProfile?.promoter_instagram : undefined),
+>            promoter_twitter: hasPromoter ? promoterTwitter.trim() : (isUpgradeMode ? uProfile?.promoter_twitter : undefined),
+>            promoter_website: hasPromoter ? promoterWebsite.trim() : (isUpgradeMode ? uProfile?.promoter_website : undefined),
+>            nexus_consent_checked: nexusConsentChecked
+>          }));
+> 
+>          if (isPromoYearApplied) {
+>            localStorage.setItem('nexus_core_active_plan', 'touring-pro');
+>            localStorage.setItem('nexus_core_promo_gated', 'true');
+>            localStorage.setItem('tally_trial_start_time', Date.now().toString());
+>          }
+> 
+>          if (profileBanner) {
+>            localStorage.setItem('distro_db_banner_url', `url(${profileBanner}));`);
+>          }
+>       }
+> 
+>       // Sync/insert the constructed workspace schema and accounts to Supabase database
+>       if (supabase) {
+>         setStatusMessage('Syncing core security credentials to database server...');
+>         const { error: profileError } = await executeWithSchemaResilience(
+>           async (payload) => {
+>             return await supabase.from('profiles').upsert(payload);
+>           },
+>           newProfile
+>         );
+>         if (profileError) {
+>           console.error("Supabase profile syncing failure:", profileError);
+>         } else {
+>           console.log("Successfully synchronized profile to Supabase database.");
+>         }
+> 
+>         if (hasBand && newBand) {
+>           setStatusMessage('Registering new Artist credentials to server database...');
+>           const { error: bandError } = await executeWithSchemaResilience(
+>             async (payload) => {
+>               return await supabase.from('bands').upsert(payload);
+>             },
+>             newBand
+>           );
+>           if (bandError) {
+>             console.error("Supabase band syncing failure:", bandError);
+>           } else {
+>             console.log("Successfully synchronized band/artist profile to Supabase database.");
+>           }
+>         }
+>       }
+> 
+>       // Complete login
+>       setTimeout(() => {
+>         if (typeof window !== 'undefined') {
+>           localStorage.removeItem('nexus_target_register_workspace');
+>           localStorage.removeItem('nexus_wizard_roles');
+>         }
+>         onLogin(newProfile, newBand, newBandId);
+>       }, 1000);
+> 
+>     } catch (err: any) {
+>       console.error(err);
+>       setError(err.message || 'Signup failed');
+>       setIsLoading(false);
+>     }
+>   };
+> 
+>   const handleCompleteLabelCheckout = async () => {
+>     if (!stagedSignupData) return;
+>     setCheckoutLoading(true);
+>     setCheckoutError('');
+> 
+>     try {
+>       if (!checkoutCardName.trim()) {
+>         setCheckoutError('CARDHOLDER NAME IS REQUIRED.');
+>         setCheckoutLoading(false);
+>         return;
+>       }
+>       if (!checkoutCardNumber.trim() || checkoutCardNumber.replace(/\s/g, '').length < 16) {
+>         setCheckoutError('INVALID CARD NUMBER. ENTER A VALID 16-DIGIT CARD NUMBER.');
+>         setCheckoutLoading(false);
+>         return;
+>       }
+>       if (!checkoutCardExpiry.trim() || !/^\d{2}\/\d{2}$/.test(checkoutCardExpiry)) {
+>         setCheckoutError('INVALID EXPIRY DATE. USE MM/YY FORMAT.');
+>         setCheckoutLoading(false);
+>         return;
+>       }
+>       if (!checkoutCardCvc.trim() || checkoutCardCvc.length < 3) {
+>         setCheckoutError('INVALID CVC. ENTER 3 OR 4 DIGIT SECURITY CODE.');
+>         setCheckoutLoading(false);
+>         return;
+>       }
+>       if (!checkoutCardZip.trim()) {
+>         setCheckoutError('BILLING POSTAL CODE IS REQUIRED.');
+>         setCheckoutLoading(false);
+>         return;
+>       }
+> 
+>       setCheckoutLoading(true);
+>       const { newProfile, newBand, newBandId } = stagedSignupData;
+> 
+>       if (typeof window !== 'undefined') {
+>          localStorage.setItem('user_auth_store', JSON.stringify({ 
+>            activePermissions: isUpgradeMode 
+>              ? Array.from(new Set([...(userProfile?.allowed_workspaces || []), ...newProfile.allowed_workspaces]))
+>              : newProfile.allowed_workspaces,
+>            legal_name: newProfile.legal_name,
+>            screen_name: newProfile.screen_name,
+>            location_code: newProfile.location_code,
+>            city_state: newProfile.location_code,
+>            zip_code: newProfile.zip_code,
+>            console_handle: newProfile.console_handle,
+>            avatar_url: newProfile.avatar_url,
+>            banner_url: newProfile.banner_url,
+>            
+>            label_managed_rights: newProfile.label_managed_rights,
+>            independent_upload_deferred: newProfile.independent_upload_deferred,
+>            payment_configured: newProfile.payment_configured,
+>            stripe_merchant_id: newProfile.stripe_merchant_id,
+>            paypal_email: newProfile.paypal_email,
+>            cashapp_tag: newProfile.cashapp_tag,
+>            profile_slug: newProfile.profile_slug,
+>            apparel_sizes: newProfile.apparel_sizes,
+>            touring_vehicle: newProfile.touring_vehicle,
+> 
+>            label_company_name: newProfile.label_company_name,
+>            label_booking_email: newProfile.label_booking_email,
+>            label_roster_count: newProfile.label_roster_count,
+>            label_headquarters: newProfile.label_headquarters,
+>            label_founded_year: newProfile.label_founded_year,
+>            label_plan_tier: newProfile.label_plan_tier,
+>            label_billing_cycle: newProfile.label_billing_cycle,
+> 
+>            nexus_consent_checked: true
+>          }));
+> 
+>          if (isPromoYearApplied) {
+>            localStorage.setItem('nexus_core_active_plan', 'touring-pro');
+>            localStorage.setItem('nexus_core_promo_gated', 'true');
+>            localStorage.setItem('tally_trial_start_time', Date.now().toString());
+>          }
+> 
+>          if (newProfile.banner_url) {
+>            localStorage.setItem('distro_db_banner_url', `url(${newProfile.banner_url}));`);
+>          }
+>       }
+> 
+>       const supabase = getSupabase();
+>       if (supabase) {
+>         const { error: profileError } = await executeWithSchemaResilience(
+>           async (payload) => {
+>             return await supabase.from('profiles').upsert(payload);
+>           },
+>           newProfile
+>         );
+>         if (profileError) {
+>           console.error("Supabase profile syncing failure in label checkout:", profileError);
+>         }
+> 
+>         if (activeUserRoles.includes('BAND') && newBand) {
+>           const { error: bandError } = await executeWithSchemaResilience(
+>             async (payload) => {
+>               return await supabase.from('bands').upsert(payload);
+>             },
+>             newBand
+>           );
+>           if (bandError) {
+>             console.error("Supabase band syncing failure:", bandError);
+>           }
+>         }
+>       }
+> 
+>       setCheckoutLoading(false);
+>       setShowLabelCheckoutModal(false);
+> 
+>       setTimeout(() => {
+>         if (typeof window !== 'undefined') {
+>           localStorage.removeItem('nexus_target_register_workspace');
+>           localStorage.removeItem('nexus_wizard_roles');
+>         }
+>         onLogin(newProfile, newBand, newBandId);
+>       }, 1000);
+> 
+>     } catch (err: any) {
+>       console.error(err);
+>       setCheckoutError(err.message || 'Payment authorization failed');
+>       setCheckoutLoading(false);
+>     }
+>   };
+> 
+>   const isSectionStaged = (role: string) => {
+>     if (role === 'BAND') {
+>       const parsedSlug = profileSlug.trim();
+>       const isSlugValid = parsedSlug.length > 0 && /^[a-zA-Z0-9-_]+$/.test(parsedSlug);
+>       const isPaymentConfigured = setupPaymentLater || stripeMerchantId.trim() !== '' || paypalEmail.trim() !== '' || cashAppTag.trim() !== '';
+>       return bandName.trim() !== '' && bandHomebase.trim() !== '' && isSlugValid && isPaymentConfigured;
+>     }
+>     if (role === 'LABEL') {
+>       const isPaymentConfigured = labelSetupPaymentLater || labelStripeConnected || labelPaypalConnected;
+>       return (
+>         labelCompanyName.trim() !== '' && 
+>         labelUrlSlug.trim() !== '' && 
+>         labelBookingEmail.trim() !== '' && 
+>         labelRosterCount.trim() !== '' && 
+>         labelHeadquarters.trim() !== '' && 
+>         labelFoundedYear.trim() !== '' && 
+>         isPaymentConfigured
+>       );
+>     }
+>     if (role === 'PROMOTER') {
+>       const isPaymentConfigured = promoterSetupPaymentLater || promoterStripeConnected || promoterPaypalConnected;
+>       return promoterAgency.trim() !== '' && promoterRegion.trim() !== '' && isPaymentConfigured;
+>     }
+>     if (role === 'CREATIVE') {
+>       const isPaymentConfigured = creativeSetupPaymentLater || creativeStripeConnected || creativePaypalConnected;
+>       return creativeBusinessName.trim() !== '' && isPaymentConfigured;
+>     }
+>     if (role === 'FAN') {
+>       return locationCode.trim() !== '';
+>     }
+>     return false;
+>   };
+> 
+>   const handleStageRole = async (roleCode: string) => {
+>     if (roleCode === 'BAND') {
+>       if (!bandName.trim()) { setError('BAND NAME REQUIRES VALID DATA.'); return; }
+>       if (!bandHomebase.trim()) { setError('HOMETOWN LOCATION REQUIRES VALID DATA.'); return; }
+>       if (!profileSlug.trim()) { setError('PROFILE CUSTOM SLUG IS REQUIRED.'); return; }
+>       if (!/^[a-zA-Z0-9-_]+$/.test(profileSlug)) { setError('PROFILE SLUG SYNTAX INVALID: ALPHANUMERIC & DASHES ONLY.'); return; }
+>       if (!setupPaymentLater) {
+>         if (!stripeMerchantId.trim() && !paypalEmail.trim() && !cashAppTag.trim()) {
+>           setError('FINANCIAL CONFIGURATION REQUIRED, OR SELECT LATER OPTION.');
+>           return;
+>         }
+>       }
+>     } else if (roleCode === 'LABEL') {
+>       if (!labelCompanyName.trim()) { setError('CORPORATE LABEL NAME IS REQUIRED.'); return; }
+>       if (!labelUrlSlug.trim()) { setError('LABEL URL SLUG IS REQUIRED.'); return; }
+>       if (!/^[a-zA-Z0-9-_]+$/.test(labelUrlSlug)) { setError('PROFILE SLUG SYNTAX INVALID: ALPHANUMERIC & DASHES ONLY.'); return; }
+>       if (!labelSetupPaymentLater && !labelStripeConnected && !labelPaypalConnected) {
+>         setError('FINANCIAL CONFIGURATION REQUIRED, OR SELECT LATER OPTION.');
+>         return;
+>       }
+>     } else if (roleCode === 'PROMOTER') {
+>       if (!promoterAgency.trim()) { setError('BOOKING AGENCY OR PRODUCTION NAME IS REQUIRED.'); return; }
+>       if (!promoterRegion.trim()) { setError('PROMOTING JURISDICTION OR REGION IS REQUIRED.'); return; }
+>       if (!promoterSetupPaymentLater && !promoterStripeConnected && !promoterPaypalConnected) {
+>         setError('FINANCIAL CONFIGURATION REQUIRED, OR SELECT LATER OPTION.');
+>         return;
+>       }
+>     } else if (roleCode === 'CREATIVE') {
+>       if (!creativeBusinessName.trim()) { setError('CREATIVE STUDIO ALIAS / WORK NAME IS REQUIRED.'); return; }
+>       if (!creativeSetupPaymentLater && !creativeStripeConnected && !creativePaypalConnected) {
+>         setError('FINANCIAL CONFIGURATION REQUIRED, OR SELECT LATER OPTION.');
+>         return;
+>       }
+>     } else if (roleCode === 'FAN') {
+>       if (!cityState.trim()) { setError('REGIONAL GEOGRAPHIC CITY, STATE IS REQUIRED.'); return; }
+>       if (!zipCode.trim()) { setError('POSTAL ZIP CODE IS REQUIRED.'); return; }
+>     }
+>     
+>     setError('');
+>     setIsStagedCacheInFlight(true);
+>     setStatusMessage(`SYNCING CHANNELS FOR [${roleCode}] STAGE PAYLOAD...`);
+>     
+>     try {
+>       const payload = {
+>         fullName,
+>         legalName,
+>         screenName,
+>         locationCode,
+>         bandName,
+>         bandGenre,
+>         bandSubGenre,
+>         bandYoutubeVideo,
+>         deferMusicUpload,
+>         labelManagedRights,
+>         stripeMerchantId,
+>         stripeConnected,
+>         paypalEmail,
+>         cashAppTag,
+>         setupPaymentLater,
+>         profileSlug,
+>         selectedApparelSizes,
+>         touringVehicle,
+>         labelCompanyName,
+>         labelVerificationId,
+>         promoterAgency,
+>         promoterPhone,
+>         promoterRegion,
+>         promoterAdminEmail,
+>         promoterBookingEmail,
+>         promoterTitle,
+>         promoterGenres,
+>         promoterStripeConnected,
+>         promoterPaypalConnected,
+>         promoterVenueClass,
+>         promoterDeferTechSpecs,
+>         promoterLogo,
+>         promoterCoverImage,
+>         promoterCapacity,
+>         promoterSecurityMap,
+>         promoterTechRider,
+>         promoterLegalFirstName,
+>         promoterLegalLastName,
+>         promoterLegalEntityType,
+>         promoterTaxId,
+>         promoterInstagram,
+>         promoterTwitter,
+>         promoterWebsite,
+>         nexusConsentChecked,
+>         creativeBusinessName,
+>         stagedRoles: activeUserRoles,
+>         timestamp: Date.now()
+>       };
+>       
+>       await registrationStagingStore.setItem(`draft_${signupEmail || 'anonymous'}`, payload);
+>       
+>       // Advance to next active section if there is one
+>       const currentIndex = activeUserRoles.indexOf(roleCode);
+>       if (currentIndex !== -1 && currentIndex < activeUserRoles.length - 1) {
+>         const nextRole = activeUserRoles[currentIndex + 1];
+>         setActiveAccordionSection(nextRole);
+>         setStatusMessage(`STAGED ACTIVE CELL FOR ${roleCode}. REDIRECTING FRAME TO ${nextRole}...`);
+>       } else {
+>         setStatusMessage(`ALL SECTION DATA SECURELY STAGED TO OFFLINE RECORD CACHE`);
+>       }
+>     } catch (ex: any) {
+>       setError(`STAGING ERROR: ${ex?.message || 'INDEXED_DB_FAILED_TO_COMMIT'}`);
+>     } finally {
+>       setIsStagedCacheInFlight(false);
+>     }
+>   };
+> 
+>     if (activeTab === 'signup') {
+>       const targetWorkspace = typeof window !== 'undefined' ? localStorage.getItem('nexus_target_register_workspace') : null;
+>       return (
+>         <div className="w-full min-h-screen bg-[#07080a] text-zinc-100 font-sans p-0 select-none overflow-y-auto">
+>           <div className="w-full min-h-screen bg-[#0c0e12] p-1.5 sm:p-4 md:p-6 relative">
+>             <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-emerald-500 via-[#00ffcc] to-purple-500" />
+>             
+>             <div className="w-full max-w-md mx-auto mt-10">
+>               <form onSubmit={handleSignup} className="w-full flex flex-col items-stretch space-y-5" autoComplete="off">
+>                 {/* Tier 1: Profile Scope Configuration (Primary Toggle) - Hidden in Upgrade Mode */}
+>                 {!isUpgradeMode && (
+>                 <div className="w-full space-y-2">
+>                   <h4 className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase mb-1">
+>                     Select Profile Classification Profile
+>                   </h4>
+>                   <div className="grid grid-cols-2 gap-3">
+>                     <div className="flex flex-col justify-end h-full">
+>                       <span className="text-[9px] font-sans text-zinc-500 leading-tight text-center mb-2 flex-1 flex items-end justify-center">
+>                         I am joining Nexus Core purely as a music supporter and fan only, but I can upgrade later if needed.
+>                       </span>
+>                       <button
+>                         type="button"
+>                         disabled={!!targetWorkspace && ['BAND', 'PROMOTER', 'CREATIVE', 'LABEL'].includes(targetWorkspace.toUpperCase())}
+>                         onClick={() => setActiveUserRoles(['FAN'])}
+>                         className={`p-3 rounded-lg border text-xs font-bold transition-all w-full h-[42px] flex items-center justify-center ${
+>                           activeUserRoles.length === 1 && activeUserRoles.includes('FAN') 
+>                             ? 'bg-[#000000] border-emerald-500 text-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.35)]' 
+>                             : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed'
+>                         }`}
+>                       >
+>                         [ 🎧 FAN / SUPPORTER ]
+>                       </button>
+>                     </div>
+>                     <div className="flex flex-col justify-end h-full">
+>                       <span className="text-[9px] font-sans text-zinc-500 leading-tight text-center mb-2 flex-1 flex items-end justify-center">
+>                         I am currently an active artist/ band member, venue promoter, creative pro or part of a record label
+>                       </span>
+>                       <button
+>                         type="button"
+>                         onClick={() => {
+>                           const targetRole = targetWorkspace?.toUpperCase();
+>                           if (targetRole && ['BAND', 'PROMOTER', 'CREATIVE', 'LABEL'].includes(targetRole)) {
+>                             setActiveUserRoles([targetRole]);
+>                           } else {
+>                             setActiveUserRoles(['CREATIVE', 'BAND', 'PROMOTER', 'LABEL']);
+>                           }
+>                         }}
+>                         className={`p-3 rounded-lg border text-xs font-bold transition-all w-full h-[42px] flex items-center justify-center ${
+>                           activeUserRoles.length > 1 || (!activeUserRoles.includes('FAN') && activeUserRoles.length > 0)
+>                             ? 'bg-[#000000] border-purple-500 text-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.35)]' 
+>                             : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-600'
+>                         }`}
+>                       >
+>                         [ ⚡ INDUSTRY PROFESSIONAL ]
+>                       </button>
+>                     </div>
+>                   </div>
+> 
+>                   {/* Sub-selector for specific workspace enrollments */}
+>                   {(!activeUserRoles.includes('FAN') && activeUserRoles.length > 0) && (
+>                     <div className="mt-4 p-3 bg-zinc-950/60 border border-zinc-900 rounded-xl space-y-3">
+>                       <div className="flex items-center justify-between">
+>                         <span className="block text-[9.5px] font-mono font-bold text-zinc-400 uppercase tracking-wider">
+>                           SELECT WORKSPACE ENROLLMENTS:
+>                         </span>
+>                         {targetWorkspace && (
+>                           <span className="text-[8px] font-mono text-amber-500 animate-pulse font-bold">
+>                             ⚠️ TARGET PORTAL REQUIRED
+>                           </span>
+>                         )}
+>                       </div>
+>                       <div className="grid grid-cols-2 gap-2">
+>                         {[
+>                           { key: 'BAND', name: '🎸 Band / Artist', desc: 'Lineup, presets & shows' },
+>                           { key: 'PROMOTER', name: '🏟️ Venue Promoter', desc: 'Schedules & lineups' },
+>                           { key: 'CREATIVE', name: '🛠️ Creative Hub', desc: 'Contracts & portfolio' },
+>                           { key: 'LABEL', name: '💿 Record Label', desc: 'Roster & releases' },
+>                         ].map((item) => {
+>                           const isTarget = targetWorkspace?.toUpperCase() === item.key;
+>                           const isChecked = activeUserRoles.includes(item.key);
+>                           const isAlreadyUnlocked = userProfile?.registered_workspaces?.includes(item.key.toLowerCase());
+>                           
+>                           return (
+>                             <button
+>                               key={item.key}
+>                               type="button"
+>                               disabled={isTarget || isAlreadyUnlocked}
+>                               onClick={() => {
+>                                 toggleRole(item.key);
+>                               }}
+>                               className={`p-2.5 rounded-lg border text-[11px] font-bold text-left transition-all relative flex flex-col justify-between h-[64px] ${
+>                                 isChecked
+>                                   ? 'bg-[#000000] border-purple-500/80 text-purple-400 shadow-[0_0_6px_rgba(168,85,247,0.2)]'
+>                                   : 'bg-zinc-900/40 border-zinc-850 text-zinc-500 hover:border-zinc-700 disabled:opacity-60 disabled:cursor-not-allowed'
+>                               }`}
+>                             >
+>                               <div className="flex items-center justify-between w-full">
+>                                 <span>{item.name}</span>
+>                                 {isTarget && (
+>                                   <span className="text-[7.5px] bg-amber-950/80 text-amber-400 border border-amber-900 px-1.5 py-0.5 rounded font-mono font-black uppercase">REQUIRED</span>
+>                                 )}
+>                                 {isAlreadyUnlocked && (
+>                                   <span className="text-[7.5px] bg-emerald-950/80 text-emerald-400 border border-emerald-900 px-1.5 py-0.5 rounded font-mono font-black uppercase">ACTIVE</span>
+>                                 )}
+>                               </div>
+>                               <span className="text-[7.5px] font-mono text-zinc-600 leading-tight">{item.desc}</span>
+>                             </button>
+>                           );
+>                         })}
+>                       </div>
+>                     </div>
+>                   )}
+>                 </div>
+>                 )}
+> 
+>               {/* ROLE ACCORDIONS (BAND / ARTIST PORTAL) */}
+>               {activeUserRoles.includes('BAND') && (
+>                 <div className="border border-emerald-900 rounded-xl overflow-hidden mb-4 transition-all">
+>                   <div 
+>                     className="bg-emerald-950/40/20 p-4 border-b border-emerald-900 flex justify-between items-center cursor-pointer hover:bg-emerald-950/40/30 transition-colors"
+>                     onClick={() => setActiveAccordionSection(activeAccordionSection === 'BAND' ? '' : 'BAND')}
+>                   >
+>                     <div className="flex items-center gap-3">
+>                       <span className="text-2xl drop-shadow-md">🎸</span>
+>                       <div>
+>                         import React, { useState, useEffect, useRef } from 'react';
+> import { 
+>   Radio, Lock, UserPlus, RefreshCw, CheckCircle, Sparkles, Clock, Check, ChevronRight, 
+>   Eye, EyeOff, User, Upload, Building, AlertTriangle, Disc, Tag, LogIn, ChevronLeft, Calendar, Ticket, ChevronDown,
+>   Image as ImageIcon
+> } from 'lucide-react';
+> import { motion, AnimatePresence } from 'motion/react';
+> 
+> import { MASTER_GENRES } from '../constants/genres';
+> import { BAND_PORTAL_BILLING } from '../config/billingMatrix';
+> import TermsOfServiceView from './TermsOfServiceView';
+> import { registrationStagingStore } from '../utils/indexedDB';
+> import { wipeAllLocalData } from "../utils/resetApp";
+> 
+> function compressImageAtModuleLevel(base64Str: string, maxWidth = 800, maxHeight = 800, quality = 0.7): Promise<string> {
+>   return new Promise((resolve) => {
+>     const img = document.createElement('img');
+>     img.src = base64Str;
+>     img.onload = () => {
+>       let width = img.width;
+>       let height = img.height;
+>       if (width <= 0 || height <= 0) {
+>         resolve(base64Str);
+>         return;
+>       }
+>       if (width > maxWidth || height > maxHeight) {
+>         if (width > height) {
+>           height = Math.round((height * maxWidth) / width);
+>           width = maxWidth;
+>         } else {
+>           width = Math.round((width * maxHeight) / height);
+>           height = maxHeight;
+>         }
+>       }
+>       const canvas = document.createElement('canvas');
+>       canvas.width = width;
+>       canvas.height = height;
+>       const ctx = canvas.getContext('2d');
+>       if (ctx) {
+>         ctx.drawImage(img, 0, 0, width, height);
+>         resolve(canvas.toDataURL('image/jpeg', quality));
+>       } else {
+>         resolve(base64Str);
+>       }
+>     };
+>     img.onerror = () => resolve(base64Str);
+>   });
+> }
+> 
+> const CREATIVE_CORE_SKILLS: Record<string, string[]> = {
+>   GRAPHIC_DESIGN: ['MERCH_DESIGN', 'ALBUM_ART', 'TOUR_POSTERS', 'BRAND_IDENTITY', 'SOCIAL_ASSETS'],
+>   PHOTOGRAPHY: ['LIVE_MUSIC_PHOTO', 'PRESS_SHOTS', 'TOUR_DOCUMENTARY', 'STUDIO_SESSIONS'],
+>   VIDEO_PRODUCTION: ['MUSIC_VIDEOS', 'TOUR_RECAPS', 'LIVE_VISUALS', 'DOCUMENTARY', 'SHORT_FORM_CONTENT'],
+>   AUDIO_ENGINEERING: ['FOH_ENGINEER', 'MONITOR_ENGINEER', 'STUDIO_MIXING', 'MASTERING', 'POST_PRODUCTION'],
+>   SESSION_MUSICIAN_TECHS: ['TOUR_MANAGEMENT', 'SESSION_MUSICIAN', 'LIGHTING_DIRECTOR', 'STAGE_DESIGN', 'BOOKING_AGENT']
+> };
+> 
+> const GENRE_CLUSTERS = [
+>   {
+>     name: 'CLUSTER 01: EXTREME METAL',
+>     genres: ['DEATH METAL', 'SLAMMING BDM', 'BRUTAL DEATH METAL', 'BRUTAL DEATHCORE', 'TECHNICAL BDM', 'DEATH N\' ROLL', 'TECH DEATH', 'BLASTING BDM', 'GRINDCORE', 'DEATHGRIND', 'GOREGRIND/PORNOGRIND', 'THRASH METAL', 'DEATH THRASH', 'MELODIC DEATH', 'OSDM', 'DOOM', 'BLACK METAL', 'BLACKENED DEATH', 'SYMPHONIC BLACK', 'DEATHCORE', 'PROGRESSIVE DEATH']
+>   },
+>   {
+>     name: 'CLUSTER 02: ROCK/HEAVY METAL',
+>     genres: ['TRADITIONAL HEAVY METAL', 'DOOM METAL', 'STONER METAL', 'SLUDGE METAL', 'STONER ROCK', 'PROG METAL', 'POWER METAL', 'ALTERNATIVE ROCK', 'GOTHIC ROCK', 'HARD ROCK', 'NEW WAVE', 'FOLK METAL', 'AVANT-GARDE', 'DJENT', 'MATHCORE', 'MATH ROCK', 'SHOE GAZE', 'NOISE ROCK', 'INDIE ROCK', 'NU METAL']
+>   },
+>   {
+>     name: 'CLUSTER 03: HARDCORE',
+>     genres: ['TRADITIONAL HARDCORE', 'METALCORE', 'BEATDOWN', 'YOUTH CREW', 'FASTCORE', 'POST HARDCORE', 'MELODIC HARDCORE', 'SKRAMZ/SCREAMO', 'POWER VIOLENCE', 'MINCECORE']
+>   },
+>   {
+>     name: 'CLUSTER 04: PUNK/ALTERNATIVE',
+>     genres: ['PUNK ROCK', 'POP PUNK', 'MATH ROCK', 'MIDWEST EMO', 'SKATE PUNK', 'MELODIC PUNK', 'INDIE PUNK', 'POST PUNK', 'GRUNGE']
+>   },
+>   {
+>     name: 'CLUSTER 05: INDUSTRIAL/EDM',
+>     genres: ['EBM', 'SYNTHWAVE', 'DARKWAVE/COLD WAVE', 'AGGROTECH/TERROR EBM', 'TECHNO', 'INDUSTRIAL METAL', 'DUBSTEP', 'DRUM & BASS', 'GABBER/HARDSTYLE', 'BREAKCORE', 'HARSH NOISE WALL', 'WITCH HOUSE']
+>   },
+>   {
+>     name: 'CLUSTER 06: HIP HOP/RAP',
+>     genres: ['UNDERGROUND RAP', 'TRAP', 'BOOM BAP', 'PHONK', 'DRILL', 'CLOUD RAP', 'EXPERIMENTAL', 'GRIME']
+>   }
+> ];
+> 
+> import { executeWithSchemaResilience, getSupabase, generateUUID, normalizeLoadedProfile, resolveZipCode } from '../supabase';
+> import { Band, UserProfile, Show } from '../types';
+> 
+> interface LoginViewProps {
+>   onLogin: (customProfile?: UserProfile, customBand?: Band, selectBandId?: string) => void;
+>   userProfile?: UserProfile;
+>   initialTab?: 'unlock' | 'signup';
+>   onTabChange?: (tab: 'unlock' | 'signup') => void;
+>   triggerNotification?: (msg: string) => void;
+>   isUpgradeMode?: boolean;
+> }
+> 
+> const LoginView: React.FC<LoginViewProps> = ({ onLogin, userProfile, initialTab = 'unlock', onTabChange, triggerNotification, isUpgradeMode = false }) => {
+>   const [activeTab, setActiveTab] = useState<'unlock' | 'signup'>(initialTab);
+>   
+>   // Conditionally rendered gateway state
+>   const [isRoleGatewayPassed, setIsRoleGatewayPassed] = useState(isUpgradeMode);
+>   const [activeUserRoles, setActiveUserRoles] = useState<string[]>(() => {
+>     if (typeof window !== 'undefined') {
+>       const wizardRolesRaw = localStorage.getItem('nexus_wizard_roles');
+>       if (wizardRolesRaw) {
+>         try {
+>           const roles = JSON.parse(wizardRolesRaw);
+>           if (Array.isArray(roles) && roles.length > 0) {
+>             return roles;
+>           }
+>         } catch (e) {
+>           console.error('Failed to parse wizard roles', e);
+>         }
+>       }
+>     }
+> 
+>     const targetWorkspace = typeof window !== 'undefined' ? localStorage.getItem('nexus_target_register_workspace') : null;
+>     if (targetWorkspace) {
+>       const role = targetWorkspace.toUpperCase();
+>       if (['BAND', 'PROMOTER', 'CREATIVE', 'LABEL'].includes(role)) {
+>         return [role];
+>       }
+>     }
+>     return isUpgradeMode ? ['FAN'] : [];
+>   });
+>   
+>   const selectTab = (tab: 'unlock' | 'signup') => {
+>     setActiveTab(tab);
+>     onTabChange?.(tab);
+>   };
+>   
+>   // Tab 1: Session Unlock
+>   const [email, setEmail] = useState(() => {
+>     const params = new URLSearchParams(window.location.search);
+>     return params.get('email') || userProfile?.email || 'admin@example.com';
+>   });
+>   const [pin, setPin] = useState('');
+>   const [error, setError] = useState('');
+> 
+>   // Form Fields
+>   const [fullName, setFullName] = useState(() => isUpgradeMode ? userProfile?.name || '' : '');
+>   const [legalName, setLegalName] = useState(() => isUpgradeMode ? userProfile?.name || '' : '');
+>   const [screenName, setScreenName] = useState(() => isUpgradeMode ? userProfile?.screen_name || userProfile?.console_handle || '' : '');
+>   const [locationCode, setLocationCode] = useState(() => isUpgradeMode ? userProfile?.location_code || '' : '');
+>   const [cityState, setCityState] = useState(() => isUpgradeMode ? userProfile?.city_state || userProfile?.location_code || '' : '');
+>   const [zipCode, setZipCode] = useState(() => isUpgradeMode ? userProfile?.zip_code || '' : '');
+>   const [consoleHandle, setConsoleHandle] = useState(() => isUpgradeMode ? userProfile?.console_handle || '' : '');
+>   const [signupEmail, setSignupEmail] = useState(() => {
+>     if (isUpgradeMode && userProfile?.email) return userProfile?.email;
+>     const params = new URLSearchParams(window.location.search);
+>     return params.get('email') || '';
+>   });
+>   const [signUpPassword, setSignUpPassword] = useState(() => isUpgradeMode ? userProfile?.pin || '' : '');
+>   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
+>   const [signUpUnlockPin, setSignUpUnlockPin] = useState(() => isUpgradeMode ? userProfile?.pin || '' : '');
+>   const [signUpIs24Hour, setSignUpIs24Hour] = useState<boolean>(true);
+>   const [signUpPromoCode, setSignUpPromoCode] = useState('');
+>   
+>   const [profileAvatar, setProfileAvatar] = useState(() => isUpgradeMode ? userProfile?.avatar_url || '/Nexus Icon brackets.png' : '/Nexus Icon brackets.png');
+>   const [profileBanner, setProfileBanner] = useState(() => isUpgradeMode ? userProfile?.banner_url || '' : '');
+>   const [showCoverImageUploader, setShowCoverImageUploader] = useState(false);
+>   const [isPromoYearApplied, setIsPromoYearApplied] = useState(false);
+>   const [isDragOverAvatar, setIsDragOverAvatar] = useState(false);
+>   const [isDragOverBanner, setIsDragOverBanner] = useState(false);
+>   const [promoValidationError, setPromoValidationError] = useState('');
+>   const [promoSuccessMsg, setPromoSuccessMsg] = useState('');
+>   const [isBandPromoExpanded, setIsBandPromoExpanded] = useState(false);
+>   
+>   // Staging / Accordion States
+>   const [activeAccordionSection, setActiveAccordionSection] = useState<string>('');
+>   const [labelManagedRights, setLabelManagedRights] = useState<boolean>(false);
+>   const [stripeMerchantId, setStripeMerchantId] = useState<string>('');
+>   const [stripeConnected, setStripeConnected] = useState<boolean>(false);
+>   const [paypalEmail, setPaypalEmail] = useState<string>('');
+>   const [paypalConnected, setPaypalConnected] = useState<boolean>(false);
+>   const [cashAppTag, setCashAppTag] = useState<string>('');
+>   const [setupPaymentLater, setSetupPaymentLater] = useState<boolean>(false);
+>   const [profileSlug, setProfileSlug] = useState<string>('');
+>   const [selectedApparelSizes, setSelectedApparelSizes] = useState<string[]>(['M', 'L', 'XL']);
+>   const [touringVehicle, setTouringVehicle] = useState<string>('Van');
+> 
+>   // Auto-initialize active accordion section based on chosen roles
+>   useEffect(() => {
+>     if (activeTab === 'signup' && !isUpgradeMode && !isRoleGatewayPassed) {
+>       setActiveUserRoles(['FAN']);
+>       setIsRoleGatewayPassed(true);
+>       setActiveAccordionSection('FAN');
+>     }
+>   }, [activeTab, isUpgradeMode, isRoleGatewayPassed]);
+> 
+>   useEffect(() => {
+>     if (isRoleGatewayPassed && activeUserRoles.length > 0) {
+>       // Choose the first role as the active open accordion section by default
+>       const defaultRole = activeUserRoles[0];
+>       setActiveAccordionSection(defaultRole);
+>     }
+>   }, [isRoleGatewayPassed, activeUserRoles]);
+> 
+>   useEffect(() => {
+>     const handleOAuthMessage = (event: MessageEvent) => {
+>       const origin = event.origin;
+>       if (!origin.endsWith('.run.app') && !origin.includes('localhost') && !origin.includes('127.0.0.1')) {
+>         return;
+>       }
+>       
+>       if (event.data?.type === 'STRIPE_AUTH_SUCCESS') {
+>         const stripeId = event.data.stripeUserId;
+>         setStripeMerchantId(stripeId);
+>         setStripeConnected(true);
+>         setLabelStripeConnected(true);
+>         triggerNotification?.(`✔️ STRIPE REGISTERED: Account ${stripeId} successfully synced!`);
+>       }
+>       
+>       if (event.data?.type === 'PAYPAL_AUTH_SUCCESS') {
+>         const email = event.data.email;
+>         setPaypalEmail(email);
+>         setPaypalConnected(true);
+>         setLabelPaypalConnected(true);
+>         triggerNotification?.(`✔️ PAYPAL REGISTERED: Account ${email} successfully linked!`);
+>       }
+>     };
+>     
+>     window.addEventListener('message', handleOAuthMessage);
+>     return () => window.removeEventListener('message', handleOAuthMessage);
+>   }, [triggerNotification]);
+>   
+>   // Band Details
+>   const [bandName, setBandName] = useState(() => {
+>     const params = new URLSearchParams(window.location.search);
+>     return params.get('band') || '';
+>   });
+>   const [bandGenre, setBandGenre] = useState('Extreme Metal');
+>   const [bandSubGenre, setBandSubGenre] = useState('ALL');
+>   const [isMicroGenresExpanded, setIsMicroGenresExpanded] = useState(false);
+>   const [isCreativeGenresExpanded, setIsCreativeGenresExpanded] = useState(false);
+>   const [customGenre, setCustomGenre] = useState('');
+>   const [bandHomebase, setBandHomebase] = useState('');
+>   const [bandYoutubeVideo, setBandYoutubeVideo] = useState('');
+>   const [bandAudioHub, setBandAudioHub] = useState('');
+>   const [deferMusicUpload, setDeferMusicUpload] = useState(true);
+>   const [bandLogo, setBandLogo] = useState('https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=300');
+>   const [bandBanner, setBandBanner] = useState('');
+> 
+>   // Band collapsible sub-sections
+>   const [bandSectionAOpen, setBandSectionAOpen] = useState(true);
+>   const [bandSectionBOpen, setBandSectionBOpen] = useState(false);
+>   const [bandSectionCOpen, setBandSectionCOpen] = useState(false);
+> 
+>   const [bandSubGenres, setBandSubGenres] = useState<string[]>([]);
+>   const [bandBookingEmail, setBandBookingEmail] = useState('');
+>   const [bandBookingPhone, setBandBookingPhone] = useState('');
+>   const [bandTechRider, setBandTechRider] = useState('');
+>   const [bandHeadcount, setBandHeadcount] = useState(1);
+>   const [bandRoster, setBandRoster] = useState<{name: string, role: string, access: string}[]>([]);
+>   const [newRosterName, setNewRosterName] = useState('');
+>   const [newRosterRole, setNewRosterRole] = useState('');
+>   const [newRosterAccess, setNewRosterAccess] = useState('Level 1');
+>   const [bandStripeConnected, setBandStripeConnected] = useState(false);
+>   const [bandPaypalConnected, setBandPaypalConnected] = useState(false);
+> 
+> 

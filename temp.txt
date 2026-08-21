@@ -1,0 +1,68 @@
+123:  const [bandRosterInput, setBandRosterInput] = useState(() => Array.isArray(userProfile.label_band_roster) ? userProfile.label_band_roster.join(', ') : '');
+124:  const [subLabelsInput, setSubLabelsInput] = useState(() => Array.isArray(userProfile.label_sub_labels) ? userProfile.label_sub_labels.join(', ') : '');
+127:    const joined = Array.isArray(userProfile.label_band_roster) ? userProfile.label_band_roster.join(', ') : '';
+129:    const profileJoined = Array.isArray(userProfile.label_band_roster) ? userProfile.label_band_roster.map(x => x.trim()).filter(Boolean).join(', ') : '';
+133:  }, [userProfile.label_band_roster]);
+136:    const joined = Array.isArray(userProfile.label_sub_labels) ? userProfile.label_sub_labels.join(', ') : '';
+138:    const profileJoined = Array.isArray(userProfile.label_sub_labels) ? userProfile.label_sub_labels.map(x => x.trim()).filter(Boolean).join(', ') : '';
+142:  }, [userProfile.label_sub_labels]);
+173:  const allowedWorkspaces = userProfile.allowed_workspaces || [userProfile.account_type || 'label'];
+1764:      ? (userProfile.label_company_name || 'NEXUS LABEL HQ').toUpperCase()
+1862:              username: (userProfile.label_company_name || 'NEXUS LABEL HQ').toUpperCase() + ' (Label)',
+2134:            {userProfile.label_banner && (
+2137:                  src={userProfile.label_banner} 
+2166:                  {userProfile.label_avatar ? (
+2168:                      src={userProfile.label_avatar} 
+2187:                  <span>{userProfile.label_company_name || 'NEXUS LABEL HQ'}</span>
+2192:                    nexus-core.app/{userProfile.label_url_slug || 'hq'}
+2213:                <span className="text-[#f97316] font-bold">{userProfile.label_plan_tier === 'APEX' ? 'APEX COMMAND' : userProfile.label_plan_tier === 'SYNDICATE' ? 'SYNDICATE FLEET' : 'DISTRO SEED'}</span>
+2217:                <span className="text-zinc-300 font-bold">0 / {userProfile.label_plan_tier === 'APEX' ? 'UNLIMITED' : userProfile.label_plan_tier === 'SYNDICATE' ? '20' : '5'}</span>
+2295:                      creative_metadata: userProfile.creative_metadata || {
+2296:                        business_name: userProfile.name + ' Studio',
+2297:                        booking_email: userProfile.email,
+2298:                        base_location: userProfile.target_region || 'Austin, Texas',
+2372:            {userProfile.label_banner && (
+2375:                  src={userProfile.label_banner} 
+2407:                  {userProfile.label_avatar ? (
+2409:                      src={userProfile.label_avatar} 
+2428:                  <span>{userProfile.label_company_name || 'NEXUS LABEL HQ'}</span>
+2433:                    nexus-core.app/{userProfile.label_url_slug || 'hq'}
+2462:                <span className="text-[#f97316] font-extrabold">{userProfile.label_plan_tier === 'APEX' ? 'APEX COMMAND' : userProfile.label_plan_tier === 'SYNDICATE' ? 'SYNDICATE FLEET' : 'DISTRO SEED'}</span>
+2466:                <span className="text-zinc-300 font-bold">0 / {userProfile.label_plan_tier === 'APEX' ? 'UNLIMITED' : userProfile.label_plan_tier === 'SYNDICATE' ? '20' : '5'}</span>
+2470:                <span className="text-zinc-300 font-bold">{userProfile.label_trial_period_days || 30} DAYS REMAINING</span>
+2550:                      creative_metadata: userProfile.creative_metadata || {
+2551:                        business_name: userProfile.name + ' Studio',
+2552:                        booking_email: userProfile.email,
+2553:                        base_location: userProfile.target_region || 'Austin, Texas',
+4327:                          nexus-core.app/label/{userProfile.label_company_name ? userProfile.label_company_name.toLowerCase().replace(/[^a-z0-9]/g, '') : 'hq'}
+5728:                      {userProfile.label_avatar ? (
+5731:                            src={userProfile.label_avatar} 
+5777:                      {userProfile.label_banner ? (
+5780:                            src={userProfile.label_banner} 
+5839:                      value={userProfile.label_company_name || ''}
+5850:                      value={userProfile.label_url_slug || ''}
+5861:                      value={userProfile.email}
+5872:                      value={userProfile.label_headquarters || ''}
+5883:                      value={userProfile.label_founded_year || ''}
+5894:                      value={userProfile.label_roster_count || ''}
+5906:                      value={userProfile.label_security_pin || ''}
+5961:                      value={userProfile.label_legal_entity_type || 'LLC'}
+5976:                      value={userProfile.label_tax_registration_number || ''}
+5985:                      value={userProfile.label_master_distro_model || 'IN_HOUSE_FULFILLMENT'}
+6000:                      value={userProfile.label_shipping_postal_code || ''}
+6009:                      value={userProfile.label_shipping_country || 'US'}
+6034:                      LABEL: <span className="text-[#f97316]">{userProfile.label_default_contract_split ?? 50}%</span> / ARTIST: <span className="text-[#00ffcc]">{100 - (userProfile.label_default_contract_split ?? 50)}%</span>
+6044:                    value={userProfile.label_default_contract_split ?? 50}
+6052:                      value={userProfile.label_digital_accreditation_scheme || 'LABEL_PROVIDES_INDEPENDENT_CODES'}
+6101:                          const currentGenres = userProfile.label_genres || [];
+6150:                        userProfile.label_stripe_connected && userProfile.stripe_customer_id
+6154:                        {userProfile.label_stripe_connected && userProfile.stripe_customer_id ? '● LIVE SYNCED' : '○ DISCONNECTED'}
+6158:                    {userProfile.stripe_customer_id ? (
+6163:                            <span className="text-xs font-mono text-[#00ffcc] font-bold truncate block">{userProfile.stripe_customer_id}</span>
+6208:                        userProfile.label_paypal_connected && userProfile.paypal_email
+6212:                        {userProfile.label_paypal_connected && userProfile.paypal_email ? '● LIVE SYNCED' : '○ DISCONNECTED'}
+6216:                    {userProfile.paypal_email ? (
+6221:                            <span className="text-xs font-mono text-sky-400 font-bold truncate block">{userProfile.paypal_email}</span>
+6263:                      checked={!!userProfile.label_setup_payment_later}
+6324:                LOGGED IN AS: <span className="text-[#f97316] font-bold">{(userProfile.label_company_name || 'NEXUS LABEL HQ').toUpperCase()}</span>
+6742:          labelName={userProfile.label_company_name || 'UNDEFINED'}
