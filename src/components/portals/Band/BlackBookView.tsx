@@ -648,10 +648,10 @@ Representing ${activeBandName}`;
             <p className="text-zinc-400 font-mono text-xs uppercase">No venues found for routing</p>
           </div>
         ) : (
-          filteredVenues.map((venue) => {
+          filteredVenues.map((venue, idx) => {
             return (
               <VenueReputationCard
-                key={venue.id}
+                key={`${venue.id}-${idx}`}
                 venue={venue}
                 userReviews={userReviews}
                 savedVenueIds={savedVenueIds}
@@ -703,9 +703,9 @@ Representing ${activeBandName}`;
                 <div>
                   <label className="block text-[10px] uppercase text-[#00ffcc] mb-1.5 tracking-wider">Search Radius</label>
                   <div className="flex items-center gap-2">
-                    {['25 MI', '50 MI', '100 MI', '250 MI'].map(radius => (
+                    {['25 MI', '50 MI', '100 MI', '250 MI'].map((radius, idx) => (
                       <button
-                        key={radius}
+                        key={`${radius}-${idx}`}
                         type="button"
                         onClick={() => setBeaconForm(p => ({ ...p, radius }))}
                         className={`flex-1 py-2 rounded text-[10px] font-bold tracking-widest uppercase transition-colors border ${
@@ -790,9 +790,9 @@ Representing ${activeBandName}`;
                   </h3>
                 </div>
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
-                  {['all', 'pending', 'accepted', 'renegotiating'].map((filter) => (
+                  {['all', 'pending', 'accepted', 'renegotiating'].map((filter, idx) => (
                     <button
-                      key={filter}
+                      key={`${filter}-${idx}`}
                       onClick={() => setOfferFilter(filter as any)}
                       className={`px-2.5 py-1 rounded text-[9px] font-mono font-bold tracking-widest uppercase transition-colors whitespace-nowrap ${
                         offerFilter === filter 
@@ -812,7 +812,7 @@ Representing ${activeBandName}`;
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {offers.filter(o => offerFilter === 'all' || o.status === offerFilter).map(offer => {
+                  {offers.filter(o => offerFilter === 'all' || o.status === offerFilter).map((offer, idx) => {
                     let badgeText = '';
                     let badgeStyle = '';
                     let borderStyle = '';
@@ -843,7 +843,7 @@ Representing ${activeBandName}`;
 
                     return (
                       <div 
-                        key={offer.id} 
+                        key={`${offer.id}-${idx}`} 
                         className={`font-mono rounded-lg transition-all text-xs overflow-hidden ${cardContainerStyle}`}
                       >
                         <div 
@@ -1044,8 +1044,8 @@ Representing ${activeBandName}`;
                                   <div className="mt-2.5 pt-2.5 border-t border-zinc-800/60">
                                     <div className="text-[9px] uppercase text-zinc-600 font-bold mb-2 tracking-widest">Flag Missing Info:</div>
                                     <div className="grid grid-cols-2 gap-2 text-[9.5px]">
-                                      {['Missing Wi-Fi details', 'Missing Parking/Power specs', 'Curfew/Load-out times', 'Green room access code'].map(flag => (
-                                        <label key={flag} className="flex items-center gap-2 cursor-pointer group" onClick={e => e.stopPropagation()}>
+                                      {['Missing Wi-Fi details', 'Missing Parking/Power specs', 'Curfew/Load-out times', 'Green room access code'].map((flag, idx) => (
+                                        <label key={`${flag}-${idx}`} className="flex items-center gap-2 cursor-pointer group" onClick={e => e.stopPropagation()}>
                                           <input type="checkbox" className="accent-amber-500 bg-zinc-900 border-zinc-700" />
                                           <span className="text-zinc-400 group-hover:text-zinc-200 transition-colors uppercase select-none">{flag}</span>
                                         </label>
@@ -1270,9 +1270,9 @@ Representing ${activeBandName}`;
                   <div className="flex-1">
                     <label className="block text-[10px] uppercase font-mono text-amber-500 mb-1.5">Payout Rating</label>
                     <div className="flex items-center gap-1">
-                      {[1, 2, 3, 4, 5].map((val) => (
+                      {[1, 2, 3, 4, 5].map((val, idx) => (
                         <button
-                          key={`payout-${val}`}
+                          key={`payout-${val}-${idx}`}
                           type="button"
                           onClick={() => setNewIntelForm(p => ({ ...p, payout: val }))}
                           className={`flex-1 h-8 rounded border flex items-center justify-center cursor-pointer transition-colors ${
@@ -1289,9 +1289,9 @@ Representing ${activeBandName}`;
                   <div className="flex-1">
                     <label className="block text-[10px] uppercase font-mono text-amber-500 mb-1.5">Load-in Rating</label>
                     <div className="flex items-center gap-1">
-                      {[1, 2, 3, 4, 5].map((val) => (
+                      {[1, 2, 3, 4, 5].map((val, idx) => (
                         <button
-                          key={`loadin-${val}`}
+                          key={`loadin-${val}-${idx}`}
                           type="button"
                           onClick={() => setNewIntelForm(p => ({ ...p, loadIn: val }))}
                           className={`flex-1 h-8 rounded border flex items-center justify-center cursor-pointer transition-colors ${

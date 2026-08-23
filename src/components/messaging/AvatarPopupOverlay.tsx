@@ -433,9 +433,9 @@ export const AvatarPopupOverlay: React.FC = () => {
                 </div>
 
                 <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                  {EMOJIS.map(emoji => (
+                  {EMOJIS.map((emoji, idx) => (
                     <button
-                      key={emoji}
+                      key={`${emoji}-${idx}`}
                       onClick={() => handleReact(emoji)}
                       title={`React ${emoji}`}
                       className={`text-base px-2.5 py-1.5 rounded-lg border transition-all ${
@@ -452,9 +452,9 @@ export const AvatarPopupOverlay: React.FC = () => {
                 {/* Aggregated reactions count pills */}
                 {reactions.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2.5 pt-2 border-t border-zinc-800/50">
-                    {Object.entries(reactionCounts).map(([emoji, count]) => (
+                    {Object.entries(reactionCounts).map(([emoji, count], idx) => (
                       <div
-                        key={emoji}
+                        key={`${emoji}-${idx}`}
                         className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-xs text-zinc-300"
                       >
                         <span>{emoji}</span>
@@ -484,8 +484,8 @@ export const AvatarPopupOverlay: React.FC = () => {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {comments.map((comment) => (
-                      <div key={comment.id} className="flex gap-2.5 text-xs">
+                    {comments.map((comment, idx) => (
+                      <div key={`${comment.id}-${idx}`} className="flex gap-2.5 text-xs">
                         {/* Commenter Avatar */}
                         <div className="w-7 h-7 rounded-full bg-zinc-900 border border-zinc-800 shrink-0 flex items-center justify-center overflow-hidden font-bold text-[10px] text-purple-400">
                           {comment.avatarUrl ? (

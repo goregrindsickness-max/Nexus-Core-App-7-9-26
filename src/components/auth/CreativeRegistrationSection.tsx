@@ -204,8 +204,8 @@ export const CreativeRegistrationSection: React.FC<CreativeRegistrationSectionPr
                     className="w-full bg-zinc-950 border border-zinc-800 rounded p-2.5 text-xs font-mono text-purple-400 focus:border-purple-500 outline-none"
                   >
                     <option value="">SELECT STATE...</option>
-                    {US_STATES.map((st) => (
-                      <option key={st.code} value={st.code}>{st.name.toUpperCase()} ({st.code})</option>
+                    {US_STATES.map((st, idx) => (
+                      <option key={`${st.code}-${idx}`} value={st.code}>{st.name.toUpperCase()} ({st.code})</option>
                     ))}
                     <option value="OUTSIDE_US">Outside US / Int'l</option>
                   </select>
@@ -218,8 +218,8 @@ export const CreativeRegistrationSection: React.FC<CreativeRegistrationSectionPr
                     onChange={(e) => setCreativeCountry(e.target.value)}
                     className="w-full bg-zinc-950 border border-zinc-800 rounded p-2.5 text-xs font-mono text-purple-400 focus:border-purple-500 outline-none"
                   >
-                    {COUNTRIES.map((c) => (
-                      <option key={c.code} value={c.code}>{c.name.toUpperCase()}</option>
+                    {COUNTRIES.map((c, cIdx) => (
+                      <option key={`${c.code}-${cIdx}`} value={c.code}>{c.name.toUpperCase()}</option>
                     ))}
                   </select>
                 </div>
@@ -305,8 +305,8 @@ export const CreativeRegistrationSection: React.FC<CreativeRegistrationSectionPr
                     onChange={(e) => setCreativeCoreSkill(e.target.value)}
                     className="w-full bg-zinc-950 border border-zinc-800 rounded p-2.5 text-xs font-mono text-purple-400 focus:border-purple-500 outline-none"
                   >
-                    {(CREATIVE_CORE_SKILLS[creativePrimarySpecialty] || []).map(skill => (
-                      <option key={skill} value={skill}>{skill.replace(/_/g, ' ')}</option>
+                    {(CREATIVE_CORE_SKILLS[creativePrimarySpecialty] || []).map((skill, idx) => (
+                      <option key={`${skill}-${idx}`} value={skill}>{skill.replace(/_/g, ' ')}</option>
                     ))}
                   </select>
                 </div>
@@ -340,8 +340,8 @@ export const CreativeRegistrationSection: React.FC<CreativeRegistrationSectionPr
                     onChange={(e) => setCreativeSecondaryCoreSkill(e.target.value)}
                     className="w-full bg-zinc-950 border border-zinc-800 rounded p-2.5 text-xs font-mono text-purple-400 focus:border-purple-500 outline-none"
                   >
-                    {(CREATIVE_CORE_SKILLS[creativeSecondarySpecialty] || []).map(skill => (
-                      <option key={skill} value={skill}>{skill.replace(/_/g, ' ')}</option>
+                    {(CREATIVE_CORE_SKILLS[creativeSecondarySpecialty] || []).map((skill, idx) => (
+                      <option key={`${skill}-${idx}`} value={skill}>{skill.replace(/_/g, ' ')}</option>
                     ))}
                   </select>
                 </div>
@@ -382,13 +382,13 @@ export const CreativeRegistrationSection: React.FC<CreativeRegistrationSectionPr
               
               {isCreativeGenresExpanded && (
                 <div className="mt-3 space-y-3">
-                  {GENRE_CLUSTERS.map(cluster => (
-                    <div key={cluster.name} className="bg-zinc-950/50 border border-zinc-800/80 rounded-lg p-3">
+                  {GENRE_CLUSTERS.map((cluster, idx) => (
+                    <div key={`${cluster.name}-${idx}`} className="bg-zinc-950/50 border border-zinc-800/80 rounded-lg p-3">
                       <div className="text-[8px] font-mono font-bold text-zinc-400 mb-2 uppercase tracking-widest">{cluster.name}</div>
                       <div className="flex flex-wrap gap-1.5">
-                        {cluster.genres.map(genre => (
+                        {cluster.genres.map((genre, idx) => (
                           <button
-                            key={genre}
+                            key={`${genre}-${idx}`}
                             type="button"
                             onClick={(e) => {
                               e.preventDefault();

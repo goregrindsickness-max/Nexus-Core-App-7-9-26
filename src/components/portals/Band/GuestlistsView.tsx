@@ -431,8 +431,8 @@ export default function GuestlistsView({
               }}
               className="w-full bg-[#161a23] border border-zinc-800 text-xs text-white rounded-xl p-3 font-medium focus:outline-none focus:border-[#00ffcc] tracking-wide"
             >
-              {shows.map(s => (
-                <option key={s.id} value={s.id}>
+              {shows.map((s, sIdx) => (
+                <option key={`${s.id}-${sIdx}`} value={s.id}>
                   {s.date} - {s.festival_name || s.name} ({s.guest_list?.length || 0} guests)
                 </option>
               ))}
@@ -609,9 +609,9 @@ export default function GuestlistsView({
                     No guests match filter criteria.
                   </div>
                 ) : (
-                  filteredGuests.map((g) => (
+                  filteredGuests.map((g, gIdx) => (
                     <div 
-                      key={g.id}
+                      key={`${g.id}-${gIdx}`}
                       className="bg-[#181d26] border border-[#2b3140] rounded-xl p-3 text-left relative flex justify-between items-center group"
                     >
                       <div className="space-y-1 pr-2 overflow-hidden flex-grow">

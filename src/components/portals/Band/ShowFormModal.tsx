@@ -977,8 +977,8 @@ export default function ShowFormModal({
                     <option value="" disabled className="text-zinc-500 font-sans">Select State...</option>
                     <option value="__custom__" className="text-[#00ffcc] font-sans font-bold bg-[#1a1e26]">Custom / Province...</option>
                     <option disabled>-----------------------</option>
-                    {US_STATES.map((state) => (
-                      <option key={state.code} value={state.code} className="font-sans text-white bg-[#13161d]">
+                    {US_STATES.map((state, idx) => (
+                      <option key={`${state.code}-${idx}`} value={state.code} className="font-sans text-white bg-[#13161d]">
                         {state.code} - {state.name}
                       </option>
                     ))}
@@ -1024,8 +1024,8 @@ export default function ShowFormModal({
                     <option value="United States" className="font-sans text-white bg-[#13161d]">United States</option>
                     <option value="__custom__" className="text-[#00ffcc] font-sans font-bold bg-[#1a1e26]">Custom / Other...</option>
                     <option disabled>-----------------------</option>
-                    {COUNTRIES.filter(c => c !== 'United States').map((ctry) => (
-                      <option key={ctry} value={ctry} className="font-sans text-white bg-[#13161d]">
+                    {COUNTRIES.filter(c => c !== 'United States').map((ctry, idx) => (
+                      <option key={`${ctry}-${idx}`} value={ctry} className="font-sans text-white bg-[#13161d]">
                         {ctry}
                       </option>
                     ))}
@@ -1415,9 +1415,9 @@ export default function ShowFormModal({
               <div>
                 <label className="block text-[8px] font-mono text-zinc-500 mb-1.5 uppercase tracking-wider">Age Restriction</label>
                 <div className="grid grid-cols-3 gap-1.5">
-                  {(['all', '18', '21'] as const).map((restriction) => (
+                  {(['all', '18', '21'] as const).map((restriction, idx) => (
                     <button
-                      key={restriction}
+                      key={`${restriction}-${idx}`}
                       type="button"
                       onClick={() => setAgeRestriction(restriction)}
                       className={`py-1.5 text-[9px] uppercase font-mono font-black tracking-tight rounded border transition-all cursor-pointer ${
@@ -1599,8 +1599,8 @@ export default function ShowFormModal({
             {/* Existing guest list items display */}
             {guestList.length > 0 && (
               <div className="border border-zinc-800 rounded bg-[#0d0f14] max-h-[110px] overflow-y-auto p-1.5 mb-2.5 text-xs font-mono space-y-1">
-                {guestList.map((g) => (
-                  <div key={g.id} className="flex justify-between items-center bg-[#141720]/80 px-2 py-1 rounded border border-zinc-900">
+                {guestList.map((g, gIdx) => (
+                  <div key={`${g.id}-${gIdx}`} className="flex justify-between items-center bg-[#141720]/80 px-2 py-1 rounded border border-zinc-900">
                     <span className="text-zinc-300 text-[11px]">
                       👤 {g.name} {g.additional_count > 0 ? `(+${g.additional_count})` : ''}
                     </span>
@@ -1632,9 +1632,9 @@ export default function ShowFormModal({
               <div>
                 <label className="block text-[9px] font-mono text-zinc-400 mb-1">Additional Guests:</label>
                 <div className="grid grid-cols-5 gap-1 text-[10px] font-mono">
-                  {([0, 1, 2, 3, 4] as const).map((count) => (
+                  {([0, 1, 2, 3, 4] as const).map((count, idx) => (
                     <button
-                      key={count}
+                      key={`${count}-${idx}`}
                       type="button"
                       onClick={() => setTempAdditionalCount(count)}
                       className={`p-1 border rounded transition-all cursor-pointer ${

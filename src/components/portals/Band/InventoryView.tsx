@@ -1108,9 +1108,9 @@ export default function InventoryView({
           >
             <div className="bg-[#13161d] border border-[#252830] rounded-xl p-3 flex flex-wrap gap-1.5 items-center mt-2">
               <span className="text-xs font-mono text-zinc-400 block mr-2 w-full mb-1">Filter by Health:</span>
-              {(['all', 'Healthy', 'Warning', 'Critical'] as const).map(status => (
+              {(['all', 'Healthy', 'Warning', 'Critical'] as const).map((status, idx) => (
                 <button
-                  key={status}
+                  key={`${status}-${idx}`}
                   onClick={() => setStatusFilter(status)}
                   className={`px-3 py-1 rounded text-[10px] font-mono font-bold uppercase transition-all ${
                     statusFilter === status 
@@ -1265,9 +1265,9 @@ export default function InventoryView({
               <div>
                 <label className="block text-[10px] font-mono text-zinc-400 uppercase tracking-wider mb-1">Border Tint Accent</label>
                 <div className="flex gap-2.5 pt-1">
-                  {['#a855f7', '#3b82f6', '#eab308', '#10b981', '#ef4444'].map(c => (
+                  {['#a855f7', '#3b82f6', '#eab308', '#10b981', '#ef4444'].map((c, cIdx) => (
                     <button
-                      key={c}
+                      key={`${c}-${cIdx}`}
                       type="button"
                       onClick={() => setNewItemForm(prev => ({ ...prev, border_color: c }))}
                       className={`w-6 h-6 rounded-full border-2 transition-all ${
@@ -1315,8 +1315,8 @@ export default function InventoryView({
                   className="w-full bg-[#13161d] border border-zinc-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-red-400"
                 >
                   <option value="">-- Choose Merchandise --</option>
-                  {inventory.map(item => (
-                    <option key={item.id} value={item.id}>{item?.name}</option>
+                  {inventory.map((item, idx) => (
+                    <option key={`${item.id}-${idx}`} value={item.id}>{item?.name}</option>
                   ))}
                 </select>
               </div>
@@ -1419,9 +1419,9 @@ export default function InventoryView({
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-mono tracking-wider text-[#1cb0a9] uppercase font-bold">Integration Method:</span>
                     <div className="flex gap-1.5">
-                      {(['sandbox', 'partner_api'] as const).map(mode => (
+                      {(['sandbox', 'partner_api'] as const).map((mode, idx) => (
                         <button
-                          key={mode}
+                          key={`${mode}-${idx}`}
                           type="button"
                           onClick={() => setBcAccountType(mode)}
                           className={`px-2 py-0.5 rounded text-[8.5px] font-mono font-bold uppercase transition-all cursor-pointer ${
@@ -1565,12 +1565,12 @@ export default function InventoryView({
                     </p>
 
                     <div className="max-h-[145px] overflow-y-auto border border-zinc-800 rounded-xl bg-black/15 divide-y divide-[#1e222b] text-left">
-                      {bcCatalog.map(item => {
+                      {bcCatalog.map((item, idx) => {
                         const isAlreadyImported = (inventory || []).some(i => i.name.toLowerCase() === item?.name.toLowerCase() || i.sku === item.sku);
                         const isChecked = selectedBcImports.includes(item.id);
 
                         return (
-                          <div key={item.id} className="p-2 py-2.5 flex items-center justify-between gap-2 hover:bg-black/10 transition-all">
+                          <div key={`${item.id}-${idx}`} className="p-2 py-2.5 flex items-center justify-between gap-2 hover:bg-black/10 transition-all">
                             <div className="flex items-center gap-2.5 min-w-0 flex-1">
                               {isAlreadyImported ? (
                                 <div className="w-4.5 h-4.5 rounded bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center shrink-0">
@@ -1720,13 +1720,13 @@ export default function InventoryView({
 
                         return (
                           <div className="divide-y divide-[#1d222b] max-h-[190px] overflow-y-auto">
-                            {matched.map(({ bcItem, appItem }) => {
+                            {matched.map(({ bcItem, appItem }, idx) => {
                               if (!appItem) return null;
                               const appTotalStock = appItem.table_stock + appItem.van_stock;
                               const isInSync = appTotalStock === bcItem.stock;
 
                               return (
-                                <div key={bcItem.id} className="grid grid-cols-12 gap-1 px-3 py-2.5 items-center hover:bg-black/10 transition-colors">
+                                <div key={`${bcItem.id}-${idx}`} className="grid grid-cols-12 gap-1 px-3 py-2.5 items-center hover:bg-black/10 transition-colors">
                                   {/* Title SKU column */}
                                   <div className="col-span-4 min-w-0 pr-1.5 leading-tight">
                                     <span className="text-[11px] font-bold text-zinc-250 block truncate">{appItem.name}</span>
@@ -1904,8 +1904,8 @@ export default function InventoryView({
                 <p className="text-zinc-500 font-mono text-[11px] uppercase tracking-wider">No audits logged yet</p>
               </div>
             ) : (
-              inventoryAudits.map((audit) => (
-                <div key={audit.id} className="bg-[#1f1515] border border-red-500/20 rounded-xl p-3 flex flex-col gap-2 relative">
+              inventoryAudits.map((audit, idx) => (
+                <div key={`${audit.id}-${idx}`} className="bg-[#1f1515] border border-red-500/20 rounded-xl p-3 flex flex-col gap-2 relative">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-mono font-bold text-white max-w-[60%] truncate">{audit.item_name}</span>
                     <span className="text-[10px] bg-red-500 text-white font-mono font-bold px-1.5 py-0.5 rounded shadow">
@@ -1938,7 +1938,7 @@ export default function InventoryView({
           
           /* GRID VIEW - BENTO DOUBLE-BORDERED PANEL ARTWORKS */
           <div className="grid grid-cols-2 gap-3.5">
-            {filteredAndSortedInventory.map((item) => {
+            {filteredAndSortedInventory.map((item, idx) => {
               // Custom health status tint
               let healthStateColor = 'bg-emerald-400';
               if (item.status === 'Warning') healthStateColor = 'bg-amber-400 animate-pulse';
@@ -1952,7 +1952,7 @@ export default function InventoryView({
 
               return (
                 <div 
-                  key={item.id} 
+                  key={`${item.id}-${idx}`} 
                   onClick={() => onEditItem?.(item)}
                   className={`bg-[#0b0c0f] rounded-2xl relative overflow-hidden transition-all duration-300 group hover:-translate-y-1 hover:shadow-2xl flex flex-col justify-between cursor-pointer ${
                     isHighlighted ? 'ring-2 ring-offset-2 ring-offset-black animate-pulse' : ''
@@ -2044,7 +2044,7 @@ export default function InventoryView({
         ) : (
           /* LIST VIEW - DETAILED COMPACT ROWS */
           <div className="space-y-2">
-            {filteredAndSortedInventory.map((item) => {
+            {filteredAndSortedInventory.map((item, idx) => {
               // Custom status color badge
               let healthBadgeStyle = 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5';
               if (item.status === 'Warning') healthBadgeStyle = 'border-amber-500/30 text-amber-400 bg-amber-500/5';
@@ -2056,7 +2056,7 @@ export default function InventoryView({
 
               return (
                 <div 
-                  key={item.id}
+                  key={`${item.id}-${idx}`}
                   onClick={() => onEditItem?.(item)}
                   className={`bg-[#13161d] border rounded-xl p-3 flex items-center justify-between transition-all cursor-pointer ${
                     isHighlighted 
@@ -2196,10 +2196,10 @@ export default function InventoryView({
                     </div>
                     <p className="text-[10px] text-zinc-400 font-mono">The following items are running at 10% or less capacity. Tap any to design an immediate reorder draft:</p>
                     <div className="max-h-24 overflow-y-auto space-y-1.5 pr-1">
-                      {inventory.filter(isLow10Percent).map(item => {
+                      {inventory.filter(isLow10Percent).map((item, idx) => {
                         const totalSec = (item.table_stock || 0) + (item.van_stock || 0);
                         return (
-                          <div key={item.id} className="flex items-center justify-between bg-black/40 p-2 rounded-lg border border-zinc-800 hover:border-red-500/50 transition-colors">
+                          <div key={`${item.id}-${idx}`} className="flex items-center justify-between bg-black/40 p-2 rounded-lg border border-zinc-800 hover:border-red-500/50 transition-colors">
                             <span className="text-[10px] text-white truncate max-w-[180px] font-sans font-semibold">{item?.name}</span>
                             <div className="flex items-center gap-2">
                               <span className="text-[9px] font-mono text-zinc-500">Left: {totalSec}/{item.initial_batch_size || 100}</span>
@@ -2470,12 +2470,12 @@ export default function InventoryView({
                       <p className="text-xs text-zinc-500 font-mono">No matching suppliers found. Try adjusting the filter or search tags.</p>
                     </div>
                   ) : (
-                    filteredPrinters.map((printer) => {
+                    filteredPrinters.map((printer, idx) => {
                       const isExpanded = expandedPrinterId === printer.id;
                       
                       return (
                         <div 
-                          key={printer.id} 
+                          key={`${printer.id}-${idx}`} 
                           className={`relative text-left transition-all p-4.5 space-y-3.5 rounded-xl border ${
                             printer.blacklisted 
                               ? 'bg-red-950/15 border-red-900/40 hover:border-red-800/60 shadow-[inset_0_0_12px_rgba(239,68,68,0.05)] opacity-90' 
@@ -2549,8 +2549,8 @@ export default function InventoryView({
                           {/* Specialties badge lists */}
                           {printer.specialties && printer.specialties.length > 0 && (
                             <div className="flex flex-wrap gap-1">
-                              {printer.specialties.map((spec: string) => (
-                                <span key={spec} className={`border text-[8.51px] font-mono rounded px-1.5 py-0.5 font-bold uppercase tracking-wider ${
+                              {printer.specialties.map((spec: string, idx) => (
+                                <span key={`${spec}-${idx}`} className={`border text-[8.51px] font-mono rounded px-1.5 py-0.5 font-bold uppercase tracking-wider ${
                                   printer.blacklisted 
                                     ? 'bg-zinc-950/40 border-zinc-900 text-zinc-600' 
                                     : 'bg-zinc-900/80 border-zinc-800 text-zinc-400'
@@ -2870,8 +2870,8 @@ export default function InventoryView({
                       }}
                       className="w-full bg-[#161821] border border-zinc-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-[#00ffcc] cursor-pointer"
                     >
-                      {printers.map(p => (
-                        <option key={p.id} value={p.id}>{p.name} {p.company_name ? `(${p.company_name})` : ''}</option>
+                      {printers.map((p, pIdx) => (
+                        <option key={`${p.id}-${pIdx}`} value={p.id}>{p.name} {p.company_name ? `(${p.company_name})` : ''}</option>
                       ))}
                     </select>
                   )}

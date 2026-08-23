@@ -731,7 +731,7 @@ export const DiscographyReleaseForm: React.FC<DiscographyReleaseFormProps> = ({
 
                 return (
                   <div 
-                    key={track.id} 
+                    key={`${track.id}-${idx}`} 
                     className={`border rounded-xl p-3 space-y-2.5 transition-all ${
                       isVerified
                         ? 'bg-black/60 border-zinc-850 hover:border-emerald-500/40'

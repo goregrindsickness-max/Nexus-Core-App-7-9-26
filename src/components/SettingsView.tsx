@@ -245,7 +245,7 @@ export default function SettingsView({
     for (let i = 0; i < 4; i++) {
       codeRand += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    const newCode = `TOURING-LIFE-${codeRand}`;
+    const newCode = `TOURING-LIFE`;
     
     const newPromo = {
       code: newCode,
@@ -1889,8 +1889,8 @@ Powered by NEXUS CORE
                   </div>
 
                   <div className="space-y-1">
-                    {scannedDevices.map(dev => (
-                      <div key={dev.id} className="bg-zinc-950 border border-zinc-900/50 p-2.5 rounded-lg flex items-center justify-between text-[11px]">
+                    {scannedDevices.map((dev, dIdx) => (
+                      <div key={dev.id ? `scan-dev-${dev.id}-${dIdx}` : `scan-dev-${dIdx}`} className="bg-zinc-950 border border-zinc-900/50 p-2.5 rounded-lg flex items-center justify-between text-[11px]">
                         <div className="flex items-center gap-2">
                           <Bluetooth className="w-3.5 h-3.5 text-zinc-550" />
                           <span className="font-medium text-zinc-300">{dev.name} ({dev.manufacturer})</span>
@@ -2633,8 +2633,8 @@ ALTER TABLE public.nexus_posts ADD COLUMN IF NOT EXISTS data JSONB;`}
                           </div>
 
                           <div className="space-y-1">
-                            {scannedDevices.map(dev => (
-                              <div key={dev.id} className="bg-zinc-950 border border-zinc-900/50 p-2.5 rounded-lg flex items-center justify-between text-[11px]">
+                            {scannedDevices.map((dev, idx) => (
+                              <div key={`${dev.id}-${idx}`} className="bg-zinc-950 border border-zinc-900/50 p-2.5 rounded-lg flex items-center justify-between text-[11px]">
                                 <div className="flex items-center gap-2">
                                   <Bluetooth className="w-3.5 h-3.5 text-zinc-500" />
                                   <span className="font-medium text-zinc-300">{dev.name} ({dev.manufacturer})</span>

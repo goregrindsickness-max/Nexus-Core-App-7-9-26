@@ -55,7 +55,7 @@ export const BandClaimHandoverModal: React.FC<BandClaimHandoverModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[1000005] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
       <div className="w-full max-w-2xl bg-[#090a0f] border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-5 border-b border-zinc-850 bg-gradient-to-r from-emerald-950/40 via-zinc-900 to-zinc-950 flex items-center justify-between">

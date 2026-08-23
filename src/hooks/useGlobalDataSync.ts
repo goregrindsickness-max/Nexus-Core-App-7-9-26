@@ -10,6 +10,8 @@ import {
 import {
   getSupabase,
   sanitizeInventoryItemForDb,
+  sanitizeShowForDb,
+  ensureValidSupabaseAuthSession,
   executeWithSchemaResilience,
   isBypassRequiredError,
   generateUUID,
@@ -54,6 +56,13 @@ export function useGlobalDataSync({
     const supabase = getSupabase();
     if (!supabase || !navigator.onLine) return;
 
+    // Guard Clause: Ensure there is a valid session before executing requests
+    const session = await ensureValidSupabaseAuthSession(supabase);
+    if (!session) {
+      console.warn('[OFFLINE RECOVERY] Skipped syncOfflineQueue: No valid auth session.');
+      return;
+    }
+
     try {
       const queueStr = localStorage.getItem('nexus_core_offline_queue');
       if (!queueStr) return;
@@ -76,23 +85,10 @@ export function useGlobalDataSync({
               if (!error) successCount++;
             }
           } else if (type === 'show') {
-            const columns = [
-              'id', 'created_at', 'name', 'festival_name', 'date', 'status', 'revenue', 'show_type', 'band_id',
-              'event_scope', 'tour_id', 'venue_address', 'city', 'state_province', 'country', 'promoter_contact',
-              'load_in_time', 'doors_time', 'set_time', 'curfew_time', 'venue_cut_percentage', 'guarantee_amount',
-              'currency', 'tax_rate', 'expected_attendance', 'additional_notes', 'merch_space_fee', 'seller_cost',
-              'tables_provided', 'hanging_grids_provided', 'shore_power', 'parking_arrangements', 'age_restriction',
-              'wifi_network', 'wifi_password', 'merch_call_time', 'soundcheck_time', 'dinner_arrangements',
-              'local_food_notes', 'emergency_medical_info', 'local_pharmacy_info', 'support_lineup'
-            ];
-            const prunedDbShow: any = {};
-            columns.forEach(col => {
-              if (payload[col] !== undefined && payload[col] !== null) {
-                prunedDbShow[col] = payload[col];
-              } else if (col === 'city') {
-                prunedDbShow[col] = 'Tour City';
-              }
-            });
+            const prunedDbShow = sanitizeShowForDb(payload);
+            if (!prunedDbShow.city) {
+              prunedDbShow.city = 'Tour City';
+            }
 
             if (operation === 'insert') {
               const { error } = await supabase.from('shows').insert([prunedDbShow]);
@@ -279,24 +275,23 @@ export function useGlobalDataSync({
       // Push to Supabase if online
       const supabase = getSupabase();
       if (supabase && navigator.onLine) {
-         mutations.forEach(m => {
-            const prunedDbShow: any = { ...m };
-            delete prunedDbShow.is_synced;
-            delete prunedDbShow.local_mutation_timestamp;
-            delete prunedDbShow.client_id;
-            delete prunedDbShow.band_id;
-            
-            // Check if we need to insert or update
-            supabase.from('shows').select('id').eq('id', prunedDbShow.id).single().then(({data, error: selErr}) => {
-                if (data) {
-                    supabase.from('shows').update(prunedDbShow).eq('id', prunedDbShow.id).then(({error}) => {
-                       if (error) console.warn('Failed to sync show to DB', error);
-                    });
-                } else {
-                    supabase.from('shows').insert([prunedDbShow]).then(({error}) => {
-                       if (error) console.warn('Failed to sync show to DB', error);
-                    });
-                }
+         ensureValidSupabaseAuthSession(supabase).then(session => {
+            if (!session) return;
+            mutations.forEach(m => {
+               const prunedDbShow = sanitizeShowForDb(m);
+               
+               // Check if we need to insert or update
+               supabase.from('shows').select('id').eq('id', prunedDbShow.id).single().then(({data, error: selErr}) => {
+                   if (data) {
+                       supabase.from('shows').update(prunedDbShow).eq('id', prunedDbShow.id).then(({error}) => {
+                          if (error) console.warn('Failed to sync show to DB (update)', error);
+                       });
+                   } else {
+                       supabase.from('shows').insert([prunedDbShow]).then(({error}) => {
+                          if (error) console.warn('Failed to sync show to DB (insert)', error);
+                       });
+                   }
+               });
             });
          });
       }
@@ -458,6 +453,12 @@ export function useGlobalDataSync({
             let res;
             if (tableName === 'inventory') {
               const cleanPayload = sanitizeInventoryItemForDb(payload);
+              res = await executeWithSchemaResilience(
+                async (p) => await supabase.from(tableName).upsert([p]).select().single(),
+                cleanPayload
+              );
+            } else if (tableName === 'shows') {
+              const cleanPayload = sanitizeShowForDb(payload);
               res = await executeWithSchemaResilience(
                 async (p) => await supabase.from(tableName).upsert([p]).select().single(),
                 cleanPayload

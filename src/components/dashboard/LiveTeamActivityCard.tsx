@@ -62,8 +62,8 @@ export const LiveTeamActivityCard: React.FC<LiveTeamActivityCardProps> = ({
                 Active Crew ({teamMembers.length})
               </span>
               <div className="flex-1 overflow-y-auto pr-1 space-y-1.5 scrollbar-thin scrollbar-thumb-zinc-800">
-                {teamMembers.map(member => (
-                  <div key={member.id} className="flex items-center justify-between px-2 py-1.5 bg-zinc-900/40 hover:bg-zinc-900/80 rounded border border-zinc-850/60 transition-colors w-full group">
+                {teamMembers.map((member, idx) => (
+                  <div key={`${member.id}-${idx}`} className="flex items-center justify-between px-2 py-1.5 bg-zinc-900/40 hover:bg-zinc-900/80 rounded border border-zinc-850/60 transition-colors w-full group">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="relative flex-shrink-0">
                         <div className="w-8 h-8 rounded-full overflow-hidden bg-zinc-800 border border-zinc-700 group-hover:border-[#00ffcc] transition-colors shadow">
@@ -99,8 +99,8 @@ export const LiveTeamActivityCard: React.FC<LiveTeamActivityCardProps> = ({
             <div className="space-y-2 bg-zinc-950/30 p-3 rounded-xl border border-zinc-900 flex flex-col h-[200px]">
               <span className="text-[8.5px] font-mono font-bold text-zinc-400 uppercase tracking-widest text-left">Crew Actions Feed</span>
               <div className="flex-1 overflow-y-auto pr-1 space-y-1.5 scrollbar-thin scrollbar-thumb-zinc-800">
-                {teamActivities.map((act) => (
-                  <div key={act.id} className="text-[8.5px] bg-zinc-900/35 px-2.5 py-2 rounded border border-zinc-850/40 leading-snug">
+                {teamActivities.map((act, idx) => (
+                  <div key={`${act.id}-${idx}`} className="text-[8.5px] bg-zinc-900/35 px-2.5 py-2 rounded border border-zinc-850/40 leading-snug">
                     <div className="flex justify-between items-center text-[7.5px] text-zinc-550 font-mono mb-0.5">
                       <span className="font-bold text-zinc-300">{act.user}</span>
                       <span>{act.time}</span>

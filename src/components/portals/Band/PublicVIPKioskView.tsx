@@ -719,9 +719,9 @@ export default function PublicVIPKioskView({
                   <div className="p-3 bg-black border border-zinc-850 rounded-xl space-y-2 font-mono text-[9px]">
                     <span className="text-zinc-500 uppercase font-black block">SHIFT VIRTUAL RADAR POSITION</span>
                     <div className="grid grid-cols-4 gap-1">
-                      {(['Chicago', 'Brooklyn', 'Denver', 'LA'] as const).map(loc => (
+                      {(['Chicago', 'Brooklyn', 'Denver', 'LA'] as const).map((loc, idx) => (
                         <button
-                          key={loc}
+                          key={`${loc}-${idx}`}
                           type="button"
                           onClick={() => {
                             setGpsSimLocation(loc);
@@ -742,13 +742,13 @@ export default function PublicVIPKioskView({
 
                   {/* Renders shows list */}
                   <div className="space-y-2.5">
-                    {shows.slice(0, 5).map(show => {
+                    {shows.slice(0, 5).map((show, idx) => {
                       const distance = getDistanceMiles(show.city);
                       const isInRange = distance < 50;
                       const alreadyScanned = (currentFan.scanned_shows || []).includes(show.id);
 
                       return (
-                        <div key={show.id} className="p-3 bg-[#0e1015]/80 border border-zinc-900 rounded-xl flex items-center justify-between gap-3 font-mono">
+                        <div key={`${show.id}-${idx}`} className="p-3 bg-[#0e1015]/80 border border-zinc-900 rounded-xl flex items-center justify-between gap-3 font-mono">
                           <div className="space-y-0.5">
                             <span className="text-xs font-bold text-white block">{show.city}</span>
                             <span className="text-[9px] text-zinc-500 uppercase block">{show.date} • {show.name || 'FOH Venue'}</span>
@@ -804,9 +804,9 @@ export default function PublicVIPKioskView({
                       <div className="space-y-1">
                         <label className="text-[9px] text-zinc-550 uppercase tracking-wider block">1. RATE TONIGHT'S SOUND PERFORMANCE WORK:</label>
                         <div className="flex gap-2">
-                          {[1, 2, 3, 4, 5].map((num) => (
+                          {[1, 2, 3, 4, 5].map((num, idx) => (
                             <button
-                              key={num}
+                              key={`${num}-${idx}`}
                               type="button"
                               onClick={() => setQuizRating(num)}
                               className={`flex-1 py-1.5 border rounded-lg text-xs font-black transition cursor-pointer ${
@@ -956,12 +956,12 @@ export default function PublicVIPKioskView({
                 { id: 'radar', label: 'Radar', icon: Compass },
                 { id: 'quiz', label: 'XP Quiz', icon: Zap },
                 { id: 'wallet', label: 'Wallet', icon: Ticket }
-              ].map(tab => {
+              ].map((tab, idx) => {
                 const Icon = tab.icon;
                 const isSelected = activeTab === tab.id;
                 return (
                   <button
-                    key={tab.id}
+                    key={`${tab.id}-${idx}`}
                     type="button"
                     onClick={() => setActiveTab(tab.id as any)}
                     className={`flex-1 py-1.5 flex flex-col items-center gap-0.5 text-[9px] font-mono uppercase font-black tracking-tighter cursor-pointer transition ${

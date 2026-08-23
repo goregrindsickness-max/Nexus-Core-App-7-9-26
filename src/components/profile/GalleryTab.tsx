@@ -112,6 +112,9 @@ export const GalleryTab: React.FC<GalleryTabProps> = ({
   isYou = false,
   selectedUserProfile,
   userProfile,
+  workspaceType,
+  currentActiveWorkspace,
+  portalRole,
   triggerPictureViewer,
   setSelectedGalleryItem,
   feed,
@@ -150,6 +153,9 @@ export const GalleryTab: React.FC<GalleryTabProps> = ({
     isYou,
     selectedUserProfile,
     userProfile,
+    workspaceType,
+    currentActiveWorkspace,
+    portalRole,
     feed,
   });
   propsRef.current = {
@@ -159,46 +165,103 @@ export const GalleryTab: React.FC<GalleryTabProps> = ({
     isYou,
     selectedUserProfile,
     userProfile,
+    workspaceType,
+    currentActiveWorkspace,
+    portalRole,
     feed,
   };
 
+  // Derive resolved workspace type
+  const targetWorkspaceType = (
+    workspaceType ||
+    portalRole ||
+    currentActiveWorkspace ||
+    selectedUserProfile?.portalRole ||
+    selectedUserProfile?.workspaceType ||
+    selectedUserProfile?.account_type ||
+    selectedUserProfile?.role ||
+    ''
+  ).toLowerCase();
+
+  const isBandWorkspace =
+    targetWorkspaceType.includes('band') ||
+    targetWorkspaceType.includes('artist') ||
+    Boolean(selectedUserProfile?.band_name || selectedUserProfile?.bandName);
+
+  const isCreativeWorkspace =
+    !isBandWorkspace &&
+    (targetWorkspaceType.includes('creative') ||
+      targetWorkspaceType.includes('industry') ||
+      Boolean(selectedUserProfile?.creative_id || selectedUserProfile?.creative_metadata));
+
+  const isPromoterWorkspace =
+    !isBandWorkspace &&
+    !isCreativeWorkspace &&
+    (targetWorkspaceType.includes('promoter') || Boolean(selectedUserProfile?.promoter_metadata));
+
+  const isLabelWorkspace =
+    !isBandWorkspace &&
+    !isCreativeWorkspace &&
+    !isPromoterWorkspace &&
+    (targetWorkspaceType.includes('label') || Boolean(selectedUserProfile?.label_company_name));
+
   // Derive primitive stable keys for useEffect triggers
   const primaryId = String(
-    profileId ||
-    userId ||
-    selectedUserProfile?.id ||
-    selectedUserProfile?.uuid ||
-    selectedUserProfile?.user_id ||
-    selectedUserProfile?.creator_id ||
-    selectedUserProfile?.registered_creative_id ||
-    selectedUserProfile?.creative_id ||
-    userProfile?.id ||
-    userProfile?.uuid ||
-    ''
+    isBandWorkspace
+      ? (profileId ||
+          selectedUserProfile?.id ||
+          selectedUserProfile?.uuid ||
+          selectedUserProfile?.band_id ||
+          selectedUserProfile?.bandId ||
+          userId ||
+          '')
+      : isCreativeWorkspace
+      ? (profileId ||
+          selectedUserProfile?.creative_id ||
+          selectedUserProfile?.registered_creative_id ||
+          selectedUserProfile?.creator_id ||
+          selectedUserProfile?.id ||
+          selectedUserProfile?.uuid ||
+          userId ||
+          '')
+      : (profileId ||
+          userId ||
+          selectedUserProfile?.id ||
+          selectedUserProfile?.uuid ||
+          selectedUserProfile?.user_id ||
+          userProfile?.id ||
+          userProfile?.uuid ||
+          '')
   ).trim();
 
   const userAvatarKey = String(
-    selectedUserProfile?.avatar_url ||
-    selectedUserProfile?.avatar ||
-    selectedUserProfile?.creative_avatar ||
-    userProfile?.avatar_url ||
-    userProfile?.avatar ||
-    ''
+    isBandWorkspace
+      ? (selectedUserProfile?.logo_url || selectedUserProfile?.avatar_url || selectedUserProfile?.avatar || selectedUserProfile?.band_logo || '')
+      : isCreativeWorkspace
+      ? (selectedUserProfile?.creative_avatar || selectedUserProfile?.avatar_url || selectedUserProfile?.avatar || '')
+      : isPromoterWorkspace
+      ? (selectedUserProfile?.promoter_logo || selectedUserProfile?.avatar_url || selectedUserProfile?.avatar || '')
+      : isLabelWorkspace
+      ? (selectedUserProfile?.label_avatar || selectedUserProfile?.avatar_url || selectedUserProfile?.avatar || '')
+      : (selectedUserProfile?.avatar_url || selectedUserProfile?.avatar || userProfile?.avatar_url || userProfile?.avatar || '')
   ).trim();
 
   const userBannerKey = String(
-    selectedUserProfile?.banner_url ||
-    selectedUserProfile?.cover_url ||
-    selectedUserProfile?.creative_banner ||
-    selectedUserProfile?.label_banner ||
-    selectedUserProfile?.banner ||
-    userProfile?.banner_url ||
-    userProfile?.cover_url ||
-    ''
+    isBandWorkspace
+      ? (selectedUserProfile?.cover_url || selectedUserProfile?.banner_url || selectedUserProfile?.banner || '')
+      : isCreativeWorkspace
+      ? (selectedUserProfile?.creative_banner || selectedUserProfile?.banner_url || selectedUserProfile?.banner || '')
+      : isPromoterWorkspace
+      ? (selectedUserProfile?.promoter_cover_image || selectedUserProfile?.banner_url || selectedUserProfile?.banner || '')
+      : isLabelWorkspace
+      ? (selectedUserProfile?.label_banner || selectedUserProfile?.banner_url || selectedUserProfile?.banner || '')
+      : (selectedUserProfile?.banner_url || selectedUserProfile?.cover_url || userProfile?.banner_url || userProfile?.cover_url || '')
   ).trim();
 
   const profileCustomFoldersKey = JSON.stringify(
-    selectedUserProfile?.photo_folders || userProfile?.photo_folders || []
+    isBandWorkspace
+      ? (selectedUserProfile?.photo_folders || [])
+      : (selectedUserProfile?.photo_folders || userProfile?.photo_folders || [])
   );
 
   useEffect(() => {
@@ -225,71 +288,263 @@ export const GalleryTab: React.FC<GalleryTabProps> = ({
         const curIsYou = propsRef.current.isYou;
         const curProfileName = propsRef.current.profileName || curSelected?.name || 'Nexus Member';
 
-        // 1. Gather all candidate IDs across user, creative, and session profiles
+        // 1. Gather candidate IDs strictly scoped to the active workspace
         const candidateIdSet = new Set<string>();
-        [
-          primaryId,
-          propsRef.current.profileId,
-          propsRef.current.userId,
-          curSelected?.id,
-          curSelected?.uuid,
-          curSelected?.user_id,
-          curSelected?.creator_id,
-          curSelected?.registered_creative_id,
-          curSelected?.creative_id,
-          curSelected?.creative_metadata?.creative_id,
-          curSelected?.console_handle,
-          curSelected?.creative_handle,
-          curSelected?.handle,
-          curSelected?.business_name,
-          curUser?.id,
-          curUser?.uuid,
-          curUser?.user_id,
-          curUser?.creator_id,
-          curUser?.registered_creative_id,
-          curUser?.creative_id,
-          curUser?.creative_metadata?.creative_id,
-          curUser?.console_handle,
-          curUser?.creative_handle,
-        ].forEach((item) => {
-          if (item && typeof item === 'string' && item.trim()) {
-            candidateIdSet.add(item.trim());
-          }
-        });
 
-        // Also check active UUID from local storage
-        if (typeof window !== 'undefined') {
-          const activeUuid = localStorage.getItem('nexus_active_user_uuid');
-          const activeProfileId = localStorage.getItem('nexus_active_profile_id');
-          const activeUserId = localStorage.getItem('nexus_user_profile_id');
-          if (activeUuid) candidateIdSet.add(activeUuid);
-          if (activeProfileId) candidateIdSet.add(activeProfileId);
-          if (activeUserId) candidateIdSet.add(activeUserId);
+        if (isBandWorkspace) {
+          // Band workspace: ONLY include identifiers belonging to this specific band
+          [
+            primaryId,
+            propsRef.current.profileId,
+            curSelected?.id,
+            curSelected?.uuid,
+            curSelected?.band_id,
+            curSelected?.bandId,
+            curSelected?.custom_slug,
+            curSelected?.slug,
+          ].forEach((item) => {
+            if (item && typeof item === 'string' && item.trim()) {
+              candidateIdSet.add(item.trim());
+            }
+          });
+        } else if (isCreativeWorkspace) {
+          // Creative workspace: Include creative node and portfolio identifiers
+          [
+            primaryId,
+            propsRef.current.profileId,
+            propsRef.current.userId,
+            curSelected?.id,
+            curSelected?.uuid,
+            curSelected?.creator_id,
+            curSelected?.registered_creative_id,
+            curSelected?.creative_id,
+            curSelected?.creative_metadata?.creative_id,
+            curSelected?.console_handle,
+            curSelected?.creative_handle,
+            curSelected?.business_name,
+          ].forEach((item) => {
+            if (item && typeof item === 'string' && item.trim()) {
+              candidateIdSet.add(item.trim());
+            }
+          });
+
+          if (curIsYou) {
+            [
+              curUser?.creator_id,
+              curUser?.registered_creative_id,
+              curUser?.creative_id,
+              curUser?.creative_metadata?.creative_id,
+            ].forEach((item) => {
+              if (item && typeof item === 'string' && item.trim()) {
+                candidateIdSet.add(item.trim());
+              }
+            });
+          }
+        } else if (isPromoterWorkspace) {
+          [
+            primaryId,
+            propsRef.current.profileId,
+            curSelected?.id,
+            curSelected?.uuid,
+            curSelected?.promoter_id,
+          ].forEach((item) => {
+            if (item && typeof item === 'string' && item.trim()) {
+              candidateIdSet.add(item.trim());
+            }
+          });
+        } else if (isLabelWorkspace) {
+          [
+            primaryId,
+            propsRef.current.profileId,
+            curSelected?.id,
+            curSelected?.uuid,
+            curSelected?.label_id,
+          ].forEach((item) => {
+            if (item && typeof item === 'string' && item.trim()) {
+              candidateIdSet.add(item.trim());
+            }
+          });
+        } else {
+          // Fan / General Profile
+          [
+            primaryId,
+            propsRef.current.profileId,
+            propsRef.current.userId,
+            curSelected?.id,
+            curSelected?.uuid,
+            curSelected?.user_id,
+            curUser?.id,
+            curUser?.uuid,
+            curUser?.user_id,
+          ].forEach((item) => {
+            if (item && typeof item === 'string' && item.trim()) {
+              candidateIdSet.add(item.trim());
+            }
+          });
+
+          if (typeof window !== 'undefined' && curIsYou) {
+            const activeUuid = localStorage.getItem('nexus_active_user_uuid');
+            const activeProfileId = localStorage.getItem('nexus_active_profile_id');
+            const activeUserId = localStorage.getItem('nexus_user_profile_id');
+            if (activeUuid) candidateIdSet.add(activeUuid);
+            if (activeProfileId) candidateIdSet.add(activeProfileId);
+            if (activeUserId) candidateIdSet.add(activeUserId);
+          }
         }
 
         const candidateIds = Array.from(candidateIdSet);
 
-        // 2. Retrieve custom folders from profile or local storage
-        const profileFolders = curSelected?.photo_folders || curUser?.photo_folders || [];
+        // 2. Retrieve custom folders scoped to this workspace
         let storedFolders: string[] = [];
-        candidateIds.forEach((id) => {
-          try {
-            const keys = [
-              `nexus_photo_folders_${id}`,
-              `nexus_photo_folders_${id}_creative`,
-              `nexus_photo_folders_creative_${id}`,
-            ];
-            keys.forEach((k) => {
-              const saved = localStorage.getItem(k);
+
+        if (isBandWorkspace) {
+          // Band folders only
+          const bandFolders = curSelected?.photo_folders;
+          if (Array.isArray(bandFolders)) {
+            storedFolders.push(...bandFolders);
+          }
+          candidateIds.forEach((id) => {
+            try {
+              const bandKeys = [
+                `nexus_photo_folders_band_${id}`,
+                `nexus_band_photo_folders_${id}`,
+              ];
+              bandKeys.forEach((k) => {
+                const saved = localStorage.getItem(k);
+                if (saved) {
+                  const parsed = JSON.parse(saved);
+                  if (Array.isArray(parsed)) {
+                    storedFolders.push(...parsed);
+                  }
+                }
+              });
+            } catch (e) {}
+          });
+        } else if (isCreativeWorkspace) {
+          // Creative folders
+          const creativeFolders = curSelected?.photo_folders || curUser?.photo_folders;
+          if (Array.isArray(creativeFolders)) {
+            storedFolders.push(...creativeFolders);
+          }
+          candidateIds.forEach((id) => {
+            try {
+              const creativeKeys = [
+                `nexus_photo_folders_${id}_creative`,
+                `nexus_photo_folders_creative_${id}`,
+                `nexus_photo_folders_${id}`,
+              ];
+              creativeKeys.forEach((k) => {
+                const saved = localStorage.getItem(k);
+                if (saved) {
+                  const parsed = JSON.parse(saved);
+                  if (Array.isArray(parsed)) {
+                    storedFolders.push(...parsed);
+                  }
+                }
+              });
+            } catch (e) {}
+          });
+        } else {
+          // General / Other workspace folders
+          const profileFolders = curSelected?.photo_folders || curUser?.photo_folders || [];
+          if (Array.isArray(profileFolders)) {
+            storedFolders.push(...profileFolders);
+          }
+          candidateIds.forEach((id) => {
+            try {
+              const saved = localStorage.getItem(`nexus_photo_folders_${id}`);
               if (saved) {
                 const parsed = JSON.parse(saved);
                 if (Array.isArray(parsed)) {
                   storedFolders.push(...parsed);
                 }
               }
-            });
-          } catch (e) {}
-        });
+            } catch (e) {}
+          });
+        }
+
+        // Helper to determine if a post strictly matches the current workspace
+        const bandName = (
+          curSelected?.band_name ||
+          curSelected?.bandName ||
+          curSelected?.name ||
+          propsRef.current.profileName ||
+          ''
+        ).toLowerCase().trim();
+
+        const isPostForActiveWorkspace = (p: any): boolean => {
+          if (!p) return false;
+          const postWorkspace = (p.workspace_type || p.data?.workspace_type || '').toLowerCase();
+          const authorRole = (p.author?.role || p.data?.author?.role || '').toLowerCase();
+          const authorName = (p.author?.name || p.data?.author?.name || p.authorName || '').toLowerCase().trim();
+          const pProfId = p.profile_id || p.data?.profile_id || p.data?.postedBy || p.author?.id;
+          const pUserId = p.user_id || p.data?.user_id;
+
+          if (isBandWorkspace) {
+            // STRICT ISOLATION: Reject if explicitly tagged as creative, industry pro, promoter, or label
+            if (
+              postWorkspace.includes('creative') ||
+              postWorkspace.includes('industry') ||
+              postWorkspace.includes('promoter') ||
+              postWorkspace.includes('label')
+            ) {
+              return false;
+            }
+            if (
+              authorRole.includes('creative') ||
+              authorRole.includes('industry') ||
+              authorRole.includes('graphic') ||
+              authorRole.includes('promoter') ||
+              authorRole.includes('label')
+            ) {
+              return false;
+            }
+
+            // Exclude user's creative/industry IDs if present
+            if (curUser?.creator_id && (pProfId === curUser.creator_id || pUserId === curUser.creator_id)) {
+              return false;
+            }
+            if (curUser?.registered_creative_id && (pProfId === curUser.registered_creative_id || pUserId === curUser.registered_creative_id)) {
+              return false;
+            }
+
+            // Accept if matching band candidate IDs or band name
+            if (pProfId && candidateIds.includes(pProfId)) return true;
+            if (p.data?.band_id && candidateIds.includes(p.data.band_id)) return true;
+            if (p.data?.bandId && candidateIds.includes(p.data.bandId)) return true;
+            if (bandName && authorName && (authorName === bandName || authorName.includes(bandName))) return true;
+            if (postWorkspace === 'band' && (pProfId && candidateIds.includes(pProfId))) return true;
+            return false;
+          }
+
+          if (isCreativeWorkspace) {
+            // STRICT ISOLATION: Reject band posts
+            if (postWorkspace === 'band' || authorRole.includes('artist') || authorRole.includes('band')) {
+              return false;
+            }
+            if (pProfId && candidateIds.includes(pProfId)) return true;
+            if (pUserId && candidateIds.includes(pUserId)) return true;
+            return false;
+          }
+
+          if (isPromoterWorkspace) {
+            if (postWorkspace && postWorkspace !== 'promoter') return false;
+            if (pProfId && candidateIds.includes(pProfId)) return true;
+            return false;
+          }
+
+          if (isLabelWorkspace) {
+            if (postWorkspace && postWorkspace !== 'label') return false;
+            if (pProfId && candidateIds.includes(pProfId)) return true;
+            return false;
+          }
+
+          // Fan / fallback
+          if (pProfId && candidateIds.includes(pProfId)) return true;
+          if (pUserId && candidateIds.includes(pUserId)) return true;
+          if (curIsYou && (p.author?.isYou || p.isYou)) return true;
+          return false;
+        };
 
         // 3. Query Supabase posts
         const supabase = getSupabase();
@@ -308,7 +563,7 @@ export const GalleryTab: React.FC<GalleryTabProps> = ({
               .order('created_at', { ascending: false });
 
             if (!selectErr && Array.isArray(data)) {
-              dbRows = data;
+              dbRows = data.filter(isPostForActiveWorkspace);
             } else if (selectErr) {
               console.warn('[GalleryTab] Posts fetch notice:', selectErr);
             }
@@ -327,13 +582,7 @@ export const GalleryTab: React.FC<GalleryTabProps> = ({
             const pid = String(p.id || p.data?.id || '');
             if (deletedPostIds.has(pid)) return;
 
-            const pProfId = p.profile_id || p.data?.profile_id || p.data?.postedBy || p.author?.id;
-            const pUserId = p.user_id || p.data?.user_id;
-            if (
-              (pProfId && candidateIds.includes(pProfId)) ||
-              (pUserId && candidateIds.includes(pUserId)) ||
-              (curIsYou && (p.author?.isYou || p.isYou))
-            ) {
+            if (isPostForActiveWorkspace(p)) {
               feedCandidatePosts.push(p);
             }
           });
@@ -358,13 +607,7 @@ export const GalleryTab: React.FC<GalleryTabProps> = ({
                   const pid = String(p.id || p.data?.id || '');
                   if (deletedPostIds.has(pid)) return;
 
-                  const pProfId = p.profile_id || p.data?.profile_id || p.data?.postedBy || p.author?.id;
-                  const pUserId = p.user_id || p.data?.user_id;
-                  if (
-                    (pProfId && candidateIds.includes(pProfId)) ||
-                    (pUserId && candidateIds.includes(pUserId)) ||
-                    (curIsYou && (p.author?.isYou || p.isYou))
-                  ) {
+                  if (isPostForActiveWorkspace(p)) {
                     feedCandidatePosts.push(p);
                   }
                 });
@@ -372,40 +615,64 @@ export const GalleryTab: React.FC<GalleryTabProps> = ({
             }
           });
 
-          // Check direct creative gallery items in localStorage
-          candidateIds.forEach((id) => {
-            const creativeGalleryKey = `nexus_core_creative_gallery_${id}`;
-            const raw = localStorage.getItem(creativeGalleryKey);
-            if (raw) {
-              try {
-                const parsed = JSON.parse(raw);
-                if (Array.isArray(parsed)) {
-                  const cleaned = parsed.filter((item: any) => {
-                    const imgUrl = item?.imageUrl || item?.url || item?.image;
-                    return item && imgUrl && !isHardcodedPlaceholder(imgUrl, item.title, item.id);
-                  });
-                  // If cleaned differed, update localStorage to purge mock artifacts
-                  if (cleaned.length !== parsed.length) {
-                    localStorage.setItem(creativeGalleryKey, JSON.stringify(cleaned));
-                  }
-                  cleaned.forEach((item: any) => {
-                    const imgUrl = item.imageUrl || item.url || item.image;
-                    feedCandidatePosts.push({
-                      id: item.id || `creative_gal_${id}_${item.title}`,
-                      profile_id: id,
-                      user_id: id,
-                      image: imgUrl,
-                      content: item.title || item.subtitle || 'Creative Portfolio Piece',
-                      gallery_folder: item.folder || item.gallery_folder || 'Portfolio Work',
-                      timestamp: item.year || 'Portfolio Work',
+          // ONLY for creative workspace: Check direct creative gallery items and nodes in localStorage/IndexedDB
+          if (isCreativeWorkspace) {
+            candidateIds.forEach((id) => {
+              const creativeGalleryKey = `nexus_core_creative_gallery_${id}`;
+              const raw = localStorage.getItem(creativeGalleryKey);
+              if (raw) {
+                try {
+                  const parsed = JSON.parse(raw);
+                  if (Array.isArray(parsed)) {
+                    const cleaned = parsed.filter((item: any) => {
+                      const imgUrl = item?.imageUrl || item?.url || item?.image;
+                      return item && imgUrl && !isHardcodedPlaceholder(imgUrl, item.title, item.id);
                     });
-                  });
-                }
-              } catch (_) {}
-            }
-          });
+                    if (cleaned.length !== parsed.length) {
+                      localStorage.setItem(creativeGalleryKey, JSON.stringify(cleaned));
+                    }
+                    cleaned.forEach((item: any) => {
+                      const imgUrl = item.imageUrl || item.url || item.image;
+                      feedCandidatePosts.push({
+                        id: item.id || `creative_gal_${id}_${item.title}`,
+                        profile_id: id,
+                        user_id: id,
+                        image: imgUrl,
+                        content: item.title || item.subtitle || 'Creative Portfolio Piece',
+                        gallery_folder: item.folder || item.gallery_folder || 'Portfolio Work',
+                        timestamp: item.year || 'Portfolio Work',
+                      });
+                    });
+                  }
+                } catch (_) {}
+              }
+            });
 
-          // 4b. Also scan IndexedDB stores (social_feed_store, profile_store, creative_nodes_store) with strict candidate ownership
+            try {
+              const nodeKeys = await creativeNodesStore.keys();
+              for (const nk of nodeKeys) {
+                const nodeItem = await creativeNodesStore.getItem<any>(nk);
+                if (nodeItem && (nodeItem.imageUrl || nodeItem.url || nodeItem.image)) {
+                  const nodeCreator = nodeItem.creator_id || nodeItem.user_id;
+                  if (nodeCreator && candidateIds.includes(nodeCreator)) {
+                    feedCandidatePosts.push({
+                      id: nodeItem.id || `node_${nk}`,
+                      profile_id: nodeCreator,
+                      user_id: nodeCreator,
+                      image: nodeItem.imageUrl || nodeItem.url || nodeItem.image,
+                      content: nodeItem.title || nodeItem.name || 'Creative Asset',
+                      gallery_folder: nodeItem.folder || nodeItem.gallery_folder || 'Portfolio Work',
+                      timestamp: nodeItem.timestamp || 'Portfolio Item',
+                    });
+                  }
+                }
+              }
+            } catch (nodeErr) {
+              console.warn('[GalleryTab] Creative nodes fetch notice:', nodeErr);
+            }
+          }
+
+          // Scan IndexedDB feed with workspace isolation
           try {
             const feedKeys = await socialFeedStore.keys();
             for (const fk of feedKeys) {
@@ -416,35 +683,10 @@ export const GalleryTab: React.FC<GalleryTabProps> = ({
                   const pid = String(p.id || p.data?.id || '');
                   if (deletedPostIds.has(pid)) return;
 
-                  const pProfId = p.profile_id || p.data?.profile_id || p.data?.postedBy || p.author?.id;
-                  const pUserId = p.user_id || p.data?.user_id;
-                  if (
-                    (pProfId && candidateIds.includes(pProfId)) ||
-                    (pUserId && candidateIds.includes(pUserId)) ||
-                    (curIsYou && (p.author?.isYou || p.isYou))
-                  ) {
+                  if (isPostForActiveWorkspace(p)) {
                     feedCandidatePosts.push(p);
                   }
                 });
-              }
-            }
-
-            const nodeKeys = await creativeNodesStore.keys();
-            for (const nk of nodeKeys) {
-              const nodeItem = await creativeNodesStore.getItem<any>(nk);
-              if (nodeItem && (nodeItem.imageUrl || nodeItem.url || nodeItem.image)) {
-                const nodeCreator = nodeItem.creator_id || nodeItem.user_id;
-                if (nodeCreator && candidateIds.includes(nodeCreator)) {
-                  feedCandidatePosts.push({
-                    id: nodeItem.id || `node_${nk}`,
-                    profile_id: nodeCreator,
-                    user_id: nodeCreator,
-                    image: nodeItem.imageUrl || nodeItem.url || nodeItem.image,
-                    content: nodeItem.title || nodeItem.name || 'Creative Asset',
-                    gallery_folder: nodeItem.folder || nodeItem.gallery_folder || 'Portfolio Work',
-                    timestamp: nodeItem.timestamp || 'Portfolio Item',
-                  });
-                }
               }
             }
           } catch (idbErr) {
@@ -452,7 +694,7 @@ export const GalleryTab: React.FC<GalleryTabProps> = ({
           }
         } catch (e) {}
 
-        // Trigger asynchronous background cleanup of stale IndexedDB posts if dbRows available
+        // Trigger asynchronous background cleanup of stale IndexedDB photos if dbRows available
         if (dbRows.length > 0 && primaryId) {
           const authIds = dbRows.map((r) => r.id);
           const authUrls = dbRows.map((r) => r.media_url || r.image).filter(Boolean);
@@ -473,6 +715,8 @@ export const GalleryTab: React.FC<GalleryTabProps> = ({
 
         const processPostObject = (postObj: any, rawPostId?: string, rawCreatedAt?: string) => {
           if (!postObj) return;
+          if (!isPostForActiveWorkspace(postObj)) return;
+
           const postId = String(rawPostId || postObj.id || '');
           if (postId.startsWith('mock_') || postObj.isMock || deletedPostIds.has(postId)) return;
 
@@ -557,7 +801,7 @@ export const GalleryTab: React.FC<GalleryTabProps> = ({
               folder: rawFolder,
               authorName: postObj.author?.name || curSelected?.name || curProfileName || 'Nexus Member',
               authorAvatar: postObj.author?.avatar || curSelected?.avatar_url || curSelected?.avatar || '',
-              authorRole: postObj.author?.role || curSelected?.role || 'Creative Pro',
+              authorRole: postObj.author?.role || curSelected?.role || (isBandWorkspace ? 'Artist' : 'Creative Pro'),
               post: postObj,
             });
           });
@@ -586,13 +830,16 @@ export const GalleryTab: React.FC<GalleryTabProps> = ({
           processPostObject({ ...postObj, ...feedPost }, feedPost.id, feedPost.created_at);
         });
 
-        // 6. Include active avatar & banner (only if not a default mock placeholder)
-        const userAvatar =
-          curSelected?.avatar_url ||
-          curSelected?.avatar ||
-          curSelected?.creative_avatar ||
-          curUser?.avatar_url ||
-          curUser?.avatar;
+        // 6. Include active avatar & banner strictly for this workspace
+        const userAvatar = isBandWorkspace
+          ? (curSelected?.logo_url || curSelected?.avatar_url || curSelected?.avatar || curSelected?.band_logo)
+          : isCreativeWorkspace
+          ? (curSelected?.creative_avatar || curSelected?.avatar_url || curSelected?.avatar)
+          : isPromoterWorkspace
+          ? (curSelected?.promoter_logo || curSelected?.avatar_url || curSelected?.avatar)
+          : isLabelWorkspace
+          ? (curSelected?.label_avatar || curSelected?.avatar_url || curSelected?.avatar)
+          : (curSelected?.avatar_url || curSelected?.avatar || curUser?.avatar_url || curUser?.avatar);
 
         if (
           userAvatar &&
@@ -613,24 +860,25 @@ export const GalleryTab: React.FC<GalleryTabProps> = ({
             allImages.push({
               id: avatarId,
               url: userAvatar,
-              caption: 'Current Profile Picture',
+              caption: isBandWorkspace ? 'Band Official Logo' : 'Current Profile Picture',
               timestamp: 'Active',
               folder: 'Profile Pics',
               authorName: curSelected?.name || curProfileName || 'Nexus Member',
               authorAvatar: userAvatar,
-              authorRole: curSelected?.role || 'Member',
+              authorRole: isBandWorkspace ? 'Artist' : curSelected?.role || 'Member',
             });
           }
         }
 
-        const userCover =
-          curSelected?.banner_url ||
-          curSelected?.cover_url ||
-          curSelected?.creative_banner ||
-          curSelected?.label_banner ||
-          curSelected?.banner ||
-          curUser?.banner_url ||
-          curUser?.cover_url;
+        const userCover = isBandWorkspace
+          ? (curSelected?.cover_url || curSelected?.banner_url || curSelected?.banner)
+          : isCreativeWorkspace
+          ? (curSelected?.creative_banner || curSelected?.banner_url || curSelected?.banner)
+          : isPromoterWorkspace
+          ? (curSelected?.promoter_cover_image || curSelected?.banner_url || curSelected?.banner)
+          : isLabelWorkspace
+          ? (curSelected?.label_banner || curSelected?.banner_url || curSelected?.banner)
+          : (curSelected?.banner_url || curSelected?.cover_url || curUser?.banner_url || curUser?.cover_url);
 
         if (
           userCover &&
@@ -651,12 +899,12 @@ export const GalleryTab: React.FC<GalleryTabProps> = ({
             allImages.push({
               id: coverId,
               url: userCover,
-              caption: 'Current Cover Banner',
+              caption: isBandWorkspace ? 'Band Stage Banner' : 'Current Cover Banner',
               timestamp: 'Active',
               folder: 'Cover Images',
               authorName: curSelected?.name || curProfileName || 'Nexus Member',
               authorAvatar: userAvatar || '',
-              authorRole: curSelected?.role || 'Member',
+              authorRole: isBandWorkspace ? 'Artist' : curSelected?.role || 'Member',
             });
           }
         }
@@ -664,7 +912,6 @@ export const GalleryTab: React.FC<GalleryTabProps> = ({
         // 7. Assemble deduplicated clean folders list
         const rawFolderList = [
           ...DEFAULT_FOLDERS,
-          ...profileFolders,
           ...storedFolders,
           ...Array.from(postFolders),
         ];
@@ -673,6 +920,25 @@ export const GalleryTab: React.FC<GalleryTabProps> = ({
         rawFolderList.forEach((f) => {
           const norm = normalizeFolderName(f);
           if (!norm || MOCK_FOLDERS_TO_REMOVE.has(norm.toLowerCase())) return;
+          
+          // In Band workspace: Prune cross-pollinated folders (like "Logos", "Logos & Branding", "Graphic Design Portfolio")
+          // if they contain 0 images for this band
+          if (isBandWorkspace) {
+            const isKnownCreativeFolder =
+              norm.toLowerCase() === 'logos' ||
+              norm.toLowerCase() === 'logos & branding' ||
+              norm.toLowerCase() === 'graphic design portfolio' ||
+              norm.toLowerCase() === 'client artworks' ||
+              norm.toLowerCase() === 'commission samples';
+
+            if (isKnownCreativeFolder) {
+              const imageCountInFolder = allImages.filter((img) => areFoldersEqual(img.folder, norm)).length;
+              if (imageCountInFolder === 0) {
+                return; // Omit cross-pollinated empty creative folder from band
+              }
+            }
+          }
+
           if (!cleanedFolders.some((existing) => areFoldersEqual(existing, norm))) {
             cleanedFolders.push(norm);
           }

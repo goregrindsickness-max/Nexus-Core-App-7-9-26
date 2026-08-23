@@ -490,7 +490,7 @@ export const TimelineFeed: React.FC<TimelineFeedProps> = ({
                   />
                   {showSuggestionsAfterThis && (
                     <PeopleYouMayKnow
-                      key={`people-you-may-know-after-${post.id}`}
+                      key={`people-you-may-know-after-${post.id || index}`}
                       discoverProfiles={discoverProfiles}
                       currentUserId={currentUserId}
                       currentUserName={currentUserName}

@@ -99,9 +99,9 @@ export const PhotoLightboxModal: React.FC<PhotoLightboxModalProps> = ({
 
             {/* Filter Pills */}
             <div className="hidden sm:flex items-center gap-1 bg-zinc-900/90 rounded-xl p-1 border border-zinc-800">
-              {STAGE_FILTERS.map(f => (
+              {STAGE_FILTERS.map((f, fIdx) => (
                 <button
-                  key={f.id}
+                  key={`photo-lightbox-filter-${f.id}-${fIdx}`}
                   onClick={() => setActiveFilterId(f.id)}
                   className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold uppercase transition-all flex items-center gap-1 cursor-pointer ${
                     activeFilterId === f.id

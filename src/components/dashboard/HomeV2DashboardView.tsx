@@ -770,12 +770,12 @@ export function HomeV2DashboardView(props: any & { renderTourNotesCard: any; ren
                   { id: 'SOCIAL', label: 'Social', icon: Globe },
                   { id: 'SETTINGS', label: 'Settings', icon: Settings },
                   { id: 'STUDIO', label: 'Studio', icon: Mic },
-                ].map((item) => {
+                ].map((item, idx) => {
                   const IconComponent = item.icon;
                   const isActive = item.id === 'STUDIO' ? activeTab === 'studio' : dashboardV2ActiveNav === item.id;
                   return (
                     <button
-                      key={item.id}
+                      key={`${item.id}-${idx}`}
                       type="button"
                       onClick={() => item.id === 'STUDIO' ? setActiveTab('studio') : setDashboardV2ActiveNav(item.id as any)}
                       className="flex flex-col items-center justify-center w-full pt-0.5 pb-1 group relative transition-colors cursor-pointer"
@@ -907,8 +907,8 @@ export function HomeV2DashboardView(props: any & { renderTourNotesCard: any; ren
                        {[
                          ...(Array.isArray(bandLineup) ? bandLineup : []).map((m: any) => ({ ...m, type: 'Lineup', lvl: m.clearanceLevel || 5 })),
                          ...(Array.isArray(crewMembers) ? crewMembers : []).map((c: any) => ({ ...c, type: 'Crew', lvl: c.clearanceLevel || 1 }))
-                       ].map((member: any) => (
-                         <option key={member.id} value={member.id}>
+                       ].map((member: any, idx) => (
+                         <option key={`${member.id || '' || ''}-${idx}`} value={member.id}>
                            [{member.type}] {member?.name || 'Unnamed'} ({member.role || 'Crew'}) - Lvl {member.lvl}
                          </option>
                        ))}

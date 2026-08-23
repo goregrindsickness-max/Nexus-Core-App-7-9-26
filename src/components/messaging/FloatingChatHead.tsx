@@ -131,6 +131,7 @@ export const FloatingChatHead: React.FC = () => {
   const [isOverDismiss, setIsOverDismiss] = useState(false);
   const dragStartPos = useRef({ x: 0, y: 0, startLeft: 0, startTop: 0 });
   const hasMovedRef = useRef(false);
+  const hasInitializedOpen = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom of messages
@@ -260,6 +261,13 @@ export const FloatingChatHead: React.FC = () => {
 
     setConversations(loadedList);
     setTotalUnreadCount(unreadCount);
+
+    if (!hasInitializedOpen.current) {
+      hasInitializedOpen.current = true;
+      if (unreadCount > 0) {
+        setIsOpen(true);
+      }
+    }
 
     // If no targetUser is selected yet, default targetUser to the most recent conversation if present
     setTargetUser((prev) => {
@@ -962,7 +970,7 @@ export const FloatingChatHead: React.FC = () => {
               messages.map((msg, idx) => {
                 const isMe = msg.sender_id === currentUserId || msg.sender_id === 'me' || (msg as any).sender === 'user';
                 return (
-                  <div key={msg.id || idx} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                  <div key={msg.id ? `msg-${msg.id}-${idx}` : `msg-${idx}`} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                     <div
                       className={`max-w-[82%] px-3.5 py-2 rounded-2xl text-xs font-mono break-words shadow-md ${
                         isMe
@@ -1027,9 +1035,9 @@ export const FloatingChatHead: React.FC = () => {
                 <p className="text-[10px] text-zinc-600">Click "Message" on any user or band profile to start a thread.</p>
               </div>
             ) : (
-              filteredConversations.map((conv) => (
+              filteredConversations.map((conv, idx) => (
                 <FloatingConversationRow
-                  key={conv.id}
+                  key={`${conv.id}-${idx}`}
                   conv={conv}
                   onSelect={() => {
                     setTargetUser({

@@ -348,11 +348,11 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
           let showsList: any[] = [];
           const validUUID = targetId && extractUUID(targetId);
           if (validUUID) {
-            // Only filter by creator_id (remove band_id, user_id, and band_name lookups)
+            // Only filter by band_id
             const { data } = await supabase
               .from('shows')
               .select('*')
-              .eq('creator_id', validUUID);
+              .eq('band_id', validUUID);
             if (data && data.length > 0) showsList = data;
           }
 
@@ -447,28 +447,28 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
 
           if (!linkedBandRecord && validUUID) {
             try {
-              const { data } = await supabase.from('bands').select('*').eq('creator_id', validUUID).order('created_at', { ascending: false }).limit(1).maybeSingle();
+              const { data } = await supabase.from('bands').select('*').eq('creator_id', validUUID).neq('verification_status', 'community_archive').order('created_at', { ascending: false }).limit(1).maybeSingle();
               if (data) linkedBandRecord = data;
             } catch (_) {}
           }
 
           if (!linkedBandRecord && validUUID) {
             try {
-              const { data } = await supabase.from('bands').select('*').eq('user_id', validUUID).order('created_at', { ascending: false }).limit(1).maybeSingle();
+              const { data } = await supabase.from('bands').select('*').eq('user_id', validUUID).neq('verification_status', 'community_archive').order('created_at', { ascending: false }).limit(1).maybeSingle();
               if (data) linkedBandRecord = data;
             } catch (_) {}
           }
 
           if (!linkedBandRecord && validUUID) {
             try {
-              const { data } = await supabase.from('bands').select('*').eq('owner_id', validUUID).order('created_at', { ascending: false }).limit(1).maybeSingle();
+              const { data } = await supabase.from('bands').select('*').eq('owner_id', validUUID).neq('verification_status', 'community_archive').order('created_at', { ascending: false }).limit(1).maybeSingle();
               if (data) linkedBandRecord = data;
             } catch (_) {}
           }
 
           if (!linkedBandRecord && validUUID) {
             try {
-              const { data } = await supabase.from('bands').select('*').eq('profile_id', validUUID).order('created_at', { ascending: false }).limit(1).maybeSingle();
+              const { data } = await supabase.from('bands').select('*').eq('profile_id', validUUID).neq('verification_status', 'community_archive').order('created_at', { ascending: false }).limit(1).maybeSingle();
               if (data) linkedBandRecord = data;
             } catch (_) {}
           }
@@ -1360,7 +1360,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                     matchingBandProfile = allProfiles.find((p: any) => {
                       const isBandType = p.type === 'band' || p.isBandProfile || p.category === 'bands' || (p.role && p.role.toLowerCase() === 'band') || (p.portalRole && p.portalRole.toLowerCase() === 'band');
                       if (!isBandType) return false;
-                      return p.id === targetBandId || p.band_id === targetBandId || p.id === `real-b-${targetBandId}` || p.id === `real-p-${targetBandId}`;
+                      return p.id === targetBandId || p.band_id === targetBandId || p.id === `real-b` || p.id === `real-p`;
                     });
                   }
 
@@ -1388,7 +1388,10 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                     )
                   );
 
-                  const rawBandName = lbd?.band_name || lbd?.name || effTarget.band_name || effTarget.bandName || (typeof bandWsRef === 'object' && bandWsRef?.name ? bandWsRef.name : null) || userProfile?.band_name || userProfile?.bandName || (hasWorkspaceType('band') ? (effTarget.name ? `${effTarget.name} Band` : 'Artist Workspace') : null);
+                  let rawBandName = lbd?.band_name || lbd?.name || effTarget.band_name || effTarget.bandName || (typeof bandWsRef === 'object' && bandWsRef?.name ? bandWsRef.name : null) || userProfile?.band_name || userProfile?.bandName || (hasWorkspaceType('band') ? (effTarget.name ? `${effTarget.name} Band` : 'Artist Workspace') : null);
+                  if (rawBandName && typeof rawBandName === 'string' && rawBandName.toLowerCase() === 'dying fetus') {
+                    rawBandName = 'Virulent Excision';
+                  }
                   const hasBandWorkspace = (hasWorkspaceType('band') || Boolean(matchingBandProfile) || Boolean(lbd) || Boolean(targetBandId) || Boolean(effTarget.band_name) || Boolean(effTarget.bandName)) && Boolean(rawBandName) && String(rawBandName).trim() !== '';
 
                   const hasBand = !isCurrentProfileBand && hasBandWorkspace;
@@ -2126,10 +2129,10 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                       </div>
 
                       <div className="space-y-2 max-h-56 overflow-y-auto custom-scrollbar p-0.5">
-                        {Object.entries(clusterMap).map(([clusterName, tags]) => {
+                        {Object.entries(clusterMap).map(([clusterName, tags], idx) => {
                           const theme = clusterColorMap[clusterName] || { bg: 'bg-violet-950/40', border: 'border-violet-800/40', text: 'text-violet-300', header: 'text-violet-400' };
                           return (
-                            <div key={clusterName} className="bg-black/40 border border-zinc-900/90 rounded-lg p-2">
+                            <div key={`${clusterName}-${idx}`} className="bg-black/40 border border-zinc-900/90 rounded-lg p-2">
                               <div className={`text-[8.5px] font-mono font-bold uppercase tracking-wider ${theme.header} mb-1.5 flex items-center gap-1`}>
                                 <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80" />
                                 {clusterName}
@@ -2837,11 +2840,11 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
 
                 return (
                   <div className="mt-6 flex flex-nowrap overflow-x-auto hide-scrollbar items-center justify-start sm:justify-around border-b border-zinc-800 bg-zinc-950/60 p-1 sm:p-2 w-full gap-1 sm:gap-2">
-                    {tabButtons.map(tab => {
+                    {tabButtons.map((tab, idx) => {
                       const isActive = profileActiveTab === tab.id;
                       return (
                         <button
-                          key={tab.id}
+                          key={`${tab.id}-${idx}`}
                           onClick={() => setProfileActiveTab(tab.id)}
                           className={`flex items-center justify-center space-x-1.5 sm:space-x-2 px-2.5 sm:px-3 py-2.5 text-[10px] sm:text-xs font-bold tracking-tight sm:tracking-wider uppercase transition-all border-b-2 sm:flex-1 text-center ${
                             isActive
@@ -2997,9 +3000,9 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                           <div className="flex items-center gap-2">
                             <span className="text-[9px] uppercase tracking-widest text-zinc-400 font-bold">Rating Score:</span>
                             <div className="flex items-center gap-1 bg-[#090b0e] border border-zinc-900 p-1.5 rounded-xl">
-                              {[1, 2, 3, 4, 5].map((val) => (
+                              {[1, 2, 3, 4, 5].map((val, idx) => (
                                 <button
-                                  key={val}
+                                  key={`${val}-${idx}`}
                                   type="button"
                                   onClick={() => setPublicReviewScore(val)}
                                   className="p-0.5 cursor-pointer hover:scale-110 transition-transform"
@@ -3022,8 +3025,8 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
 
                     {/* REVIEWS LIST */}
                     <div className="space-y-3 pt-1">
-                      {publicReviewsList.map((rev) => (
-                        <div key={rev.id} className="bg-zinc-950 border border-zinc-900 hover:border-zinc-800 rounded-2xl p-4 sm:p-5 space-y-3 transition-all">
+                      {publicReviewsList.map((rev, idx) => (
+                        <div key={`${rev.id}-${idx}`} className="bg-zinc-950 border border-zinc-900 hover:border-zinc-800 rounded-2xl p-4 sm:p-5 space-y-3 transition-all">
                           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                             <div className="flex items-center gap-2.5 flex-wrap">
                               <div className="w-7 h-7 rounded-full bg-fuchsia-950/50 border border-fuchsia-500/30 text-fuchsia-300 font-mono text-xs font-black flex items-center justify-center">
@@ -3331,6 +3334,11 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
 
                 {profileActiveTab === 'gallery' && (
                   <GalleryTab 
+                    workspaceType="creative"
+                    portalRole="creative"
+                    profileId={selectedUserProfile?.id || selectedUserProfile?.creative_id || selectedUserProfile?.creator_id}
+                    profileName={selectedUserProfile?.name || selectedUserProfile?.business_name}
+                    isYou={Boolean(selectedUserProfile?.isYou)}
                     selectedUserProfile={selectedUserProfile}
                     userProfile={userProfile}
                     triggerPictureViewer={triggerPictureViewer}
@@ -3698,7 +3706,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                   <div className="grid grid-cols-3 gap-2 sm:gap-3">
                     {formatOptions.map((link: any, idx: number) => (
                       <button
-                        key={`format-${link.format || idx}-${idx}`}
+                        key={`format-${link.format || idx}`}
                         onClick={() => {
                           openCheckout?.('merch', {
                             name: `${selectedLabelBand} - ${currentAlbum.albumName} (${link.format})`,
@@ -3734,7 +3742,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
 
           {/* Commission Quote Inquiry Modal */}
           {showCommissionModal && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+            <div className="fixed inset-0 z-[1000005] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}

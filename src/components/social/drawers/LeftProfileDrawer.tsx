@@ -686,7 +686,7 @@ if (!leftDrawerOpen) return null;
                                     const listToDisplay = bandGenreList.length > 0 ? bandGenreList : (labelPrimaryGenres.length > 0 ? labelPrimaryGenres : ['Metal']);
                                     return listToDisplay.map((genre, idx) => (
                                       <span
-                                        key={`genre-${genre}-${idx}`}
+                                        key={`genre-${genre}`}
                                         className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider rounded border bg-orange-950/40 text-orange-400 border-orange-500/40 shadow-[0_0_8px_rgba(249,115,22,0.15)]"
                                       >
                                         {genre}
@@ -871,9 +871,9 @@ if (!leftDrawerOpen) return null;
                                   <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
                                     {[
                                       { name: 'Nexus Icon Brackets', url: 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/public-assets/Nexus%20Icon%20Circuits.png' }
-                                    ].map((preset) => (
+                                    ].map((preset, prIdx) => (
                                       <button
-                                        key={preset.url}
+                                        key={`avatar-preset-${preset.url}-${prIdx}`}
                                         type="button"
                                         onClick={() => {
                                           setProfileAvatarUrl(preset.url);
@@ -956,9 +956,9 @@ if (!leftDrawerOpen) return null;
                                   <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
                                     {[
                                       { name: 'VE Background 2026', url: 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/public-assets/Virulent%20Excision%20-%20Chambers%20TS.png' }
-                                    ].map((preset) => (
+                                    ].map((preset, prIdx) => (
                                       <button
-                                        key={preset.url}
+                                        key={`cover-preset-${preset.url}-${prIdx}`}
                                         type="button"
                                         onClick={() => {
                                           setProfileCoverUrl(preset.url);
@@ -1068,7 +1068,7 @@ if (!leftDrawerOpen) return null;
                                 }}
                                 className="w-full mt-1 bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-white focus:border-rose-500 focus:outline-none font-mono"
                               >
-                                {COUNTRIES.map(c => (
+                                {COUNTRIES.map((c) => (
                                   <option key={c.code} value={c.code}>{c.name}</option>
                                 ))}
                               </select>
@@ -1091,7 +1091,7 @@ if (!leftDrawerOpen) return null;
                                   className="w-full mt-1 bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-white focus:border-rose-500 focus:outline-none font-mono"
                                 >
                                   <option value="">Select State</option>
-                                  {US_STATES.map(st => (
+                                  {US_STATES.map((st) => (
                                     <option key={st.code} value={st.code}>{st.name} ({st.code})</option>
                                   ))}
                                 </select>
@@ -1266,13 +1266,13 @@ if (!leftDrawerOpen) return null;
                                 </div>
                                 
                                 <div className="space-y-2">
-                                  {MASTER_GENRES.map((cluster) => {
+                                  {MASTER_GENRES.map((cluster, cIdx) => {
                                     const isExpanded = !!expandedClusters[cluster.name];
                                     const activePicks = Array.from(new Set([...profileGenres, ...profileMicroGenres]));
                                     const selectedCount = cluster.tags.filter(tag => activePicks.includes(tag.label)).length;
                                     
                                     return (
-                                      <div key={cluster.name} className="border border-zinc-900 rounded-xl bg-zinc-950/60 overflow-hidden">
+                                      <div key={`master-genre-${cluster.name}-${cIdx}`} className="border border-zinc-900 rounded-xl bg-zinc-950/60 overflow-hidden">
                                         <button
                                           type="button"
                                           onClick={() => {
@@ -1297,11 +1297,11 @@ if (!leftDrawerOpen) return null;
                                         
                                         {isExpanded && (
                                           <div className="p-3 bg-black/80 border-t border-zinc-900/80 flex flex-wrap gap-1.5 max-h-52 overflow-y-auto">
-                                            {cluster.tags.map((tag) => {
+                                            {cluster.tags.map((tag, tIdx) => {
                                               const isSelected = activePicks.includes(tag.label);
                                               return (
                                                 <button
-                                                  key={tag.id}
+                                                  key={tag.id ? `tag-${tag.id}-${tIdx}` : `tag-${tIdx}`}
                                                   type="button"
                                                   onClick={() => {
                                                     let nextList: string[];
@@ -1602,8 +1602,8 @@ if (!leftDrawerOpen) return null;
                                   </div>
 
                                   <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                                    {loyaltyCustomTiers.map((tier) => (
-                                      <div key={tier.id} className="p-3 bg-zinc-950/40 border border-zinc-900 rounded-xl flex items-center justify-between gap-3">
+                                    {loyaltyCustomTiers.map((tier, trIdx) => (
+                                      <div key={tier.id ? `tier-${tier.id}-${trIdx}` : `tier-${trIdx}`} className="p-3 bg-zinc-950/40 border border-zinc-900 rounded-xl flex items-center justify-between gap-3">
                                         <div>
                                           <div className="text-xs font-black text-zinc-200 flex items-center gap-1.5">
                                             <Crown className="w-3.5 h-3.5 text-orange-400" />
@@ -1863,10 +1863,10 @@ if (!leftDrawerOpen) return null;
                                   item.brand?.toLowerCase() === 'torture' ||
                                   (item as any).isLabelProduct
                                 );
-                              }).map((rawItem) => {
+                              }).map((rawItem, itIdx) => {
                                 const item = rawItem as any;
                                 return (
-                                  <div key={item.id} className={`p-3 bg-zinc-950/40 border rounded-xl flex flex-col gap-2.5 transition-colors ${item.hidden ? 'border-zinc-900/60 opacity-50' : 'border-zinc-850 hover:border-zinc-800'}`}>
+                                  <div key={item.id ? `item-${item.id}-${itIdx}` : `item-${itIdx}`} className={`p-3 bg-zinc-950/40 border rounded-xl flex flex-col gap-2.5 transition-colors ${item.hidden ? 'border-zinc-900/60 opacity-50' : 'border-zinc-850 hover:border-zinc-800'}`}>
                                     <div className="flex items-start justify-between gap-3">
                                       <div>
                                         <div className="text-xs font-black text-white flex items-center gap-1.5">
@@ -2130,7 +2130,7 @@ if (!leftDrawerOpen) return null;
                                               };
                                               return (
                                                 <button
-                                                  key={lvl}
+                                                  key={`lvl-${lvl}`}
                                                   type="button"
                                                   onClick={() => {
                                                     setTeamMembers(prev => prev.map(m => m.id === member.id ? { ...m, clearanceLevel: lvl } : m));
@@ -2434,7 +2434,7 @@ if (!leftDrawerOpen) return null;
                                                   const rating = collPlayerRatings[activeMusicItem.id] || 0;
                                                   return (
                                                     <button
-                                                      key={star}
+                                                      key={`star-${star}`}
                                                       type="button"
                                                       onClick={() => {
                                                         setCollPlayerRatings(prev => ({ ...prev, [activeMusicItem.id]: star }));

@@ -714,7 +714,7 @@ export default function CoOpRouteStagingView({ onBack, triggerNotification, addL
                       : "flex flex-col sm:flex-row gap-3 items-stretch sm:items-center p-3 border border-purple-500/10 border-l-2 border-l-purple-500/60 pl-3 bg-purple-950/10 rounded";
 
                     return (
-                      <div key={b.id} className={rowClass}>
+                      <div key={`${b.id}-${idx}`} className={rowClass}>
                         <div className="text-[9.5px] font-bold shrink-0 w-20 uppercase font-mono tracking-wider">
                           {b.isHost ? (
                             <span className="text-emerald-400">STAGE HOST</span>
@@ -901,7 +901,7 @@ export default function CoOpRouteStagingView({ onBack, triggerNotification, addL
                   <div className="space-y-2.5">
                     {bands.map((b, idx) => (
                       <div 
-                        key={b.id}
+                        key={`${b.id}-${idx}`}
                         className="bg-rose-950/20 border border-rose-500/20 rounded p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
                       >
                         <div className="space-y-1">
@@ -1104,8 +1104,8 @@ export default function CoOpRouteStagingView({ onBack, triggerNotification, addL
                   <div className="pt-3 border-t border-purple-950/40 space-y-3 font-sans">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block font-mono">Itemized Guarantees &amp; Splits</span>
                     <div className="grid grid-cols-2 gap-2.5">
-                      {bands.map(b => (
-                        <div key={b.id} className="bg-black/60 border border-zinc-900 p-2.5 rounded">
+                      {bands.map((b, bIdx) => (
+                        <div key={`${b.id}-${bIdx}`} className="bg-black/60 border border-zinc-900 p-2.5 rounded">
                           <span className="text-[9px] uppercase font-bold text-zinc-500 tracking-wider block mb-1 font-mono">{b.name}</span>
                           <div className="flex items-center bg-zinc-950 border border-zinc-850 px-2 py-0.5 rounded">
                             <span className="text-purple-400 text-xs font-bold">$</span>
@@ -1253,7 +1253,7 @@ export default function CoOpRouteStagingView({ onBack, triggerNotification, addL
 
                   {/* Backline Asset Cards (Flat Stack) */}
                   <div className="space-y-3">
-                    {gearAssets.map((asset) => {
+                    {gearAssets.map((asset, idx) => {
                       const handleUpdateSupplier = (assetId: string, supplierId: string) => {
                         setGearAssets(prev => prev.map(item => item.id === assetId ? { ...item, supplierId } : item));
                         triggerNotification('Updated supplier assigned for gear asset! 🚚');
@@ -1299,7 +1299,7 @@ export default function CoOpRouteStagingView({ onBack, triggerNotification, addL
                       };
 
                       return (
-                        <div key={asset.id} className="bg-black/60 border border-zinc-900 p-3.5 rounded space-y-3 relative">
+                        <div key={`${asset.id}-${idx}`} className="bg-black/60 border border-zinc-900 p-3.5 rounded space-y-3 relative">
                           <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2">
                               <span className="text-[8px] font-mono px-1.5 py-0.5 bg-purple-950/40 border border-purple-500/20 text-purple-400 uppercase font-bold">
@@ -1333,8 +1333,8 @@ export default function CoOpRouteStagingView({ onBack, triggerNotification, addL
                               >
                                 <option value="">[ Unassigned ]</option>
                                 <option value="PROMOTER">[ Provided by Venue / Promoter ]</option>
-                                {bands.map((b) => (
-                                  <option key={b.id} value={b.id}>
+                                {bands.map((b, bIdx) => (
+                                  <option key={`${b.id}-${bIdx}`} value={b.id}>
                                     @{b.name}
                                   </option>
                                 ))}
@@ -1347,11 +1347,11 @@ export default function CoOpRouteStagingView({ onBack, triggerNotification, addL
                                 Utilizing Bands:
                               </span>
                               <div className="flex flex-wrap gap-2 bg-zinc-950/60 border border-zinc-850 p-1.5 rounded">
-                                {bands.map((b) => {
+                                {bands.map((b, bIdx) => {
                                   const isChecked = asset.utilizerIds?.includes(b.id);
                                   return (
                                     <label 
-                                      key={b.id} 
+                                      key={`${b.id}-${bIdx}`} 
                                       className="flex items-center gap-1 cursor-pointer text-[10px] uppercase font-bold text-zinc-400 hover:text-white px-1"
                                     >
                                       <input
@@ -1538,13 +1538,13 @@ export default function CoOpRouteStagingView({ onBack, triggerNotification, addL
                             { name: 'Independent Vehicles', mpg: 12 },
                             { name: 'Tour Bus Rig', mpg: 6 },
                             { name: 'Van & Trailer + Car', mpg: 10 },
-                          ].map((cfg) => {
+                          ].map((cfg, idx) => {
                             const isSelected = transportType === cfg.name || 
                                                (cfg.name === 'Tour Bus Rig' && transportType === 'Separate Tour Buses') ||
                                                (cfg.name === 'Shared Van & Trailer' && transportType === 'Shared Van & Trailer (14 MPG)');
                             return (
                               <button
-                                key={cfg.name}
+                                key={`${cfg.name}-${idx}`}
                                 type="button"
                                 onClick={() => {
                                   setTransportType(cfg.name);
@@ -1712,7 +1712,7 @@ export default function CoOpRouteStagingView({ onBack, triggerNotification, addL
                   const transitLeg = prevNode ? getTransitMetrics(prevNode.city, node.city) : null;
 
                   return (
-                    <React.Fragment key={node.id}>
+                    <React.Fragment key={`${node.id}-${index}`}>
                       {index > 0 && prevNode && (
                         <div className="my-[20px] mx-2 sm:mx-6 pl-4 border-l-2 border-dashed border-[#A855F7]/30 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                           <div className="flex items-center gap-2 text-[10px] text-zinc-400 font-mono uppercase">
@@ -1865,9 +1865,9 @@ export default function CoOpRouteStagingView({ onBack, triggerNotification, addL
                                             [ CLOSE ]
                                           </button>
                                         </div>
-                                        {uniqueCities.slice(0, 5).map(citySelection => (
+                                        {uniqueCities.slice(0, 5).map((citySelection, idx) => (
                                           <button
-                                            key={citySelection}
+                                            key={`${citySelection}-${idx}`}
                                             type="button"
                                             onClick={(e) => {
                                               e.stopPropagation();
@@ -1923,9 +1923,9 @@ export default function CoOpRouteStagingView({ onBack, triggerNotification, addL
                                             [ CLOSE ]
                                           </button>
                                         </div>
-                                        {filtered.slice(0, 5).map(vSelection => (
+                                        {filtered.slice(0, 5).map((vSelection, idx) => (
                                           <button
-                                            key={vSelection.name}
+                                            key={`${vSelection.name}-${idx}`}
                                             type="button"
                                             onClick={(e) => {
                                               e.stopPropagation();
@@ -2088,7 +2088,7 @@ export default function CoOpRouteStagingView({ onBack, triggerNotification, addL
                             ) : (
                               <div className="space-y-2 mt-2">
                                 {node.localSupports.map((supp: any, sIdx: number) => (
-                                  <div key={supp.id} className="flex gap-2 items-center bg-[#000000] border border-[#222] p-1.5">
+                                  <div key={`${supp.id}-${sIdx}`} className="flex gap-2 items-center bg-[#000000] border border-[#222] p-1.5">
                                     <span className="text-[9px] font-bold text-[#A855F7] uppercase shrink-0 w-20">
                                       [ Leg Support {sIdx + 1} ]
                                     </span>
@@ -2171,8 +2171,8 @@ export default function CoOpRouteStagingView({ onBack, triggerNotification, addL
                                 </div>
 
                                 <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
-                                  {nodeSchedule.map((item: any) => (
-                                    <div key={item.id} className="flex gap-2 items-center bg-[#050505] p-1.5 border border-[#1e1e1e]">
+                                  {nodeSchedule.map((item: any, idx) => (
+                                    <div key={`${item.id}-${idx}`} className="flex gap-2 items-center bg-[#050505] p-1.5 border border-[#1e1e1e]">
                                       <div className="flex items-center gap-1.5 shrink-0">
                                         <input 
                                           type="text" 

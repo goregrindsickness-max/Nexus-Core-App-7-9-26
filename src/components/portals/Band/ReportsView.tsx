@@ -1167,7 +1167,7 @@ export default function ReportsView({
                             totalUsed += percent;
                             return (
                               <div 
-                                key={cat} 
+                                key={`${cat}-${idx}`} 
                                 className={`${colors[idx]} h-full first:rounded-l-full last:rounded-r-full transition-all duration-500`}
                                 style={{ width: `${percent}%` }}
                                 title={`${cat}: $${catAmt.toFixed(2)} (${percent.toFixed(1)}%)`}
@@ -1189,11 +1189,11 @@ export default function ReportsView({
                             { name: 'Venue/Booking', colorBadge: 'bg-cyan-400' },
                             { name: 'Miscellaneous', colorBadge: 'bg-zinc-500' }
                           ];
-                          return cats.map(c => {
+                          return cats.map((c, cIdx) => {
                             const catAmt = expenses.filter(e => e.category === c.name).reduce((sum, e) => sum + e.amount, 0);
                             if (catAmt <= 0) return null;
                             return (
-                              <div key={c.name} className="flex items-center gap-1">
+                              <div key={`${c.name}-${cIdx}`} className="flex items-center gap-1">
                                 <span className={`w-2 h-2 rounded-full ${c.colorBadge}`} />
                                 <span className="text-zinc-300 font-bold">{c.name}:</span>
                                 <span className="text-zinc-400">${catAmt.toFixed(0)}</span>
@@ -1209,14 +1209,14 @@ export default function ReportsView({
                   <div className="space-y-2">
                     <span className="block text-[8.5px] text-zinc-500 font-mono uppercase tracking-widest text-left font-bold">Category Preset Filters</span>
                     <div className="flex flex-wrap gap-1.5 justify-start">
-                      {['All', 'Gas/Travel', 'Lodging', 'Meals/Food', 'Equipment/Supplies', 'Promotion/PR', 'Venue/Booking', 'Miscellaneous'].map((cat) => {
+                      {['All', 'Gas/Travel', 'Lodging', 'Meals/Food', 'Equipment/Supplies', 'Promotion/PR', 'Venue/Booking', 'Miscellaneous'].map((cat, idx) => {
                         const count = cat === 'All' ? expenses.length : expenses.filter(e => e.category === cat).length;
                         const sum = cat === 'All' ? totalExpensesAmount : expenses.filter(e => e.category === cat).reduce((s, e) => s + e.amount, 0);
                         const isActive = selectedFilterCategory === cat;
                         
                         return (
                           <button
-                            key={cat}
+                            key={`${cat}-${idx}`}
                             type="button"
                             onClick={() => { setSelectedFilterCategory(cat); triggerNotification(`Filtered road items by: ${cat}`); }}
                             className={`text-[9.5px] font-mono px-2.5 py-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 ${
@@ -1370,7 +1370,7 @@ export default function ReportsView({
                       </div>
                     ) : (
                       <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-zinc-800">
-                        {filteredAndSortedExpenses.map((exp) => {
+                        {filteredAndSortedExpenses.map((exp, idx) => {
                           const categoryStyle = (() => {
                             switch(exp.category) {
                               case 'Gas/Travel': return { icon: '⛽', color: 'bg-amber-500/10 text-amber-400 border-amber-500/20' };
@@ -1384,7 +1384,7 @@ export default function ReportsView({
                           })();
 
                           return (
-                            <div key={exp.id} className="bg-[#151722]/40 rounded-xl p-3 border border-zinc-850 hover:border-zinc-800 transition-all group relative flex flex-col justify-between text-left space-y-2">
+                            <div key={`${exp.id}-${idx}`} className="bg-[#151722]/40 rounded-xl p-3 border border-zinc-850 hover:border-zinc-800 transition-all group relative flex flex-col justify-between text-left space-y-2">
                               <div className="flex justify-between items-start gap-4">
                                 <div className="space-y-1">
                                   <div className="flex items-center gap-2">
@@ -1604,7 +1604,7 @@ export default function ReportsView({
                       Commission & Split Payouts
                     </span>
 
-                    {teamMembers.map((member) => {
+                    {teamMembers.map((member, idx) => {
                       const computedCommission = (totalRevenue * member.commissionRate) / 100;
                       const isEditing = editingTeamId === member.id;
 
@@ -1623,7 +1623,7 @@ export default function ReportsView({
 
                       return (
                         <div 
-                          key={member.id}
+                          key={`${member.id}-${idx}`}
                           className="p-3 bg-zinc-950/60 border border-zinc-900 rounded-xl space-y-2"
                         >
                           <div className="flex justify-between items-start text-xs">
@@ -1734,7 +1734,7 @@ export default function ReportsView({
                         { city: 'HOUSTON, TX', yieldVal: 2.15 }
                       ].map((node, index) => (
                         <div 
-                          key={node.city} 
+                          key={`${node.city}-${index}`} 
                           className="bg-[#151722]/50 rounded-xl p-4 border border-zinc-850 hover:border-zinc-800 transition-all flex flex-col justify-between text-left h-24"
                           onMouseEnter={() => console.log('[REPORTS_SANDBOX_CALCULATION_RUNNING]')}
                         >

@@ -2041,17 +2041,57 @@ loadProfileIndexedDBCache(portalRole, userProfile?.id).then((data: any) => {
           return;
         }
 
-        let activeId: string | null = null;
-        if (activeTarget.raw_id && isValidUUID(activeTarget.raw_id)) activeId = activeTarget.raw_id;
-        else if (activeTarget.creative_id && isValidUUID(activeTarget.creative_id)) activeId = activeTarget.creative_id;
-        else if (activeTarget.registered_creative_id && isValidUUID(activeTarget.registered_creative_id)) activeId = activeTarget.registered_creative_id;
-        else if (activeTarget.band_id && isValidUUID(activeTarget.band_id)) activeId = activeTarget.band_id;
-        else if (activeTarget.id && isValidUUID(activeTarget.id)) activeId = activeTarget.id;
-        else if (activeTarget.creator_id && isValidUUID(activeTarget.creator_id)) activeId = activeTarget.creator_id;
-        else if (activeTarget.user_id && isValidUUID(activeTarget.user_id)) activeId = activeTarget.user_id;
+        const isBandTarget = Boolean(
+          activeTarget?.isBandProfile ||
+          activeTarget?.type === 'band' ||
+          activeTarget?.role === 'band' ||
+          activeTarget?.role === 'Band' ||
+          activeTarget?.portalRole === 'band' ||
+          activeTarget?.account_type === 'band' ||
+          (portalRole === 'band' && (activeTarget?.isYou || activeTarget?.id === userProfile?.id || activeTarget?.band_name)) ||
+          activeTarget?.band_name ||
+          activeTarget?.bandName ||
+          activeTarget?.band_id
+        );
 
-        if (!activeId) {
-          activeId = resolveProfileUUID(activeTarget, allProfiles);
+        let activeId: string | null = null;
+
+        if (isBandTarget) {
+          // 1. Resolve Band-specific UUID
+          const candidateBandId = activeTarget.band_id || (activeTarget.isBandProfile ? (activeTarget.raw_id || activeTarget.id) : null);
+          if (candidateBandId && isValidUUID(candidateBandId)) {
+            activeId = candidateBandId;
+          }
+
+          const bandSearchName = (activeTarget.band_name || activeTarget.bandName || activeTarget.name || '').trim();
+          if ((!activeId || !isValidUUID(activeId)) && bandSearchName) {
+            try {
+              const { data: bMatch } = await supabase
+                .from('bands')
+                .select('id')
+                .or(`band_name.ilike.${bandSearchName},name.ilike.${bandSearchName}`)
+                .limit(1);
+              if (bMatch?.[0]?.id && isValidUUID(bMatch[0].id)) {
+                activeId = bMatch[0].id;
+              }
+            } catch (e) {}
+          }
+
+          if ((!activeId || !isValidUUID(activeId)) && (activeTarget.isYou || activeTarget.id === userProfile?.id) && userProfile?.band_id && isValidUUID(userProfile.band_id)) {
+            activeId = userProfile.band_id;
+          }
+        } else {
+          // Personal / Creative / Label / Promoter resolution
+          if (activeTarget.creative_id && isValidUUID(activeTarget.creative_id)) activeId = activeTarget.creative_id;
+          else if (activeTarget.registered_creative_id && isValidUUID(activeTarget.registered_creative_id)) activeId = activeTarget.registered_creative_id;
+          else if (activeTarget.raw_id && isValidUUID(activeTarget.raw_id)) activeId = activeTarget.raw_id;
+          else if (activeTarget.id && isValidUUID(activeTarget.id)) activeId = activeTarget.id;
+          else if (activeTarget.creator_id && isValidUUID(activeTarget.creator_id)) activeId = activeTarget.creator_id;
+          else if (activeTarget.user_id && isValidUUID(activeTarget.user_id)) activeId = activeTarget.user_id;
+
+          if (!activeId) {
+            activeId = resolveProfileUUID(activeTarget, allProfiles);
+          }
         }
 
         const targetName = (
@@ -2067,14 +2107,7 @@ loadProfileIndexedDBCache(portalRole, userProfile?.id).then((data: any) => {
         // If activeId is not yet resolved, query creatives, bands, and profiles in Supabase
         if (!activeId && targetName) {
           try {
-            const { data: cMatch } = await supabase
-              .from('creatives')
-              .select('id, creator_id, user_id')
-              .or(`business_name.ilike.%${targetName}%,creative_name.ilike.%${targetName}%,name.ilike.%${targetName}%`)
-              .limit(1);
-            if (cMatch?.[0]?.id && isValidUUID(cMatch[0].id)) {
-              activeId = cMatch[0].id;
-            } else {
+            if (isBandTarget) {
               const { data: bMatch } = await supabase
                 .from('bands')
                 .select('id')
@@ -2082,6 +2115,15 @@ loadProfileIndexedDBCache(portalRole, userProfile?.id).then((data: any) => {
                 .limit(1);
               if (bMatch?.[0]?.id && isValidUUID(bMatch[0].id)) {
                 activeId = bMatch[0].id;
+              }
+            } else {
+              const { data: cMatch } = await supabase
+                .from('creatives')
+                .select('id, creator_id, user_id')
+                .or(`business_name.ilike.%${targetName}%,creative_name.ilike.%${targetName}%,name.ilike.%${targetName}%`)
+                .limit(1);
+              if (cMatch?.[0]?.id && isValidUUID(cMatch[0].id)) {
+                activeId = cMatch[0].id;
               } else {
                 const { data: pMatch } = await supabase
                   .from('profiles')
@@ -2111,25 +2153,30 @@ loadProfileIndexedDBCache(portalRole, userProfile?.id).then((data: any) => {
             localFollows = JSON.parse(localStorage.getItem('nexus_local_follows_v1') || '{}');
           } catch (e) {}
 
-          const targetNameLower = targetName.toLowerCase().trim();
-          const isLocallyFollowed = (activeId && localFollows[activeId]) || (targetNameLower && localFollows[targetNameLower]) || !!activeTarget.isFollowed;
+          const isLocallyFollowed = (activeId && localFollows[activeId]) === true;
 
-          // Query official records in Supabase 'follows' table where followed_id = activeId
+          // Query official records in Supabase 'follows' table where followed_id = activeId or artist_id = activeId
           let followsData: any[] = [];
           if (activeId && isValidUUID(activeId)) {
             try {
               const { data, error: fErr } = await supabase
                 .from('follows')
                 .select('*')
-                .eq('followed_id', activeId);
-              if (!fErr && data) {
+                .or(`followed_id.eq.${activeId},artist_id.eq.${activeId}`);
+              if (!fErr && data && data.length > 0) {
                 followsData = data;
+              } else {
+                const { data: d2 } = await supabase
+                  .from('follows')
+                  .select('*')
+                  .eq('followed_id', activeId);
+                if (d2) followsData = d2;
               }
             } catch (e) {}
           }
 
           const combinedMap = new Map<string, any>();
-          const followerIds = (followsData || []).map((f: any) => f.follower_id).filter(isValidUUID);
+          const followerIds = (followsData || []).map((f: any) => f.follower_id || f.fan_profile_id).filter(isValidUUID);
 
           if (followerIds.length > 0) {
             const { data: profilesData } = await supabase
@@ -2220,7 +2267,7 @@ loadProfileIndexedDBCache(portalRole, userProfile?.id).then((data: any) => {
             });
           }
 
-          // If current logged-in user follows this profile, ensure current user is in the followers list
+          // If current logged-in user explicitly follows this specific band/entity, ensure current user is in the followers list
           if (isLocallyFollowed && userProfile) {
             const currentUserId = userProfile.id || userProfile.user_id || 'you-current-user';
             const currentUserName = userProfile.full_name || userProfile.display_name || userProfile.name || 'You';
@@ -2238,37 +2285,6 @@ loadProfileIndexedDBCache(portalRole, userProfile?.id).then((data: any) => {
             });
           }
 
-          // If followers list is still low or empty, provide realistic community followers from allProfiles
-          if (combinedMap.size === 0 && allProfiles && allProfiles.length > 0) {
-            const seedFollowers = allProfiles
-              .filter(p => p.id !== activeId && p.name !== targetName)
-              .slice(0, 8);
-
-            seedFollowers.forEach(p => {
-              const norm = normalizeLoadedProfile(p);
-              const pName = p.full_name || p.display_name || p.name || p.console_handle || 'Member';
-              const pRole = (p.role || p.account_type || '').toLowerCase();
-              let cat = 'people';
-              if (pRole.includes('band') || p.isBandProfile) cat = 'band';
-              else if (pRole.includes('creative') || p.isCreativeProfile) cat = 'creative';
-              else if (pRole.includes('label')) cat = 'label';
-              else if (pRole.includes('promoter')) cat = 'promoter';
-
-              combinedMap.set(String(p.id || pName), {
-                ...norm,
-                id: p.id || pName,
-                name: pName,
-                full_name: pName,
-                display_name: pName,
-                console_handle: p.console_handle || `@${pName.toLowerCase().replace(/\s+/g, '')}`,
-                avatar_url: p.avatar_url || p.avatar || p.logo_url,
-                role: p.role || p.account_type || 'Member',
-                category: cat,
-                isYou: (userProfile?.id && p.id === userProfile.id)
-              });
-            });
-          }
-
           const resultList = Array.from(combinedMap.values());
           if (active) {
             setLiveFollowsList(resultList);
@@ -2282,15 +2298,21 @@ loadProfileIndexedDBCache(portalRole, userProfile?.id).then((data: any) => {
               const { data, error: fErr } = await supabase
                 .from('follows')
                 .select('*')
-                .eq('follower_id', activeId);
-              if (!fErr && data) {
+                .or(`follower_id.eq.${activeId},fan_profile_id.eq.${activeId}`);
+              if (!fErr && data && data.length > 0) {
                 followsData = data;
+              } else {
+                const { data: d2 } = await supabase
+                  .from('follows')
+                  .select('*')
+                  .eq('follower_id', activeId);
+                if (d2) followsData = d2;
               }
             } catch (e) {}
           }
 
           const combinedMap = new Map<string, any>();
-          const followedIds = (followsData || []).map((f: any) => f.followed_id).filter(isValidUUID);
+          const followedIds = (followsData || []).map((f: any) => f.followed_id || f.artist_id).filter(isValidUUID);
 
           if (followedIds.length > 0) {
             const { data: profilesData } = await supabase
@@ -2378,36 +2400,6 @@ loadProfileIndexedDBCache(portalRole, userProfile?.id).then((data: any) => {
                   });
                 }
               }
-            });
-          }
-
-          // If following list is empty, provide sensible roster/following list from allProfiles
-          if (combinedMap.size === 0 && allProfiles && allProfiles.length > 0) {
-            const seedFollowing = allProfiles
-              .filter(p => p.id !== activeId && p.name !== targetName)
-              .slice(0, 6);
-
-            seedFollowing.forEach(p => {
-              const norm = normalizeLoadedProfile(p);
-              const pName = p.full_name || p.display_name || p.name || p.console_handle || 'Member';
-              const pRole = (p.role || p.account_type || '').toLowerCase();
-              let cat = 'people';
-              if (pRole.includes('band') || p.isBandProfile) cat = 'band';
-              else if (pRole.includes('creative') || p.isCreativeProfile) cat = 'creative';
-              else if (pRole.includes('label')) cat = 'label';
-              else if (pRole.includes('promoter')) cat = 'promoter';
-
-              combinedMap.set(String(p.id || pName), {
-                ...norm,
-                id: p.id || pName,
-                name: pName,
-                full_name: pName,
-                display_name: pName,
-                console_handle: p.console_handle || `@${pName.toLowerCase().replace(/\s+/g, '')}`,
-                avatar_url: p.avatar_url || p.avatar || p.logo_url,
-                role: p.role || p.account_type || 'Member',
-                category: cat
-              });
             });
           }
 
@@ -4200,7 +4192,7 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
           <div className="space-y-3">
             <div className="h-3 w-32 bg-zinc-800/50 rounded" />
             <div className="flex gap-3 overflow-hidden">
-              {[1, 2, 3, 4].map(i => (
+              {[1, 2, 3, 4].map((i) => (
                 <div key={`story-skel-${i}`} className="w-28 h-40 rounded-xl bg-zinc-900/50 border border-zinc-800/50 shrink-0 flex items-center justify-center">
                   <div className="w-8 h-8 rounded-full bg-zinc-800/80" />
                 </div>
@@ -4209,7 +4201,7 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
           </div>
           
           {/* Edge-to-edge card shells */}
-          {[1, 2].map(i => (
+          {[1, 2].map((i) => (
             <div key={`card-skel-${i}`} className="-mx-4 sm:mx-0 bg-[#121214]/50 border-y sm:border border-zinc-900/50 sm:rounded-2xl p-4 space-y-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-zinc-800/50 shrink-0" />

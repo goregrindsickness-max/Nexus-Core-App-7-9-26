@@ -313,9 +313,9 @@ export default function EditableChecklistModal({
                     <p className="text-[10px] text-zinc-500 font-mono">Create custom items above or load presets from the template bank tab.</p>
                   </div>
                 ) : (
-                  activeItems.map(item => (
+                  activeItems.map((item, idx) => (
                     <motion.div 
-                      key={item.id}
+                      key={`${item.id}-${idx}`}
                       layout
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -451,9 +451,9 @@ export default function EditableChecklistModal({
                     {bankSearch ? 'No matches found' : 'The template bank is empty'}
                   </div>
                 ) : (
-                  filteredBankItems.map(item => (
+                  filteredBankItems.map((item, idx) => (
                     <div 
-                      key={item.id}
+                      key={`${item.id}-${idx}`}
                       className="group flex items-center justify-between p-2 px-3 border border-zinc-900 bg-zinc-905/30 hover:bg-zinc-900 rounded-xl transition-all"
                     >
                       {/* Active click adds to current checklist */}

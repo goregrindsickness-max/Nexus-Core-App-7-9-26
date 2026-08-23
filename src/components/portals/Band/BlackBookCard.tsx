@@ -149,8 +149,8 @@ export default function BlackBookCard({
                 
                 <div className="flex justify-between items-center bg-black/40 border border-[#a855f7]/10 rounded-lg px-2.5 py-2">
                   <div className="flex -space-x-2">
-                    {[1,2,3].map(i => (
-                      <div key={i} className={`w-5 h-5 rounded-full border-2 border-[#0b0c10] flex items-center justify-center bg-zinc-800`}>
+                    {[1,2,3].map((i, _kIdx) => (
+                      <div key={`${i}-${_kIdx}`} className={`w-5 h-5 rounded-full border-2 border-[#0b0c10] flex items-center justify-center bg-zinc-800`}>
                         <span className="text-[7px]">🎸</span>
                       </div>
                     ))}

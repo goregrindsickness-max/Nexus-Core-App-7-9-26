@@ -526,11 +526,11 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
                 {/* Micro-genre Switcher Console */}
                 <div className="bg-zinc-950/90 px-3 py-2.5 sm:py-3 border-b border-zinc-900 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
                   <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 font-mono mr-1 shrink-0">CHANNELS:</span>
-                  {(Object.keys(RADIO_PLAYLISTS) as Array<keyof typeof RADIO_PLAYLISTS>).map((genreKey) => {
+                  {(Object.keys(RADIO_PLAYLISTS) as Array<keyof typeof RADIO_PLAYLISTS>).map((genreKey, gIdx) => {
                     const isActive = selectedRadioGenre === genreKey;
                     return (
                       <button
-                        key={genreKey}
+                        key={`radio-genre-${genreKey}-${gIdx}`}
                         onClick={() => {
                           if (selectedRadioGenre !== genreKey) {
                             setSelectedRadioGenre(genreKey);
@@ -581,7 +581,7 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
                         {playlistVideos[currentVideoIndex]?.title ? (
                           (playlistVideos[currentVideoIndex].title.length > 32) ? (
                             <div className="inline-block animate-marquee-slow pr-8">
-                              <span key={playlistVideos[currentVideoIndex].title}>
+                              <span key={`track-title-${playlistVideos[currentVideoIndex]?.videoId || currentVideoIndex}`}>
                                 {playlistVideos[currentVideoIndex].title}
                               </span>
                             </div>
@@ -812,7 +812,7 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
                           const isCurrent = video.originalIndex === currentVideoIndex;
                           return (
                             <div
-                              key={`${video.videoId}-${video.originalIndex}`}
+                              key={`video-item-${video.videoId || ''}-${video.originalIndex}`}
                               role="button"
                               tabIndex={0}
                               onKeyDown={(e) => {
@@ -988,7 +988,7 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
 
             {/* Center Section: Quick Channel Selector (Hidden on mobile, visible on md+) */}
             <div className="hidden lg:flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0 max-w-[30%]">
-              {(Object.keys(RADIO_PLAYLISTS) as Array<keyof typeof RADIO_PLAYLISTS>).slice(0, 4).map((genreKey) => {
+              {(Object.keys(RADIO_PLAYLISTS) as Array<keyof typeof RADIO_PLAYLISTS>).slice(0, 4).map((genreKey, gIdx) => {
                 const isActive = selectedRadioGenre === genreKey;
                 return (
                   <button

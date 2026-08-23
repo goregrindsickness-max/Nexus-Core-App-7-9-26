@@ -241,7 +241,7 @@ export function AppNavigationBar({
                       <p className="px-2.5 pb-1.5 text-[8.5px] font-extrabold font-mono text-zinc-500 uppercase tracking-widest border-b border-zinc-800/30 pb-1 mb-1">
                         {group.groupTitle}
                       </p>
-                      {group.items.map((item) => {
+                      {group.items.map((item, idx) => {
                         const IconComponent = item.icon;
                         const isActive = item.tab === 'loyalty'
                           ? (activeTab === 'promo-hub' && promoHubSubTab === 'loyalty')
@@ -250,7 +250,7 @@ export function AppNavigationBar({
                             : activeTab === item.tab;
                         return (
                           <button
-                            key={item.tab}
+                            key={`${item.tab}-${idx}`}
                             onClick={() => {
                               if (item.tab === 'loyalty') {
                                 setPromoHubSubTab('loyalty');

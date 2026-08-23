@@ -104,7 +104,7 @@ export default function AddItemView({ onBack, onSave, onDelete, triggerNotificat
     const randNum = Math.floor(1000 + Math.random() * 9000);
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const randChar = chars[Math.floor(Math.random() * chars.length)];
-    const generated = `${prefix}-${randNum}-${randChar}`;
+    const generated = `${prefix}`;
     setSku(generated);
     triggerNotification(`Generated SKU: ${generated}`);
   };
@@ -926,11 +926,11 @@ export default function AddItemView({ onBack, onSave, onDelete, triggerNotificat
                 className="overflow-hidden"
               >
                 <div className="flex flex-wrap gap-2 pt-1">
-                  {availableTags.map((tag) => {
+                  {availableTags.map((tag, idx) => {
                     const isSelected = selectedTags.includes(tag.label);
                     return (
                       <button
-                        key={tag.label}
+                        key={`${tag.label}-${idx}`}
                         onClick={() => toggleTag(tag.label)}
                         className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 border text-xs font-bold transition-all ${
                           isSelected 

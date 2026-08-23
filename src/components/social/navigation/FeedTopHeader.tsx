@@ -937,7 +937,7 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
               { id: 'reels', label: 'Clips', icon: Video, isTab: true },
               { id: 'messages', label: 'Inbox', icon: MessageSquare, isTab: true },
               { id: 'notices', label: 'Notices', icon: Bell, badge: true, isTab: false }
-            ].map((item) => {
+            ].map((item, itemIdx) => {
               const isActive = item.isTab ? activeTab === item.id : false;
               return (
                 <button
@@ -1090,18 +1090,18 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                       grouped[cat].push(p);
                     });
 
-                    return Object.entries(grouped).map(([catName, items]) => (
-                      <div key={catName} className="mb-2 last:mb-0">
+                    return Object.entries(grouped).map(([catName, items], catIdx) => (
+                      <div key={`cat-group-${catName}-${catIdx}`} className="mb-2 last:mb-0">
                         <div className="px-2 py-1 text-[9px] font-black uppercase text-zinc-500 tracking-wider font-mono">
                           {catName}
                         </div>
                         <div className="space-y-1 mt-1">
-                          {items.map(item => {
+                          {items.map((item) => {
                             const displayName = item.full_name || item.band_name || item.business_name || item.agency_name || item.label_name || item.username || item.name || item.console_handle || 'Unknown Entity';
                             const displayAvatar = item.avatar_url || item.avatar || item.logo_url || item.band_logo || item.creative_avatar || item.promoter_logo || item.label_avatar;
                             const subRole = item.genre || item.homebase || item.portalRole || item.role || (catName === 'Bands & Artists' ? 'Registered Band' : 'Scene Member');
 
-                            const uniqueKey = `search-item-${item.id || ''}-${item.band_id || ''}-${item.role || item.portalRole || item.type || ''}-${displayName}-${subRole}`;
+                            const uniqueKey = `search-item-${item.id || ''}-${item.band_id || ''}-${item.role || item.portalRole || item.type || ''}`;
 
                             return (
                               <div

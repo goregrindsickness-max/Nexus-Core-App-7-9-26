@@ -93,16 +93,16 @@ export const PollWidget: React.FC<PollWidgetProps> = ({
         const totalVotes = currentVote ? currentVote.totalVotes : (post.pollData.totalVotes || optionsList.reduce((a, b) => a + b.votes, 0));
 
         // Calculate max votes for leading indicator (#1 in yellow/amber)
-        const maxVotes = Math.max(...optionsList.map(o => o.votes));
+        const maxVotes = Math.max(...optionsList.map((o) => o.votes));
 
         return (
           <div className="space-y-2">
             {/* If NOT voted and NOT expired, show clean unbiased voting buttons */}
             {!revealResults ? (
               <div className="space-y-2">
-                {optionsList.map((opt) => (
+                {optionsList.map((opt, optIdx) => (
                   <button
-                    key={opt.id}
+                    key={`poll-opt-${opt.id || optIdx}-${optIdx}`}
                     onClick={() => handleVotePoll(post.id, opt.id, post.pollData!)}
                     className="w-full relative group overflow-hidden rounded-xl border border-purple-900/30 bg-zinc-950/90 hover:bg-amber-950/20 hover:border-amber-500/70 p-3 text-left transition-all cursor-pointer shadow hover:shadow-[0_0_15px_rgba(245,158,11,0.2)]"
                   >
@@ -129,14 +129,14 @@ export const PollWidget: React.FC<PollWidgetProps> = ({
             ) : (
               /* If VOTED or EXPIRED, reveal live results with animations & leading answer in yellow! */
               <div className="space-y-2 animate-in fade-in duration-500">
-                {optionsList.map((opt) => {
+                {optionsList.map((opt, optIdx) => {
                   const pct = totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0;
                   const isVoted = currentVote?.optionId === opt.id;
                   const isLeading = opt.votes === maxVotes && maxVotes > 0;
 
                   return (
                     <div
-                      key={opt.id}
+                      key={`poll-result-${opt.id || optIdx}-${optIdx}`}
                       className={`w-full relative overflow-hidden rounded-xl border text-left p-3 transition-all ${
                         isLeading
                           ? 'bg-[#0f0d06] border-amber-500/80 shadow-[0_0_15px_rgba(245,158,11,0.25)]'

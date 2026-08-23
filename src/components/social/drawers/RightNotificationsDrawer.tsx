@@ -247,9 +247,9 @@ export const RightNotificationsDrawer: React.FC<RightNotificationsDrawerProps> =
               { id: 'unread', label: 'UNREAD' },
               { id: 'social', label: 'SOCIAL' },
               { id: 'system', label: 'SYSTEM' }
-            ].map((f) => (
+            ].map((f, fIdx) => (
               <button
-                key={f.id}
+                key={`notif-filter-${f.id}-${fIdx}`}
                 onClick={() => setNotifFilter(f.id)}
                 className={`px-3 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase transition-all whitespace-nowrap cursor-pointer ${
                   notifFilter === f.id

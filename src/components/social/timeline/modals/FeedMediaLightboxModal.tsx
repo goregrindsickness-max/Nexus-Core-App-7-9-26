@@ -150,9 +150,9 @@ export const FeedMediaLightboxModal: React.FC<FeedMediaLightboxModalProps> = ({
 
           {/* Pit Filter Presets Bar */}
           <div className="hidden sm:flex items-center gap-1 bg-zinc-900/90 backdrop-blur-md border border-white/10 rounded-xl p-1 shadow-2xl">
-            {STAGE_FILTERS.map(f => (
+            {STAGE_FILTERS.map((f, fIdx) => (
               <button
-                key={f.id}
+                key={`stage-filter-${f.id}-${fIdx}`}
                 onClick={() => setActiveFilterId(f.id)}
                 className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold uppercase transition-all flex items-center gap-1 cursor-pointer ${
                   activeFilterId === f.id

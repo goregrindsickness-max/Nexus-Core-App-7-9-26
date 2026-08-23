@@ -97,8 +97,8 @@ export default function PacingTracker({
             className="bg-zinc-950 border border-zinc-700 text-white text-sm font-mono p-3 rounded-xl focus:ring-1 focus:ring-[#00ffcc]/50 focus:border-[#00ffcc] cursor-pointer"
           >
             <option value="demo-sandbox">⭐ [DEMO SANDBOX] Showcase Arena</option>
-            {lineups.map(l => (
-              <option key={l.id} value={l.id}>📡 {l.name} ({l.date})</option>
+            {lineups.map((l, lIdx) => (
+              <option key={`${l.id}-${lIdx}`} value={l.id}>📡 {l.name} ({l.date})</option>
             ))}
           </select>
         </div>
@@ -133,7 +133,7 @@ export default function PacingTracker({
         </div>
       ) : (
         <div className="flex flex-wrap justify-center gap-4">
-          {activeTiers.map((tier) => {
+          {activeTiers.map((tier, idx) => {
             const percentSold = tier.capacity && tier.capacity > 0 
               ? Math.min(Math.round((tier.sold / tier.capacity) * 100), 100) 
               : 0;
@@ -151,7 +151,7 @@ export default function PacingTracker({
 
             return (
               <div 
-                key={tier.id} 
+                key={`${tier.id}-${idx}`} 
                 className="relative bg-zinc-950/55 border border-zinc-900 rounded-xl flex flex-col p-3 gap-3 transition-all hover:border-zinc-800 w-[325px] overflow-hidden"
               >
                 {/* Header Row */}

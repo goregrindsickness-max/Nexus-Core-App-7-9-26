@@ -40,6 +40,65 @@ export function sanitizeInventoryItemForDb(item: any): any {
 }
 
 /**
+ * Strips properties from a Show that are not present in the
+ * 'shows' Postgres table schema, preventing column not found errors.
+ */
+export function sanitizeShowForDb(show: any): any {
+  const allowedKeys = [
+    'id',
+    'created_at',
+    'name',
+    'festival_name',
+    'date',
+    'status',
+    'revenue',
+    'show_type',
+    'band_id',
+    'event_scope',
+    'tour_id',
+    'venue_address',
+    'city',
+    'state_province',
+    'country',
+    'promoter_contact',
+    'load_in_time',
+    'doors_time',
+    'set_time',
+    'curfew_time',
+    'venue_cut_percentage',
+    'guarantee_amount',
+    'currency',
+    'tax_rate',
+    'expected_attendance',
+    'additional_notes',
+    'merch_space_fee',
+    'seller_cost',
+    'tables_provided',
+    'hanging_grids_provided',
+    'shore_power',
+    'parking_arrangements',
+    'age_restriction',
+    'wifi_network',
+    'wifi_password',
+    'merch_call_time',
+    'soundcheck_time',
+    'dinner_arrangements',
+    'local_food_notes',
+    'emergency_medical_info',
+    'local_pharmacy_info',
+    'stage_name'
+  ];
+
+  const dbShow: any = {};
+  for (const key of allowedKeys) {
+    if (show[key] !== undefined) {
+      dbShow[key] = show[key];
+    }
+  }
+  return dbShow;
+}
+
+/**
  * Generates a valid RFC4122 v4 UUID.
  * Compatible with PostgreSQL UUID column constraints.
  */

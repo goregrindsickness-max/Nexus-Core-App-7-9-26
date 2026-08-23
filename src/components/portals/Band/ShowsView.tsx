@@ -224,7 +224,7 @@ export const getShowWeatherAndWarnings = (show: Show): ShowWeather => {
 import { Show, Sale } from '../../../types';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { getSupabase } from '../../../supabase';
+import { getSupabase, sanitizeShowForDb, ensureValidSupabaseAuthSession } from '../../../supabase';
 import ShowFormModal from './ShowFormModal';
 import ShowExpandedView from './ShowExpandedView';
 import DaySheetPrintView from './DaySheetPrintView';
@@ -954,21 +954,12 @@ export default function ShowsView({
     // Database Sync
     const supabase = getSupabase();
     if (supabase) {
-      const columns = [
-        'id', 'created_at', 'name', 'festival_name', 'date', 'status', 'revenue', 'show_type', 'band_id',
-        'event_scope', 'tour_id', 'venue_address', 'city', 'state_province', 'country', 'promoter_contact',
-        'load_in_time', 'doors_time', 'set_time', 'curfew_time', 'venue_cut_percentage', 'guarantee_amount',
-        'currency', 'tax_rate', 'expected_attendance', 'additional_notes', 'merch_space_fee', 'seller_cost',
-        'tables_provided', 'hanging_grids_provided', 'shore_power', 'parking_arrangements', 'age_restriction',
-        'wifi_network', 'wifi_password', 'merch_call_time', 'soundcheck_time', 'dinner_arrangements',
-        'local_food_notes', 'emergency_medical_info', 'local_pharmacy_info', 'audio_production_requirements', 'stage_backline_requirements', 'support_lineup'
-      ];
-      const prunedDbShow: any = {};
-      columns.forEach(col => {
-        if ((duplicated as any)[col] !== undefined) {
-          prunedDbShow[col] = (duplicated as any)[col];
-        }
-      });
+      const session = await ensureValidSupabaseAuthSession(supabase);
+      if (!session) {
+        addLog(`Database session invalid. Duplicated show cached locally.`);
+        return;
+      }
+      const prunedDbShow = sanitizeShowForDb(duplicated);
       const { error } = await supabase.from('shows').insert([prunedDbShow]);
       if (error) {
         addLog(`Database insert error on duplicate: ${error.message}`);
@@ -1104,21 +1095,14 @@ export default function ShowsView({
     // Database Sync
     const supabase = getSupabase();
     if (supabase) {
-      const columns = [
-        'id', 'created_at', 'name', 'festival_name', 'date', 'status', 'revenue', 'show_type', 'band_id',
-        'event_scope', 'tour_id', 'venue_address', 'city', 'state_province', 'country', 'promoter_contact',
-        'load_in_time', 'doors_time', 'set_time', 'curfew_time', 'venue_cut_percentage', 'guarantee_amount',
-        'currency', 'tax_rate', 'expected_attendance', 'additional_notes', 'merch_space_fee', 'seller_cost',
-        'tables_provided', 'hanging_grids_provided', 'shore_power', 'parking_arrangements', 'age_restriction',
-        'wifi_network', 'wifi_password', 'merch_call_time', 'soundcheck_time', 'dinner_arrangements',
-        'local_food_notes', 'emergency_medical_info', 'local_pharmacy_info', 'audio_production_requirements', 'stage_backline_requirements', 'support_lineup'
-      ];
-      const prunedDbShow: any = {};
-      columns.forEach(col => {
-        if ((newShow as any)[col] !== undefined) {
-          prunedDbShow[col] = (newShow as any)[col];
-        }
-      });
+      const session = await ensureValidSupabaseAuthSession(supabase);
+      if (!session) {
+        addLog(`Database session invalid. Saved show cached locally.`);
+        setIsFormModalOpen(false);
+        setEditingFormShow(null);
+        return;
+      }
+      const prunedDbShow = sanitizeShowForDb(newShow);
 
       let dbErr;
       if (payload.id) {
@@ -1351,14 +1335,14 @@ export default function ShowsView({
                 )}
 
                 {/* Show stop coordinate points */}
-                {showsWithCoords.map((show) => {
+                {showsWithCoords.map((show, swcIdx) => {
                   const isActive = selectedShowId === show.id;
                   const isClosed = show.status === 'Closed';
                   const colorClass = isClosed ? '#c084fc' : '#00ffcc'; // Purple for closed, teal for active
                   
                   return (
                     <g 
-                      key={show.id} 
+                      key={show.id ? `coord-${show.id}-${swcIdx}` : `coord-${swcIdx}`} 
                       className="cursor-pointer group"
                       onClick={() => handleSelectShow(show.id)}
                     >
@@ -1521,9 +1505,9 @@ export default function ShowsView({
           {isOffersPanelExpanded && (
             <div className="p-4 border-t border-purple-900/40 bg-zinc-950/50 space-y-3.5 text-left font-mono">
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 hide-scrollbar mb-3">
-                {['all', 'pending', 'accepted', 'renegotiating'].map((filter) => (
+                {['all', 'pending', 'accepted', 'renegotiating'].map((filter, idx) => (
                   <button
-                    key={filter}
+                    key={`${filter}-${idx}`}
                     onClick={() => setOfferFilter(filter as any)}
                     className={`px-2.5 py-1 rounded text-[9px] font-mono font-bold tracking-widest uppercase transition-colors whitespace-nowrap ${
                       offerFilter === filter 
@@ -1582,7 +1566,7 @@ export default function ShowsView({
 
                     return (
                       <div 
-                        key={offer.id} 
+                        key={offer.id ? `offer-${offer.id}-${idx}` : `offer-${idx}`} 
                         className={`font-mono bg-zinc-950/70 border rounded-lg hover:border-opacity-100 transition-all text-xs overflow-hidden ${idx === 0 ? '' : borderStyle}`}
                         style={idx === 0 ? { borderColor: '#f9f90b', borderWidth: '1.834783px', backgroundColor: '#0b0c0e' } : undefined}
                       >
@@ -1926,14 +1910,14 @@ export default function ShowsView({
                   )}
 
                   {/* Show stop coordinate points */}
-                  {showsWithCoords.map((show) => {
+                  {showsWithCoords.map((show, swcIdx) => {
                     const isActive = selectedShowId === show.id;
                     const isClosed = show.status === 'Closed';
                     const colorClass = isClosed ? '#c084fc' : '#00ffcc'; // Purple for closed, teal for active
                     
                     return (
                       <g 
-                        key={show.id} 
+                        key={show.id ? `coord2-${show.id}-${swcIdx}` : `coord2-${swcIdx}`} 
                         className="cursor-pointer group"
                         onClick={() => handleSelectShow(show.id)}
                       >
@@ -2154,7 +2138,7 @@ export default function ShowsView({
           <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
             {calendarDays.map((day, idx) => {
               if (!day.date) {
-                return <div key={`empty-${idx}`} className="min-h-[46px] sm:min-h-0 sm:aspect-square bg-transparent rounded" />;
+                return <div key={`empty-day-${idx}`} className="min-h-[46px] sm:min-h-0 sm:aspect-square bg-transparent rounded" />;
               }
 
               const isSelected = selectedDate && day.date.toDateString() === selectedDate.toDateString();
@@ -2172,7 +2156,7 @@ export default function ShowsView({
 
               return (
                 <button
-                  key={`day-${dayStr}`}
+                  key={`day-${idx}`}
                   onClick={() => setSelectedDate(day.date)}
                   className={`min-h-[46px] sm:min-h-0 sm:aspect-square hover:scale-[1.03] transition-all flex flex-col justify-between p-1.5 sm:p-1 text-xs rounded border cursor-pointer ${statusBorder}`}
                   style={{ touchAction: 'manipulation' }}
@@ -2213,12 +2197,12 @@ export default function ShowsView({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {showsOnSelectedDate.map((show) => {
+                  {showsOnSelectedDate.map((show, sdIdx) => {
                     const isClosed = show.status === 'Closed';
 
                     return (
                       <div 
-                        key={show.id} 
+                        key={show.id ? `sondate-${show.id}-${sdIdx}` : `sondate-${sdIdx}`} 
                         className={`border rounded-lg p-3 space-y-3 bg-zinc-900/40 relative overflow-hidden ${
                           isClosed ? 'border-purple-900/30 opacity-80' : 'border-[#00ffcc]/30 shadow-[0_0_10px_rgba(0,255,204,0.02)]'
                         }`}
@@ -2322,11 +2306,11 @@ export default function ShowsView({
                                   />
                                 </div>
                                 <div className="grid grid-cols-1 gap-1.5 pt-1.5">
-                                  {milestones.map(m => {
+                                  {milestones.map((m, mIdx) => {
                                     const isDone = activeChecked.includes(m);
                                     return (
                                       <button
-                                        key={m}
+                                        key={`${m}-${mIdx}`}
                                         type="button"
                                         onClick={() => toggleMilestone(show.id, m)}
                                         className={`flex items-center gap-2.5 text-[11px] font-mono tracking-tight p-2.5 rounded-lg text-left border cursor-pointer select-none transition-all active:scale-[0.98] ${
@@ -2532,7 +2516,7 @@ export default function ShowsView({
             const isLongDrive = distanceMiles > 350;
 
             return (
-              <React.Fragment key={stop.id}>
+              <React.Fragment key={stop.id ? `stop-${stop.id}-${stopIdx}` : `stop-${stopIdx}`}>
                 <div 
                   className={`bg-[#0c0f12] border-2 rounded-2xl flex flex-col overflow-hidden shadow-lg transition-all ${borderClass}`}
                   style={stopIdx === 0 ? { borderWidth: '3.1px', borderColor: '#000090' } : undefined}
@@ -3027,8 +3011,8 @@ export default function ShowsView({
                 if (showSales.length === 0) {
                   return <div className="text-center py-8 text-zinc-500 font-mono text-xs">No transactions recorded for this show.</div>;
                 }
-                return showSales.map(sale => (
-                  <div key={sale.id} className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3 flex items-center justify-between">
+                return showSales.map((sale, sIdx) => (
+                  <div key={sale.id ? `sale-${sale.id}-${sIdx}` : `sale-${sIdx}`} className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3 flex items-center justify-between">
                     <div>
                       <h4 className="text-sm font-bold text-white">
                         {sale.quantity}x {sale.item_name || 'Item'}
@@ -3122,8 +3106,8 @@ export default function ShowsView({
 
               {/* Messages Area */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar flex flex-col-reverse">
-                {[...messages].reverse().map(msg => (
-                  <div key={msg.id} className={`flex flex-col ${msg.user === 'You' ? 'items-end' : 'items-start'}`}>
+                {[...messages].reverse().map((msg, mIdx) => (
+                  <div key={msg.id ? `msg-${msg.id}-${mIdx}` : `msg-${mIdx}`} className={`flex flex-col ${msg.user === 'You' ? 'items-end' : 'items-start'}`}>
                     <div className="flex items-baseline gap-2 mb-1">
                       <span className="text-[10px] font-bold text-zinc-300">{msg.user}</span>
                       <span className="text-[8px] font-mono text-zinc-600">{msg.time}</span>
@@ -3632,8 +3616,8 @@ const SettlementTerminal: React.FC<SettlementTerminalProps> = ({
                   </ul>
                 </div>
               ) : (
-                gridData.map((item) => (
-                  <div key={item.id} className="bg-zinc-900/30 border border-zinc-800/60 rounded-xl p-3 flex flex-col gap-2 hover:bg-zinc-900/40 transition-colors">
+                gridData.map((item, gdIdx) => (
+                  <div key={item.id ? `gd-${item.id}-${gdIdx}` : `gd-${gdIdx}`} className="bg-zinc-900/30 border border-zinc-800/60 rounded-xl p-3 flex flex-col gap-2 hover:bg-zinc-900/40 transition-colors">
                     <div className="flex gap-3 items-center">
                       <div className="w-9 h-9 bg-zinc-950 rounded bg-cover bg-center border border-zinc-800/50 shrink-0 flex items-center justify-center text-zinc-600 font-bold text-xs"
                            style={item.image_url ? { backgroundImage: `url(${item.image_url})` } : undefined}>

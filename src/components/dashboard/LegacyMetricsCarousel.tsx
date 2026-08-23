@@ -97,7 +97,7 @@ export function LegacyMetricsCarousel({ todayRevenue, topSellerName, totalItemsS
         <div className="absolute bottom-1.5 flex gap-1.5 z-10 justify-center w-full">
           {metrics.map((m, idx) => (
             <button
-              key={m.id}
+              key={`${m.id}-${idx}`}
               onClick={(e) => {
                 e.stopPropagation();
                 setCurrentMetricIndex(idx);

@@ -175,8 +175,8 @@ export default function MetricsSplitCard({
           {teamCarouselIndex === 0 ? (
             /* Slide 1: Vertical list of live team members & profiles */
             <div className="flex flex-col gap-1.5 w-full h-[125px] overflow-y-auto pr-0.5 scrollbar-barely-visible">
-              {teamMembers.map(member => (
-                <div key={member.id} className="flex items-center gap-2 px-1.5 py-1 bg-zinc-950/20 hover:bg-zinc-950/50 rounded border border-zinc-900/10 transition-colors w-full group">
+              {teamMembers.map((member, idx) => (
+                <div key={`${member.id}-${idx}`} className="flex items-center gap-2 px-1.5 py-1 bg-zinc-950/20 hover:bg-zinc-950/50 rounded border border-zinc-900/10 transition-colors w-full group">
                   <div className="relative flex-shrink-0">
                     <div className="w-7 h-7 rounded-full overflow-hidden bg-zinc-800 border border-zinc-700 group-hover:border-[#00ffcc] transition-colors shadow">
                       <img 
@@ -217,8 +217,8 @@ export default function MetricsSplitCard({
           ) : (
             /* Slide 2: Auto or scrollable List of dynamic actions */
             <div className="space-y-1.5 w-full h-[125px] overflow-y-auto pr-0.5 scrollbar-barely-visible">
-              {teamActivities.map((act) => (
-                <div key={act.id} className="text-[8.5px] bg-zinc-950/40 px-2 py-1.5 rounded border border-zinc-900/40 leading-snug">
+              {teamActivities.map((act, idx) => (
+                <div key={`${act.id}-${idx}`} className="text-[8.5px] bg-zinc-950/40 px-2 py-1.5 rounded border border-zinc-900/40 leading-snug">
                   <div className="flex justify-between items-center text-[7.5px] text-zinc-500 font-mono mb-0.5">
                     <span className="font-bold text-zinc-400">{act.user}</span>
                     <span>{act.time}</span>

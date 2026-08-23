@@ -430,9 +430,9 @@ export const PaymentMethodsSettings: React.FC<PaymentMethodsSettingsProps> = ({
               </span>
             </div>
 
-            {savedCards.map((card) => (
+            {savedCards.map((card, cIdx) => (
               <div
-                key={card.id}
+                key={`${card.id}-${cIdx}`}
                 className={`bg-[#0c0e14] border rounded-xl p-3 flex items-center justify-between transition-all ${
                   card.isDefault
                     ? 'border-purple-500/50 bg-purple-950/10 shadow-[0_0_15px_rgba(168,85,247,0.06)]'
@@ -798,9 +798,9 @@ export const PaymentMethodsSettings: React.FC<PaymentMethodsSettingsProps> = ({
                 Default Currency
               </label>
               <div className="grid grid-cols-3 gap-1.5">
-                {(['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY'] as const).map((curr) => (
+                {(['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY'] as const).map((curr, currIdx) => (
                   <button
-                    key={curr}
+                    key={`${curr}-${currIdx}`}
                     type="button"
                     onClick={() => {
                       const updated = { ...billingPrefs, defaultCurrency: curr };

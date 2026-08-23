@@ -389,9 +389,9 @@ export const LabelRegistrationSection: React.FC<LabelRegistrationSectionProps> =
                 {selectedRosterArtists.length === 0 ? (
                   <span className="text-[9px] font-mono text-zinc-600 uppercase">No roster acts linked. Search to add below.</span>
                 ) : (
-                  selectedRosterArtists.map(artist => (
+                  selectedRosterArtists.map((artist, idx) => (
                     <span 
-                      key={artist}
+                      key={`${artist}-${idx}`}
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono rounded bg-orange-500/10 text-orange-500 border border-orange-500/40 uppercase tracking-wide"
                     >
                       💿 {artist}
@@ -440,9 +440,9 @@ export const LabelRegistrationSection: React.FC<LabelRegistrationSectionProps> =
                       </div>
                     ) : (
                       <div className="divide-y divide-orange-500/10">
-                        {rosterSearchResults.map(result => (
+                        {rosterSearchResults.map((result, idx) => (
                           <button
-                            key={result.id}
+                            key={`${result.id}-${idx}`}
                             type="button"
                             onClick={() => {
                               if (!selectedRosterArtists.includes(result.name)) {
@@ -588,13 +588,13 @@ export const LabelRegistrationSection: React.FC<LabelRegistrationSectionProps> =
               
               {isLabelGenresExpanded && (
                 <div className="mt-3 space-y-3">
-                  {GENRE_CLUSTERS.map(cluster => (
-                    <div key={cluster.name} className="bg-zinc-950/50 border border-zinc-800/80 rounded-lg p-3">
+                  {GENRE_CLUSTERS.map((cluster, idx) => (
+                    <div key={`${cluster.name}-${idx}`} className="bg-zinc-950/50 border border-zinc-800/80 rounded-lg p-3">
                       <div className="text-[8px] font-mono font-bold text-zinc-400 mb-2 uppercase tracking-widest">{cluster.name}</div>
                       <div className="flex flex-wrap gap-1.5">
-                        {cluster.genres.map(genre => (
+                        {cluster.genres.map((genre, idx) => (
                           <button
-                            key={genre}
+                            key={`${genre}-${idx}`}
                             type="button"
                             onClick={(e) => {
                               e.preventDefault();

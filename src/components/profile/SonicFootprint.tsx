@@ -179,12 +179,12 @@ export const SonicFootprint: React.FC<SonicFootprintProps> = ({ profile, onActio
 
       {/* 2x2 Full Width Grid */}
       <div className="grid grid-cols-2 gap-2">
-        {Object.values(metrics).map((metric) => {
+        {Object.values(metrics).map((metric, idx) => {
           const isExpanded = expandedMetric === metric.id;
 
           return (
             <div
-              key={metric.id}
+              key={`${metric.id}-${idx}`}
               className={`border rounded-xl transition-all duration-200 overflow-hidden ${
                 isExpanded
                   ? 'col-span-2 bg-zinc-900 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.25)]'

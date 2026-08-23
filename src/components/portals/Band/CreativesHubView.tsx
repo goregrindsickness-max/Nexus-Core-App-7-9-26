@@ -2033,7 +2033,7 @@ export default function CreativesHubView({
       const count = 1 + (hash % 2); // 1 or 2 pieces
       for (let i = 0; i < count; i++) {
         pieces.push({
-          id: `${talent.id}-art-${i}`,
+          id: `${talent.id}-art`,
           talent,
           imageUrl: images[(hash + i) % images.length],
         });
@@ -2566,9 +2566,9 @@ export default function CreativesHubView({
                         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                           {allLookbookItems
                             .slice((lookbookPage - 1) * 8, lookbookPage * 8)
-                            .map((item) => (
+                            .map((item, idx) => (
                               <div
-                                key={`lookbook-item-${item.id}`}
+                                key={`lookbook-item-${item.id}-${idx}`}
                                 onClick={() => {
                                   setFullscreenLookbookItem({
                                     id: item.id,
@@ -2709,7 +2709,7 @@ export default function CreativesHubView({
 
                     {viewMode === "roster" && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-                        {processedTalents.map((talent) => {
+                        {processedTalents.map((talent, idx) => {
                           const isExpanded = !!expandedCardIds[talent.id];
 
                           // Routing match check
@@ -2733,7 +2733,7 @@ export default function CreativesHubView({
 
                           return (
                             <div
-                              key={talent.id}
+                              key={`${talent.id}-${idx}`}
                               className={`relative bg-gradient-to-br from-zinc-950 to-black border-2 transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-lg group rounded-lg ${
                                 favorites.includes(talent.id)
                                   ? "border-amber-500/80 shadow-[0_0_15px_rgba(244,180,26,0.15)]"
@@ -3263,9 +3263,9 @@ export default function CreativesHubView({
                                       -- No network support matches --
                                     </span>
                                   ) : (
-                                    matchingTalents.map((match) => (
+                                    matchingTalents.map((match, idx) => (
                                       <div
-                                        key={match.id}
+                                        key={`${match.id}-${idx}`}
                                         className="flex items-center justify-between text-[10px] gap-1.5"
                                       >
                                         <span className="text-emerald-400/90 font-medium truncate max-w-[110px] uppercase">
@@ -3464,9 +3464,9 @@ export default function CreativesHubView({
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {rfps.map((rfp) => (
+                    {rfps.map((rfp, idx) => (
                       <div
-                        key={rfp.id}
+                        key={`${rfp.id}-${idx}`}
                         className="bg-zinc-950 border border-zinc-900 p-6 md:p-8 space-y-6 relative overflow-hidden rounded-2xl text-center flex flex-col items-center justify-center animate-slide-up"
                       >
                         {/* Subtle top brand glow accent */}
@@ -3538,7 +3538,7 @@ export default function CreativesHubView({
                   </div>
                 ) : (
                   <div className="space-y-0 divide-y divide-zinc-900 w-full max-w-5xl mx-auto">
-                    {contracts.map((contract) => {
+                    {contracts.map((contract, idx) => {
                       const allEnforcedTested = Object.keys(
                         contract.enforced_protocols || {},
                       ).filter(
@@ -3725,7 +3725,7 @@ export default function CreativesHubView({
 
                       return (
                         <div
-                          key={contract.id}
+                          key={`${contract.id}-${idx}`}
                           className="bg-[#030406] py-10 px-5 w-full space-y-6 relative overflow-hidden flex flex-col items-center border-t-2 border-dashed border-[#39ff14]"
                         >
                           {/* HEADER */}
@@ -3828,7 +3828,7 @@ export default function CreativesHubView({
 
                                   return (
                                     <div
-                                      key={milestone.id}
+                                      key={`${milestone.id}-${mIdx}`}
                                       className="bg-black border border-zinc-900/60 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
                                     >
                                       <div className="space-y-1 text-left">
@@ -4058,11 +4058,11 @@ export default function CreativesHubView({
                   {getTalentServiceTiers(
                     hiringCreative.id,
                     hiringCreative.category,
-                  ).map((tier: any) => {
+                  ).map((tier: any, idx) => {
                     const isSelected = selectedTierIdInModal === tier.id;
                     return (
                       <div
-                        key={tier.id}
+                        key={`${tier.id}-${idx}`}
                         onClick={() => {
                           setSelectedTierIdInModal(tier.id);
                           const parsedPrice =
@@ -4808,7 +4808,7 @@ export default function CreativesHubView({
                           <div className="grid grid-cols-2 gap-3 animate-fade-in">
                             {localGallery.map((item: any, idx: number) => (
                               <div
-                                key={item.id || `gal-${idx}`}
+                                key={item.id ? `gal-${item.id}-${idx}` : `gal-${idx}`}
                                 onClick={() =>
                                   setFullscreenLookbookItem({
                                     id: item.id || `gal-${idx}`,
@@ -4928,10 +4928,10 @@ export default function CreativesHubView({
                     {getTalentServiceTiers(
                       selectedDrawerTalent.id,
                       selectedDrawerTalent.category,
-                    ).map((tier: any) => {
+                    ).map((tier: any, idx) => {
                       return (
                         <div
-                          key={tier.id}
+                          key={`${tier.id}-${idx}`}
                           onClick={() => {
                             setSelectedDrawerTalent(null);
                             setIsPlayingAudio(false);
@@ -5215,11 +5215,11 @@ export default function CreativesHubView({
                 <div className="flex-grow space-y-3 p-3 bg-black/60 border border-zinc-900 min-h-[380px] max-h-[500px] overflow-y-auto font-mono scrollbar-none rounded-2xl">
                   {(chatMessages[selectedDrawerTalent.id] || [])
                     .filter((msg) => msg.id !== "init-sys")
-                    .map((msg) => {
+                    .map((msg, idx) => {
                       const isMe = msg.sender === "me";
                       return (
                         <div
-                          key={msg.id}
+                          key={`${msg.id}-${idx}`}
                           className={`flex flex-col max-w-[85%] ${isMe ? "ml-auto items-end" : "mr-auto items-start"}`}
                         >
                           <div

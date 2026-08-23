@@ -124,7 +124,7 @@ export const LabelInboxDrawer: React.FC<LabelInboxDrawerProps> = ({
                 </div>
 
                 <div className="space-y-3 mt-4">
-                  {inboxChannels.map((channel) => {
+                  {inboxChannels.map((channel, idx) => {
                     const isCurrentlyActive = activeInboxChatId === channel.id;
                     const threadMsgs = inboxMessages[channel.id] || [];
                     const lastMsg = threadMsgs.length > 0 ? threadMsgs[threadMsgs.length - 1] : null;
@@ -132,7 +132,7 @@ export const LabelInboxDrawer: React.FC<LabelInboxDrawerProps> = ({
                     
                     return (
                       <div
-                        key={channel.id}
+                        key={`${channel.id}-${idx}`}
                         className={`w-full relative transition-all rounded-2xl border group ${
                           isCurrentlyActive 
                             ? 'bg-zinc-900/40 border-[#f97316]/40 text-white shadow-md shadow-orange-950/5' 
@@ -299,11 +299,11 @@ export const LabelInboxDrawer: React.FC<LabelInboxDrawerProps> = ({
                       {/* Message stream */}
                       <div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col justify-end bg-black/40">
                         <div className="space-y-4 max-w-3xl mx-auto w-full">
-                          {textStream.map((msg: any) => {
+                          {textStream.map((msg: any, idx) => {
                             const isMe = msg.sender === 'label';
                             return (
                               <div
-                                key={msg.id}
+                                key={`${msg.id}-${idx}`}
                                 className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} space-y-1`}
                               >
                                 <div className="flex items-center gap-2">

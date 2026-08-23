@@ -307,9 +307,9 @@ export default function CreativeAlliancesView({
         <h2 className="text-[13px] font-black tracking-widest text-[#A855F7] uppercase mb-2">YOUR SHARED PROJECTS</h2>
 
         <div className="space-y-0 border-t border-[#262626]">
-          {alliances.map(alliance => (
+          {alliances.map((alliance, idx) => (
             <div
-              key={alliance.id}
+              key={`${alliance.id}-${idx}`}
               className="border-b border-[#262626] py-5 last:border-0 hover:bg-[#050505] transition-colors flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 group"
             >
               <div className="space-y-1.5">

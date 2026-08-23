@@ -136,9 +136,9 @@ export const MerchDropModal: React.FC<MerchDropModalProps> = ({
                         { label: '24 Hours', h: '24', m: '0' },
                         { label: '48 Hours', h: '48', m: '0' },
                         { label: '72 Hours', h: '72', m: '0' }
-                      ].map(preset => (
+                      ].map((preset, prIdx) => (
                         <button
-                          key={preset.label}
+                          key={`drop-preset-${preset.label}-${prIdx}`}
                           type="button"
                           onClick={() => {
                             setMerchDropTimerHours(preset.h);

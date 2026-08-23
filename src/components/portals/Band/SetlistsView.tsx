@@ -696,8 +696,8 @@ export default function SetlistsView({
               {shows.length === 0 ? (
                 <option value="">-- No shows registered yet --</option>
               ) : (
-                shows.map(s => (
-                  <option key={s.id} value={s.id}>
+                shows.map((s, sIdx) => (
+                  <option key={`${s.id}-${sIdx}`} value={s.id}>
                     {s.festival_name || s.name} ({s.date}) {s.city ? `• ${s.city}` : ''}
                   </option>
                 ))
@@ -727,8 +727,8 @@ export default function SetlistsView({
               className="bg-[#090b0f] border border-purple-900/40 hover:border-purple-500 text-[10px] font-mono rounded p-2 focus:outline-none focus:border-purple-400 text-purple-300 cursor-pointer w-full sm:w-auto min-w-[130px]"
             >
               <option value="" disabled>Clone from...</option>
-              {shows.filter(s => s.id !== selectedShowId).map(s => (
-                <option key={s.id} value={s.id}>
+              {shows.filter(s => s.id !== selectedShowId).map((s, sIdx) => (
+                <option key={`${s.id}-${sIdx}`} value={s.id}>
                   {s.festival_name || s.name} ({s.date})
                 </option>
               ))}
@@ -1035,7 +1035,7 @@ export default function SetlistsView({
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ duration: 0.2 }}
-                      key={song.id} 
+                      key={`${song.id}-${idx}`} 
                       draggable
                       onDragStart={(e: any) => handleDragStart(e, idx)}
                       onDragOver={(e: any) => handleDragOver(e)}
@@ -1145,7 +1145,7 @@ export default function SetlistsView({
 
                     return (
                       <div 
-                        key={song.id}
+                        key={`${song.id}-${idx}`}
                         title={`${idx + 1}. ${song.name} (${song.minutes}:${song.seconds.toString().padStart(2, '0')})`}
                         style={{ width: `${pct}%` }}
                         className={`h-full bg-gradient-to-r ${bgGradient} border-r border-zinc-950/40 relative group first:rounded-l-full last:rounded-r-full transition-all duration-300 hover:opacity-95 cursor-help`}
@@ -1435,7 +1435,7 @@ export default function SetlistsView({
                   <div className="space-y-1.5">
                     <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-wide block">Track Performance Vibe</span>
                     <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 text-[8px] font-mono font-bold uppercase select-none">
-                      {(['opener', 'heavy', 'groove', 'atmospheric', 'anthem', 'closer', 'instrumental', 'interlude', 'mid-pace'] as const).map(v => {
+                      {(['opener', 'heavy', 'groove', 'atmospheric', 'anthem', 'closer', 'instrumental', 'interlude', 'mid-pace'] as const).map((v, vIdx) => {
                         let activeStyle = '';
                         let inactiveStyle = 'border-zinc-850 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300 bg-zinc-950/45';
                         if (v === 'opener') activeStyle = 'bg-red-500/20 text-red-300 border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.1)]';
@@ -1450,7 +1450,7 @@ export default function SetlistsView({
 
                         return (
                           <button
-                            key={v}
+                            key={`${v}-${vIdx}`}
                             type="button"
                             onClick={() => { setNewMasterVibe(prev => prev === v ? undefined : v); playSetlistSynthSound('click'); }}
                             className={`py-1.5 px-0.5 rounded-lg border text-center transition-all cursor-pointer ${newMasterVibe === v ? activeStyle : inactiveStyle}`}
@@ -1489,7 +1489,7 @@ export default function SetlistsView({
                 {filteredMasterSongs.length === 0 ? (
                   <p className="text-[10px] text-zinc-650 font-mono text-center py-4">No tracks left in bank matching query.</p>
                 ) : (
-                  filteredMasterSongs.map(m => {
+                  filteredMasterSongs.map((m, mIdx) => {
                     // Render small helper vibe badge
                     const renderMasterVibeBadge = (vibe?: string) => {
                       if (!vibe) return null;
@@ -1570,7 +1570,7 @@ export default function SetlistsView({
                             <div>
                               <label className="block text-[8px] font-mono text-zinc-500 uppercase tracking-wider mb-1">Performance Vibe</label>
                               <div className="grid grid-cols-3 gap-1 text-[8px] font-mono font-bold uppercase select-none">
-                                {(['opener', 'heavy', 'groove', 'atmospheric', 'anthem', 'closer', 'instrumental', 'interlude', 'mid-pace'] as const).map(v => {
+                                {(['opener', 'heavy', 'groove', 'atmospheric', 'anthem', 'closer', 'instrumental', 'interlude', 'mid-pace'] as const).map((v, vIdx) => {
                                   let activeStyle = '';
                                   let inactiveStyle = 'border-zinc-850 text-zinc-500 hover:border-zinc-700 bg-[#11141c]';
                                   if (v === 'opener') activeStyle = 'bg-red-500/20 text-red-300 border-red-500/50 shadow-sm';
@@ -1585,7 +1585,7 @@ export default function SetlistsView({
 
                                   return (
                                     <button
-                                      key={v}
+                                      key={`${v}-${vIdx}`}
                                       type="button"
                                       onClick={() => { setEditMasterVibe(prev => prev === v ? undefined : v); playSetlistSynthSound('click'); }}
                                       className={`py-1 rounded border text-center transition-all cursor-pointer ${editMasterVibe === v ? activeStyle : inactiveStyle}`}
@@ -1624,7 +1624,7 @@ export default function SetlistsView({
                         layout
                         whileHover={{ scale: 1.015, x: 2 }}
                         transition={{ duration: 0.15 }}
-                        key={m.id} 
+                        key={`${m.id}-${mIdx}`} 
                         className="p-2.5 bg-[#0a0b10] border border-zinc-850 hover:border-zinc-800 rounded-xl flex justify-between items-center transition"
                       >
                         <div className="text-left space-y-0.5">

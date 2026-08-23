@@ -197,8 +197,8 @@ export const MerchEmbedCard: React.FC<MerchEmbedCardProps> = ({
                   onChange={(e) => setSelectedSizesMap(prev => ({ ...prev, [post.id]: e.target.value }))}
                   className="bg-zinc-900 text-orange-400 border border-orange-500/40 rounded-lg px-2.5 py-1 text-xs font-mono font-bold focus:outline-none focus:border-orange-500 cursor-pointer min-w-[130px] flex-1 sm:flex-none"
                 >
-                  {post.merchData.sizes.map((sz) => (
-                    <option key={sz} value={sz} className="bg-zinc-950 text-white font-mono">
+                  {post.merchData.sizes.map((sz, szIdx) => (
+                    <option key={`merch-sz-${sz}-${szIdx}`} value={sz} className="bg-zinc-950 text-white font-mono">
                       {formatFullSizeName(sz)}
                     </option>
                   ))}

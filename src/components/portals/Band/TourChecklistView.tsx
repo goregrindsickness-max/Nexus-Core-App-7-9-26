@@ -661,12 +661,12 @@ export default function TourChecklistView({
                   </div>
                 ) : (
                   <AnimatePresence mode="popLayout">
-                    {filteredActiveItems.map(item => {
+                    {filteredActiveItems.map((item, idx) => {
                       const priority = itemPriorities[item.id] || 'MED';
                       
                       return (
                         <motion.div 
-                          key={item.id}
+                          key={`${item.id}-${idx}`}
                           layout
                           initial={{ opacity: 0, y: 10, scale: 0.98 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -851,8 +851,8 @@ export default function TourChecklistView({
                 <button onClick={() => setIsFactoryPresetModalOpen(false)} className="text-zinc-500 hover:text-white"><X className="w-5 h-5" /></button>
               </div>
               <div className="p-4 overflow-y-auto space-y-4">
-                {PRESET_GROUPS.map(g => (
-                  <div key={g.category} className="border border-zinc-900 rounded-xl p-3 bg-black/40">
+                {PRESET_GROUPS.map((g, gIdx) => (
+                  <div key={`${g.category}-${gIdx}`} className="border border-zinc-900 rounded-xl p-3 bg-black/40">
                     <div className="flex justify-between items-center mb-2">
                       <span className="font-bold text-sm text-white flex items-center gap-2">{g.icon} {g.category.toUpperCase()}</span>
                       <button 
@@ -905,8 +905,8 @@ export default function TourChecklistView({
                 {bankItems.length === 0 ? (
                    <div className="text-center py-8 text-zinc-500 font-mono text-xs">No saved templates found.</div>
                 ) : (
-                  bankItems.map(item => (
-                    <div key={item.id} className="flex justify-between items-center p-3 border border-zinc-900 rounded-xl bg-black/40 hover:border-zinc-800 transition-colors">
+                  bankItems.map((item, idx) => (
+                    <div key={`${item.id}-${idx}`} className="flex justify-between items-center p-3 border border-zinc-900 rounded-xl bg-black/40 hover:border-zinc-800 transition-colors">
                       <span className="text-sm text-zinc-300 font-sans truncate pr-4">{item.text}</span>
                       <button 
                         onClick={() => {

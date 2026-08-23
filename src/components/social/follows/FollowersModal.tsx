@@ -85,11 +85,8 @@ export const FollowersModal: React.FC<FollowersModalProps> = ({
 
   // Parse and categorize all follow list items
   const parsedItems = useMemo(() => {
-    let listToParse = liveFollowsList;
-    if ((!listToParse || listToParse.length === 0) && allProfiles && allProfiles.length > 0) {
-      listToParse = allProfiles.filter(p => p && p.id !== selectedUserProfile?.id && p.name !== selectedUserProfile?.name).slice(0, 10);
-    }
-    return (listToParse || []).map(p => {
+    const listToParse = liveFollowsList || [];
+    return listToParse.map(p => {
       const targetData = p?.follower || p?.following || p?.profile || p;
       
       const id = targetData?.id || p?.id || p?.user_id || p?.follower_id || p?.following_id;
@@ -281,7 +278,7 @@ export const FollowersModal: React.FC<FollowersModalProps> = ({
 
   const renderUserRow = (user: any, index: number, groupKey: string = 'general') => (
     <div 
-      key={user.id ? `follower-${groupKey}-${user.id}-${index}` : `follower-${groupKey}-${index}`} 
+      key={`follower-row-${groupKey}-${user.id || user.handle || 'user'}-${index}`} 
       onClick={() => handleNavigateToProfile(user)}
       className="flex items-center justify-between p-2.5 bg-zinc-900/90 border border-zinc-800/80 rounded-xl hover:border-violet-500/50 hover:bg-zinc-800/60 transition-all text-left cursor-pointer group"
     >
@@ -397,7 +394,7 @@ export const FollowersModal: React.FC<FollowersModalProps> = ({
 
             {/* Category Filter Tabs */}
             <div className="flex items-center gap-1.5 py-3 overflow-x-auto no-scrollbar shrink-0 border-b border-zinc-900/80">
-              {categoriesConfig.map(cat => {
+              {categoriesConfig.map((cat, catIdx) => {
                 const Icon = cat.icon;
                 const isActive = activeCategory === cat.key;
                 return (
@@ -455,11 +452,11 @@ export const FollowersModal: React.FC<FollowersModalProps> = ({
 
                   return (
                     <div className="space-y-4">
-                      {groups.map(group => {
+                      {groups.map((group, grpIdx) => {
                         if (group.items.length === 0) return null;
                         const GroupIcon = group.icon;
                         return (
-                          <div key={group.key} className="space-y-2">
+                          <div key={`fol-group-${group.key}-${grpIdx}`} className="space-y-2">
                             <div className={`flex items-center justify-between pb-1 border-b ${group.color}`}>
                               <span className={`text-[10px] font-bold tracking-widest flex items-center gap-1.5 ${group.color.split(' ')[0]}`}>
                                 <GroupIcon className="w-3 h-3" />

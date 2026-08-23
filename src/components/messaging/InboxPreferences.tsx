@@ -663,9 +663,9 @@ export const InboxPreferences: React.FC<InboxPreferencesProps> = ({
             { id: 'everyone', label: 'Everyone', desc: 'Any verified user or workspace account.' },
             { id: 'artists_bands', label: 'Artists & Bands Only', desc: 'Only accounts marked as band/artist workspace roster.' },
             { id: 'mutuals', label: 'Mutuals & Collaborators', desc: 'Only operators you actively follow back.' }
-          ].map((opt) => (
+          ].map((opt, idx) => (
             <button
-              key={opt.id}
+              key={`${opt.id}-${idx}`}
               onClick={async () => {
                 const targetId = opt.id as 'everyone' | 'artists_bands' | 'mutuals';
                 setWhoCanReachMe(targetId);
@@ -940,11 +940,11 @@ export const InboxPreferences: React.FC<InboxPreferencesProps> = ({
             </div>
 
             <div className="grid grid-cols-1 gap-2">
-              {INDUSTRY_PRO_PUSH_CATEGORIES.map((cat) => {
+              {INDUSTRY_PRO_PUSH_CATEGORIES.map((cat, idx) => {
                 const isEnabled = pushPrefs.categories[cat.id] !== false;
                 return (
                   <div
-                    key={cat.id}
+                    key={`${cat.id}-${idx}`}
                     className="p-3 rounded-xl border border-zinc-900 hover:border-zinc-800 bg-zinc-950/50 flex items-start justify-between gap-3 transition-colors"
                   >
                     <div className="space-y-1 min-w-0 pr-2">
@@ -1001,11 +1001,11 @@ export const InboxPreferences: React.FC<InboxPreferencesProps> = ({
             </div>
 
             <div className="grid grid-cols-1 gap-2">
-              {FAN_PUSH_CATEGORIES.map((cat) => {
+              {FAN_PUSH_CATEGORIES.map((cat, idx) => {
                 const isEnabled = pushPrefs.categories[cat.id] !== false;
                 return (
                   <div
-                    key={cat.id}
+                    key={`${cat.id}-${idx}`}
                     className="p-3 rounded-xl border border-zinc-900 hover:border-zinc-800 bg-zinc-950/50 flex items-start justify-between gap-3 transition-colors"
                   >
                     <div className="space-y-1 min-w-0 pr-2">
@@ -1234,12 +1234,12 @@ export const InboxPreferences: React.FC<InboxPreferencesProps> = ({
                         No profiles matching "{searchQuery}" found.
                       </div>
                     ) : (
-                      searchResults.map(p => {
+                      searchResults.map((p, pIdx) => {
                         const isAlreadyBlocked = (blockedProfiles || []).some(b => b.id === p.id);
                         const isAlreadyRestricted = (restrictedProfiles || []).some(r => r.id === p.id);
                         
                         return (
-                          <div key={p.id} className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/40 hover:bg-zinc-900/80 transition-colors border border-transparent hover:border-zinc-800">
+                          <div key={`${p.id}-${pIdx}`} className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/40 hover:bg-zinc-900/80 transition-colors border border-transparent hover:border-zinc-800">
                             <div className="flex items-center gap-2 min-w-0">
                               <img 
                                 src={p.avatar || `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&h=80&q=80`} 
@@ -1311,8 +1311,8 @@ export const InboxPreferences: React.FC<InboxPreferencesProps> = ({
                         <p className="text-[11px] text-zinc-500 font-sans">No blocked operators on record.</p>
                       </div>
                     ) : (
-                      blockedProfiles.map(p => (
-                        <div key={p.id} className="flex items-center justify-between bg-zinc-950/60 p-3 rounded-xl border border-zinc-900 hover:border-zinc-800 transition-colors">
+                      blockedProfiles.map((p, pIdx) => (
+                        <div key={`${p.id}-${pIdx}`} className="flex items-center justify-between bg-zinc-950/60 p-3 rounded-xl border border-zinc-900 hover:border-zinc-800 transition-colors">
                           <div className="flex items-center gap-2.5 min-w-0">
                             <img 
                               src={p.avatar || `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&h=80&q=80`} 
@@ -1344,8 +1344,8 @@ export const InboxPreferences: React.FC<InboxPreferencesProps> = ({
                         <p className="text-[11px] text-zinc-500 font-sans">No restricted operators on record.</p>
                       </div>
                     ) : (
-                      restrictedProfiles.map(p => (
-                        <div key={p.id} className="flex items-center justify-between bg-zinc-950/60 p-3 rounded-xl border border-zinc-900 hover:border-zinc-800 transition-colors">
+                      restrictedProfiles.map((p, pIdx) => (
+                        <div key={`${p.id}-${pIdx}`} className="flex items-center justify-between bg-zinc-950/60 p-3 rounded-xl border border-zinc-900 hover:border-zinc-800 transition-colors">
                           <div className="flex items-center gap-2.5 min-w-0">
                             <img 
                               src={p.avatar || `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&h=80&q=80`} 
@@ -1377,8 +1377,8 @@ export const InboxPreferences: React.FC<InboxPreferencesProps> = ({
                         <p className="text-[11px] text-zinc-500 font-sans">No hidden conversation threads found.</p>
                       </div>
                     ) : (
-                      hiddenConversations.map(c => (
-                        <div key={c.id} className="flex items-center justify-between bg-zinc-950/60 p-3 rounded-xl border border-zinc-900 hover:border-zinc-800 transition-colors">
+                      hiddenConversations.map((c, cIdx) => (
+                        <div key={`${c.id}-${cIdx}`} className="flex items-center justify-between bg-zinc-950/60 p-3 rounded-xl border border-zinc-900 hover:border-zinc-800 transition-colors">
                           <div className="flex items-center gap-2.5 min-w-0">
                             <img 
                               src={c.avatar || `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&h=80&q=80`} 

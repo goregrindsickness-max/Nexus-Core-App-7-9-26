@@ -982,8 +982,8 @@ export default function CreativeSettingsTab({
                         onChange={(e) => setStateProvince(e.target.value)}
                       >
                         <option value="">SELECT STATE...</option>
-                        {US_STATES.map((st) => (
-                          <option key={st.code} value={st.code}>{st.name.toUpperCase()} ({st.code})</option>
+                        {US_STATES.map((st, idx) => (
+                          <option key={`${st.code}-${idx}`} value={st.code}>{st.name.toUpperCase()} ({st.code})</option>
                         ))}
                         <option value="OUTSIDE_US">Outside US / Int'l</option>
                       </select>
@@ -996,8 +996,8 @@ export default function CreativeSettingsTab({
                         value={country}
                         onChange={(e) => setCountry(e.target.value)}
                       >
-                        {COUNTRIES.map((c) => (
-                          <option key={c.code} value={c.code}>{c.name.toUpperCase()}</option>
+                        {COUNTRIES.map((c, cIdx) => (
+                          <option key={`${c.code}-${cIdx}`} value={c.code}>{c.name.toUpperCase()}</option>
                         ))}
                       </select>
                     </div>
@@ -1127,8 +1127,8 @@ export default function CreativeSettingsTab({
                           handleSaveCreativeProfile({ primary_skill: e.target.value });
                         }}
                       >
-                        {(CREATIVE_CORE_SKILLS[primaryCategory] || ['MERCH_DESIGN']).map((skill) => (
-                          <option key={skill} value={skill}>
+                        {(CREATIVE_CORE_SKILLS[primaryCategory] || ['MERCH_DESIGN']).map((skill, idx) => (
+                          <option key={`${skill}-${idx}`} value={skill}>
                             {skill.replace(/_/g, ' ')}
                           </option>
                         ))}
@@ -1169,8 +1169,8 @@ export default function CreativeSettingsTab({
                         }}
                       >
                         <option value="">None Selected</option>
-                        {secondaryCategory && (CREATIVE_CORE_SKILLS[secondaryCategory] || []).map((skill) => (
-                          <option key={skill} value={skill}>
+                        {secondaryCategory && (CREATIVE_CORE_SKILLS[secondaryCategory] || []).map((skill, idx) => (
+                          <option key={`${skill}-${idx}`} value={skill}>
                             {skill.replace(/_/g, ' ')}
                           </option>
                         ))}
@@ -1187,15 +1187,15 @@ export default function CreativeSettingsTab({
                   <p className="text-[10px] text-zinc-400 font-sans">Select which underground genre clusters fit your creative style best.</p>
 
                   <div className="space-y-3">
-                    {GENRE_CLUSTERS.map((cluster) => (
-                      <div key={cluster.name} className="space-y-1.5">
+                    {GENRE_CLUSTERS.map((cluster, idx) => (
+                      <div key={`${cluster.name}-${idx}`} className="space-y-1.5">
                         <span className="text-[8.5px] font-mono text-zinc-500 font-bold uppercase tracking-wider">{cluster.name}</span>
                         <div className="flex flex-wrap gap-1.5 font-mono">
-                          {cluster.genres.map((genre) => {
+                          {cluster.genres.map((genre, idx) => {
                             const selected = genreTags.includes(genre);
                             return (
                               <button
-                                key={genre}
+                                key={`${genre}-${idx}`}
                                 type="button"
                                 onClick={() => toggleGenreTag(genre)}
                                 className={`px-2.5 py-1 border rounded-lg text-[9px] font-black uppercase transition-all flex items-center gap-1 cursor-pointer ${
@@ -1244,11 +1244,11 @@ export default function CreativeSettingsTab({
                       'Flyer Art', 'Logo Design', 'Album Art', 'Merch Prepress', 'Screenprinting',
                       'Tour Photography', 'Music Video Production', 'Live Sound Engineering', 'Stage Lighting',
                       'Mix / Master', 'Guitar Tech', 'Drum Tech', 'Social Media Management'
-                    ].map(skill => {
+                    ].map((skill, idx) => {
                       const selected = selectedSkills.includes(skill);
                       return (
                         <button
-                          key={skill}
+                          key={`${skill}-${idx}`}
                           type="button"
                           onClick={() => toggleSkillTag(skill)}
                           className={`px-3 py-1.5 border rounded-xl text-[10px] font-black uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
@@ -1274,8 +1274,8 @@ export default function CreativeSettingsTab({
                         'Flyer Art', 'Logo Design', 'Album Art', 'Merch Prepress', 'Screenprinting',
                         'Tour Photography', 'Music Video Production', 'Live Sound Engineering', 'Stage Lighting',
                         'Mix / Master', 'Guitar Tech', 'Drum Tech', 'Social Media Management'
-                      ].includes(s)).map(customSkill => (
-                        <div key={customSkill} className="bg-fuchsia-950/30 border border-fuchsia-500/30 px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs text-fuchsia-200 font-mono">
+                      ].includes(s)).map((customSkill, idx) => (
+                        <div key={`${customSkill}-${idx}`} className="bg-fuchsia-950/30 border border-fuchsia-500/30 px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs text-fuchsia-200 font-mono">
                           <span>⚡ {customSkill}</span>
                           <button 
                             type="button" 
@@ -1575,8 +1575,8 @@ export default function CreativeSettingsTab({
               </div>
 
               <div className="flex flex-wrap gap-2 pt-2">
-                {gearTags.map(item => (
-                  <div key={item} className="bg-zinc-950 border border-zinc-900 px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs text-zinc-200 font-mono">
+                {gearTags.map((item, idx) => (
+                  <div key={`${item}-${idx}`} className="bg-zinc-950 border border-zinc-900 px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs text-zinc-200 font-mono">
                     <span>🔧 {item}</span>
                     <button 
                       type="button" 
@@ -1641,9 +1641,9 @@ export default function CreativeSettingsTab({
 
                 {/* LIST MEMBERS */}
                 <div className="space-y-2 pt-1 font-mono">
-                  {teamMembers.map((member) => (
+                  {teamMembers.map((member, idx) => (
                     <div 
-                      key={member.id} 
+                      key={`${member.id}-${idx}`} 
                       className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3.5 bg-zinc-950/45 border border-zinc-900 rounded-xl gap-3 hover:border-zinc-850 transition-colors"
                     >
                       <div className="flex items-center gap-3">
@@ -1740,11 +1740,11 @@ export default function CreativeSettingsTab({
 
                 {/* THREE PLANS GRID */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1 text-left font-sans">
-                  {plans.map((p) => {
+                  {plans.map((p, pIdx) => {
                     const isCurrent = activeTierId === p.id;
                     return (
                       <div 
-                        key={p.id}
+                        key={`${p.id}-${pIdx}`}
                         className={`p-4 rounded-xl border flex flex-col justify-between gap-4 transition-all relative overflow-hidden ${
                           isCurrent 
                             ? 'border-fuchsia-500 bg-fuchsia-950/15 shadow-[0_0_15px_rgba(217,70,239,0.15)]' 
@@ -1856,8 +1856,8 @@ export default function CreativeSettingsTab({
 
                 {/* Published Reviews List with Creative Responses */}
                 <div className="space-y-3 font-mono">
-                  {userReviews.map((rev) => (
-                    <div key={rev.id} className="p-4 bg-zinc-950/60 border border-zinc-900 rounded-xl space-y-3">
+                  {userReviews.map((rev, idx) => (
+                    <div key={`${rev.id}-${idx}`} className="p-4 bg-zinc-950/60 border border-zinc-900 rounded-xl space-y-3">
                       <div className="flex items-start justify-between gap-4">
                         <div className="text-left space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">

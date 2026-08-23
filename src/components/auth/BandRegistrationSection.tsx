@@ -363,8 +363,8 @@ export const BandRegistrationSection: React.FC<BandRegistrationSectionProps> = (
                     onChange={(e) => setBandCountry(e.target.value)}
                     className="w-full bg-zinc-950 border border-zinc-800 rounded p-2.5 text-xs font-mono text-emerald-400 focus:border-emerald-500 outline-none"
                   >
-                    {COUNTRIES.map(c => (
-                      <option key={c.code} value={c.code}>{c.name.toUpperCase()}</option>
+                    {COUNTRIES.map((c, cIdx) => (
+                      <option key={`${c.code}-${cIdx}`} value={c.code}>{c.name.toUpperCase()}</option>
                     ))}
                   </select>
                 </div>
@@ -379,8 +379,8 @@ export const BandRegistrationSection: React.FC<BandRegistrationSectionProps> = (
                     className="w-full bg-zinc-950 border border-zinc-800 rounded p-2.5 text-xs font-mono text-emerald-400 focus:border-emerald-500 outline-none"
                   >
                     <option value="">SELECT STATE...</option>
-                    {US_STATES.map(st => (
-                      <option key={st.code} value={st.code}>{st.name.toUpperCase()} ({st.code})</option>
+                    {US_STATES.map((st, idx) => (
+                      <option key={`${st.code}-${idx}`} value={st.code}>{st.name.toUpperCase()} ({st.code})</option>
                     ))}
                   </select>
                 </div>
@@ -403,8 +403,8 @@ export const BandRegistrationSection: React.FC<BandRegistrationSectionProps> = (
                     className="w-full bg-zinc-950 border border-zinc-800 rounded p-2.5 text-xs font-mono text-emerald-400 focus:border-emerald-500 outline-none"
                   >
                     <option value="">SELECT CLASSIFICATION...</option>
-                    {MASTER_GENRES.map(g => (
-                      <option key={g.name} value={g.name}>{g.name}</option>
+                    {MASTER_GENRES.map((g, gIdx) => (
+                      <option key={`${g.name}-${gIdx}`} value={g.name}>{g.name}</option>
                     ))}
                   </select>
                 </div>
@@ -413,12 +413,12 @@ export const BandRegistrationSection: React.FC<BandRegistrationSectionProps> = (
                   <div className="space-y-1.5 text-left">
                     <label className="text-[8px] font-mono tracking-wider text-zinc-500 uppercase">Genre Tags (Select up to 3)</label>
                     <div className="flex flex-wrap gap-1.5 p-2 bg-zinc-950 border border-zinc-800 rounded max-h-24 overflow-y-auto">
-                      {MASTER_GENRES.find(c => c.name === bandGenre)?.tags.map(tagObj => {
+                      {MASTER_GENRES.find(c => c.name === bandGenre)?.tags.map((tagObj, idx) => {
                         const tag = tagObj.label;
                         const isSelected = bandTags.includes(tag);
                         return (
                           <button
-                            key={tagObj.id}
+                            key={`${tagObj.id}-${idx}`}
                             type="button"
                             onClick={() => {
                               if (isSelected) {
@@ -643,11 +643,11 @@ export const BandRegistrationSection: React.FC<BandRegistrationSectionProps> = (
                 <span>Default Apparel Sizes Offered</span>
               </label>
               <div className="flex flex-wrap gap-2 p-2.5 bg-zinc-950 border border-zinc-800 rounded">
-                {allSizes.map((sz) => {
+                {allSizes.map((sz, idx) => {
                   const isSelected = selectedApparelSizes.includes(sz);
                   return (
                     <button
-                      key={sz}
+                      key={`${sz}-${idx}`}
                       type="button"
                       onClick={() => {
                         if (setSelectedApparelSizes) {

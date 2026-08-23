@@ -400,8 +400,8 @@ export default function LiveTeamActivityWorkspace({
 
             {/* Scrollable list inside wrapper */}
             <div className="flex-grow overflow-y-auto pr-1 space-y-2.5 scrollbar-thin scrollbar-thumb-zinc-800">
-              {displayTeamMembers.map((member) => (
-                <div key={member.id} className="flex items-center justify-between p-3 bg-zinc-900/25 hover:bg-zinc-900/60 rounded-xl border border-zinc-850/40 hover:border-zinc-800 transition-all w-full group">
+              {displayTeamMembers.map((member, idx) => (
+                <div key={`${member.id}-${idx}`} className="flex items-center justify-between p-3 bg-zinc-900/25 hover:bg-zinc-900/60 rounded-xl border border-zinc-850/40 hover:border-zinc-800 transition-all w-full group">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="relative shrink-0">
                       <div className="w-9 h-9 rounded-full overflow-hidden bg-zinc-850 border border-zinc-700 group-hover:border-[#00ffcc] transition-colors shadow">
@@ -460,8 +460,8 @@ export default function LiveTeamActivityWorkspace({
                   <span>NO CONCURRENT CO-OP ACTIONS RECORDED</span>
                 </div>
               ) : (
-                teamActivities.map((act) => (
-                  <div key={act.id} className="text-[10px] bg-zinc-900/15 p-2.5 rounded-lg border border-zinc-850/30 leading-normal hover:border-zinc-800 transition-colors">
+                teamActivities.map((act, idx) => (
+                  <div key={`${act.id}-${idx}`} className="text-[10px] bg-zinc-900/15 p-2.5 rounded-lg border border-zinc-850/30 leading-normal hover:border-zinc-800 transition-colors">
                     <div className="flex justify-between items-center text-[8px] text-zinc-500 font-mono mb-1">
                       <span className="font-extrabold text-zinc-300 uppercase">{act.user}</span>
                       <span>{act.time}</span>
@@ -544,8 +544,8 @@ export default function LiveTeamActivityWorkspace({
               <div className="space-y-3 text-left">
                 <h3 className="text-[10px] font-mono text-amber-400 uppercase tracking-wider font-bold">PENDING OUTBOUND SEAT INVITATIONS</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {pendingInvites.map((invite) => (
-                    <div key={invite.id} className="bg-zinc-950/25 border border-zinc-850 p-3.5 rounded-xl flex items-center justify-between shadow-sm hover:border-amber-500/20 transition-all group">
+                  {pendingInvites.map((invite, idx) => (
+                    <div key={`${invite.id}-${idx}`} className="bg-zinc-950/25 border border-zinc-850 p-3.5 rounded-xl flex items-center justify-between shadow-sm hover:border-amber-500/20 transition-all group">
                       <div className="min-w-0">
                         <span className="text-xs font-bold text-zinc-200 group-hover:text-amber-300 transition-colors block truncate">{invite.email}</span>
                         <span className="block text-[8.5px] font-mono text-purple-400 font-bold mt-0.5">{invite.role}</span>
@@ -660,8 +660,8 @@ export default function LiveTeamActivityWorkspace({
                 <div className="space-y-2">
                   <h4 className="text-[9px] font-mono font-black text-zinc-400 uppercase tracking-wider">Live Transaction dispatch logs</h4>
                   <div className="bg-black/80 rounded-xl border border-zinc-900 overflow-hidden divide-y divide-zinc-950">
-                    {liveEmailLogs.slice(0, 5).map((log) => (
-                      <div key={log.id} className="p-2.5 flex items-center justify-between text-[9px] font-mono">
+                    {liveEmailLogs.slice(0, 5).map((log, idx) => (
+                      <div key={`${log.id}-${idx}`} className="p-2.5 flex items-center justify-between text-[9px] font-mono">
                         <div className="min-w-0 flex-1 text-left">
                           <div className="flex items-center gap-2">
                             <span className="text-zinc-300 truncate font-bold">{log.to}</span>

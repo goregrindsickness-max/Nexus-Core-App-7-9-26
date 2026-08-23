@@ -439,7 +439,7 @@ export const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({
         {/* Categories & Carousel Navigation */}
         <div className="flex items-center gap-1.5 justify-between sm:justify-end">
           <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5">
-            {categories.map((cat) => {
+            {categories.map((cat, catIdx) => {
               const isSelected = selectedCategory === cat.id;
               return (
                 <button
@@ -508,7 +508,7 @@ export const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({
 
             return (
               <motion.div
-                key={profile.id ? `pymk-${profile.id}-${pIdx}` : `pymk-${profile.name}-${pIdx}`}
+                key={`pymk-${profile.id || profile.name || 'user'}-${pIdx}`}
                 layout
                 initial={{ opacity: 0, scale: 0.92, y: 6 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}

@@ -1129,7 +1129,7 @@ export default function PromoterDashboardViewV2({
       }
 
       const newItem = {
-        id: `gal-${Date.now()}-${i}-${Math.random()}`,
+        id: `gal-${Date.now()}-${Math.random()}`,
         title: newGalTitle.trim(),
         subtitle: newGalSubtitle.trim(),
         imageUrl: finalUrl,
@@ -1315,8 +1315,8 @@ export default function PromoterDashboardViewV2({
 
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-900/60 pt-3 relative z-10 select-none">
                   <div className="flex flex-wrap gap-1">
-                    {gig.tags.map(t => (
-                      <span key={t} className="bg-zinc-950 border border-zinc-850 text-[9px] text-zinc-400 hover:text-white px-2.5 py-0.5 rounded font-mono transition-colors shadow">
+                    {gig.tags.map((t, tIdx) => (
+                      <span key={`${t}-${tIdx}`} className="bg-zinc-950 border border-zinc-850 text-[9px] text-zinc-400 hover:text-white px-2.5 py-0.5 rounded font-mono transition-colors shadow">
                         #{t}
                       </span>
                     ))}
@@ -1691,7 +1691,7 @@ export default function PromoterDashboardViewV2({
                             { key: 'promoter', icon: '🏟️', name: 'Venue Promoter Gateway', desc: 'Calendars, lineups & finance', bgClass: 'bg-yellow-950/40 text-yellow-400 border-yellow-500/30', hoverBorderClass: 'hover:border-yellow-500/50', textClass: 'text-yellow-400', activeIndicator: 'bg-yellow-500 shadow-[0_0_8px_#eab308]' },
                             { key: 'creative', icon: '🛠️', name: 'Creative Hub & Crew', desc: 'Contracts, portfolio & sound crew', bgClass: 'bg-fuchsia-950/40 text-fuchsia-400 border-fuchsia-500/30', hoverBorderClass: 'hover:border-fuchsia-500/50', textClass: 'text-fuchsia-400', activeIndicator: 'bg-fuchsia-500 shadow-[0_0_8px_#d946ef]' },
                             { key: 'label', icon: '💿', name: 'Record Label Console', desc: 'Oversee rosters & releases', bgClass: 'bg-orange-950/40 text-orange-400 border-orange-500/30', hoverBorderClass: 'hover:border-orange-500/50', textClass: 'text-orange-400', activeIndicator: 'bg-orange-500 shadow-[0_0_8px_#f97316]' }
-                          ].map((portal) => {
+                          ].map((portal, idx) => {
                             const registeredWorkspaces = userProfile?.registered_workspaces || [];
                             const allowedWorkspaces = userProfile?.allowed_workspaces || [];
                             const currentRole = userProfile?.active_workspace || userProfile?.account_type;
@@ -1764,7 +1764,7 @@ export default function PromoterDashboardViewV2({
                             // Not allowed/locked
                             return (
                               <button
-                                key={portal.key}
+                                key={`${portal.key}-${idx}`}
                                 type="button"
                                 onClick={() => {
                                   setV2RoleMenuOpen(false);
@@ -1811,12 +1811,12 @@ export default function PromoterDashboardViewV2({
             { id: 'SALES', label: 'Sales', icon: ShoppingCart },
             { id: 'SOCIAL', label: 'Social', icon: MessageSquare },
             { id: 'SETTINGS', label: 'Settings', icon: Settings },
-          ].map((item) => {
+          ].map((item, idx) => {
             const IconComponent = item.icon;
             const isActive = activeTab === item.id;
             return (
               <button
-                key={item.id}
+                key={`${item.id}-${idx}`}
                 type="button"
                 onClick={() => {
                   setActiveTab(item.id as any);
@@ -2366,7 +2366,7 @@ export default function PromoterDashboardViewV2({
                       <div className="grid grid-cols-1 gap-2">
                         {pitchTemplates.map((temp, index) => (
                           <button
-                            key={temp.id}
+                            key={`${temp.id}-${index}`}
                             type="button"
                             onClick={() => {
                               setSelectedTemplateIndex(index);
@@ -2473,9 +2473,9 @@ export default function PromoterDashboardViewV2({
                           { id: 'Sound Engineer/Recording', label: 'Sound / Recording' },
                           { id: 'Media/Photography', label: 'Photo / Video / Social' },
                           { id: 'Session Musician/Techs', label: 'Session / Tech' }
-                        ].map(cat => (
+                        ].map((cat, idx) => (
                           <button
-                            key={cat.id}
+                            key={`${cat.id}-${idx}`}
                             type="button"
                             onClick={() => {
                               setPrimaryCategory(cat.id);
@@ -2508,9 +2508,9 @@ export default function PromoterDashboardViewV2({
                           { id: 'Media/Photography', label: 'Photo / Video / Social' },
                           { id: 'Session Musician/Techs', label: 'Session / Tech' },
                           { id: '', label: 'None' }
-                        ].map(cat => (
+                        ].map((cat, idx) => (
                           <button
-                            key={cat.id}
+                            key={`${cat.id}-${idx}`}
                             type="button"
                             onClick={() => {
                               if (cat.id === '') {
@@ -2622,11 +2622,11 @@ export default function PromoterDashboardViewV2({
                     <div className="space-y-1.5 border-t border-zinc-900 pt-3">
                       <label className="block text-[9px] uppercase font-black text-lime-300">Assign Specialized Skills</label>
                       <div className="flex flex-wrap gap-1 pt-1 font-sans">
-                        {(categoryTags[primaryCategory as keyof typeof categoryTags] || []).map(tag => {
+                        {(categoryTags[primaryCategory as keyof typeof categoryTags] || []).map((tag, idx) => {
                           const selected = selectedSkills.includes(tag);
                           return (
                             <button
-                              key={tag}
+                              key={`${tag}-${idx}`}
                               type="button"
                               onClick={() => toggleSkillTag(tag)}
                               className={`px-2.5 py-1.5 rounded-md text-[10px] font-black uppercase transition-all flex items-center gap-1 border cursor-pointer ${
@@ -2666,8 +2666,8 @@ export default function PromoterDashboardViewV2({
                     <div className="space-y-1.5 border-t border-zinc-900 pt-3">
                       <label className="block text-[9px] uppercase font-black text-lime-400">Gear Specifications & Equipment Inventory</label>
                       <div className="flex flex-wrap gap-1.5 font-sans">
-                        {gearTags.map(g => (
-                          <span key={g} className="bg-zinc-950 border border-zinc-900 text-[10px] text-zinc-300 px-2.5 py-1 rounded flex items-center gap-1.5 font-mono">
+                        {gearTags.map((g, gIdx) => (
+                          <span key={`${g}-${gIdx}`} className="bg-zinc-950 border border-zinc-900 text-[10px] text-zinc-300 px-2.5 py-1 rounded flex items-center gap-1.5 font-mono">
                             🔧 {g}
                             <button type="button" onClick={() => removeGearTag(g)} className="text-zinc-500 hover:text-red-400 cursor-pointer">
                               <X className="w-3 h-3" />
@@ -2701,11 +2701,11 @@ export default function PromoterDashboardViewV2({
                         {[
                           'Grindcore', 'Hardcore', 'Death Metal', 'Crust Punk', 'Doom Metal', 
                           'Sludge', 'Darkwave', 'Synthwave', 'Post-Punk', 'Indie Rock'
-                        ].map(genre => {
+                        ].map((genre, idx) => {
                           const selected = genreTags.includes(genre);
                           return (
                             <button
-                              key={genre}
+                              key={`${genre}-${idx}`}
                               type="button"
                               onClick={() => toggleGenrePreset(genre)}
                               className={`px-2.5 py-1.5 rounded-md text-[10px] font-black uppercase transition-all flex items-center gap-1 border cursor-pointer ${

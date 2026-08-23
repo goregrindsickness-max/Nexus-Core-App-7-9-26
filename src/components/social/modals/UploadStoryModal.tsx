@@ -404,7 +404,7 @@ export const UploadStoryModal: React.FC<UploadStoryModalProps> = ({
                     { id: 'stickers', label: 'STICKERS', icon: Sticker },
                     { id: 'border', label: 'AURA BORDER', icon: Palette },
                     { id: 'preset', label: 'BG PRESETS', icon: Sparkles }
-                  ].map((tab) => {
+                  ].map((tab, tabIdx) => {
                     const Icon = tab.icon;
                     return (
                       <button

@@ -57,6 +57,7 @@ export type { OfflineAction } from './services/offlineSyncService';
 // 4. Schema Resilience & Database Utilities
 export {
   sanitizeInventoryItemForDb,
+  sanitizeShowForDb,
   generateUUID,
   ensureUUID,
   resolveZipCode,

@@ -52,7 +52,7 @@ export const AlbumDetailsModal: React.FC<AlbumDetailsModalProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[110] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[1000005] flex items-center justify-center p-4"
         >
           <motion.div
             initial={{ scale: 0.95, opacity: 0, y: 10 }}
@@ -164,7 +164,7 @@ export const AlbumDetailsModal: React.FC<AlbumDetailsModalProps> = ({
                 <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                   {selectedAlbum.purchaseLinks?.map((link: any, idx: number) => (
                     <button
-                      key={`format-${link.format || idx}-${idx}`}
+                      key={`format-${link.format || idx}`}
                       onClick={() => {
                         openCheckout?.('merch', {
                           name: `${selectedAlbum.band} - ${selectedAlbum.albumName} (${link.format})`,

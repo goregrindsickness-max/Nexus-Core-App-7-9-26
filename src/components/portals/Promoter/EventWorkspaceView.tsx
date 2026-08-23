@@ -208,9 +208,9 @@ export default function EventWorkspaceView({
           { step: 1, label: 'Gig Basics' },
           { step: 2, label: 'Lineup & Running Order' },
           { step: 3, label: 'Financial Runway' }
-        ].map(s => (
+        ].map((s, sIdx) => (
           <button
-            key={s.step}
+            key={`${s.step}-${sIdx}`}
             onClick={() => { setActiveStep(s.step as 1|2|3); playLocalBeep(400 + s.step * 100, 'sine', 0.02); }}
             className={`flex-1 py-3 px-2 text-center transition-all duration-300 font-bold uppercase tracking-widest ${
               activeStep === s.step 
@@ -444,8 +444,8 @@ export default function EventWorkspaceView({
                       className="w-full bg-black border border-zinc-800 rounded px-2 py-1.5 text-yellow-400 focus:outline-none text-xs font-mono"
                     >
                       <option value="">Select Band...</option>
-                      {bands.map(b => (
-                        <option key={b.id} value={b.id}>{b.name}</option>
+                      {bands.map((b, bIdx) => (
+                        <option key={`${b.id}-${bIdx}`} value={b.id}>{b.name}</option>
                       ))}
                     </select>
                   </div>
@@ -562,7 +562,7 @@ export default function EventWorkspaceView({
                   </div>
                 ) : (
                   plannerLineup.map((act, index) => (
-                    <div key={act.id} className="flex items-center justify-between bg-black border border-zinc-800 rounded p-3 hover:border-yellow-900/50 transition-colors group">
+                    <div key={`${act.id}-${index}`} className="flex items-center justify-between bg-black border border-zinc-800 rounded p-3 hover:border-yellow-900/50 transition-colors group">
                       <div className="flex items-center gap-4">
                         <div className="text-zinc-600 font-mono text-xs font-black w-6">{index + 1}.</div>
                         <div>
@@ -698,11 +698,11 @@ export default function EventWorkspaceView({
                   <div className="bg-black/40 border border-zinc-800/50 rounded-lg p-3">
                     <div className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase mb-3 border-b border-zinc-800 pb-2">EXPENSE ALLOCATIONS</div>
                     <div className="space-y-3">
-                      {['Sound/Audio', 'Marketing', 'Security', 'Hospitality'].map(cat => {
+                      {['Sound/Audio', 'Marketing', 'Security', 'Hospitality'].map((cat, idx) => {
                         const catTotal = plannerCostLedger.filter(c => c.category === cat).reduce((sum, c) => sum + parseFloat(c.amount || '0'), 0);
                         const pct = proposedBudget > 0 ? (catTotal / proposedBudget) * 100 : 0;
                         return (
-                          <div key={cat}>
+                          <div key={`${cat}-${idx}`}>
                             <div className="flex justify-between text-[10px] font-mono text-zinc-400 mb-1">
                               <span>{cat}</span>
                               <span className="text-yellow-500/80">${catTotal}</span>

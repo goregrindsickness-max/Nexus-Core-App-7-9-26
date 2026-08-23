@@ -883,7 +883,7 @@ export default function PlansView({
               <div className="space-y-1">
                 <div className="flex gap-1 text-[#00F2FE]">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3 h-3 fill-current" />
+                    <Star key={`rev1-star-${i}`} className="w-3 h-3 fill-current" />
                   ))}
                 </div>
                 <p className="text-[11px] text-zinc-300 tracking-wide font-medium leading-relaxed italic">
@@ -901,7 +901,7 @@ export default function PlansView({
               <div className="space-y-1">
                 <div className="flex gap-1 text-[#00F2FE]">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3 h-3 fill-current" />
+                    <Star key={`rev2-star-${i}`} className="w-3 h-3 fill-current" />
                   ))}
                 </div>
                 <p className="text-[11px] text-zinc-300 tracking-wide font-medium leading-relaxed italic">
@@ -919,7 +919,7 @@ export default function PlansView({
               <div className="space-y-1">
                 <div className="flex gap-1 text-[#00F2FE]">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3 h-3 fill-current" />
+                    <Star key={`rev3-star-${i}`} className="w-3 h-3 fill-current" />
                   ))}
                 </div>
                 <p className="text-[11px] text-zinc-300 tracking-wide font-medium leading-relaxed italic">

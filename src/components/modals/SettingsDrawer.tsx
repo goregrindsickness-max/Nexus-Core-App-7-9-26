@@ -282,12 +282,12 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
               { id: 'profile', label: 'Profile Media', icon: User },
               { id: 'storage', label: 'Local Cache', icon: HardDrive },
               { id: 'queue', label: `Offline Queue (${offlineActions.length})`, icon: Wifi }
-            ].map(tab => {
+            ].map((tab, idx) => {
               const Icon = tab.icon;
               const isActive = activeSubTab === tab.id;
               return (
                 <button
-                  key={tab.id}
+                  key={`${tab.id}-${idx}`}
                   onClick={() => setActiveSubTab(tab.id as any)}
                   className={`flex items-center gap-1.5 px-3 py-2 text-xs font-mono font-bold uppercase tracking-wider rounded-t-lg transition-all cursor-pointer whitespace-nowrap ${
                     isActive 
@@ -316,9 +316,9 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
                       { id: 'band', label: 'Band / Artist' },
                       { id: 'promoter', label: 'Promoter' },
                       { id: 'creative', label: 'Creative' }
-                    ].map(p => (
+                    ].map((p, pIdx) => (
                       <button
-                        key={p.id}
+                        key={`${p.id}-${pIdx}`}
                         onClick={() => setSelectedPortal(p.id as any)}
                         className={`py-2 px-2.5 rounded-lg border text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${
                           selectedPortal === p.id 
@@ -528,8 +528,8 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
                     Heaviest Cached Keys
                   </span>
                   <div className="space-y-1 max-h-48 overflow-y-auto">
-                    {storageKeys.map(k => (
-                      <div key={k.key} className="flex items-center justify-between px-3 py-1.5 bg-zinc-950 border border-zinc-850 rounded-lg text-xs font-mono">
+                    {storageKeys.map((k, kIdx) => (
+                      <div key={`${k.key}-${kIdx}`} className="flex items-center justify-between px-3 py-1.5 bg-zinc-950 border border-zinc-850 rounded-lg text-xs font-mono">
                         <span className="text-zinc-300 truncate pr-2 max-w-[240px]">{k.key}</span>
                         <span className="text-emerald-400 font-bold shrink-0">{k.sizeKb} KB</span>
                       </div>

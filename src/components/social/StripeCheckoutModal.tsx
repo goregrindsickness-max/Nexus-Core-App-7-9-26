@@ -445,7 +445,7 @@ export function StripeCheckoutModal({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {(Object.keys(tierPricing) as TicketTierKey[]).map(key => {
+                  {(Object.keys(tierPricing) as TicketTierKey[]).map((key, keyIdx) => {
                     const tier = tierPricing[key];
                     const isSelected = selectedTier === key;
                     const IconComponent = tier.icon;
@@ -559,7 +559,7 @@ export function StripeCheckoutModal({
                             Merch Size:
                           </span>
                           <div className="flex items-center gap-1 flex-wrap">
-                            {availableSizes.map(sz => (
+                            {availableSizes.map((sz) => (
                               <button
                                 key={sz}
                                 type="button"
@@ -592,9 +592,9 @@ export function StripeCheckoutModal({
                   <span className="text-[9px] font-mono text-zinc-400">Standard Unisex Fit</span>
                 </div>
                 <div className="grid grid-cols-6 gap-1.5">
-                  {availableSizes.map(sz => (
+                  {availableSizes.map((sz, szIdx) => (
                     <button
-                      key={sz}
+                      key={`sz-${sz}-${szIdx}`}
                       type="button"
                       onClick={() => setSelectedMerchSize(sz)}
                       className={`py-2 rounded-xl text-xs font-mono font-black transition-all cursor-pointer ${
@@ -872,7 +872,7 @@ export function StripeCheckoutModal({
                       <div className="mt-1.5 p-2 bg-zinc-950/90 border border-zinc-800 rounded-xl space-y-1.5 animate-in fade-in-50 duration-200">
                         <span className="text-[8.5px] font-mono uppercase text-zinc-400 block px-1">Select card for this checkout:</span>
                         <div className="grid grid-cols-1 gap-1">
-                          {walletsState.google.cards.map((card) => {
+                          {walletsState.google.cards.map((card, cardIdx) => {
                             const isSelected = (walletsState.google.selectedCardId || walletsState.google.cards[0]?.id) === card.id;
                             return (
                               <div
@@ -970,7 +970,7 @@ export function StripeCheckoutModal({
                       <div className="mt-1.5 p-2 bg-zinc-950/90 border border-zinc-800 rounded-xl space-y-1.5 animate-in fade-in-50 duration-200">
                         <span className="text-[8.5px] font-mono uppercase text-zinc-400 block px-1">Select card for this checkout:</span>
                         <div className="grid grid-cols-1 gap-1">
-                          {walletsState.apple.cards.map((card) => {
+                          {walletsState.apple.cards.map((card, cardIdx) => {
                             const isSelected = (walletsState.apple.selectedCardId || walletsState.apple.cards[0]?.id) === card.id;
                             return (
                               <div
@@ -1072,7 +1072,7 @@ export function StripeCheckoutModal({
                       <div className="mt-1.5 p-2 bg-zinc-950/90 border border-zinc-800 rounded-xl space-y-1.5 animate-in fade-in-50 duration-200">
                         <span className="text-[8.5px] font-mono uppercase text-zinc-400 block px-1">Select funding source for this checkout:</span>
                         <div className="grid grid-cols-1 gap-1">
-                          {walletsState.paypal.cards.map((card) => {
+                          {walletsState.paypal.cards.map((card, cardIdx) => {
                             const isSelected = (walletsState.paypal.selectedCardId || walletsState.paypal.cards[0]?.id) === card.id;
                             return (
                               <div

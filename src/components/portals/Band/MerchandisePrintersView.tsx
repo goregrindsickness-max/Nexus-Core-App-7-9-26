@@ -753,10 +753,10 @@ export default function MerchandisePrintersView({
             <p className="text-[11px] text-zinc-400 leading-relaxed text-left">The following styles are functioning at 10% or below initial batch allocation. Re-trigger a bulk run batch instantly via any active production suppliers:</p>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-40 overflow-y-auto pr-1">
-              {lowStockItems.map(item => {
+              {lowStockItems.map((item, idx) => {
                 const totalSec = item.table_stock + item.van_stock;
                 return (
-                  <div key={item.id} className="flex items-center justify-between bg-black/40 p-3 rounded-lg border border-zinc-800 hover:border-red-500/50 transition-colors">
+                  <div key={`${item.id}-${idx}`} className="flex items-center justify-between bg-black/40 p-3 rounded-lg border border-zinc-800 hover:border-red-500/50 transition-colors">
                     <div className="text-left">
                       <span className="text-xs text-white truncate block max-w-[200px] font-semibold">{item?.name}</span>
                       <span className="text-[10px] font-mono text-zinc-500 block">Remaining: {totalSec} / {item.initial_batch_size || 100} ({Math.round(totalSec / (item.initial_batch_size || 100) * 100)}%)</span>
@@ -878,9 +878,9 @@ export default function MerchandisePrintersView({
               </select>
 
               <div className="flex bg-zinc-950 p-1 rounded-lg border border-zinc-800 h-9.5 items-center justify-around sm:justify-start">
-                {['active', 'blacklisted', 'all'].map((mode) => (
+                {['active', 'blacklisted', 'all'].map((mode, idx) => (
                   <button
-                    key={mode}
+                    key={`${mode}-${idx}`}
                     type="button"
                     onClick={() => setPrinterViewMode(mode as any)}
                     className={`px-2.5 py-1 text-[9px] font-mono uppercase font-bold rounded transition-all h-full flex items-center ${
@@ -1056,11 +1056,11 @@ export default function MerchandisePrintersView({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredPrinters.map(printer => {
+              {filteredPrinters.map((printer, idx) => {
                 const isExpanded = expandedPrinterId === printer.id;
                 return (
                   <div 
-                    key={printer.id}
+                    key={`${printer.id}-${idx}`}
                     className={`relative p-5 text-left transition-all duration-300 rounded-none border flex flex-col justify-between gap-4 group ${
                       printer.blacklisted
                         ? 'bg-[#000000] border-red-900/35 shadow-[inset_0_0_15px_rgba(239,68,68,0.05)]'
@@ -1154,9 +1154,9 @@ export default function MerchandisePrintersView({
                       {/* Specialties tags list */}
                       {printer.specialties && printer.specialties.length > 0 && (
                         <div className="flex flex-wrap gap-1 pt-1">
-                          {printer.specialties.map((spec: string) => (
+                          {printer.specialties.map((spec: string, idx) => (
                             <span 
-                              key={spec}
+                              key={`${spec}-${idx}`}
                               className={`text-[8.5px] font-mono font-bold uppercase rounded px-1.5 py-0.5 border ${
                                 printer.blacklisted
                                   ? 'bg-zinc-900/50 border-zinc-950 text-zinc-650'
@@ -1586,9 +1586,9 @@ export default function MerchandisePrintersView({
                               </div>
                             ) : (
                               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                {printer.finished_works.map((work: any) => (
+                                {printer.finished_works.map((work: any, idx) => (
                                   <div 
-                                    key={work.id}
+                                    key={`${work.id}-${idx}`}
                                     onClick={() => setActiveLightboxPhoto({ printerId: printer.id, photo: work })}
                                     className="group relative bg-[#0c0617]/50 border border-zinc-900 hover:border-[#A855F7]/30 rounded-lg overflow-hidden flex flex-col justify-between transition-all duration-300 cursor-pointer shadow-lg hover:shadow-[#A855F7]/10"
                                   >
@@ -1668,8 +1668,8 @@ export default function MerchandisePrintersView({
                           onClick={(e) => e.stopPropagation()}
                         >
                           <option value="">[ SELECT ALLIANCE PROJECT ]</option>
-                          {alliances.map(a => (
-                            <option key={a.id} value={a.id}>{a.project_name || a.id}</option>
+                          {alliances.map((a, aIdx) => (
+                            <option key={`${a.id}-${aIdx}`} value={a.id}>{a.project_name || a.id}</option>
                           ))}
                           {alliances.length === 0 && <option value="mock" disabled>No active alliances found locally</option>}
                         </select>
@@ -1782,8 +1782,8 @@ export default function MerchandisePrintersView({
                       }}
                       className="w-full bg-[#12141d] border border-zinc-800 rounded p-2 text-sm text-zinc-200 font-mono focus:border-[#00ffcc] focus:ring-1 focus:ring-[#00ffcc]"
                     >
-                      {printers.filter(p => !p.blacklisted).map(p => (
-                        <option key={p.id} value={p.id} className="font-mono">
+                      {printers.filter(p => !p.blacklisted).map((p, pIdx) => (
+                        <option key={`${p.id}-${pIdx}`} value={p.id} className="font-mono">
                           {p.company_name} ({p.name}) - {p.region}
                         </option>
                       ))}

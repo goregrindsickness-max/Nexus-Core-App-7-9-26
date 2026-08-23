@@ -377,7 +377,7 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
                   { id: 'vinyl', label: 'Vinyl' },
                   { id: 'cds', label: 'CDs' },
                   { id: 'cassettes', label: 'Cassettes' }
-                ].map(cat => (
+                ].map((cat) => (
                   <button
                     key={cat.id}
                     onClick={() => setShopCategory(cat.id)}
@@ -555,7 +555,7 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
                       { id: 'all', label: 'All Community' },
                       { id: 'gear', label: 'Gear Swap 🎸' },
                       { id: 'classifieds', label: 'Classifieds 📋' }
-                    ].map(cat => (
+                    ].map((cat) => (
                       <button
                         key={cat.id}
                         onClick={() => setCommunityCategory(cat.id)}

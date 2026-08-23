@@ -558,9 +558,9 @@ export default function HelpDeskView({ onBack, triggerNotification, portalType }
                 ? 'Select a module below to understand how it operates and fits into your record label operations.'
                 : 'Select a module below to understand how it operates and fits into your tour workflow.'}
             </p>
-            {(portalType === 'label' ? LABEL_TOPICS : TOPICS).map((topic) => (
+            {(portalType === 'label' ? LABEL_TOPICS : TOPICS).map((topic, tIdx) => (
               <div 
-                key={topic.id}
+                key={`${topic.id}-${tIdx}`}
                 className="bg-black/60 border border-zinc-800 rounded-xl overflow-hidden transition-all hover:border-zinc-700"
               >
                 <button
@@ -612,9 +612,9 @@ export default function HelpDeskView({ onBack, triggerNotification, portalType }
                       { id: 'question', label: 'Question', icon: HelpCircle, color: 'text-blue-400' },
                       { id: 'feature', label: 'Feature', icon: Lightbulb, color: 'text-amber-400' },
                       { id: 'bug', label: 'Bug Report', icon: Bug, color: 'text-red-400' },
-                    ].map(type => (
+                    ].map((type, idx) => (
                       <button
-                        key={type.id}
+                        key={`${type.id}-${idx}`}
                         type="button"
                         onClick={() => setTicketType(type.id)}
                         className={`flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg border transition-colors ${

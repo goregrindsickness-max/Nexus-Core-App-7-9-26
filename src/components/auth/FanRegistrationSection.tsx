@@ -151,8 +151,8 @@ export const FanRegistrationSection: React.FC<FanRegistrationSectionProps> = ({
               onChange={(e) => setCountry(e.target.value)}
               className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-sm font-sans text-emerald-500 focus:border-emerald-500/80 transition-all outline-none font-mono"
             >
-              {COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code}>{c.name}</option>
+              {COUNTRIES.map((c, cIdx) => (
+                <option key={`${c.code}-${cIdx}`} value={c.code}>{c.name}</option>
               ))}
             </select>
           </div>
@@ -167,8 +167,8 @@ export const FanRegistrationSection: React.FC<FanRegistrationSectionProps> = ({
                 className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-sm font-sans text-emerald-500 focus:border-emerald-500/80 transition-all outline-none font-mono"
               >
                 <option value="">SELECT STATE...</option>
-                {US_STATES.map((st) => (
-                  <option key={st.code} value={st.code}>{st.name.toUpperCase()} ({st.code})</option>
+                {US_STATES.map((st, idx) => (
+                  <option key={`${st.code}-${idx}`} value={st.code}>{st.name.toUpperCase()} ({st.code})</option>
                 ))}
               </select>
             </div>
@@ -242,13 +242,13 @@ export const FanRegistrationSection: React.FC<FanRegistrationSectionProps> = ({
           </div>
           {isMicroGenresExpanded && (
             <div className="mt-3 space-y-2">
-              {MASTER_GENRES.map((cluster) => {
+              {MASTER_GENRES.map((cluster, idx) => {
                 const isExpanded = !!expandedSignupClusters[cluster.name];
                 const selectedList = customGenre.split(',').map((g) => g.trim()).filter(Boolean);
                 const selectedCount = cluster.tags.filter((tag) => selectedList.includes(tag.label)).length;
 
                 return (
-                  <div key={cluster.name} className="border border-zinc-850 rounded-lg bg-black/60 overflow-hidden">
+                  <div key={`${cluster.name || '' || ''}-${idx}`} className="border border-zinc-850 rounded-lg bg-black/60 overflow-hidden">
                     <button
                       type="button"
                       onClick={(e) => {
@@ -270,11 +270,11 @@ export const FanRegistrationSection: React.FC<FanRegistrationSectionProps> = ({
 
                     {isExpanded && (
                       <div className="p-2.5 bg-zinc-950/80 border-t border-zinc-900 flex flex-wrap gap-1.5 max-h-48 overflow-y-auto">
-                        {cluster.tags.map((tag) => {
+                        {cluster.tags.map((tag, idx) => {
                           const isSelected = selectedList.includes(tag.label);
                           return (
                             <button
-                              key={tag.id}
+                              key={`${tag.id}-${idx}`}
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();

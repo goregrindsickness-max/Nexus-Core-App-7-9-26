@@ -488,13 +488,13 @@ export const LabelWarehouseRestockModal: React.FC<WarehouseRestockModalProps> = 
                     className="w-full bg-[#05080c] border border-zinc-850 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#FF9900]"
                   >
                     <optgroup label="RELEASES">
-                      {(catalogReleases[activeRestockBand.id] || []).map((r: any) => (
-                        <option key={r.id} value={r.id}>{r.title} ({r.catalogId})</option>
+                      {(catalogReleases[activeRestockBand.id] || []).map((r: any, rIdx) => (
+                        <option key={`${r.id}-${rIdx}`} value={r.id}>{r.title} ({r.catalogId})</option>
                       ))}
                     </optgroup>
                     <optgroup label="APPAREL">
-                      {(catalogApparel[activeRestockBand.id] || []).map((a: any) => (
-                        <option key={a.id} value={a.id}>{a.title}</option>
+                      {(catalogApparel[activeRestockBand.id] || []).map((a: any, aIdx) => (
+                        <option key={`${a.id}-${aIdx}`} value={a.id}>{a.title}</option>
                       ))}
                     </optgroup>
                   </select>

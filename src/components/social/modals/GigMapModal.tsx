@@ -174,7 +174,7 @@ export const GigMapModal: React.FC<GigMapModalProps> = ({
                       const isSelected = selectedMapEvent?.id === evt.id;
                       return (
                         <motion.button
-                          key={evt.id}
+                          key={evt.id ? `gig-evt-${evt.id}-${idx}` : `gig-evt-${idx}`}
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => setSelectedMapEvent(evt)}

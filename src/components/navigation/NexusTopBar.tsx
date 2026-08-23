@@ -382,7 +382,7 @@ export const NexusTopBar: React.FC<NexusTopBarProps> = ({
                           { key: 'promoter', icon: '🏟️', name: 'Venue Promoter Gateway', desc: 'Calendars, lineups & finance', bg: 'bg-yellow-950/40', border: 'border-yellow-500/30', text: 'text-yellow-400', dot: 'bg-yellow-500 shadow-[0_0_8px_#eab308]' },
                           { key: 'creative', icon: '🛠️', name: 'Creative Hub & Crew', desc: 'Contracts, portfolio & sound crew', bg: 'bg-fuchsia-950/40', border: 'border-fuchsia-500/30', text: 'text-fuchsia-400', dot: 'bg-fuchsia-500 shadow-[0_0_8px_#d946ef]' },
                           { key: 'label', icon: '💿', name: 'Record Label Console', desc: 'Oversee rosters & releases', bg: 'bg-orange-950/40', border: 'border-orange-500/30', text: 'text-orange-400', dot: 'bg-orange-500 shadow-[0_0_8px_#f97316]' }
-                        ].map((portal) => {
+                        ].map((portal, idx) => {
                           const rawPortalRole = userProfile?.active_workspace || userProfile?.account_type || 'fan_only';
                           const portalRole = (rawPortalRole === 'fan' || rawPortalRole === 'fan_only') ? 'fan_only' : rawPortalRole;
                           const isActive = portalRole === portal.key;
@@ -391,7 +391,7 @@ export const NexusTopBar: React.FC<NexusTopBarProps> = ({
                           
                           if (portal.key === 'fan_only' && isIndustryPro) {
                             return (
-                              <div key={portal.key} className="w-full flex items-center justify-between p-2 rounded-xl bg-zinc-950/20 border border-zinc-900/30 text-zinc-650 opacity-40 select-none cursor-not-allowed">
+                              <div key={`portal-disabled-${portal.key}`} className="w-full flex items-center justify-between p-2 rounded-xl bg-zinc-950/20 border border-zinc-900/30 text-zinc-650 opacity-40 select-none cursor-not-allowed">
                                 <div className="flex items-center gap-2">
                                   <span className="text-xs grayscale opacity-50">{portal.icon}</span>
                                   <div className="text-left">
@@ -408,7 +408,7 @@ export const NexusTopBar: React.FC<NexusTopBarProps> = ({
 
                           if (isActive) {
                             return (
-                              <div key={portal.key} className={`w-full flex items-center justify-between p-2 rounded-xl ${portal.bg} border ${portal.border} ${portal.text}`}>
+                              <div key={`portal-active-${portal.key}`} className={`w-full flex items-center justify-between p-2 rounded-xl ${portal.bg} border ${portal.border} ${portal.text}`}>
                                 <div className="flex items-center gap-2">
                                   <span className="text-xs">{portal.icon}</span>
                                   <div className="text-left">
@@ -467,7 +467,7 @@ export const NexusTopBar: React.FC<NexusTopBarProps> = ({
 
                           return (
                             <button
-                              key={portal.key}
+                              key={`${portal.key}-${idx}`}
                               onClick={() => {
                                 setRoleMenuOpen(false);
                                 if (typeof window !== 'undefined') {

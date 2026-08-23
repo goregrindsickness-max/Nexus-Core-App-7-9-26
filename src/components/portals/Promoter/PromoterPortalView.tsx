@@ -1339,7 +1339,7 @@ export default function PromoterPortalView({
     savedVenuesList.forEach((v: any, idx: number) => {
       if (v && v.name) {
         list.push({
-          id: v.id || `saved-${idx}`,
+          id: v.id || `saved`,
           name: v.name,
           city: v.city || '',
           state: v.state || v.state_province || '',
@@ -2873,11 +2873,11 @@ export default function PromoterPortalView({
                         </div>
 
                         <div className="space-y-1">
-                          {switchableBands.map((b) => {
+                          {switchableBands.map((b, bIdx) => {
                             const isSelected = activeBandId === b.id || (!activeBandId && bands[0]?.id === b.id);
                             return (
                               <button
-                                key={`switch-band-${b.id}`}
+                                key={`switch-band-${b.id}-${bIdx}`}
                                 type="button"
                                 onClick={() => {
                                   if (setActiveBandId) {
@@ -2933,7 +2933,7 @@ export default function PromoterPortalView({
                         { key: 'promoter', icon: '🏟️', name: 'Venue Promoter Gateway', desc: 'Calendars, lineups & finance', theme: roleTheme.promoter },
                         { key: 'creative', icon: '🛠️', name: 'Creative Hub & Crew', desc: 'Contracts, portfolio & sound crew', theme: roleTheme.creative },
                         { key: 'label', icon: '💿', name: 'Record Label Console', desc: 'Oversee rosters & releases', theme: roleTheme.label }
-                      ].map((portal) => {
+                      ].map((portal, idx) => {
                         const currentRole = userProfile?.active_workspace || userProfile?.account_type;
                         const isActive = currentRole === portal.key || (portal.key === 'fan_only' && (currentRole === 'fan' || currentRole === 'fan_only')) || (portal.key === 'industry_pro' && (currentRole === 'industry_pro' || currentRole === 'industry pro'));
                         const registeredWorkspaces = userProfile?.registered_workspaces || [];
@@ -3010,7 +3010,7 @@ export default function PromoterPortalView({
                         // Locked/Upgrade workspace
                         return (
                           <button
-                            key={portal.key}
+                            key={`${portal.key}-${idx}`}
                             type="button"
                             onClick={() => {
                               setRoleMenuOpen(false);
@@ -4056,7 +4056,7 @@ export default function PromoterPortalView({
 
                     return (
                       <button
-                        key={`cal-day-${dayStr}-${day.date.getMonth()}`}
+                        key={`cal-day-${day.date.getMonth()}-${idx}`}
                         type="button"
                         onClick={() => {
                           setCalendarSelectedDate(day.date!);
@@ -4441,7 +4441,7 @@ export default function PromoterPortalView({
 
                               {/* Draggable Content Card */}
                               <motion.div
-                                key={`modal-show-${ev.eventType}-${ev.id}-${index}`}
+                                key={`modal-show-${ev.eventType}-${ev.id}`}
                                 onClick={() => {
                                   handleOpenShowInWorkspace(ev);
                                   setShowAllShowsDraftsModal(false);
@@ -4921,7 +4921,7 @@ export default function PromoterPortalView({
                         className="w-full bg-[#050608] border border-zinc-855 focus:border-emerald-500/85 text-zinc-200 rounded-xl p-3 text-xs outline-none transition-colors"
                       >
                         {activeAllVenues.map((v, idx) => (
-                          <option key={`opt-venue-${idx}`} value={idx} className="bg-[#0c0e12]">
+                          <option key={`opt-venue-${v.id || idx}-${idx}`} value={idx} className="bg-[#0c0e12]">
                             {v.name} ({v.city}, {v.state || 'TX'} | Cap: {v.capacity || 'N/A'})
                           </option>
                         ))}
@@ -5059,8 +5059,8 @@ export default function PromoterPortalView({
                             className="w-full bg-[#050608] border border-zinc-850 focus:border-emerald-500 text-zinc-100 rounded-xl p-2.5 text-xs outline-none"
                           >
                             <option value="">-- Choose talent --</option>
-                            {allAvailableFormBands.map((b) => (
-                              <option key={`opt-planner-add-${b.id}`} value={b.id}>
+                            {allAvailableFormBands.map((b, bIdx) => (
+                              <option key={`opt-planner-add-${b.id}-${bIdx}`} value={b.id}>
                                 {b.name} ({b.genre})
                               </option>
                             ))}
@@ -5230,7 +5230,7 @@ export default function PromoterPortalView({
 
                           return (
                             <div 
-                              key={`draft-${item.id}-${index}`}
+                              key={`draft-${item.id}`}
                               draggable
                               onDragStart={(e) => e.dataTransfer.setData('itemId', item.id)}
                               className={`border rounded-xl transition-all duration-200 overflow-hidden text-zinc-300 font-mono text-[11px] cursor-grab active:cursor-grabbing hover:scale-[1.01] ${cardBorders}`}
@@ -5444,16 +5444,16 @@ export default function PromoterPortalView({
                                   if (stagingList.length === 0) {
                                     return <div className="text-center py-10 text-zinc-600 text-[10px] uppercase tracking-wider font-bold border border-zinc-900 border-dashed rounded-xl">Staging Depot Empty<br/><span className="font-normal text-[8px] block mt-1 opacity-50">Drag bands here or add them</span></div>;
                                   }
-                                  return stagingList.map((item) => <RenderCard key={item.id} item={item} />);
+                                  return stagingList.map((item, idx) => <RenderCard key={`${item.id}-${idx}`} item={item} />);
                                 })()}
                               </div>
                             </div>
 
                             {/* COLUMN 2: MULTI-DAY TIMELINE GRIDS */}
                             <div className="flex flex-col gap-5 overflow-y-auto pr-1.5 scroll-smooth pb-4">
-                              {activeDays.map(day => (
+                              {activeDays.map((day, dIdx) => (
                                 <div 
-                                  key={`day-col-${day}`}
+                                  key={`day-col-${day}-${dIdx}`}
                                   className={`bg-black border rounded-xl flex flex-col transition-all duration-300 min-h-[220px] ${plannerDragOverDay === day ? 'border-[#A855F7] shadow-[0_0_20px_rgba(168,85,247,0.3)]' : 'border-[#262626]'}`}
                                   onDragOver={(e) => { e.preventDefault(); if(plannerDragOverDay !== day) setPlannerDragOverDay(day); }}
                                   onDragLeave={() => { if(plannerDragOverDay === day) setPlannerDragOverDay(null); }}
@@ -5483,7 +5483,7 @@ export default function PromoterPortalView({
                                       if (dayList.length === 0) {
                                         return <div className="text-center py-6 text-zinc-600 text-[10px] uppercase tracking-wider font-bold border border-zinc-900 border-dashed rounded-xl h-full flex items-center justify-center min-h-[100px]">Drop bands here</div>;
                                       }
-                                      return dayList.map((item) => <RenderCard key={item.id} item={item} />);
+                                      return dayList.map((item, idx) => <RenderCard key={`${item.id}-${idx}`} item={item} />);
                                     })()}
                                   </div>
                                 </div>
@@ -5651,7 +5651,7 @@ export default function PromoterPortalView({
 
                     {/* Draggable Content Card */}
                     <motion.div
-                      key={`upcoming-show-flat-${ev.eventType}-${ev.id}-${index}`}
+                      key={`upcoming-show-flat-${ev.eventType}-${ev.id}`}
                       onClick={() => handleOpenShowInWorkspace(ev)}
                       className={`p-3 border w-full rounded-xl transition-colors text-left flex flex-col gap-1.5 relative overflow-hidden group ${cardBorderClass} cursor-pointer active:cursor-grabbing z-10`}
                       drag="x"
@@ -5726,12 +5726,12 @@ export default function PromoterPortalView({
                 Select general styles or input specific micro-genres to narrow your artist search parameters.
               </div>
               <div className="flex flex-col gap-2 py-3 px-4 bg-[#0a0612]/70 border border-purple-900/20 rounded-xl font-mono text-[9.5px] w-full" id="promoter-segmented-frequency-selector">
-                {(['ALL', 'Extreme Metal', 'Rock/Heavy Metal', 'Punk/Alternative', 'Hardcore', 'Hip-Hop/Rap', 'Industrial/EDM'] as const).map(freq => {
+                {(['ALL', 'Extreme Metal', 'Rock/Heavy Metal', 'Punk/Alternative', 'Hardcore', 'Hip-Hop/Rap', 'Industrial/EDM'] as const).map((freq, idx) => {
                   const meta = FREQUENCY_METADATA[freq];
                   const isActive = selectedFrequency === freq;
                   return (
                     <button
-                      key={freq}
+                      key={`${freq}-${idx}`}
                       type="button"
                       onClick={() => {
                         setSelectedFrequency(freq);
@@ -5768,7 +5768,7 @@ export default function PromoterPortalView({
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {(MICRO_GENRES_MAP[selectedFrequency] || []).map(mg => {
+                  {(MICRO_GENRES_MAP[selectedFrequency] || []).map((mg, idx) => {
                     const isSubActive = selectedSubGenre === mg.id;
                     const activeStyle = selectedFrequency === 'Extreme Metal'
                       ? 'bg-gradient-to-r from-red-950/90 to-red-900/40 border-red-500 text-rose-400'
@@ -5784,7 +5784,7 @@ export default function PromoterPortalView({
                     
                     return (
                       <button
-                        key={mg.id}
+                        key={`${mg.id}-${idx}`}
                         type="button"
                         onClick={() => {
                           setSelectedSubGenre(mg.id);
@@ -5913,8 +5913,8 @@ export default function PromoterPortalView({
                     className="w-full bg-zinc-950/80 border border-purple-900/50 focus:border-[#00ffcc] focus:shadow-[0_0_10px_rgba(0,255,204,0.15)] focus:outline-none p-2.5 rounded-lg text-xs text-white uppercase tracking-wider font-mono transition-all"
                   />
                   <datalist id="target-region-suggestions">
-                    {Array.from(new Set(beacons.map(b => b.target_region).filter(Boolean))).sort().map(region => (
-                      <option key={region} value={region} />
+                    {Array.from(new Set(beacons.map((b) => b.target_region).filter(Boolean))).sort().map((region, idx) => (
+                      <option key={`${region}-${idx}`} value={region} />
                     ))}
                   </datalist>
                   <div className="absolute right-3 top-3.5 h-2 w-2 rounded-full bg-purple-500 animate-ping" />
@@ -5927,9 +5927,9 @@ export default function PromoterPortalView({
                     to avoid confusion (e.g. "Dallas, TX"). If casting a wider net, literally state "Statewide" or "Country Wide".
                   </p>
                   <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                    {['Dallas, TX', 'Texas Statewide', 'US Country Wide', 'London, UK'].map(ex => (
+                    {['Dallas, TX', 'Texas Statewide', 'US Country Wide', 'London, UK'].map((ex, idx) => (
                       <button
-                        key={ex}
+                        key={`${ex}-${idx}`}
                         type="button"
                         onClick={() => {
                           setEditingRegion(ex);
@@ -6074,7 +6074,7 @@ export default function PromoterPortalView({
                     const mappedBand = bands.find(b => b.name.toLowerCase() === beacon.band_name.toLowerCase());
                     return (
                     <motion.div 
-                      key={beacon.id}
+                      key={`${beacon.id}-${idx}`}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.04 }}
@@ -6255,10 +6255,10 @@ export default function PromoterPortalView({
                   <p className="text-zinc-500 font-mono text-[11px] uppercase tracking-widest">No lineups created yet. Initialize your first event workspace.</p>
                 </div>
               ) : (
-                lineups.map(lineup => {
+                lineups.map((lineup, idx) => {
                   const lineupOffers = promoterOffers.filter(o => o.event_id === lineup.id);
                   return (
-                    <div key={lineup.id} className="border border-orange-950 bg-[#0a0705] rounded-xl overflow-hidden shadow-2xl">
+                    <div key={`${lineup.id}-${idx}`} className="border border-orange-950 bg-[#0a0705] rounded-xl overflow-hidden shadow-2xl">
                       <div className="bg-gradient-to-r from-orange-950/40 to-black p-4 border-b border-orange-950/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
                           <h4 className="text-orange-400 font-black tracking-widest uppercase text-sm flex items-center gap-2">
@@ -6301,8 +6301,8 @@ export default function PromoterPortalView({
                                 </tr>
                               </thead>
                               <tbody>
-                                {lineupOffers.map((o) => (
-                                  <tr key={o.id} className="border-b border-zinc-900/50 hover:bg-zinc-950/50 transition-colors">
+                                {lineupOffers.map((o, oIdx) => (
+                                  <tr key={`${o.id}-${oIdx}`} className="border-b border-zinc-900/50 hover:bg-zinc-950/50 transition-colors">
                                     <td className="py-3 text-xs text-zinc-300 font-bold">{o.band_name}</td>
                                     <td className="py-3">
                                       <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-black uppercase tracking-widest ${
@@ -6516,8 +6516,8 @@ export default function PromoterPortalView({
                     <label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider block mb-1">Select Found Artist</label>
                     <select value={formBandId} onChange={(e) => setFormBandId(e.target.value)} className="w-full bg-black/50 border border-zinc-800 p-2.5 rounded-lg text-xs text-white uppercase font-mono" required>
                       <option value="" className="bg-zinc-950 text-zinc-500">-- Select Found Artist --</option>
-                      {filteredFormBands.map(b => (
-                        <option key={b.id} value={b.id} className="bg-zinc-950 text-white">{b.name}</option>
+                      {filteredFormBands.map((b, bIdx) => (
+                        <option key={`${b.id}-${bIdx}`} value={b.id} className="bg-zinc-950 text-white">{b.name}</option>
                       ))}
                     </select>
                   </div>
@@ -6799,9 +6799,9 @@ export default function PromoterPortalView({
               </div>
             ) : (
               <div className="space-y-2 max-h-[520px] overflow-y-auto pr-1 font-mono w-full min-w-0">
-                {promoterOffers.map((offer) => (
+                {promoterOffers.map((offer, idx) => (
                   <div 
-                    key={offer.id} 
+                    key={`${offer.id}-${idx}`} 
                     className={`border border-purple-900/40 rounded-lg p-3 text-xs space-y-3 transition-all min-w-0 w-full overflow-hidden ${
                       offer.status === 'accepted' ? 'border-emerald-500/30 bg-[#0c1f13]/30' : 
                       offer.status === 'renegotiating' ? 'border-purple-500/40 bg-purple-900/10' : 
@@ -7411,11 +7411,11 @@ export default function PromoterPortalView({
                     </p>
 
                     <div className="space-y-2.5 font-mono text-[9px]">
-                      {genreClusters.map(cluster => {
+                      {genreClusters.map((cluster, idx) => {
                         const selectedCount = cluster.tags.filter(t => profileGenreTags.includes(t.id)).length;
                         const isExpanded = expandedClusters.includes(cluster.name);
                         return (
-                          <div key={cluster.name} className="border border-zinc-850 bg-black/20 rounded-xl overflow-hidden">
+                          <div key={`${cluster.name}-${idx}`} className="border border-zinc-850 bg-black/20 rounded-xl overflow-hidden">
                             <button
                               type="button"
                               onClick={() => {
@@ -7447,12 +7447,12 @@ export default function PromoterPortalView({
                             {isExpanded && (
                               <div className="p-3 bg-[#050608] transition-all">
                                 <div className="grid grid-cols-2 gap-2">
-                                  {cluster.tags.map(tag => {
+                                  {cluster.tags.map((tag, idx) => {
                                     const isChecked = profileGenreTags.includes(tag.id);
                                     return (
                                       <button
                                         type="button"
-                                        key={tag.id}
+                                        key={`${tag.id}-${idx}`}
                                         onClick={() => toggleGenreTag(tag.id)}
                                         className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-left transition-all ${
                                           isChecked
@@ -8264,7 +8264,7 @@ export default function PromoterPortalView({
                   </div>
 
                   <div className="space-y-3 mt-4">
-                    {INBOX_CHANNELS.map((channel) => {
+                    {INBOX_CHANNELS.map((channel, idx) => {
                       const isCurrentlyActive = activeInboxChatId === channel.id;
                       const threadMsgs = inboxMessages[channel.id] || [];
                       const lastMsg = threadMsgs.length > 0 ? threadMsgs[threadMsgs.length - 1] : null;
@@ -8282,7 +8282,7 @@ export default function PromoterPortalView({
 
                       return (
                         <button
-                          key={channel.id}
+                          key={`${channel.id}-${idx}`}
                           type="button"
                           onClick={() => {
                             setActiveInboxChatId(channel.id);

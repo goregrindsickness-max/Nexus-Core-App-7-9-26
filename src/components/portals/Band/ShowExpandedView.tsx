@@ -432,8 +432,8 @@ export default function ShowExpandedView({
                   <span className="text-xs text-zinc-500 block">No itinerary activities registered. Click 'Add Activity' to define the sequence.</span>
                 ) : (
                   <div className="relative border-l border-zinc-800 pl-4 py-1 flex flex-col gap-4 max-w-md">
-                    {itineraries.map((item) => (
-                      <div key={item.id} className="relative group">
+                    {itineraries.map((item, idx) => (
+                      <div key={`${item.id}-${idx}`} className="relative group">
                         {/* Bullet node */}
                         <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-zinc-950 border border-zinc-700 group-hover:border-[#00ffcc] group-hover:bg-[#00ffcc] transition-all" />
                         
@@ -659,8 +659,8 @@ export default function ShowExpandedView({
                 No recorded sales.
               </div>
             ) : (
-              showSales.slice(0, 3).map(sale => (
-                <div key={sale.id} className="bg-[#13161d] border border-zinc-800/60 rounded-xl p-3 flex items-center justify-between">
+              showSales.slice(0, 3).map((sale, idx) => (
+                <div key={`${sale.id}-${idx}`} className="bg-[#13161d] border border-zinc-800/60 rounded-xl p-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="bg-amber-900/20 border border-amber-900/50 p-2 rounded-lg">
                       <Banknote className="w-4 h-4 text-amber-500" />

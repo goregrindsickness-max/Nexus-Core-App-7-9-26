@@ -152,7 +152,7 @@ export const CreateDIYEventModal: React.FC<CreateDIYEventModalProps> = ({
                   Event Category
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {EVENT_CATEGORIES.map((cat) => {
+                  {EVENT_CATEGORIES.map((cat, catIdx) => {
                     const isSelected = eventType === cat.id;
                     return (
                       <button

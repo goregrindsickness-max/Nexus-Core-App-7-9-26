@@ -274,9 +274,9 @@ export const ArtistManagementModal: React.FC<ArtistManagementModalProps> = ({
                     <div className="space-y-2">
                       <span className="text-[8.5px] font-mono uppercase text-zinc-500 tracking-wider">Managed Roster Profiles</span>
                       <div className="grid grid-cols-1 gap-2 max-h-[190px] overflow-y-auto pr-1">
-                        {bands.map((b) => (
+                        {bands.map((b, bIdx) => (
                           <div
-                            key={b.id}
+                            key={`${b.id}-${bIdx}`}
                             className={`p-2 rounded-lg border flex items-center justify-between gap-3 transition-colors ${
                               b.id === activeBandId 
                                 ? 'bg-[#181d26] border-[#00ffcc] text-white' 

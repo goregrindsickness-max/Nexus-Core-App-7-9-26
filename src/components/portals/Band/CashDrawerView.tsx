@@ -239,8 +239,8 @@ export default function CashDrawerView({ onClose, transactions, setTransactions,
                   {transactions.length === 0 ? (
                      <div className="text-center py-8 text-zinc-500 font-mono text-xs">No transactions yet</div>
                   ) : (
-                     transactions.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map(t => (
-                        <div key={t.id} className="bg-zinc-900/40 border border-zinc-800/40 p-2.5 rounded-lg flex justify-between items-center group hover:bg-zinc-800/40 transition">
+                     transactions.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((t, tIdx) => (
+                        <div key={`${t.id}-${tIdx}`} className="bg-zinc-900/40 border border-zinc-800/40 p-2.5 rounded-lg flex justify-between items-center group hover:bg-zinc-800/40 transition">
                            <div className="flex gap-2.5 items-center min-w-0">
                               <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
                                  t.type === 'starting_bank' || t.type === 'cash_sale' ? 'bg-emerald-500/10 text-emerald-400' :

@@ -1,6 +1,6 @@
 import localforage from 'localforage';
 import { getRawSupabase } from './clientService';
-import { generateUUID } from './schemaResilienceService';
+import { generateUUID, sanitizeShowForDb, sanitizeInventoryItemForDb } from './schemaResilienceService';
 
 export interface OfflineAction {
   id: string;
@@ -147,13 +147,20 @@ export async function processOfflineQueue(): Promise<void> {
     try {
       let builder = rawSupabase.from(action.table);
       let resPromise: any;
+      let payload = action.payload;
+
+      if (action.table === 'shows' && payload) {
+        payload = sanitizeShowForDb(payload);
+      } else if (action.table === 'inventory' && payload) {
+        payload = sanitizeInventoryItemForDb(payload);
+      }
 
       if (action.action === 'insert') {
-        resPromise = builder.insert(action.payload);
+        resPromise = builder.insert(payload);
       } else if (action.action === 'update') {
-        resPromise = builder.update(action.payload);
+        resPromise = builder.update(payload);
       } else if (action.action === 'upsert') {
-        resPromise = builder.upsert(action.payload);
+        resPromise = builder.upsert(payload);
       } else if (action.action === 'delete') {
         resPromise = builder.delete();
       } else {

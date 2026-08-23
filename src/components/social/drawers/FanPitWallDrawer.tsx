@@ -122,8 +122,8 @@ export const FanPitWallDrawer: React.FC<FanPitWallDrawerProps> = ({
 
             {/* Messages Area */}
             <div className="flex-1 p-4 overflow-y-auto space-y-4">
-              {pitWallMessages.map((msg) => (
-                <div key={msg.id} className="flex gap-3">
+              {pitWallMessages.map((msg, mIdx) => (
+                <div key={msg.id ? `pit-msg-${msg.id}-${mIdx}` : `pit-msg-${mIdx}`} className="flex gap-3">
                   <img
                     src={msg.avatar}
                     alt={msg.author}

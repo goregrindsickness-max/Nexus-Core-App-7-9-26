@@ -113,8 +113,8 @@ export default function WillCallIsolationModal({ shows }: WillCallIsolationModal
               GLOBAL INFLUENCE REQUIRED: AGGREGATED ISOLATION LIST
             </h2>
             <ul className="space-y-2 relative z-10">
-              {Object.entries(aggregatedSummary).map(([itemName, count]) => (
-                <li key={itemName} className="text-white font-mono text-lg flex items-center gap-3">
+              {Object.entries(aggregatedSummary).map(([itemName, count], idx) => (
+                <li key={`${itemName}-${idx}`} className="text-white font-mono text-lg flex items-center gap-3">
                   <span className="text-zinc-500">ISOLATE:</span> 
                   <span className="bg-rose-500 text-black font-black px-2 py-0.5 min-w-[50px] text-center">({count})</span>
                   <span className="font-bold text-zinc-200">{itemName}</span>

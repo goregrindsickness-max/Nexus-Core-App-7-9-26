@@ -449,7 +449,7 @@ export function StripeCartCheckoutModal({
                       <div className="mt-1.5 p-2 bg-zinc-950/90 border border-zinc-800 rounded-xl space-y-1.5 animate-in fade-in-50 duration-200">
                         <span className="text-[8.5px] font-mono uppercase text-zinc-400 block px-1">Select card for this checkout:</span>
                         <div className="grid grid-cols-1 gap-1">
-                          {walletsState.google.cards.map((card) => {
+                          {walletsState.google.cards.map((card, cardIdx) => {
                             const isSelected = (walletsState.google.selectedCardId || walletsState.google.cards[0]?.id) === card.id;
                             return (
                               <div
@@ -547,7 +547,7 @@ export function StripeCartCheckoutModal({
                       <div className="mt-1.5 p-2 bg-zinc-950/90 border border-zinc-800 rounded-xl space-y-1.5 animate-in fade-in-50 duration-200">
                         <span className="text-[8.5px] font-mono uppercase text-zinc-400 block px-1">Select card for this checkout:</span>
                         <div className="grid grid-cols-1 gap-1">
-                          {walletsState.apple.cards.map((card) => {
+                          {walletsState.apple.cards.map((card, cardIdx) => {
                             const isSelected = (walletsState.apple.selectedCardId || walletsState.apple.cards[0]?.id) === card.id;
                             return (
                               <div
@@ -649,7 +649,7 @@ export function StripeCartCheckoutModal({
                       <div className="mt-1.5 p-2 bg-zinc-950/90 border border-zinc-800 rounded-xl space-y-1.5 animate-in fade-in-50 duration-200">
                         <span className="text-[8.5px] font-mono uppercase text-zinc-400 block px-1">Select funding source for this checkout:</span>
                         <div className="grid grid-cols-1 gap-1">
-                          {walletsState.paypal.cards.map((card) => {
+                          {walletsState.paypal.cards.map((card, cardIdx) => {
                             const isSelected = (walletsState.paypal.selectedCardId || walletsState.paypal.cards[0]?.id) === card.id;
                             return (
                               <div

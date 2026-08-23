@@ -314,8 +314,8 @@ export const LabelSettingsDrawer: React.FC<LabelSettingsDrawerProps> = ({
                   onChange={(e) => setUserProfile({ ...userProfile, label_legal_entity_type: e.target.value })}
                   className="w-full bg-[#0c0e12] border border-[#1A1A1A] text-zinc-200 px-3 py-2 rounded focus:outline-none focus:border-[#f97316] font-mono text-xs"
                 >
-                  {['SOLE_PROPRIETORSHIP', 'LLC', 'C_CORP', 'S_CORP', 'PARTNERSHIP'].map(t => (
-                    <option key={t} value={t} className="bg-black text-xs">{t.replace(/_/g, ' ')}</option>
+                  {['SOLE_PROPRIETORSHIP', 'LLC', 'C_CORP', 'S_CORP', 'PARTNERSHIP'].map((t, tIdx) => (
+                    <option key={`${t}-${tIdx}`} value={t} className="bg-black text-xs">{t.replace(/_/g, ' ')}</option>
                   ))}
                 </select>
               </div>
@@ -338,8 +338,8 @@ export const LabelSettingsDrawer: React.FC<LabelSettingsDrawerProps> = ({
                   onChange={(e) => setUserProfile({ ...userProfile, label_master_distro_model: e.target.value })}
                   className="w-full bg-[#0c0e12] border border-[#1A1A1A] text-zinc-200 px-3 py-2 rounded focus:outline-none focus:border-[#f97316] font-mono text-xs select-none"
                 >
-                  {['IN_HOUSE_FULFILLMENT', 'THIRD_PARTY_DISTRIBUTION', 'PRINT_ON_DEMAND_DROP_SHIP'].map(t => (
-                    <option key={t} value={t} className="bg-black text-xs">{t.replace(/_/g, ' ')}</option>
+                  {['IN_HOUSE_FULFILLMENT', 'THIRD_PARTY_DISTRIBUTION', 'PRINT_ON_DEMAND_DROP_SHIP'].map((t, tIdx) => (
+                    <option key={`${t}-${tIdx}`} value={t} className="bg-black text-xs">{t.replace(/_/g, ' ')}</option>
                   ))}
                 </select>
               </div>
@@ -405,8 +405,8 @@ export const LabelSettingsDrawer: React.FC<LabelSettingsDrawerProps> = ({
                   onChange={(e) => setUserProfile({ ...userProfile, label_digital_accreditation_scheme: e.target.value })}
                   className="w-full bg-[#0c0e12] border border-[#1A1A1A] text-zinc-200 px-3 py-2 rounded focus:outline-none focus:border-[#f97316] font-mono text-xs select-none"
                 >
-                  {['LABEL_PROVIDES_INDEPENDENT_CODES', 'PLATFORM_GENERATES_AUTOMATICALLY'].map(t => (
-                    <option key={t} value={t} className="bg-black text-xs">{t.replace(/_/g, ' ')}</option>
+                  {['LABEL_PROVIDES_INDEPENDENT_CODES', 'PLATFORM_GENERATES_AUTOMATICALLY'].map((t, tIdx) => (
+                    <option key={`${t}-${tIdx}`} value={t} className="bg-black text-xs">{t.replace(/_/g, ' ')}</option>
                   ))}
                 </select>
               </div>
@@ -445,13 +445,13 @@ export const LabelSettingsDrawer: React.FC<LabelSettingsDrawerProps> = ({
                   name: 'CLUSTER 06: HIP HOP/RAP',
                   genres: ['UNDERGROUND RAP', 'TRAP', 'BOOM BAP', 'PHONK', 'DRILL', 'CLOUD RAP', 'EXPERIMENTAL', 'GRIME']
                 }
-              ].map(cluster => {
+              ].map((cluster, idx) => {
                 const currentGenres = userProfile.label_genres || [];
                 const activeInCluster = cluster.genres.filter(genre => currentGenres.includes(genre));
                 const isExpanded = !!expandedClusters[cluster.name];
                 
                 return (
-                  <div key={cluster.name} className="p-3 bg-black border border-zinc-900 rounded-lg space-y-3">
+                  <div key={`${cluster.name}-${idx}`} className="p-3 bg-black border border-zinc-900 rounded-lg space-y-3">
                     <button
                       type="button"
                       onClick={() => setExpandedClusters(prev => {
@@ -477,11 +477,11 @@ export const LabelSettingsDrawer: React.FC<LabelSettingsDrawerProps> = ({
                     
                     {isExpanded && (
                       <div className="flex flex-wrap gap-1.5 pt-1 animate-fade-in">
-                        {cluster.genres.map(genre => {
+                        {cluster.genres.map((genre, idx) => {
                           const isActive = currentGenres.includes(genre);
                           return (
                             <button
-                              key={genre}
+                              key={`${genre}-${idx}`}
                               type="button"
                               onClick={() => {
                                 const updated = isActive 

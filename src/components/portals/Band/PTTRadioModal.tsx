@@ -41,7 +41,7 @@ export const PTTRadioModal: React.FC<PTTRadioModalProps> = ({ isOpen, onClose, u
     if (!supabase) return;
 
     // Create a realtime channel scoped to the active band
-    const channel = supabase.channel(`ptt-radio-${activeBandId}`);
+    const channel = supabase.channel(`ptt-radio`);
 
     channel.on('broadcast', { event: 'ptt_transmission' }, (payload) => {
       const log = payload.payload;
@@ -265,8 +265,8 @@ export const PTTRadioModal: React.FC<PTTRadioModalProps> = ({ isOpen, onClose, u
                     <span className="font-mono text-[9px] uppercase tracking-wider">Channel Static. No transmissions.</span>
                   </div>
                 ) : (
-                  pttLogs.map((log) => (
-                    <div key={log.id} className="space-y-1 bg-zinc-900/35 border border-zinc-900 p-2.5 rounded-xl text-[11px] leading-relaxed relative">
+                  pttLogs.map((log, idx) => (
+                    <div key={`${log.id}-${idx}`} className="space-y-1 bg-zinc-900/35 border border-zinc-900 p-2.5 rounded-xl text-[11px] leading-relaxed relative">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5 min-w-0">
                           {log.avatar_url ? (

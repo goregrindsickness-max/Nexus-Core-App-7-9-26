@@ -263,9 +263,9 @@ export const CashDrawerLedgerCard: React.FC<CashDrawerLedgerCardProps> = ({
             
             {/* Tab Filters */}
             <div className="flex flex-wrap gap-1.5 pb-2 border-b border-zinc-950">
-              {inlineTabs.map(tab => (
+              {inlineTabs.map((tab, idx) => (
                 <button
-                  key={tab.value}
+                  key={`${tab.value}-${idx}`}
                   type="button"
                   onClick={() => setInlineCashDrawerActiveFilter(tab.value)}
                   className={`px-2.5 py-1 text-[8.5px] font-mono rounded transition-all cursor-pointer ${
@@ -286,11 +286,11 @@ export const CashDrawerLedgerCard: React.FC<CashDrawerLedgerCardProps> = ({
                   No {inlineCashDrawerActiveFilter === 'all' ? '' : inlineCashDrawerActiveFilter.replace('_', ' ') + ' '}records found
                 </div>
               ) : (
-                filteredTx.map(t => {
+                filteredTx.map((t, tIdx) => {
                   const isPlus = t.type === 'starting_bank' || t.type === 'cash_sale';
                   return (
                     <div 
-                      key={t.id} 
+                      key={`${t.id}-${tIdx}`} 
                       className="bg-zinc-950/45 hover:bg-zinc-950/85 border border-zinc-900/70 hover:border-zinc-800 p-2.5 rounded-lg flex justify-between items-center group transition-all"
                     >
                       <div className="flex gap-2.5 items-center min-w-0">

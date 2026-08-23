@@ -50,10 +50,10 @@ const INITIAL_DEMO_PROJECTS: SongProject[] = [
         volume: 85,
         muted: false,
         solo: false,
-        selected_version_id: 'v2',
+        selected_version_id: 'stem-1-v2',
         versions: [
           {
-            id: 'v1',
+            id: 'stem-1-v1',
             version_number: 1,
             file_url: 'https://cdn.freesound.org/previews/583/583348_11861866-lq.mp3',
             uploaded_by: 'Alex Mercer',
@@ -61,7 +61,7 @@ const INITIAL_DEMO_PROJECTS: SongProject[] = [
             notes: 'Raw tracking without EQ',
           },
           {
-            id: 'v2',
+            id: 'stem-1-v2',
             version_number: 2,
             file_url: 'https://cdn.freesound.org/previews/583/583348_11861866-lq.mp3',
             uploaded_by: 'Alex Mercer',
@@ -86,10 +86,10 @@ const INITIAL_DEMO_PROJECTS: SongProject[] = [
         volume: 90,
         muted: false,
         solo: false,
-        selected_version_id: 'v1',
+        selected_version_id: 'stem-2-v1',
         versions: [
           {
-            id: 'v1',
+            id: 'stem-2-v1',
             version_number: 1,
             file_url: 'https://cdn.freesound.org/previews/612/612187_11861866-lq.mp3',
             uploaded_by: 'Alex Mercer',
@@ -106,10 +106,10 @@ const INITIAL_DEMO_PROJECTS: SongProject[] = [
         volume: 80,
         muted: false,
         solo: false,
-        selected_version_id: 'v1',
+        selected_version_id: 'stem-3-v1',
         versions: [
           {
-            id: 'v1',
+            id: 'stem-3-v1',
             version_number: 1,
             file_url: 'https://cdn.freesound.org/previews/682/682121_12373324-lq.mp3',
             uploaded_by: 'Devon Vance',

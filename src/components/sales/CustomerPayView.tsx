@@ -434,7 +434,7 @@ export default function CustomerPayView({ onBackToApp }: CustomerPayViewProps) {
 
                       {/* Product Card Grid */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {storeItems.map((item) => {
+                        {storeItems.map((item, idx) => {
                           const qty = cart[item.sku] || 0;
                           const isSoldOut = item.sold >= item.capacity;
                           const remCount = item.capacity - item.sold;
@@ -448,7 +448,7 @@ export default function CustomerPayView({ onBackToApp }: CustomerPayViewProps) {
 
                           return (
                             <div 
-                              key={item.id}
+                              key={`${item.id}-${idx}`}
                               onClick={() => setExpandedSku(isExpanded ? null : item.sku)}
                               className={`border rounded-2xl overflow-hidden text-left flex flex-col justify-between transition-all duration-300 relative ${
                                 qty > 0 
@@ -542,11 +542,11 @@ export default function CustomerPayView({ onBackToApp }: CustomerPayViewProps) {
                                           {qty > 0 && <span className="text-indigo-400 font-black">Choice: {selectedOptions[item.sku]}</span>}
                                         </div>
                                         <div className="flex gap-1.5 flex-wrap">
-                                          {item.options.map((opt: string) => {
+                                          {item.options.map((opt: string, idx) => {
                                             const isSelected = selectedOptions[item.sku] === opt;
                                             return (
                                               <button
-                                                key={opt}
+                                                key={`${opt}-${idx}`}
                                                 type="button"
                                                 disabled={isSoldOut}
                                                 onClick={() => handleOptionSelect(item.sku, opt)}
@@ -728,8 +728,8 @@ export default function CustomerPayView({ onBackToApp }: CustomerPayViewProps) {
                                 className="w-full bg-black border border-indigo-500/30 text-white rounded-lg px-2.5 py-2 text-xs font-sans outline-none focus:border-indigo-400"
                               >
                                 <option value="" disabled>-- Select Tour Date --</option>
-                                {activeTourShows.map(show => (
-                                  <option key={show.id} value={show.id}>{show.date} - {show.name} ({show.city || 'TBD'})</option>
+                                {activeTourShows.map((show, idx) => (
+                                  <option key={`${show.id}-${idx}`} value={show.id}>{show.date} - {show.name} ({show.city || 'TBD'})</option>
                                 ))}
                               </select>
                             </div>
@@ -751,8 +751,8 @@ export default function CustomerPayView({ onBackToApp }: CustomerPayViewProps) {
                       {/* Cart itemized items list */}
                       <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                         {compactCart.length > 0 ? (
-                          compactCart.map((cartItem) => (
-                            <div key={cartItem.sku} className="flex justify-between items-center text-xs text-zinc-350 border-b border-zinc-900/60 pb-1.5 last:border-0 last:pb-0">
+                          compactCart.map((cartItem, idx) => (
+                            <div key={`${cartItem.sku}-${idx}`} className="flex justify-between items-center text-xs text-zinc-350 border-b border-zinc-900/60 pb-1.5 last:border-0 last:pb-0">
                               <div className="min-w-0 pr-2">
                                 <p className="font-bold text-zinc-200 truncate">{cartItem.name}</p>
                                 <p className="text-[9px] font-mono text-indigo-400 mt-0.5">

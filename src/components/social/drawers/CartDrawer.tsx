@@ -59,12 +59,12 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               ) : (
                 <div className="space-y-6">
                   {/* Group cart items by Band Name */}
-                  {Array.from(new Set(cartItems.map((item) => item.bandName))).map((bandName) => {
+                  {Array.from(new Set(cartItems.map((item) => item.bandName))).map((bandName, bIdx) => {
                     const bandItems = cartItems.filter((item) => item.bandName === bandName);
                     const bandSubtotal = bandItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
                     return (
-                      <div key={bandName} className="bg-zinc-950/50 border border-zinc-800 rounded-xl overflow-hidden">
+                      <div key={`band-group-${bandName}-${bIdx}`} className="bg-zinc-950/50 border border-zinc-800 rounded-xl overflow-hidden">
                         <div className="bg-zinc-900/80 px-4 py-2 border-b border-zinc-800 flex items-center justify-between">
                           <span className="text-[10px] font-black uppercase text-rose-400 tracking-wider">
                             Ships from: {bandName}

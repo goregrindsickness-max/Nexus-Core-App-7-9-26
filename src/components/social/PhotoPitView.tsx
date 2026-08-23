@@ -115,24 +115,55 @@ const normalizeFolderName = (f?: string): string => {
   return trimmed;
 };
 
-const loadSavedFolders = (userProfile?: any): string[] => {
+const loadSavedFolders = (userProfile?: any, portalRole?: string): string[] => {
   const userId = userProfile?.id || userProfile?.uuid || userProfile?.user_id || 'guest';
-  const userKey = `nexus_photo_folders_${userId}`;
   let baseFolders: string[] = [];
 
-  if (Array.isArray(userProfile?.photo_folders) && userProfile.photo_folders.length > 0) {
-    baseFolders = userProfile.photo_folders;
-  } else {
+  const role = (portalRole || userProfile?.portalRole || '').toLowerCase();
+  const isBand = role.includes('band') || role.includes('artist') || Boolean(userProfile?.band_name);
+  const isCreative = !isBand && (role.includes('creative') || role.includes('industry') || Boolean(userProfile?.creative_id));
+
+  if (isBand) {
     try {
-      const saved = localStorage.getItem(userKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
+      const bandSaved = localStorage.getItem(`nexus_photo_folders_band_${userId}`) || localStorage.getItem(`nexus_band_photo_folders_${userId}`);
+      if (bandSaved) {
+        const parsed = JSON.parse(bandSaved);
         if (Array.isArray(parsed) && parsed.length > 0) {
           baseFolders = parsed;
         }
       }
-    } catch (e) {
-      console.warn("Failed loading saved photo folders from localStorage:", e);
+    } catch (_) {}
+    if (baseFolders.length === 0 && Array.isArray(userProfile?.photo_folders) && userProfile.photo_folders.length > 0) {
+      baseFolders = userProfile.photo_folders;
+    }
+  } else if (isCreative) {
+    try {
+      const creativeSaved = localStorage.getItem(`nexus_photo_folders_${userId}_creative`) || localStorage.getItem(`nexus_photo_folders_creative_${userId}`);
+      if (creativeSaved) {
+        const parsed = JSON.parse(creativeSaved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          baseFolders = parsed;
+        }
+      }
+    } catch (_) {}
+    if (baseFolders.length === 0 && Array.isArray(userProfile?.photo_folders) && userProfile.photo_folders.length > 0) {
+      baseFolders = userProfile.photo_folders;
+    }
+  } else {
+    if (Array.isArray(userProfile?.photo_folders) && userProfile.photo_folders.length > 0) {
+      baseFolders = userProfile.photo_folders;
+    } else {
+      try {
+        const saved = localStorage.getItem(`nexus_photo_folders_${userId}`);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            baseFolders = parsed;
+          }
+        }
+      } catch (e) {
+        console.warn("Failed loading saved photo folders from localStorage:", e);
+      }
     }
   }
 
@@ -254,7 +285,7 @@ export const PhotoPitView: React.FC<PhotoPitViewProps> = ({
   const currentUserId = userProfile?.id || userProfile?.uuid || userProfile?.user_id || '';
 
   const [selectedFolder, setSelectedFolder] = useState('All Photos');
-  const [foldersList, setFoldersList] = useState<string[]>(() => loadSavedFolders(userProfile));
+  const [foldersList, setFoldersList] = useState<string[]>(() => loadSavedFolders(userProfile, portalRole));
   const [folderToDelete, setFolderToDelete] = useState<string | null>(null);
   const [photoToDelete, setPhotoToDelete] = useState<any | null>(null);
   const [showFolderCreator, setShowFolderCreator] = useState(false);
@@ -263,10 +294,12 @@ export const PhotoPitView: React.FC<PhotoPitViewProps> = ({
   const [galleryLimit, setGalleryLimit] = useState(24);
   const [dbUserPosts, setDbUserPosts] = useState<any[]>([]);
 
-  // Helper to persist folder modifications scoped to current user UUID
+  // Helper to persist folder modifications scoped to current workspace role and user UUID
   const saveFolders = async (updatedList: string[]) => {
     const userId = currentUserId || 'guest';
-    const userKey = `nexus_photo_folders_${userId}`;
+    const activeRole = (portalRole || userProfile?.portalRole || 'fan').toLowerCase();
+    const isBand = activeRole.includes('band') || activeRole.includes('artist') || Boolean(userProfile?.band_name);
+    const isCreative = !isBand && (activeRole.includes('creative') || activeRole.includes('industry') || Boolean(userProfile?.creative_id));
 
     const normalized = updatedList
       .map((f) => normalizeFolderName(f))
@@ -286,9 +319,15 @@ export const PhotoPitView: React.FC<PhotoPitViewProps> = ({
     setFoldersList(finalFolders);
 
     try {
-      localStorage.setItem(userKey, JSON.stringify(finalFolders));
-      localStorage.setItem(`nexus_photo_folders_${userId}_creative`, JSON.stringify(finalFolders));
-      localStorage.setItem(`nexus_photo_folders_creative_${userId}`, JSON.stringify(finalFolders));
+      if (isBand) {
+        localStorage.setItem(`nexus_photo_folders_band_${userId}`, JSON.stringify(finalFolders));
+        localStorage.setItem(`nexus_band_photo_folders_${userId}`, JSON.stringify(finalFolders));
+      } else if (isCreative) {
+        localStorage.setItem(`nexus_photo_folders_${userId}_creative`, JSON.stringify(finalFolders));
+        localStorage.setItem(`nexus_photo_folders_creative_${userId}`, JSON.stringify(finalFolders));
+      } else {
+        localStorage.setItem(`nexus_photo_folders_${userId}`, JSON.stringify(finalFolders));
+      }
     } catch (e) {
       console.warn("Failed saving photo folders to localStorage:", e);
     }
@@ -304,22 +343,20 @@ export const PhotoPitView: React.FC<PhotoPitViewProps> = ({
       } catch (e) {}
     }
 
-    // Persist to IndexedDB profileStore
+    // Persist to IndexedDB profileStore strictly for the active role
     try {
-      const roles = ['creative', 'band', 'fan', 'promoter', 'label'];
-      for (const r of roles) {
-        const activeKey = `active_${r}_${userId}`;
-        const v1Key = `nexus_${r}_profile_v1_${userId}`;
-        const activeProf = await profileStore.getItem<any>(activeKey);
-        if (activeProf) {
-          activeProf.photo_folders = finalFolders;
-          await profileStore.setItem(activeKey, activeProf);
-        }
-        const v1Prof = await profileStore.getItem<any>(v1Key);
-        if (v1Prof) {
-          v1Prof.photo_folders = finalFolders;
-          await profileStore.setItem(v1Key, v1Prof);
-        }
+      const targetRole = isBand ? 'band' : isCreative ? 'creative' : activeRole;
+      const activeKey = `active_${targetRole}_${userId}`;
+      const v1Key = `nexus_${targetRole}_profile_v1_${userId}`;
+      const activeProf = await profileStore.getItem<any>(activeKey);
+      if (activeProf) {
+        activeProf.photo_folders = finalFolders;
+        await profileStore.setItem(activeKey, activeProf);
+      }
+      const v1Prof = await profileStore.getItem<any>(v1Key);
+      if (v1Prof) {
+        v1Prof.photo_folders = finalFolders;
+        await profileStore.setItem(v1Key, v1Prof);
       }
     } catch (e) {}
 
@@ -331,15 +368,24 @@ export const PhotoPitView: React.FC<PhotoPitViewProps> = ({
           photo_folders: finalFolders,
           updated_at: new Date().toISOString()
         };
+        if (isCreative) {
+          const creativeId = userProfile?.creative_id || userProfile?.registered_creative_id;
+          if (creativeId) {
+            try {
+              await supabase.from('creatives').update(updatePayload).eq('id', creativeId);
+            } catch (_) {}
+          }
+        } else if (isBand) {
+          const bandId = userProfile?.band_id || userProfile?.bandId;
+          if (bandId) {
+            try {
+              await supabase.from('bands').update(updatePayload).eq('id', bandId);
+            } catch (_) {}
+          }
+        }
         await supabase.from('profiles').update(updatePayload).eq('id', currentUserId);
         if (userProfile?.user_id) {
           await supabase.from('profiles').update(updatePayload).eq('user_id', userProfile.user_id);
-        }
-        const creativeId = userProfile?.creative_id || userProfile?.registered_creative_id;
-        if (creativeId) {
-          try {
-            await supabase.from('creatives').update(updatePayload).eq('id', creativeId);
-          } catch (_) {}
         }
       } catch (e) {
         console.warn("Could not sync photo_folders to Supabase profiles:", e);
@@ -618,7 +664,7 @@ export const PhotoPitView: React.FC<PhotoPitViewProps> = ({
             rawFolder = 'All Photos';
           }
           const assignedFolder = rawFolder;
-          let itemId = `${post.id}-img-${idx}`;
+          let itemId = `${post.id}-img`;
           if (seenImageIds.has(itemId)) {
             let count = 1;
             while (seenImageIds.has(`${itemId}_${count}`)) count++;
@@ -804,7 +850,7 @@ export const PhotoPitView: React.FC<PhotoPitViewProps> = ({
               photo,
               'photo-pit',
               userProfileId,
-              `gallery-post-${Date.now()}-${i}`
+              `gallery-post-${Date.now()}`
             );
             if (publicUrl) {
               finalImage = publicUrl;
@@ -818,7 +864,16 @@ export const PhotoPitView: React.FC<PhotoPitViewProps> = ({
 
       const authorName = `${userProfile?.console_handle || userProfile?.name || 'NexusMember'} (${userProfile?.full_name || profileFullLegalName || userProfile?.name || 'Nexus Member'})`;
       const authorAvatar = profileAvatarUrl || userProfile?.avatar || userProfile?.avatar_url || 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100';
-      const authorRole = portalRole === 'band' ? '💀 Artist' : (userProfile?.role || 'Fan Listener');
+      const effectiveWorkspace = portalRole || 'fan';
+      const authorRole = portalRole === 'band' 
+        ? '💀 Artist' 
+        : portalRole === 'creative' 
+        ? 'Creative Pro' 
+        : portalRole === 'promoter' 
+        ? 'Promoter Pro' 
+        : portalRole === 'label' 
+        ? 'Record Label' 
+        : (userProfile?.role || 'Fan Listener');
       const userLocation = userProfile?.location || userProfile?.city || '';
 
       const createdPostObjs: any[] = [];
@@ -834,6 +889,7 @@ export const PhotoPitView: React.FC<PhotoPitViewProps> = ({
           id: postUuid,
           profile_id: userProfileId,
           user_id: userProfileId,
+          workspace_type: effectiveWorkspace,
           author: {
             id: userProfileId,
             name: authorName,

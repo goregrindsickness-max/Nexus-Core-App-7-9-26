@@ -920,8 +920,8 @@ export default function ReleasesCatalogTab({
             onChange={(e) => setSelectedCatalogBandId(e.target.value === '' ? null : e.target.value)}
           >
             <option value="">ALL ACTIVE CATALOG ASSETS</option>
-            {[...labelRosterData].sort((a, b) => a.name.localeCompare(b.name)).map(band => (
-              <option key={band.id} value={band.id}>{band.name}</option>
+            {[...labelRosterData].sort((a, b) => a.name.localeCompare(b.name)).map((band, bIdx) => (
+              <option key={band.id ? `b-${band.id}-${bIdx}` : `b-${bIdx}`} value={band.id}>{band.name}</option>
             ))}
           </select>
         </div>
@@ -1066,8 +1066,8 @@ export default function ReleasesCatalogTab({
                             }}
                             value={releases.find(r => r.digital?.some((t: any) => t.id === activePlaybackTrackId))?.id || ""}
                           >
-                            {releases.map(r => (
-                              <option key={r.id} value={r.id}>{r.title.toUpperCase()}</option>
+                            {releases.map((r, rIdx) => (
+                              <option key={r.id ? `r-${r.id}-${rIdx}` : `r-${rIdx}`} value={r.id}>{r.title.toUpperCase()}</option>
                             ))}
                           </select>
                         </div>
@@ -1150,12 +1150,12 @@ export default function ReleasesCatalogTab({
                           {/* Star Rating System */}
                           <div className="flex items-center justify-center gap-1 bg-black/40 border border-zinc-900 px-2 py-0.5 rounded-lg">
                             <span className="text-[7.5px] font-black text-zinc-555 uppercase tracking-widest">RATING:</span>
-                            {[1, 2, 3, 4, 5].map((star) => {
+                            {[1, 2, 3, 4, 5].map((star, idx) => {
                               const activeTrackId = activeTrackObj?.id || "";
                               const rating = trackRatings[activeTrackId] || 0;
                               return (
                                 <button
-                                  key={star}
+                                  key={`${star}-${idx}`}
                                   type="button"
                                   onClick={() => {
                                     setTrackRatings(prev => ({ ...prev, [activeTrackId]: star }));
@@ -1312,12 +1312,12 @@ export default function ReleasesCatalogTab({
                   {/* FULLY DETAILED TRACK LIST DIRECTLY UNDER CONTROLS */}
                   <div className="border-t border-zinc-900 pt-3">
                     <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
-                      {releases.flatMap(release => (release.digital || []).map((track: any) => {
+                      {releases.flatMap(release => (release.digital || []).map((track: any, idx) => {
                         const isCurrent = track.id === activePlaybackTrackId;
                         const trackDuration = track.duration || getRunningTime(track);
                         return (
                           <div 
-                            key={track.id} 
+                            key={`${track.id}-${idx}`} 
                             onClick={() => {
                               setActivePlaybackTrackId(track.id);
                               setIsPlaying(true);
@@ -1375,7 +1375,7 @@ export default function ReleasesCatalogTab({
                   </div>
                 ) : (
                   <div className="space-y-6 w-full">
-                    {releases.map(release => {
+                    {releases.map((release, idx) => {
                       const isEditingThis = editingReleaseId === release.id;
                       const vinylVariants = release.formats?.vinyl?.variants || [{ id: 'v1', name: 'Standard Black Wax', qty: release.formats?.vinyl?.warehouse_qty ?? 0 }];
                       const vinylStock = vinylVariants.reduce((sum, v) => sum + v.qty, 0);
@@ -1384,7 +1384,7 @@ export default function ReleasesCatalogTab({
                       const physicalShelfId = release.formats?.vinyl?.shelf_id || `A${release.id.replace(/\D/g, '').substring(0,2) || '24'}`;
                       return (
                         <div 
-                          key={release.id} 
+                          key={`${release.id}-${idx}`} 
                           id={`release-${release.id}`}
                           className={`p-4 shadow-xl w-full transition-all space-y-3 rounded-xl border ${
                             props.highlightItemId === release.id 
@@ -1644,8 +1644,8 @@ export default function ReleasesCatalogTab({
                                       <span className="text-zinc-500">TOTAL: {vinylStock}</span>
                                     </div>
                                     <div className="flex flex-wrap gap-1.5">
-                                      {vinylVariants.map(v => (
-                                        <span key={v.id} className="bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800 text-[8.5px] font-mono text-zinc-300 uppercase">
+                                      {vinylVariants.map((v, vIdx) => (
+                                        <span key={`${v.id}-${vIdx}`} className="bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800 text-[8.5px] font-mono text-zinc-300 uppercase">
                                           {v.name}: <b className="text-[#FF9900] font-black">{v.qty}</b>
                                         </span>
                                       ))}

@@ -424,7 +424,7 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
   );
 
   return (
-    <div className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[1000005] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
       <div className="w-full max-w-5xl bg-[#090a0f] border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-zinc-850 bg-gradient-to-r from-zinc-950 via-zinc-900/60 to-zinc-950 flex items-center justify-between">
@@ -1224,7 +1224,7 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
                       <div className="space-y-1 pt-1 max-h-40 overflow-y-auto pr-1">
                         {releaseTracks.map((trk, tIdx) => (
                           <div
-                            key={`trk-${tIdx}-${trk.title}`}
+                            key={`trk-${tIdx}-${trk.title || 'untitled'}`}
                             className="flex items-center justify-between p-1.5 px-2.5 rounded bg-zinc-900/80 border border-zinc-800 text-xs font-mono text-zinc-300"
                           >
                             <div className="flex items-center gap-2 min-w-0">

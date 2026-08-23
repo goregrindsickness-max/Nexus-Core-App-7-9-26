@@ -326,9 +326,9 @@ export default function FourCardAutoCarousel({
                       <span className="text-[8.5px] font-mono text-zinc-600 uppercase tracking-widest">No expenses logged</span>
                     </div>
                   ) : (
-                    expenses.slice(-4).reverse().map((e) => (
+                    expenses.slice(-4).reverse().map((e, eIdx) => (
                       <div 
-                        key={e.id}
+                        key={`${e.id}-${eIdx}`}
                         className="flex justify-between items-center bg-[#100305]/60 hover:bg-[#190508]/80 border border-zinc-900/60 hover:border-rose-500/20 rounded-md px-2 py-1 font-mono text-[8.5px] transition-all"
                       >
                         <span className="text-zinc-350 truncate max-w-[130px]" title={e.description}>
@@ -436,9 +436,9 @@ export default function FourCardAutoCarousel({
                       </div>
                       {/* Quick Presets Pills */}
                       <div className="flex gap-1.5 mt-1">
-                        {[150, 250, 500, 1000].map((preset) => (
+                        {[150, 250, 500, 1000].map((preset, idx) => (
                           <button
-                            key={preset}
+                            key={`${preset}-${idx}`}
                             type="button"
                             onClick={() => {
                               setSalesGoalInput(String(preset));

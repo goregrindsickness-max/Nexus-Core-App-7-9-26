@@ -43,7 +43,7 @@ export default function RecentSalesFeed({
             No recent transactions recorded. Feed is empty.
           </div>
         ) : (
-          sales.map((sale) => {
+          sales.map((sale, idx) => {
             // Procedural dynamic color determination for custom heavy metal art thumbnail rendering
             let artType: 'green' | 'red' | 'dark' | 'purple' = 'dark';
             if (sale.item_name.includes('Voracity')) artType = 'green';
@@ -60,7 +60,7 @@ export default function RecentSalesFeed({
 
             return (
               <div 
-                key={sale.id} 
+                key={`${sale.id}-${idx}`} 
                 onClick={() => setSelectedSaleReceipt(sale)}
                 className="flex justify-between items-center bg-[#13161d]/40 hover:bg-[#1a1d26] p-2 rounded-lg border border-zinc-800/40 cursor-pointer transition-colors relative"
               >

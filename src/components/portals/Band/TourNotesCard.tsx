@@ -172,14 +172,14 @@ export default function TourNotesCard({
                       onChange={(e) => setInlineNoteCategory(e.target.value as 'NOTE' | 'TASK' | 'MEETING')}
                       className="bg-[#111319] border border-zinc-800 text-[8.5px] font-mono font-bold tracking-wider text-amber-500 rounded px-2 py-1.5 focus:outline-none focus:border-amber-500/50 flex-1 appearance-none bg-no-repeat bg-[url('data:image/svg+xml;utf8,<svg%20fill=%22%23f59e0b%22%20viewBox=%220%200%2024%2024%22%20xmlns=%22http://www.w3.org/2000/svg%22><path%20d=%22M7%2010l5%205%205-5z%22/></svg>')] bg-[length:14px] bg-[right_8px_center]"
                     >
-                        {NOTE_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                        {NOTE_CATEGORIES.map((cat, idx) => <option key={`${cat}-${idx}`} value={cat}>{cat}</option>)}
                     </select>
                     <select 
                       value={inlineNoteTag}
                       onChange={(e) => setInlineNoteTag(e.target.value)}
                       className="bg-[#111319] border border-zinc-805 text-[8.5px] font-mono font-bold tracking-wider text-emerald-400 rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500/50 flex-1 appearance-none bg-no-repeat bg-[url('data:image/svg+xml;utf8,<svg%20fill=%22%2310b981%22%20viewBox=%220%200%2024%2024%22%20xmlns=%22http://www.w3.org/2000/svg%22><path%20d=%22M7%2010l5%205%205-5z%22/></svg>')] bg-[length:14px] bg-[right_8px_center]"
                     >
-                        {NOTE_STATUSES.map(stat => <option key={stat} value={stat}>{stat}</option>)}
+                        {NOTE_STATUSES.map((stat, idx) => <option key={`${stat}-${idx}`} value={stat}>{stat}</option>)}
                     </select>
                 </div>
 

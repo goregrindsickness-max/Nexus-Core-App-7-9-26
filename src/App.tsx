@@ -2297,6 +2297,15 @@ export default function App() {
     const unsubscribers: (() => void)[] = [];
 
     const hydrateModuleData = async () => {
+      // Guard Clause: Ensure a valid active user session exists before querying Supabase
+      const session = await ensureValidSupabaseAuthSession(supabase);
+      if (!session) {
+        addLog('🔒 Database Handshake: Invalid or expired session token. Retaining secure local storage mode.');
+        setDbStatus('error');
+        isLoadedFromDbRef.current = true;
+        return;
+      }
+
       try {
         setDbStatus('connected');
         addLog('Connecting to tour database... listening to real-time sync.');
@@ -3270,7 +3279,7 @@ export default function App() {
         avatar = avatars[idx % avatars.length];
       }
       return {
-        id: m.id || `member-${idx}`,
+        id: m.id || `member-${idx}-${m.name || 'item'}`,
         name: m.name,
         role: m.role,
         avatar: avatar,
@@ -3557,7 +3566,7 @@ list.push({
             setActiveTab('social');
             setIsNotificationDrawerOpen(false);
             setTimeout(() => {
-              const postEl = document.getElementById(`post-${postId}`);
+              const postEl = document.getElementById(`post`);
               if (postEl) {
                 postEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 postEl.classList.add('ring-2', 'ring-purple-500', 'scale-[1.01]', 'duration-500');

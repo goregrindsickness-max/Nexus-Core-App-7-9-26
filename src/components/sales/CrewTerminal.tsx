@@ -211,12 +211,12 @@ export default function CrewTerminal({
                             <p className="text-xs text-zinc-550 max-w-sm leading-relaxed">Use the payment storefront simulator above to run mock purchases and see them populate here in real-time!</p>
                           </div>
                         ) : (
-                          showSales.map(t => {
+                          showSales.map((t, tIdx) => {
                             const isRedeemed = !!redeemedTickets[t.id];
                             const rowTags = `${t.customer_email} ${t.item_name} ${t.band_name || ''} ${t.id}`.toLowerCase();
                             return (
                               <div 
-                                key={`door-item-${t.id}`}
+                                key={`door-item-${t.id}-${tIdx}`}
                                 data-door-row={rowTags}
                                 className={`p-4 border rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all ${
                                   isRedeemed 

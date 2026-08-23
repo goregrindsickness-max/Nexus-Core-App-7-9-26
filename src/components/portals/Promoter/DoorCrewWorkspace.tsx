@@ -240,9 +240,9 @@ export default function DoorCrewWorkspace({
         </button>
 
         <div className="space-y-1">
-          {filteredTickets.map(ticket => (
+          {filteredTickets.map((ticket, idx) => (
             <div 
-              key={ticket.id} 
+              key={`${ticket.id}-${idx}`} 
               className={`flex justify-between items-center py-2.5 px-3 bg-zinc-950/40 border-b border-zinc-900 hover:bg-zinc-900/40 transition-colors ${ticket.scanned ? 'opacity-60' : ''}`}
             >
               <div className="flex flex-col">

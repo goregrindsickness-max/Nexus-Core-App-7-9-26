@@ -16,6 +16,7 @@ import { TimelineTab } from '../../profile/TimelineTab';
 import { ProfileMarketplaceTab } from '../../profile/ProfileMarketplaceTab';
 import { GalleryTab } from '../../profile/GalleryTab';
 import { CrtTvFrame } from '../../profile/CrtTvFrame';
+import { ReleaseDetailsModal } from './ReleaseDetailsModal';
 
 export type { ListenerMetric };
 export { calculateListenerMetrics };
@@ -252,11 +253,11 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
           let showsList: any[] = [];
           const validUUID = targetId && extractUUID(targetId);
           if (validUUID) {
-            // Only filter by creator_id (remove band_id, user_id, and band_name lookups)
+            // Only filter by band_id
             const { data } = await supabase
               .from('shows')
               .select('*')
-              .eq('creator_id', validUUID);
+              .eq('band_id', validUUID);
             if (data && data.length > 0) showsList = data;
           }
 
@@ -297,7 +298,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
 
           if (!record && validUUID) {
             try {
-              const { data } = await supabase.from('bands').select('*').eq('creator_id', validUUID).order('created_at', { ascending: false }).limit(1).maybeSingle();
+              const { data } = await supabase.from('bands').select('*').eq('creator_id', validUUID).neq('verification_status', 'community_archive').order('created_at', { ascending: false }).limit(1).maybeSingle();
               if (data) record = data;
             } catch (_) {}
           }
@@ -329,6 +330,27 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
 
           if (isMounted && record) {
             setFetchedBandData(record);
+            if ((record.bio || record.description) && setProfileBlurb) {
+              if (base?.isYou || selectedUserProfile?.isYou) {
+                setProfileBlurb(record.bio || record.description);
+              }
+            }
+          }
+
+          // Fetch real band-specific follower count from Supabase 'follows' table
+          const bandUUID = record?.id || (targetBandId && extractUUID(targetBandId)) || (validUUID && isBand ? validUUID : null);
+          if (bandUUID && extractUUID(bandUUID)) {
+            try {
+              const { count, error } = await supabase
+                .from('follows')
+                .select('*', { count: 'exact', head: true })
+                .or(`followed_id.eq.${extractUUID(bandUUID)},artist_id.eq.${extractUUID(bandUUID)}`);
+              if (!error && count !== null && count !== undefined) {
+                if (isMounted && setLiveProfileStats) {
+                  setLiveProfileStats((prev: any) => ({ ...prev, followers: count }));
+                }
+              }
+            } catch (_) {}
           }
 
           // C) Lookup if this profile corresponds to a Fan / Community Archive
@@ -381,7 +403,8 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
               }
             }
             if (normProf.bio && setProfileBlurb) {
-              if (base?.isYou || selectedUserProfile?.isYou) {
+              // ONLY set personal profileBlurb if NOT viewing a band profile!
+              if (!isBand && (base?.isYou || selectedUserProfile?.isYou)) {
                 setProfileBlurb(normProf.bio);
               }
             }
@@ -402,40 +425,39 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
 
   const targetRole = (baseTarget?.role || baseTarget?.portalRole || baseTarget?.account_type || '').toLowerCase();
 
-  const isExplicitPersonal = !!(
-    baseTarget?.isPersonal ||
-    baseTarget?.type === 'user' ||
-    baseTarget?.isBandProfile === false ||
-    targetRole === 'fan' ||
-    targetRole.includes('industry') ||
-    targetRole === 'member' ||
-    targetRole === 'creative' ||
-    targetRole === 'promoter' ||
-    targetRole === 'label'
-  );
-
-  const isArtistOrBand = !isExplicitPersonal && !!(
-    baseTarget?.isBandProfile ||
-    baseTarget?.type === 'band' ||
-    targetRole === 'artist' ||
-    targetRole === 'band'
-  );
-
-  const isCurrentUserBand = isArtistOrBand && !!(
-    baseTarget?.isYou ||
-    baseTarget?.id === userProfile?.id ||
-    baseTarget?.name === userProfile?.bandName
+  const isExplicitPersonal = Boolean(
+    baseTarget?.isIndustryProPersonal === true ||
+    baseTarget?.isPersonal === true ||
+    (baseTarget?.type === 'user' && !baseTarget?.isBandProfile && !baseTarget?.band_name && !baseTarget?.bandName && portalRole !== 'band') ||
+    baseTarget?.isBandProfile === false
   );
 
   let localSavedBand: any = null;
-  if (isCurrentUserBand) {
-    try {
-      const localStr = localStorage.getItem('nexus_my_band_profile');
-      if (localStr) localSavedBand = JSON.parse(localStr);
-    } catch (e) {}
-  }
+  try {
+    const localStr = localStorage.getItem('nexus_my_band_profile');
+    if (localStr) localSavedBand = JSON.parse(localStr);
+  } catch (e) {}
 
-  const bData = fetchedBandData || (isCurrentUserBand ? localSavedBand : null);
+  const bData = fetchedBandData || localSavedBand || null;
+
+  const isArtistOrBand = !isExplicitPersonal && Boolean(
+    baseTarget?.isBandProfile ||
+    baseTarget?.type === 'band' ||
+    targetRole === 'artist' ||
+    targetRole === 'band' ||
+    targetRole.includes('band') ||
+    portalRole === 'band' ||
+    baseTarget?.band_name ||
+    baseTarget?.bandName ||
+    (bData && (bData.band_name || bData.name))
+  );
+
+  const isCurrentUserBand = isArtistOrBand && Boolean(
+    baseTarget?.isYou ||
+    baseTarget?.id === userProfile?.id ||
+    baseTarget?.name === userProfile?.bandName ||
+    baseTarget?.band_name === userProfile?.band_name
+  );
 
   const isBandTarget = !isExplicitPersonal && Boolean(
     baseTarget?.isBandProfile ||
@@ -444,6 +466,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
     baseTarget?.role === 'band' ||
     baseTarget?.role === 'Band' ||
     baseTarget?.portalRole === 'band' ||
+    portalRole === 'band' ||
     baseTarget?.band_name ||
     baseTarget?.bandName ||
     (bData && (bData.band_name || bData.name))
@@ -456,6 +479,20 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
   const rawResolvedBandLogo = isBandTarget ? (
     bData?.logo_url || bData?.avatar_url || baseTarget?.logo_url || baseTarget?.avatar_url || baseTarget?.avatar || baseTarget?.band_logo || (fetchedProfileData as any)?.band_logo || (fetchedProfileData as any)?.logo_url
   ) : null;
+
+  const resolvedBandBio = (
+    bData?.bio ||
+    bData?.description ||
+    bData?.history ||
+    (communityArchiveMatch as any)?.bio ||
+    (communityArchiveMatch as any)?.description ||
+    localSavedBand?.bio ||
+    localSavedBand?.description ||
+    baseTarget?.band_bio ||
+    (baseTarget?.isBandProfile ? baseTarget?.bio : '') ||
+    (isBandTarget && profileBlurb && profileBlurb !== fetchedProfileData?.bio ? profileBlurb : '') ||
+    ''
+  );
 
   const effTarget = {
     ...baseTarget,
@@ -472,7 +509,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
       country: fetchedProfileData.country || baseTarget.country,
       homebase: fetchedProfileData.homebase || baseTarget.homebase,
       location: formatLocationDisplay(fetchedProfileData) || baseTarget.location,
-      bio: (isBandTarget && bData?.bio) || fetchedProfileData?.bio || baseTarget?.bio || '',
+      bio: isBandTarget ? (resolvedBandBio || '') : (fetchedProfileData?.bio || baseTarget?.bio || ''),
       avatar: isBandTarget && rawResolvedBandLogo ? rawResolvedBandLogo : (fetchedProfileData.avatar_url || fetchedProfileData.avatar || baseTarget.avatar),
       avatar_url: isBandTarget && rawResolvedBandLogo ? rawResolvedBandLogo : (fetchedProfileData.avatar_url || fetchedProfileData.avatar || baseTarget.avatar_url),
       logo_url: isBandTarget ? (rawResolvedBandLogo || baseTarget?.logo_url) : baseTarget?.logo_url,
@@ -495,7 +532,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
       state_province: isBandTarget ? (bData.state_province || baseTarget.state_province) : (fetchedProfileData?.state_province || baseTarget.state_province),
       country: isBandTarget ? (bData.country || baseTarget.country) : (fetchedProfileData?.country || baseTarget.country),
       homebase: isBandTarget ? (bData.homebase || formatLocationDisplay(bData) || baseTarget.homebase) : (fetchedProfileData?.homebase || formatLocationDisplay(fetchedProfileData) || baseTarget.homebase || 'Global Scene'),
-      bio: isBandTarget ? (bData.bio || baseTarget.bio) : (fetchedProfileData?.bio || baseTarget.bio || ''),
+      bio: isBandTarget ? (resolvedBandBio || bData.bio || '') : (fetchedProfileData?.bio || baseTarget.bio || ''),
       custom_slug: isBandTarget ? (bData.custom_slug || baseTarget.custom_slug) : (fetchedProfileData?.custom_slug || baseTarget.custom_slug),
       console_handle: isBandTarget ? (bData.custom_slug ? `@${bData.custom_slug.replace('@', '')}` : (baseTarget.console_handle || baseTarget.handle)) : (fetchedProfileData?.console_handle || fetchedProfileData?.username || fetchedProfileData?.handle || baseTarget.console_handle || baseTarget.handle),
       genre: bData.genre || baseTarget.genre,
@@ -562,7 +599,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
           }
           
           return {
-            id: `db-mem-${idx}`,
+            id: `db-mem-${idx}-${name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
             name,
             role,
             clearanceLevel: level,
@@ -572,7 +609,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
         }
         
         return {
-          id: `db-mem-${idx}`,
+          id: `db-mem-${idx}-${itemStr.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
           name: itemStr,
           role: 'Member',
           clearanceLevel: 5,
@@ -1202,14 +1239,14 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                     });
                   }
 
-                  const uniqueBadges = Array.from(new Map(badgesToRender.map(b => [b.label, b])).values());
+                  const uniqueBadges = Array.from(new Map(badgesToRender.map((b) => [b.label, b])).values());
                   if (uniqueBadges.length === 0) return null;
 
                   return (
                     <div className="mt-2.5 flex flex-wrap gap-1.5">
                       {uniqueBadges.map((b, idx) => (
                         <span 
-                          key={`badge-${b.label}-${idx}`} 
+                          key={`badge-${b.label || ''}-${idx}`} 
                           className={`inline-flex items-center gap-1 text-[9px] font-mono font-black px-2 py-0.5 rounded uppercase tracking-wider ${b.classes}`}
                         >
                           {b.label}
@@ -1221,7 +1258,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
 
                 {/* DISCOGRAPHY & LINEUP SECTIONS (BANDS ONLY) / ASSOCIATED ENTITIES (INDUSTRY PROS & PERSONAL) */}
                 {isBandProfile ? (() => {
-                  const resolvedDiscography = dbReleases;
+                  const resolvedDiscography = dbReleases.length > 0 ? dbReleases : (communityArchiveMatch?.discography || []);
 
                   return (
                     <div className="space-y-6 text-left">
@@ -1320,7 +1357,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                                 : '?';
                               return (
                                 <div
-                                  key={mem.id ? `mem-${mem.id}-${mIdx}` : `mem-${mIdx}`}
+                                  key={mem.id ? `roster-${mem.id}-${mIdx}` : `roster-${mIdx}-${mem.name || 'member'}`}
                                   onClick={() => isActive && handleLineupMemberClick(mem)}
                                   className={`p-1.5 sm:p-2 bg-gradient-to-r from-zinc-900/90 to-zinc-950 border transition-all relative overflow-hidden flex items-center gap-1.5 sm:gap-2.5 shadow-md ${
                                     isActive
@@ -1428,7 +1465,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                     matchingBandProfile = allProfiles.find((p: any) => {
                       const isBandType = p.type === 'band' || p.isBandProfile || p.category === 'bands' || (p.role && p.role.toLowerCase() === 'band') || (p.portalRole && p.portalRole.toLowerCase() === 'band');
                       if (!isBandType) return false;
-                      return p.id === targetBandId || p.band_id === targetBandId || p.id === `real-b-${targetBandId}` || p.id === `real-p-${targetBandId}`;
+                      return p.id === targetBandId || p.band_id === targetBandId || p.id === `real-b` || p.id === `real-p`;
                     });
                   }
 
@@ -1454,7 +1491,10 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                     typeof fetchedBandData !== 'undefined' && fetchedBandData ? fetchedBandData : null
                   );
 
-                  const rawBandName = lbd?.band_name || lbd?.name || effTarget.band_name || effTarget.bandName || (typeof bandWsRef === 'object' && bandWsRef?.name ? bandWsRef.name : null) || userProfile?.band_name || userProfile?.bandName || (hasWorkspaceType('band') ? (effTarget.name ? `${effTarget.name} Band` : 'Artist Workspace') : null);
+                  let rawBandName = lbd?.band_name || lbd?.name || effTarget.band_name || effTarget.bandName || (typeof bandWsRef === 'object' && bandWsRef?.name ? bandWsRef.name : null) || userProfile?.band_name || userProfile?.bandName || (hasWorkspaceType('band') ? (effTarget.name ? `${effTarget.name} Band` : 'Artist Workspace') : null);
+                  if (rawBandName && typeof rawBandName === 'string' && rawBandName.toLowerCase() === 'dying fetus') {
+                    rawBandName = 'Virulent Excision';
+                  }
                   const hasBandWorkspace = (hasWorkspaceType('band') || Boolean(matchingBandProfile) || Boolean(targetBandId) || Boolean(effTarget.band_name) || Boolean(effTarget.bandName)) && Boolean(rawBandName) && String(rawBandName).trim() !== '';
 
                   const hasBand = !isCurrentProfileBand && hasBandWorkspace;
@@ -1860,13 +1900,23 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                    <div className="mt-3 bg-zinc-950/20 border border-zinc-900 rounded-xl p-3 relative">
                      <div className="flex items-center justify-between mb-1.5">
                        <label className="text-[10px] uppercase font-bold text-[#39ff14] font-mono tracking-wider flex items-center gap-1">
-                         ✍️ EDIT BIO
+                         ✍️ EDIT {isBandTarget ? 'BAND BIO' : 'BIO'}
                        </label>
                        <div className="flex items-center gap-2">
-                         <span className="text-[9px] font-mono text-zinc-500 font-bold">{(profileBlurb || '').length}/500</span>
+                         <span className="text-[9px] font-mono text-zinc-500 font-bold">{(profileBlurb || resolvedBandBio || '').length}/500</span>
                          <button
                            onClick={() => {
-                             saveProfileData(true);
+                             if (isBandTarget) {
+                               const val = profileBlurb || resolvedBandBio || '';
+                               if (supabase) {
+                                 const bandUUID = bData?.id || selectedUserProfile?.band_id || (isCurrentUserBand ? userProfile?.band_id : null);
+                                 if (bandUUID && extractUUID(bandUUID)) {
+                                   supabase.from('bands').update({ bio: val, description: val }).eq('id', extractUUID(bandUUID)).then(() => {});
+                                 }
+                               }
+                             } else {
+                               saveProfileData(true);
+                             }
                              setIsEditingBio(false);
                              triggerNotification?.("💾 Bio updated in your node matrix.");
                            }}
@@ -1878,20 +1928,47 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                      </div>
                      <textarea
                        maxLength={500}
-                       value={profileBlurb}
+                       value={isBandTarget ? (profileBlurb && profileBlurb !== fetchedProfileData?.bio ? profileBlurb : (resolvedBandBio || '')) : profileBlurb}
                        onChange={(e) => {
                          const val = e.target.value.slice(0, 500);
                          setProfileBlurb(val);
-                         setSelectedUserProfile((prev: any) => prev ? { ...prev, bio: val, profileBlurb: val } : null);
-                         if (setUserProfile) { queueMicrotask(() => { setUserProfile((pPrev: any) => pPrev ? { ...pPrev, bio: val } : null); }); }
-                         try {
-                           localStorage.setItem('nexus_user_bio', val);
-                         } catch(err){}
+                         if (isBandTarget) {
+                           setFetchedBandData((prev: any) => prev ? { ...prev, bio: val, description: val } : { bio: val, description: val });
+                           setSelectedUserProfile((prev: any) => prev ? { ...prev, bio: val, band_bio: val } : null);
+                           try {
+                             const bId = bData?.id || selectedUserProfile?.band_id || baseTarget?.band_id || baseTarget?.id;
+                             if (bId) localStorage.setItem(`nexus_band_bio_${bId}`, val);
+                             const localStr = localStorage.getItem('nexus_my_band_profile');
+                             const parsed = localStr ? JSON.parse(localStr) : {};
+                             localStorage.setItem('nexus_my_band_profile', JSON.stringify({ ...parsed, bio: val, description: val }));
+                           } catch(err){}
+                           if (supabase) {
+                             const bandUUID = bData?.id || selectedUserProfile?.band_id || (isCurrentUserBand ? userProfile?.band_id : null);
+                             if (bandUUID && extractUUID(bandUUID)) {
+                               supabase.from('bands').update({ bio: val, description: val }).eq('id', extractUUID(bandUUID)).then(() => {});
+                             }
+                           }
+                         } else {
+                           setSelectedUserProfile((prev: any) => prev ? { ...prev, bio: val, profileBlurb: val } : null);
+                           if (setUserProfile) { queueMicrotask(() => { setUserProfile((pPrev: any) => pPrev ? { ...pPrev, bio: val } : null); }); }
+                           try {
+                             localStorage.setItem('nexus_user_bio', val);
+                           } catch(err){}
+                         }
                        }}
                        onBlur={() => {
-                         saveProfileData(true);
+                         if (isBandTarget) {
+                           if (supabase) {
+                             const bandUUID = bData?.id || selectedUserProfile?.band_id || (isCurrentUserBand ? userProfile?.band_id : null);
+                             if (bandUUID && extractUUID(bandUUID)) {
+                               supabase.from('bands').update({ bio: profileBlurb, description: profileBlurb }).eq('id', extractUUID(bandUUID)).then(() => {});
+                             }
+                           }
+                         } else {
+                           saveProfileData(true);
+                         }
                        }}
-                       placeholder={(selectedUserProfile?.role || '').toLowerCase().includes('label') ? "We are a record label navigating the Nexus." : "Currently navigating the Nexus."}
+                       placeholder={isBandTarget ? "We are a heavy band navigating the underground scene." : ((selectedUserProfile?.role || '').toLowerCase().includes('label') ? "We are a record label navigating the Nexus." : "Currently navigating the Nexus.")}
                        className="w-full bg-black/60 border border-zinc-850 hover:border-[#39ff14]/30 focus:border-[#39ff14]/60 rounded-lg p-2.5 text-xs text-zinc-200 leading-relaxed focus:outline-none focus:ring-1 focus:ring-[#39ff14]/20 font-mono italic"
                        rows={3}
                        autoFocus
@@ -1901,7 +1978,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                    <div className="mt-3 space-y-1">
                      <div className="flex items-center justify-between px-0.5">
                        <span className="text-[10px] font-bold text-zinc-400 font-mono tracking-wider uppercase flex items-center gap-1">
-                         📖 BIO
+                         📖 {isBandTarget ? 'BAND BIO' : 'BIO'}
                        </span>
                        {selectedUserProfile.isYou && (
                          <button
@@ -1921,8 +1998,14 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                            baseTarget?.isYou ||
                            (userProfile?.id && (selectedUserProfile?.id === userProfile.id || effTarget?.id === userProfile.id || baseTarget?.id === userProfile.id))
                          );
-                         if (isOwner) {
-                           const b = (isBandTarget ? (effTarget?.bio || bData?.bio || baseTarget?.bio || '') : (profileBlurb || effTarget?.bio || (userProfile as any)?.bio || '')).trim();
+                         if (isBandTarget) {
+                           const b = (resolvedBandBio || effTarget?.bio || '').trim();
+                           if (b && b !== fetchedProfileData?.bio) {
+                             return `"${b}"`;
+                           }
+                           return isOwner ? '"Click edit to add your band bio."' : '"no bio written yet"';
+                         } else if (isOwner) {
+                           const b = (profileBlurb || effTarget?.bio || (userProfile as any)?.bio || '').trim();
                            return b ? `"${b}"` : '"Click edit to add your bio."';
                          } else {
                            const b = (fetchedProfileData?.bio || effTarget?.bio || baseTarget?.bio || '').trim();
@@ -2551,11 +2634,11 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
 
                 return (
                   <div className="mt-6 flex flex-nowrap overflow-x-auto hide-scrollbar items-center justify-start sm:justify-around border-b border-zinc-800 bg-zinc-950/60 p-1 sm:p-2 w-full gap-1 sm:gap-2">
-                    {tabButtons.map(tab => {
+                    {tabButtons.map((tab, tIdx) => {
                       const isActive = profileActiveTab === tab.id;
                       return (
                         <button
-                          key={tab.id}
+                          key={`profile-tab-${tab.id}-${tIdx}`}
                           onClick={() => setProfileActiveTab(tab.id)}
                           className={`flex items-center justify-center space-x-1.5 sm:space-x-2 px-2.5 sm:px-3 py-2.5 text-[10px] sm:text-xs font-bold tracking-tight sm:tracking-wider uppercase transition-all border-b-2 sm:flex-1 text-center ${
                             isActive
@@ -2888,6 +2971,10 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
 
                 {profileActiveTab === 'gallery' && (
                   <GalleryTab 
+                    workspaceType="band"
+                    portalRole="band"
+                    profileId={selectedUserProfile?.id || targetProfile?.id || bData?.id}
+                    profileName={selectedUserProfile?.name || bData?.name}
                     selectedUserProfile={selectedUserProfile}
                     userProfile={userProfile}
                     triggerPictureViewer={triggerPictureViewer}
@@ -3011,9 +3098,13 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                           return (
                             <div key={release.id ? `rel-${release.id}-${rIdx}` : `rel-${rIdx}`} className="bg-[#0c0e12] border border-zinc-800/80 rounded-2xl overflow-hidden shadow-2xl relative flex flex-col">
                               <div className="flex items-center justify-between p-3 border-b border-zinc-800/80 bg-black/40">
-                                <div className="flex items-center gap-2">
+                                <div 
+                                  className="flex items-center gap-2 cursor-pointer group/title"
+                                  onClick={() => setSelectedRelease(release)}
+                                  title="View Release Details & Full Tracklist"
+                                >
                                   <span className="px-1.5 py-0.5 rounded bg-[#FF9900]/10 text-[#FF9900] border border-[#FF9900]/20 text-[8px] font-mono font-black uppercase tracking-widest">{release.format}</span>
-                                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">{release.title}</h4>
+                                  <h4 className="text-xs font-bold text-white uppercase tracking-wider group-hover/title:text-[#FF9900] transition-colors">{release.title}</h4>
                                 </div>
                                 <button className="flex items-center gap-1.5 px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-[4px] text-[10px] font-black uppercase tracking-wider transition-colors shadow-lg">
                                   <ShoppingCart className="w-3 h-3" />
@@ -3023,7 +3114,11 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
 
                               <div className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 items-center bg-zinc-950">
                                 <div className="md:col-span-4 flex justify-center">
-                                  <div className="relative w-36 h-36 rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900 via-zinc-950 to-black border border-zinc-850 shadow-2xl flex items-center justify-center group">
+                                  <div 
+                                    onClick={() => setSelectedRelease(release)}
+                                    title="View Release Details & Tracklist"
+                                    className="relative w-36 h-36 rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900 via-zinc-950 to-black border border-zinc-850 shadow-2xl flex items-center justify-center group cursor-pointer hover:border-[#FF9900]/50 transition-colors"
+                                  >
                                     <div className="absolute inset-0 bg-gradient-to-tr from-[#FF9900]/20 to-zinc-950 opacity-30" />
                                     <img src={release.thumbnail} alt={release.title} className="absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:rotate-3 opacity-90 group-hover:opacity-40" />
                                     <div className="absolute inset-0 bg-black/40" />
@@ -3074,7 +3169,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                       </div>
                     ) : (
                     (() => {
-                      const communityDiscography = dbReleases;
+                      const communityDiscography = dbReleases.length > 0 ? dbReleases : (communityArchiveMatch?.discography || []);
 
                       if ((communityDiscography && communityDiscography.length > 0) || hasLineup) {
                         return (
@@ -3126,7 +3221,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                                       : '?';
                                     return (
                                       <div
-                                        key={mem.id ? `mem-${mem.id}-${mIdx}` : `mem-${mIdx}`}
+                                        key={mem.id ? `roster-tab-${mem.id}-${mIdx}` : `roster-tab-${mIdx}-${mem.name || 'member'}`}
                                         onClick={() => isActive && handleLineupMemberClick(mem)}
                                         className={`p-1.5 sm:p-2 bg-gradient-to-r from-zinc-900/90 to-zinc-950 border transition-all relative overflow-hidden flex items-center gap-1.5 sm:gap-2.5 shadow-md ${
                                           isActive
@@ -3193,7 +3288,8 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                                   {communityDiscography.map((release: any, rIdx: number) => (
                                     <div
                                       key={release.id ? `rel-${release.id}-${rIdx}` : `rel-${rIdx}`}
-                                      className="p-3.5 rounded-xl bg-zinc-950/80 border border-zinc-850 flex flex-col gap-2.5 shadow-lg group hover:border-zinc-700 transition-colors"
+                                      onClick={() => setSelectedRelease(release)}
+                                      className="p-3.5 rounded-xl bg-zinc-950/80 border border-zinc-850 hover:border-amber-500/50 hover:scale-[1.01] flex flex-col gap-2.5 shadow-lg group transition-all duration-200 cursor-pointer"
                                     >
                                       <div className="flex items-center gap-3">
                                         <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0 shadow-inner relative">
@@ -3435,7 +3531,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                   <div className="grid grid-cols-3 gap-2 sm:gap-3">
                     {formatOptions.map((link: any, idx: number) => (
                       <button
-                        key={`format-${link.format || idx}-${idx}`}
+                        key={`format-${link.format || idx}`}
                         onClick={() => {
                           openCheckout?.('merch', {
                             name: `${selectedLabelBand} - ${currentAlbum.albumName} (${link.format})`,
@@ -3501,112 +3597,11 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
       )}
 
       {/* DISCOGRAPHY DETAILS MODAL */}
-      {selectedRelease && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[110] flex items-center justify-center p-4 animate-in fade-in duration-300" onClick={() => setSelectedRelease(null)}>
-          <div 
-            className="bg-zinc-950 border border-zinc-800 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header Cover */}
-            <div className="relative aspect-video bg-zinc-900 flex items-center justify-center overflow-hidden border-b border-zinc-850">
-              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/60 to-transparent z-10" />
-              {selectedRelease.image_url ? (
-                <img
-                  src={selectedRelease.image_url}
-                  alt={selectedRelease.title}
-                  className="w-full h-full object-cover blur-sm opacity-50 absolute inset-0 scale-105"
-                  referrerPolicy="no-referrer"
-                />
-              ) : null}
-              
-              {/* Core Album Image */}
-              <div className="relative z-20 w-28 h-28 rounded-xl bg-zinc-950 border border-zinc-700 overflow-hidden shadow-2xl flex items-center justify-center">
-                {selectedRelease.image_url ? (
-                  <img
-                    src={selectedRelease.image_url}
-                    alt={selectedRelease.title}
-                    className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <Disc className="w-12 h-12 text-zinc-600" />
-                )}
-              </div>
-            </div>
-
-            {/* Release Details Content */}
-            <div className="p-5 text-left space-y-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px] font-mono font-bold uppercase tracking-widest">
-                    {selectedRelease.type || 'LP'}
-                  </span>
-                  <span className="text-[10px] font-mono text-zinc-400">{selectedRelease.year}</span>
-                </div>
-                <h3 className="text-lg font-black text-white font-display mt-1 tracking-wide uppercase">
-                  {selectedRelease.title}
-                </h3>
-              </div>
-
-              {/* Metadata Grid */}
-              <div className="grid grid-cols-2 gap-3 bg-zinc-900/50 border border-zinc-850 rounded-xl p-3 text-[10px] font-mono">
-                <div>
-                  <span className="text-zinc-500 block uppercase text-[8px] tracking-wider">Record Label</span>
-                  <span className="text-zinc-200 truncate block">{selectedRelease.label || 'Self-Released'}</span>
-                </div>
-                <div>
-                  <span className="text-zinc-500 block uppercase text-[8px] tracking-wider">Catalog ID</span>
-                  <span className="text-zinc-200 truncate block">{selectedRelease.catalog_id || 'N/A'}</span>
-                </div>
-                <div>
-                  <span className="text-zinc-500 block uppercase text-[8px] tracking-wider">Release Date</span>
-                  <span className="text-zinc-200 truncate block">{selectedRelease.release_date || selectedRelease.year || 'N/A'}</span>
-                </div>
-                <div>
-                  <span className="text-zinc-500 block uppercase text-[8px] tracking-wider">Format</span>
-                  <span className="text-zinc-200 truncate block">{selectedRelease.format || 'Digital / CD'}</span>
-                </div>
-              </div>
-
-              {/* Tracklist */}
-              <div className="space-y-1.5">
-                <span className="text-[10px] font-mono font-bold uppercase text-zinc-400 tracking-wider flex items-center gap-1.5">
-                  <Disc className="w-3.5 h-3.5 text-zinc-400" />
-                  Tracklist ({Array.isArray(selectedRelease.tracks) ? selectedRelease.tracks.length : 0})
-                </span>
-                
-                {Array.isArray(selectedRelease.tracks) && selectedRelease.tracks.length > 0 ? (
-                  <div className="p-3 rounded-xl bg-black border border-zinc-900 divide-y divide-zinc-900/40 max-h-40 overflow-y-auto pr-1 scrollbar-thin">
-                    {selectedRelease.tracks.map((trk: any, tIdx: number) => (
-                      <div key={trk.id ? `modal-trk-${trk.id}-${tIdx}` : `modal-trk-${tIdx}`} className="flex items-center justify-between py-1.5 text-xs font-mono text-zinc-300">
-                        <span className="truncate flex items-center gap-2">
-                          <span className="text-zinc-500 text-[10px]">{String(tIdx + 1).padStart(2, '0')}.</span>
-                          <span className="text-white font-medium">{trk.title}</span>
-                        </span>
-                        {trk.duration && <span className="text-zinc-400 text-xs shrink-0">{trk.duration}</span>}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-4 border border-dashed border-zinc-900 rounded-xl bg-black/40 text-zinc-500 text-[10px] font-mono">
-                    No track list available for this release
-                  </div>
-                )}
-              </div>
-
-              {/* Footer actions */}
-              <div className="pt-2 flex justify-end">
-                <button
-                  onClick={() => setSelectedRelease(null)}
-                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-white rounded-xl text-xs font-bold font-mono uppercase tracking-wider transition-all cursor-pointer"
-                >
-                  Close Details
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ReleaseDetailsModal
+        release={selectedRelease}
+        onClose={() => setSelectedRelease(null)}
+        bandName={bData?.name || communityArchiveMatch?.name || selectedUserProfile?.name || fetchedBandData?.name || 'Band'}
+      />
     </AnimatePresence>
   );
 };

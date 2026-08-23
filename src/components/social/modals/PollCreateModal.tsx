@@ -220,9 +220,9 @@ export const PollCreateModal: React.FC<PollCreateModalProps> = ({
                         { label: '24 HOURS', days: '1', hours: '0' },
                         { label: '3 DAYS', days: '3', hours: '0' },
                         { label: '7 DAYS', days: '7', hours: '0' },
-                      ].map((preset) => (
+                      ].map((preset, prIdx) => (
                         <button
-                          key={preset.label}
+                          key={`poll-preset-${preset.label}-${prIdx}`}
                           type="button"
                           onClick={() => {
                             setPollTimerDays(preset.days);

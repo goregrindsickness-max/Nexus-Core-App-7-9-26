@@ -930,11 +930,11 @@ export default function FlightTrackerModal({
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {filteredFlights.map((flight) => {
+                  {filteredFlights.map((flight, idx) => {
                     const isEditingThis = editingId === flight.id;
                     return (
                       <FlightTicketCard
-                        key={flight.id}
+                        key={`${flight.id}-${idx}`}
                         flight={flight}
                         isEditing={isEditingThis}
                         isOffline={isOffline}
@@ -996,9 +996,9 @@ export default function FlightTrackerModal({
                     { key: 'weight', label: '⚠️ WEIGHT' },
                     { key: 'electronics', label: '⚡ RF GEAR' },
                     { key: 'trackers', label: '📡 TRACK' },
-                  ].map(topic => (
+                  ].map((topic, idx) => (
                     <button
-                      key={topic.key}
+                      key={`${topic.key}-${idx}`}
                       type="button"
                       onClick={() => {
                         setSelectedTSATopic(topic.key as any);

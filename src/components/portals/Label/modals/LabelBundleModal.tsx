@@ -55,13 +55,13 @@ export const LabelBundleModal: React.FC<LabelBundleModalProps> = ({
               </div>
 
               <div className="flex-1 overflow-y-auto my-4 space-y-2 max-h-[300px] pr-2">
-                {([...(Object.values(catalogReleases).flat() as any[]), ...(Object.values(catalogApparel).flat() as any[])]).map(item => {
+                {([...(Object.values(catalogReleases).flat() as any[]), ...(Object.values(catalogApparel).flat() as any[])]).map((item) => {
                   const variants = item.type === 'Apparel' ? ['S', 'M', 'L', 'XL'] : ['Standard'];
-                  return variants.map(variant => {
+                  return variants.map((variant, idx) => {
                     const isSelected = (bundleItems || []).some(bi => bi.id === item.id && bi.variantName === variant);
                     return (
                       <div 
-                        key={`${item.id}-${variant}`}
+                        key={`${item.id || ''}-${idx}`}
                         onClick={() => {
                           if (navigator.vibrate) navigator.vibrate(50);
                           setBundleItems(prev => {

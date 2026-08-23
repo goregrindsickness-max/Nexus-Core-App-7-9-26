@@ -17,7 +17,7 @@ export const FullAlbumModal: React.FC<FullAlbumModalProps> = ({
   onBuyFormat,
 }) => {
   return (
-    <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[1000005] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
       <div className="max-w-md w-full bg-[#0c0507] border border-rose-500/60 rounded-2xl p-5 sm:p-6 shadow-[0_0_50px_rgba(244,63,94,0.45)] space-y-4 text-white relative max-h-[90vh] overflow-y-auto">
         {/* Close Button */}
         <button 

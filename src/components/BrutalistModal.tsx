@@ -144,9 +144,9 @@ export default function BrutalistModal({ isOpen, onClose, type, onSubmit, invent
               <div>
                 <label className="block text-xs font-mono text-zinc-400 mb-1 uppercase tracking-wider">Payment Method</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {(['CASH', 'QR', 'CARD', 'PAYPAL'] as const).map((method) => (
+                  {(['CASH', 'QR', 'CARD', 'PAYPAL'] as const).map((method, idx) => (
                     <button
-                      key={method}
+                      key={`${method}-${idx}`}
                       type="button"
                       onClick={() => setSaleForm(prev => ({ ...prev, payment_method: method }))}
                       className={`py-2 text-xs font-mono rounded border uppercase transition-all ${
@@ -238,8 +238,8 @@ export default function BrutalistModal({ isOpen, onClose, type, onSubmit, invent
                     className="w-full bg-[#1c202a] border border-[#2e3444] rounded p-2 text-sm text-white focus:outline-none focus:border-amber-400 font-mono"
                     required
                   >
-                    {["LOGISTICS", "SETTLEMENT", "STAFF", "COMP", "LOAD IN/OUT", "TECHNICAL", "PARKING", "VENUE", "CONTACT", "PAYMENT", "RESTOCK", "SECURITY", "CATERING", "GUEST LIST", "NOTE"].map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
+                    {["LOGISTICS", "SETTLEMENT", "STAFF", "COMP", "LOAD IN/OUT", "TECHNICAL", "PARKING", "VENUE", "CONTACT", "PAYMENT", "RESTOCK", "SECURITY", "CATERING", "GUEST LIST", "NOTE"].map((cat, idx) => (
+                      <option key={`${cat}-${idx}`} value={cat}>{cat}</option>
                     ))}
                   </select>
                 </div>
@@ -250,8 +250,8 @@ export default function BrutalistModal({ isOpen, onClose, type, onSubmit, invent
                     onChange={(e) => setNoteForm(prev => ({ ...prev, tag_name: e.target.value.toUpperCase() }))}
                     className="w-full bg-[#1c202a] border border-[#2e3444] rounded p-2 text-sm text-white focus:outline-none focus:border-amber-400 font-mono"
                   >
-                    {["URGENT", "COMPLETE", "IMPORTANT", "LOOK INTO", "GENERAL INFO"].map(stat => (
-                      <option key={stat} value={stat}>{stat}</option>
+                    {["URGENT", "COMPLETE", "IMPORTANT", "LOOK INTO", "GENERAL INFO"].map((stat, idx) => (
+                      <option key={`${stat}-${idx}`} value={stat}>{stat}</option>
                     ))}
                   </select>
                 </div>

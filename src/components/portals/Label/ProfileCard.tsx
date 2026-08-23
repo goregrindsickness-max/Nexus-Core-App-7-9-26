@@ -191,11 +191,11 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
           let showsList: any[] = [];
           const validUUID = targetId && extractUUID(targetId);
           if (validUUID) {
-            // Only filter by creator_id (remove band_id, user_id, and band_name lookups)
+            // Only filter by band_id
             const { data } = await supabase
               .from('shows')
               .select('*')
-              .eq('creator_id', validUUID);
+              .eq('band_id', validUUID);
             if (data && data.length > 0) showsList = data;
           }
 
@@ -290,28 +290,28 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
 
           if (!linkedBandRecord && validUUID) {
             try {
-              const { data } = await supabase.from('bands').select('*').eq('creator_id', validUUID).order('created_at', { ascending: false }).limit(1).maybeSingle();
+              const { data } = await supabase.from('bands').select('*').eq('creator_id', validUUID).neq('verification_status', 'community_archive').order('created_at', { ascending: false }).limit(1).maybeSingle();
               if (data) linkedBandRecord = data;
             } catch (_) {}
           }
 
           if (!linkedBandRecord && validUUID) {
             try {
-              const { data } = await supabase.from('bands').select('*').eq('user_id', validUUID).order('created_at', { ascending: false }).limit(1).maybeSingle();
+              const { data } = await supabase.from('bands').select('*').eq('user_id', validUUID).neq('verification_status', 'community_archive').order('created_at', { ascending: false }).limit(1).maybeSingle();
               if (data) linkedBandRecord = data;
             } catch (_) {}
           }
 
           if (!linkedBandRecord && validUUID) {
             try {
-              const { data } = await supabase.from('bands').select('*').eq('owner_id', validUUID).order('created_at', { ascending: false }).limit(1).maybeSingle();
+              const { data } = await supabase.from('bands').select('*').eq('owner_id', validUUID).neq('verification_status', 'community_archive').order('created_at', { ascending: false }).limit(1).maybeSingle();
               if (data) linkedBandRecord = data;
             } catch (_) {}
           }
 
           if (!linkedBandRecord && validUUID) {
             try {
-              const { data } = await supabase.from('bands').select('*').eq('profile_id', validUUID).order('created_at', { ascending: false }).limit(1).maybeSingle();
+              const { data } = await supabase.from('bands').select('*').eq('profile_id', validUUID).neq('verification_status', 'community_archive').order('created_at', { ascending: false }).limit(1).maybeSingle();
               if (data) linkedBandRecord = data;
             } catch (_) {}
           }
@@ -1097,7 +1097,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                     matchingBandProfile = allProfiles.find((p: any) => {
                       const isBandType = p.type === 'band' || p.isBandProfile || p.category === 'bands' || (p.role && p.role.toLowerCase() === 'band') || (p.portalRole && p.portalRole.toLowerCase() === 'band');
                       if (!isBandType) return false;
-                      return p.id === targetBandId || p.band_id === targetBandId || p.id === `real-b-${targetBandId}` || p.id === `real-p-${targetBandId}`;
+                      return p.id === targetBandId || p.band_id === targetBandId || p.id === `real-b` || p.id === `real-p`;
                     });
                   }
 
@@ -1123,7 +1123,10 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                     typeof fetchedBandData !== 'undefined' && fetchedBandData ? fetchedBandData : null
                   );
 
-                  const rawBandName = lbd?.band_name || lbd?.name || effTarget.band_name || effTarget.bandName || (typeof bandWsRef === 'object' && bandWsRef?.name ? bandWsRef.name : null) || userProfile?.band_name || userProfile?.bandName || (hasWorkspaceType('band') ? (effTarget.name ? `${effTarget.name} Band` : 'Artist Workspace') : null);
+                  let rawBandName = lbd?.band_name || lbd?.name || effTarget.band_name || effTarget.bandName || (typeof bandWsRef === 'object' && bandWsRef?.name ? bandWsRef.name : null) || userProfile?.band_name || userProfile?.bandName || (hasWorkspaceType('band') ? (effTarget.name ? `${effTarget.name} Band` : 'Artist Workspace') : null);
+                  if (rawBandName && typeof rawBandName === 'string' && rawBandName.toLowerCase() === 'dying fetus') {
+                    rawBandName = 'Virulent Excision';
+                  }
                   const hasBandWorkspace = (hasWorkspaceType('band') || Boolean(matchingBandProfile) || Boolean(targetBandId) || Boolean(effTarget.band_name) || Boolean(effTarget.bandName)) && Boolean(rawBandName) && String(rawBandName).trim() !== '';
 
                   const hasBand = !isCurrentProfileBand && hasBandWorkspace;
@@ -2198,11 +2201,11 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
 
                 return (
                   <div className="mt-6 flex flex-nowrap overflow-x-auto hide-scrollbar items-center justify-start sm:justify-around border-b border-zinc-800 bg-zinc-950/60 p-1 sm:p-2 w-full gap-1 sm:gap-2">
-                    {tabButtons.map(tab => {
+                    {tabButtons.map((tab, idx) => {
                       const isActive = profileActiveTab === tab.id;
                       return (
                         <button
-                          key={tab.id}
+                          key={`${tab.id}-${idx}`}
                           onClick={() => setProfileActiveTab(tab.id)}
                           className={`flex items-center justify-center space-x-1.5 sm:space-x-2 px-2.5 sm:px-3 py-2.5 text-[10px] sm:text-xs font-bold tracking-tight sm:tracking-wider uppercase transition-all border-b-2 sm:flex-1 text-center ${
                             isActive
@@ -2902,7 +2905,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                   <div className="grid grid-cols-3 gap-2 sm:gap-3">
                     {formatOptions.map((link: any, idx: number) => (
                       <button
-                        key={`format-${link.format || idx}-${idx}`}
+                        key={`format-${link.format || idx}`}
                         onClick={() => {
                           openCheckout?.('merch', {
                             name: `${selectedLabelBand} - ${currentAlbum.albumName} (${link.format})`,

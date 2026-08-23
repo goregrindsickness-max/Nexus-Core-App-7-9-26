@@ -766,11 +766,11 @@ export default function BookingAdvisorAnalytics({
                   </div>
                 ) : (
                   <div className="space-y-2.5">
-                    {enrichedShows.map((show) => {
+                    {enrichedShows.map((show, idx) => {
                       const isEditing = editingShowId === show.id;
                       return (
                         <div 
-                          key={show.id}
+                          key={`${show.id}-${idx}`}
                           className="p-4 rounded-xl border transition-all duration-150 bg-zinc-950/50 hover:bg-zinc-950/80 border-zinc-900"
                         >
                           {isEditing ? (
@@ -859,9 +859,9 @@ export default function BookingAdvisorAnalytics({
                                 <div className="space-y-1">
                                   <label className="block text-[8px] font-mono text-zinc-500 uppercase font-black">PROMOTIONAL INTENSITY</label>
                                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
-                                    {(['none', 'low', 'medium', 'high'] as const).map((tier) => (
+                                    {(['none', 'low', 'medium', 'high'] as const).map((tier, idx) => (
                                       <button
-                                        key={tier}
+                                        key={`${tier}-${idx}`}
                                         type="button"
                                         onClick={() => { setEditPromo(tier); triggerTickChime(500); }}
                                         className={`flex-1 py-1 text-[9px] font-mono rounded uppercase font-bold border transition-all ${

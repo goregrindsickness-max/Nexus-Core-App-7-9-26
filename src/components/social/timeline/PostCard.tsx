@@ -893,9 +893,9 @@ export const PostCard: React.FC<PostCardProps> = ({
         {/* Full Reaction Options Popover */}
         {isReactionMenuOpen && (
           <div className="absolute -top-14 left-0 z-50 bg-zinc-950/95 border border-zinc-700/90 rounded-2xl p-1.5 shadow-2xl flex items-center gap-1 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-md">
-            {REACTION_PALETTE.map((r) => (
+            {REACTION_PALETTE.map((r, rIdx) => (
               <button
-                key={r.id}
+                key={`react-pal-${r.id}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   onTriggerEmojiReact(r.id);
@@ -1022,7 +1022,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                       {replies.length > 0 && (
                         <div className="ml-4 pl-2.5 border-l-2 border-rose-900/40 space-y-1.5">
                           {replies.map((reply, rIdx) => (
-                            <div key={reply.id ? `reply-${reply.id}-${rIdx}` : `reply-${rIdx}`} className="bg-zinc-950/50 border border-zinc-800/50 rounded-lg p-2 text-xs space-y-1">
+                            <div key={reply.id ? `reply-${reply.id}-${rIdx}` : `reply-${cIdx}-${rIdx}`} className="bg-zinc-950/50 border border-zinc-800/50 rounded-lg p-2 text-xs space-y-1">
                               <div className="flex items-center justify-between font-mono text-[10px]">
                                 <span className="font-bold text-rose-400/90">{reply.username}</span>
                                 <span className="text-zinc-600">{formatPostTimestamp((reply as any).created_at || reply.time, reply.time)}</span>

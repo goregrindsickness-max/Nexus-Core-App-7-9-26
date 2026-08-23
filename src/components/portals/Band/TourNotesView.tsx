@@ -501,7 +501,7 @@ export default function TourNotesView({
               </div>
               <div className="max-h-24 overflow-y-auto space-y-2 pr-1 font-sans text-xs scrollbar-thin scrollbar-thumb-zinc-800">
                 {urgentNotes.slice(0, 3).map((note, idx) => (
-                  <div key={note.id} className="text-zinc-300 flex items-start gap-1.5 leading-normal">
+                  <div key={`${note.id}-${idx}`} className="text-zinc-300 flex items-start gap-1.5 leading-normal">
                     <span className="text-red-500 font-bold select-none">•</span>
                     <span className="flex-1 text-[11px]">
                       <strong className="text-red-400 uppercase font-mono mr-1">[{note.category}]:</strong> 
@@ -584,8 +584,8 @@ export default function TourNotesView({
                         onChange={(e) => setNewNoteCategory(e.target.value)}
                         className="w-full bg-[#111319] border border-zinc-850 rounded-xl p-2.5 text-[11px] text-zinc-300 focus:outline-none focus:border-[#00ffcc] font-mono uppercase tracking-wider cursor-pointer appearance-none"
                       >
-                        {NOTE_CATEGORIES.map(cat => (
-                          <option key={cat} value={cat} className="bg-[#111319]">{cat}</option>
+                        {NOTE_CATEGORIES.map((cat, idx) => (
+                          <option key={`${cat}-${idx}`} value={cat} className="bg-[#111319]">{cat}</option>
                         ))}
                       </select>
                       <ChevronDown className="absolute right-3 top-3.5 w-3 h-3 text-zinc-500 pointer-events-none" />
@@ -603,8 +603,8 @@ export default function TourNotesView({
                         onChange={(e) => setNewNoteTagName(e.target.value)}
                         className="w-full bg-[#111319] border border-zinc-850 rounded-xl p-2.5 text-[11px] text-zinc-300 focus:outline-none focus:border-[#00ffcc] font-mono uppercase tracking-wider cursor-pointer appearance-none"
                       >
-                        {NOTE_TAGS.map(tag => (
-                          <option key={tag} value={tag} className="bg-[#111319]">{tag}</option>
+                        {NOTE_TAGS.map((tag, idx) => (
+                          <option key={`${tag}-${idx}`} value={tag} className="bg-[#111319]">{tag}</option>
                         ))}
                       </select>
                       <ChevronDown className="absolute right-3 top-3.5 w-3 h-3 text-zinc-500 pointer-events-none" />
@@ -623,8 +623,8 @@ export default function TourNotesView({
                         className="w-full bg-[#111319] border border-zinc-850 rounded-xl p-2.5 text-[11px] text-zinc-300 focus:outline-none focus:border-[#00ffcc] font-mono cursor-pointer appearance-none text-ellipsis overflow-hidden whitespace-nowrap"
                       >
                         <option value="" className="bg-[#111319] font-mono uppercase text-[10px]">Unassigned / General</option>
-                        {shows.map(s => (
-                          <option key={s.id} value={s.id} className="bg-[#111319] font-mono text-[10px]">
+                        {shows.map((s, sIdx) => (
+                          <option key={`${s.id}-${sIdx}`} value={s.id} className="bg-[#111319] font-mono text-[10px]">
                             {s.name}{s.city ? ` - ${s.city}` : ''}
                           </option>
                         ))}
@@ -701,8 +701,8 @@ export default function TourNotesView({
                 >
                   <option value="All">All Show Locations</option>
                   <option value="Unassigned">Unassigned / General Notes</option>
-                  {shows.map(s => (
-                    <option key={s.id} value={s.id}>{s.name} ({s.city || 'TBD'})</option>
+                  {shows.map((s, sIdx) => (
+                    <option key={`${s.id}-${sIdx}`} value={s.id}>{s.name} ({s.city || 'TBD'})</option>
                   ))}
                 </select>
                 <ChevronDown className="absolute right-3.5 top-3.5 w-3 h-3 text-zinc-500 pointer-events-none" />
@@ -715,11 +715,11 @@ export default function TourNotesView({
                 <Tag className="w-3 h-3 text-amber-500" /> Filter by Incident Directive State
               </span>
               <div className="flex flex-nowrap overflow-x-auto gap-1.5 p-1.5 bg-[#0c0e12] rounded-xl border border-purple-500/30 items-center justify-start min-h-[38px] px-2 scrollbar-none">
-                {['All', ...NOTE_TAGS].map((tag) => {
+                {['All', ...NOTE_TAGS].map((tag, idx) => {
                   const isActive = activeTag === tag;
                   return (
                     <button
-                      key={tag}
+                      key={`${tag}-${idx}`}
                       onClick={() => setActiveTag(tag)}
                       className={`text-[9px] uppercase font-mono px-2 py-1 rounded-md tracking-wider font-extrabold transition-all cursor-pointer shrink-0 ${
                         isActive 
@@ -744,11 +744,11 @@ export default function TourNotesView({
               <Filter className="w-3 h-3 text-purple-400" /> Log Category Focus Segment
             </span>
             <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-none">
-              {['All', ...NOTE_CATEGORIES].map((cat) => {
+              {['All', ...NOTE_CATEGORIES].map((cat, idx) => {
                 const isActive = activeCategory === cat;
                 return (
                   <button
-                    key={cat}
+                    key={`${cat}-${idx}`}
                     onClick={() => setActiveCategory(cat)}
                     className={`py-2 px-3 text-[10px] font-mono font-bold uppercase tracking-wider transition-all whitespace-nowrap relative shrink-0 cursor-pointer rounded-lg border ${
                       isActive 
@@ -767,14 +767,14 @@ export default function TourNotesView({
         {/* LIST OF NOTATIONS CARDS */}
         <div className="space-y-3.5 mt-2">
           {filteredNotes.length > 0 ? (
-            filteredNotes.map((note) => {
+            filteredNotes.map((note, idx) => {
               const showName = getShowName(note.show_id);
               const showCity = getShowCity(note.show_id);
               const isEditing = editingNoteId === note.id;
 
               return (
                 <div 
-                  key={note.id}
+                  key={`${note.id}-${idx}`}
                   className={`bg-[#111319] border-2 rounded-2xl p-4.5 space-y-3 relative overflow-hidden group transition-all shadow-md ${
                     note.tag_name === 'URGENT' ? 'border-red-500/65 bg-red-950/5 shadow-lg shadow-red-950/20 hover:border-red-500' :
                     note.tag_name === 'COMPLETE' ? 'border-emerald-500/50 bg-[#111915]/20 hover:border-emerald-500' :
@@ -822,8 +822,8 @@ export default function TourNotesView({
                               onChange={(e) => setEditFormData(prev => ({ ...prev, category: e.target.value }))}
                               className="w-full bg-[#0c0e12] border border-zinc-855 rounded-xl p-2 text-xs text-zinc-200 uppercase font-mono cursor-pointer"
                             >
-                              {NOTE_CATEGORIES.map(cat => (
-                                <option key={cat} value={cat}>{cat}</option>
+                              {NOTE_CATEGORIES.map((cat, idx) => (
+                                <option key={`${cat}-${idx}`} value={cat}>{cat}</option>
                               ))}
                             </select>
                           </div>
@@ -836,8 +836,8 @@ export default function TourNotesView({
                               onChange={(e) => setEditFormData(prev => ({ ...prev, tag_name: e.target.value }))}
                               className="w-full bg-[#0c0e12] border border-zinc-855 rounded-xl p-2 text-xs text-zinc-200 uppercase font-mono cursor-pointer"
                             >
-                              {NOTE_TAGS.map(tag => (
-                                <option key={tag} value={tag}>{tag}</option>
+                              {NOTE_TAGS.map((tag, idx) => (
+                                <option key={`${tag}-${idx}`} value={tag}>{tag}</option>
                               ))}
                             </select>
                           </div>
@@ -851,8 +851,8 @@ export default function TourNotesView({
                               className="w-full bg-[#0c0e12] border border-zinc-855 rounded-xl p-2 text-xs text-zinc-200 font-mono cursor-pointer text-ellipsis"
                             >
                               <option value="">Unassigned</option>
-                              {shows.map(s => (
-                                <option key={s.id} value={s.id}>{s.name} ({s.city || 'TBD'})</option>
+                              {shows.map((s, sIdx) => (
+                                <option key={`${s.id}-${sIdx}`} value={s.id}>{s.name} ({s.city || 'TBD'})</option>
                               ))}
                             </select>
                           </div>

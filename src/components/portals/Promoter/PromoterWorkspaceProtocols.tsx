@@ -174,11 +174,11 @@ export default function PromoterWorkspaceProtocols({
       {/* RENDER FOR BAND CREATION WORKFLOW WITH TOGGLE SWITCHES */}
       {isEditableByBand ? (
         <div className="space-y-3 pt-1 w-full max-w-4xl mx-auto">
-          {visibleItems.map(item => {
+          {visibleItems.map((item, idx) => {
             const isEnforced = localActive[item.id] === true;
             return (
               <div 
-                key={item.id} 
+                key={`${item.id}-${idx}`} 
                 className={`p-4 border transition-all duration-205 flex flex-row items-center justify-between text-left gap-4 cursor-pointer rounded-none ${
                   isEnforced 
                     ? 'bg-zinc-950/80 border-violet-500/40' 
@@ -226,11 +226,11 @@ export default function PromoterWorkspaceProtocols({
               <div className="space-y-1.5 w-full">
                 {visibleItems
                   .filter(item => localActive[item.id] === true)
-                  .map(item => {
+                  .map((item, idx) => {
                     const isChecked = completedItems[item.id] === true;
                     return (
                       <div 
-                        key={item.id} 
+                        key={`${item.id}-${idx}`} 
                         className={`w-full py-3 px-4 border transition-all duration-200 flex flex-row items-center justify-start text-left gap-4 cursor-pointer rounded-none ${
                           isChecked 
                             ? 'bg-zinc-950 border-emerald-500/40 text-emerald-300' 

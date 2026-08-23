@@ -728,8 +728,8 @@ export default function PromoterSettingsTab({
               </div>
 
               <div className="flex flex-wrap gap-2 pt-2">
-                {gearTags.map(item => (
-                  <div key={item} className="bg-zinc-950 border border-zinc-900 px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs text-zinc-200 font-mono">
+                {gearTags.map((item, idx) => (
+                  <div key={`${item}-${idx}`} className="bg-zinc-950 border border-zinc-900 px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs text-zinc-200 font-mono">
                     <span>🔧 {item}</span>
                     <button 
                       type="button" 
@@ -893,11 +893,11 @@ export default function PromoterSettingsTab({
                   {[
                     'Grindcore', 'Hardcore', 'Death Metal', 'Crust Punk', 'Doom Metal', 
                     'Sludge', 'Darkwave', 'Synthwave', 'Post-Punk', 'Indie Rock'
-                  ].map(genre => {
+                  ].map((genre, idx) => {
                     const selected = genreTags.includes(genre);
                     return (
                       <button
-                        key={genre}
+                        key={`${genre}-${idx}`}
                         type="button"
                         onClick={() => toggleGenreTag(genre)}
                         className={`px-3 py-1.5 border rounded-xl text-[10px] font-black uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
@@ -972,9 +972,9 @@ export default function PromoterSettingsTab({
 
               {/* LIST MEMBERS */}
               <div className="space-y-2 pt-1 font-mono">
-                {teamMembers.map((member) => (
+                {teamMembers.map((member, idx) => (
                   <div 
-                    key={member.id} 
+                    key={`${member.id}-${idx}`} 
                     className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3.5 bg-zinc-950/45 border border-zinc-900 rounded-xl gap-3 hover:border-zinc-850 transition-colors"
                   >
                     <div className="flex items-center gap-3">
@@ -1386,9 +1386,9 @@ export default function PromoterSettingsTab({
                   <div className="flex items-center gap-2">
                     <span className="text-[9px] uppercase tracking-widest text-zinc-550 font-black">Aesthetic Rating Score:</span>
                     <div className="flex items-center gap-1 bg-black border border-zinc-900 p-1.5 rounded-lg">
-                      {[1, 2, 3, 4, 5].map((val) => (
+                      {[1, 2, 3, 4, 5].map((val, idx) => (
                         <button
-                          key={val}
+                          key={`${val}-${idx}`}
                           type="button"
                           onClick={() => setReviewScore(val)}
                           className="p-0.5 cursor-pointer hover:scale-110 transition-transform"
@@ -1413,8 +1413,8 @@ export default function PromoterSettingsTab({
               <div className="space-y-3 pt-3">
                 <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-zinc-500 block">Manage Published Testimonials</span>
                 <div className="space-y-2 font-mono">
-                  {userReviews.map((rev) => (
-                    <div key={rev.id} className="p-3.5 bg-zinc-950/45 border border-zinc-900 rounded-xl flex items-start justify-between gap-4">
+                  {userReviews.map((rev, idx) => (
+                    <div key={`${rev.id}-${idx}`} className="p-3.5 bg-zinc-950/45 border border-zinc-900 rounded-xl flex items-start justify-between gap-4">
                       <div className="text-left space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs font-black text-white">{rev.name}</span>

@@ -536,8 +536,8 @@ export const mockFeed: FeedItem[] = [
     ticketData: { headliner: 'Devourment', venue: 'Nexus Hub Main Room', date: 'OCT 24, 2026', doorTime: '8:00 PM', priceRange: '$25 - $45' },
     reactions: [{ type: 'flame', count: 89, active: false }],
     comments: [
-      { id: 'c5', author: 'RiffMaster', text: 'Got my tickets! See you in the void.', timeAgo: '4h ago' },
-      { id: 'c5_r1', parent_comment_id: 'c5', author: 'Nexus Promoters', text: 'Confirmation sent to your digital ticket stash! Doors open at 8:00 PM sharp.', timeAgo: '3h ago' },
+      { id: 'c7_1', author: 'RiffMaster', text: 'Got my tickets! See you in the void.', timeAgo: '4h ago' },
+      { id: 'c7_1_r1', parent_comment_id: 'c7_1', author: 'Nexus Promoters', text: 'Confirmation sent to your digital ticket stash! Doors open at 8:00 PM sharp.', timeAgo: '3h ago' },
       { id: 'c7_2', author: 'TexasGore', text: 'Devourment in an intimate venue is going to be pure carnage!', timeAgo: '2h ago' }
     ]
   },
@@ -564,8 +564,8 @@ export const mockFeed: FeedItem[] = [
     },
     reactions: [{ type: 'flame', count: 215, active: false }],
     comments: [
-      { id: 'c6', author: 'DoomGuy', text: 'Just copped the XXL. Sick design.', timeAgo: '20h ago' },
-      { id: 'c6_r1', parent_comment_id: 'c6', author: 'ORIGIN', text: 'Hell yeah! Shipping out tomorrow morning!', timeAgo: '18h ago' },
+      { id: 'c8_1', author: 'DoomGuy', text: 'Just copped the XXL. Sick design.', timeAgo: '20h ago' },
+      { id: 'c8_1_r1', parent_comment_id: 'c8_1', author: 'ORIGIN', text: 'Hell yeah! Shipping out tomorrow morning!', timeAgo: '18h ago' },
       { id: 'c8_2', author: 'BlastSpeed', text: 'Any chance for a zip hoodie version of this design?', timeAgo: '15h ago' },
       { id: 'c8_2_r1', parent_comment_id: 'c8_2', author: 'ORIGIN', text: 'Hoodies dropping next month for the fall circuit!', timeAgo: '10h ago' }
     ]

@@ -33,8 +33,8 @@ export default function PromoterFinancials({
       
       <div id="settlement-checklist" className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-1">
         {/* Implicit Costs (Lineup) */}
-        {plannerLineup && plannerLineup.length > 0 && plannerLineup.map((act) => (
-          <div key={`implicit-${act.id}`} className="flex justify-between items-center bg-zinc-950 border border-zinc-800/50 p-2 rounded text-[10px] font-mono">
+        {plannerLineup && plannerLineup.length > 0 && plannerLineup.map((act, idx) => (
+          <div key={`implicit-${act.id}-${idx}`} className="flex justify-between items-center bg-zinc-950 border border-zinc-800/50 p-2 rounded text-[10px] font-mono">
             <div className="flex items-center gap-2">
               <span className="text-zinc-600">🎸</span>
               <span className="text-zinc-400">{act.custom_name}</span>
@@ -51,9 +51,9 @@ export default function PromoterFinancials({
             </span>
           </div>
         ) : (
-          items.map((cost) => (
+          items.map((cost, idx) => (
             <div
-              key={cost.id}
+              key={`${cost.id}-${idx}`}
               className="flex justify-between items-center bg-zinc-950 border border-zinc-800 p-2 rounded text-[10px] font-mono group hover:border-yellow-900/40 transition-colors"
             >
               <div className="flex items-center gap-2">

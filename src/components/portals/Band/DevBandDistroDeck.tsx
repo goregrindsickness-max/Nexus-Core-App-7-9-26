@@ -1407,9 +1407,9 @@ export default function DevBandDistroDeck({
                     {/* Quick Preset Image Selectors */}
                     <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-barely-visible">
                       <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-wider shrink-0">Attach Photo:</span>
-                      {PRESET_POST_IMAGES.map((img) => (
+                      {PRESET_POST_IMAGES.map((img, idx) => (
                         <button
-                          key={img.name}
+                          key={`${img.name}-${idx}`}
                           type="button"
                           onClick={() => setNewStatusImageUrl(img.url)}
                           className={`py-1 px-2.5 rounded-lg border font-mono text-[7.5px] uppercase transition cursor-pointer shrink-0 ${
@@ -1454,9 +1454,9 @@ export default function DevBandDistroDeck({
                     </span>
                   </div>
                 ) : (
-                  announcements.map((post) => (
+                  announcements.map((post, idx) => (
                     <div
-                      key={post.id}
+                      key={`${post.id}-${idx}`}
                       className="bg-zinc-950 border border-zinc-900 rounded-3xl p-5 sm:p-6 shadow-xl relative overflow-hidden transition-all text-left space-y-4"
                     >
                       {/* Post Header Card */}
@@ -1540,8 +1540,8 @@ export default function DevBandDistroDeck({
                       {/* Inner comments cascade list */}
                       {post.comments?.length > 0 && (
                         <div className="p-3 bg-[#050608] border border-zinc-900 rounded-2xl space-y-2 mt-2">
-                          {post.comments.map((comment) => (
-                            <div key={comment.id} className="text-[10px] leading-relaxed text-left">
+                          {post.comments.map((comment, idx) => (
+                            <div key={`${comment.id}-${idx}`} className="text-[10px] leading-relaxed text-left">
                               <span className="font-mono text-zinc-300 font-extrabold mr-1.5 uppercase hover:underline cursor-pointer">
                                 @{comment.username}:
                               </span>
@@ -1636,8 +1636,8 @@ export default function DevBandDistroDeck({
 
               {allianceMode === 'bands' && (
                 <div className="space-y-6 text-left">
-                  {otherBands.map((band) => (
-                  <div key={band.id} className="bg-zinc-950/90 border border-zinc-900 rounded-3.5xl p-6 shadow-2xl relative overflow-hidden transition duration-300 hover:border-zinc-805 text-left space-y-5">
+                  {otherBands.map((band, idx) => (
+                  <div key={`${band.id}-${idx}`} className="bg-zinc-950/90 border border-zinc-900 rounded-3.5xl p-6 shadow-2xl relative overflow-hidden transition duration-300 hover:border-zinc-805 text-left space-y-5">
                     
                     {/* Top Header Card */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900/50 pb-4">
@@ -1714,8 +1714,8 @@ export default function DevBandDistroDeck({
                         <span className="text-[8.5px] font-mono text-zinc-600 font-bold">{band.posts[0]?.timestamp}</span>
                       </div>
 
-                      {band.posts.map((post: any) => (
-                        <div key={post.id} className="space-y-3">
+                      {band.posts.map((post: any, idx) => (
+                        <div key={`${post.id}-${idx}`} className="space-y-3">
                           <p className="text-[11px] text-zinc-250 leading-relaxed font-sans select-text">
                             {post.message}
                           </p>
@@ -1760,8 +1760,8 @@ export default function DevBandDistroDeck({
                             
                             {post.comments && post.comments.length > 0 && (
                               <div className="space-y-1.5 select-text">
-                                {post.comments.map((c: any) => (
-                                  <div key={c.id} className="text-[9px] bg-black/20 p-2 rounded-lg leading-normal">
+                                {post.comments.map((c: any, cIdx) => (
+                                  <div key={`${c.id}-${cIdx}`} className="text-[9px] bg-black/20 p-2 rounded-lg leading-normal">
                                     <span className="font-mono text-zinc-450 font-black">@{c.username}</span>:{' '}
                                     <span className="text-zinc-300 font-sans">{c.text}</span>
                                     <span className="text-[7.5px] text-zinc-650 font-mono block mt-0.5">{c.time}</span>
@@ -1854,8 +1854,8 @@ export default function DevBandDistroDeck({
                       </span>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {band.merch.map((item: any) => (
-                          <div key={item.id} className="bg-zinc-950 border border-zinc-900 rounded-2.5xl p-3 flex items-center justify-between gap-3 text-left">
+                        {band.merch.map((item: any, idx) => (
+                          <div key={`${item.id}-${idx}`} className="bg-zinc-950 border border-zinc-900 rounded-2.5xl p-3 flex items-center justify-between gap-3 text-left">
                             <div className="flex items-center gap-3 min-w-0">
                               <img 
                                 src={item.image} 
@@ -2286,9 +2286,9 @@ export default function DevBandDistroDeck({
                             </span>
 
                             <div className="flex flex-wrap items-center gap-2">
-                              {['FLAC lossless', 'WAV direct', 'MP3 extreme (320k)'].map((fmt) => (
+                              {['FLAC lossless', 'WAV direct', 'MP3 extreme (320k)'].map((fmt, idx) => (
                                 <button
-                                  key={fmt}
+                                  key={`${fmt}-${idx}`}
                                   type="button"
                                   disabled={isDigitalDownloading}
                                   onClick={() => {
@@ -2578,7 +2578,7 @@ Keep it heavy, keep it loud!
 
                     <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1 scrollbar-barely-visible">
                       {uploadedTracks.map((track, idx) => (
-                        <div key={track.id} className="flex flex-col gap-2 p-3 rounded-2xl border transition duration-150 bg-[#0a0c10] border-zinc-900 group">
+                        <div key={`${track.id}-${idx}`} className="flex flex-col gap-2 p-3 rounded-2xl border transition duration-150 bg-[#0a0c10] border-zinc-900 group">
                           <div
                             onClick={() => selectTrackToPlay(idx)}
                             className={`cursor-pointer flex items-center justify-between gap-3 text-left`}
@@ -2785,9 +2785,9 @@ Keep it heavy, keep it loud!
                             { name: "⚡ INDUSTRIAL SLATE", code: "f02mOEt11g4", title: "Industrial Noise & Decay Loop" },
                             { name: "📻 LOFI CODES", code: "jfKfPfyJRdk", title: "Atmospheric Lofi Ambient Jam" },
                             { name: "⚙️ TECHNO BEATS", code: "3h8kFSTg4w0", title: "Sovereign Modular Feedback Session" }
-                          ].map((preset) => (
+                          ].map((preset, idx) => (
                             <button
-                              key={preset.code}
+                              key={`${preset.code}-${idx}`}
                               type="button"
                               onClick={() => {
                                 const tEl = document.getElementById('yt-video-title') as HTMLInputElement;
@@ -2813,8 +2813,8 @@ Keep it heavy, keep it loud!
                       IN-APP BROADCAST FEEDS
                     </span>
 
-                    {youtubeVideos.map((video) => (
-                      <div key={video.id} className="bg-zinc-950/80 border border-zinc-900 rounded-3xl p-4 shadow-xl text-left space-y-3 relative overflow-hidden">
+                    {youtubeVideos.map((video, idx) => (
+                      <div key={`${video.id}-${idx}`} className="bg-zinc-950/80 border border-zinc-900 rounded-3xl p-4 shadow-xl text-left space-y-3 relative overflow-hidden">
                         <div className="flex items-center justify-between border-b border-zinc-900/60 pb-2">
                           <span className="text-[10px] font-mono font-bold text-white pr-6 truncate">
                             📺 {video.title}
@@ -2903,12 +2903,12 @@ Keep it heavy, keep it loud!
                 </div>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                  {stagedDistroItems.map((item) => {
+                  {stagedDistroItems.map((item, idx) => {
                     const isPinned = featuredDistroItemId === item.id;
                     const isExpanded = expandedItems[item.id] || false;
                     return (
                       <div
-                        key={item.id}
+                        key={`${item.id}-${idx}`}
                         className={`bg-[#0b0c0f] rounded-2xl relative overflow-hidden transition-all duration-300 group hover:-translate-y-1 hover:shadow-2xl flex flex-col justify-between ${
                           isPinned ? 'ring-2 ring-offset-2 ring-offset-black' : ''
                         } ${!item.visibility_status ? 'opacity-70 border-[#1a1b20]' : ''}`}
@@ -3133,9 +3133,9 @@ Keep it heavy, keep it loud!
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {simFollows.map((follower) => (
+                {simFollows.map((follower, idx) => (
                   <div
-                    key={follower.id}
+                    key={`${follower.id}-${idx}`}
                     className="p-4 bg-zinc-900/40 border border-zinc-900 rounded-2xl flex items-center justify-between gap-3 text-left"
                   >
                     <div>
@@ -3187,9 +3187,9 @@ Keep it heavy, keep it loud!
                   2. Select Glow Accent Preset Code:
                 </span>
                 <div className="flex gap-2.5 flex-wrap">
-                  {COLOR_PRESETS.map((col) => (
+                  {COLOR_PRESETS.map((col, idx) => (
                     <button
-                      key={col.value}
+                      key={`${col.value}-${idx}`}
                       type="button"
                       onClick={() => handleUpdateAccentColor(col.value)}
                       className="w-8 h-8 rounded-lg border-2 transition-all hover:scale-110 cursor-pointer flex items-center justify-center relative shadow-lg"
@@ -3214,9 +3214,9 @@ Keep it heavy, keep it loud!
                   3. Select Visual Backdrop Mood Banner:
                 </span>
                 <div className="grid grid-cols-2 gap-3">
-                  {BANNER_PRESETS.map((ban) => (
+                  {BANNER_PRESETS.map((ban, idx) => (
                     <button
-                      key={ban.name}
+                      key={`${ban.name}-${idx}`}
                       type="button"
                       onClick={() => handleUpdateBannerPreset(ban.url)}
                       className={`p-3 text-[10px] font-mono rounded-xl border text-left truncate transition-colors cursor-pointer block ${
@@ -3403,9 +3403,9 @@ Keep it heavy, keep it loud!
                   { id: 'acid', label: '🧪 Acid Toxic' },
                   { id: 'crimson', label: '🩸 Crimson Gut' },
                   { id: 'cyan', label: '❄️ Frozen Cyber' }
-                ].map(f => (
+                ].map((f, fIdx) => (
                   <button
-                    key={f.id}
+                    key={`${f.id}-${fIdx}`}
                     type="button"
                     onClick={() => setCropFilter(f.id)}
                     className={`py-1.5 px-2 rounded-xl text-[9px] font-mono uppercase text-center transition cursor-pointer border ${

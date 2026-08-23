@@ -315,7 +315,7 @@ export default function EventsWorkspace(props: any) {
                                 SHOW NOTES / DIRECTIVES ({showSpecificNotes.length})
                               </span>
                               <div className="space-y-1">
-                                {showSpecificNotes.slice(0, 2).map(note => <div key={note.id} className="text-[10.5px] text-zinc-300 font-sans leading-normal border-l-2 border-amber-500 pl-2">
+                                {showSpecificNotes.slice(0, 2).map((note, nIdx) => <div key={note.id ? `note-${note.id}-${nIdx}` : `note-${nIdx}`} className="text-[10.5px] text-zinc-300 font-sans leading-normal border-l-2 border-amber-500 pl-2">
                                     {note.text}
                                   </div>)}
                               </div>
@@ -464,7 +464,7 @@ export default function EventsWorkspace(props: any) {
                 };
               }
             })();
-            return <div key={show.id} onClick={() => {
+            return <div key={show.id ? `cal-show-${show.id}-${index}` : `cal-show-${index}`} onClick={() => {
               setSelectedGuestlistShowId(show.id);
               setAutoExpandShowId(show.id);
               setActiveTab('shows');
@@ -503,7 +503,7 @@ export default function EventsWorkspace(props: any) {
                                   </div>
                                 </div>;
           } else {
-            return <div key={`empty-${index}`} onClick={() => {
+            return <div key={`empty`} onClick={() => {
               setModalType('show');
               setIsModalOpen(true);
             }} className="p-3 bg-zinc-950/20 hover:bg-zinc-950/45 border border-dashed border-zinc-800 hover:border-teal-500/30 rounded-xl flex items-center justify-between opacity-50 hover:opacity-100 transition-all cursor-pointer group">
@@ -676,7 +676,7 @@ export default function EventsWorkspace(props: any) {
 
                                       {/* Waypoint List */}
                                       <div className="space-y-1.5">
-                                        {waypoints.length === 0 ? <p className="text-zinc-600 font-mono text-center py-2 text-[10px] italic">No custom stops planned yet.</p> : waypoints.map((wp, idx) => <div key={wp.id} className="flex items-center justify-between p-2 bg-black/20 border border-zinc-900 rounded-lg text-xs">
+                                        {waypoints.length === 0 ? <p className="text-zinc-600 font-mono text-center py-2 text-[10px] italic">No custom stops planned yet.</p> : waypoints.map((wp, idx) => <div key={wp.id ? `wp-${wp.id}-${idx}` : `wp-${idx}`} className="flex items-center justify-between p-2 bg-black/20 border border-zinc-900 rounded-lg text-xs">
                                               <div className="flex items-center gap-2.5">
                                                 <span className="w-5 h-5 rounded bg-zinc-900 border border-zinc-800 text-[10px] font-mono text-zinc-500 flex items-center justify-center font-bold">
                                                   {idx + 1}
@@ -827,7 +827,7 @@ export default function EventsWorkspace(props: any) {
                   }, {
                     key: 'gps',
                     label: 'GPS / Navigation Offline Sync'
-                  }].map(item => <button key={item.key} type="button" onClick={() => {
+                  }].map((item, idx) => <button key={`${item.key}-${idx}`} type="button" onClick={() => {
                     const updated = {
                       ...checkedPreDriveItems,
                       [item.key]: !checkedPreDriveItems[item.key]

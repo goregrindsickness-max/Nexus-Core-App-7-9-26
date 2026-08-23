@@ -494,8 +494,8 @@ export default function BluetoothHardwareManager({
                     </button>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {discoveredDevices.map(d => (
-                      <div key={d.id} className="bg-[#121620] border border-zinc-800 p-2.5 rounded-lg flex items-center justify-between gap-3">
+                    {discoveredDevices.map((d, dIdx) => (
+                      <div key={`${d.id}-${dIdx}`} className="bg-[#121620] border border-zinc-800 p-2.5 rounded-lg flex items-center justify-between gap-3">
                         <div className="min-w-0">
                           <div className="flex items-center gap-1">
                             <span className="text-sm">
@@ -525,12 +525,12 @@ export default function BluetoothHardwareManager({
                 <span className="text-[9px] text-zinc-500 font-black uppercase font-mono tracking-widest block">REGISTERED HARDWARE PROFILE SET</span>
                 
                 <div className="space-y-2">
-                  {devices.map(d => {
+                  {devices.map((d, dIdx) => {
                     const isConnected = d.status === 'connected';
                     const isConnecting = d.status === 'connecting';
                     return (
                       <div 
-                        key={d.id} 
+                        key={`${d.id}-${dIdx}`} 
                         className={`p-3 border rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3.5 transition-all ${
                           isConnected 
                             ? 'bg-[#0b171c] border-[#0ea5e9]/30 shadow-md shadow-[#0ea5e9]/5' 
@@ -697,8 +697,8 @@ export default function BluetoothHardwareManager({
                     -- SERIAL BUFFER STREAM IS EMPTY --
                   </div>
                 ) : (
-                  hardwareLogs.map(l => (
-                    <div key={l.id} className="border-b border-zinc-950/20 pb-1.5 flex items-start gap-1">
+                  hardwareLogs.map((l, lIdx) => (
+                    <div key={`${l.id}-${lIdx}`} className="border-b border-zinc-950/20 pb-1.5 flex items-start gap-1">
                       <span className="text-zinc-600 block shrink-0 font-sans">[{l.time}]</span>
                       <span className={`px-1.5 py-0.2 rounded font-black text-[9px] uppercase shrink-0 tracking-wider mr-1 font-mono ${
                         l.source === 'System' 
@@ -755,9 +755,9 @@ export default function BluetoothHardwareManager({
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {printedReceipts.map(rcpt => (
+                  {printedReceipts.map((rcpt, idx) => (
                     <motion.div 
-                      key={rcpt.id}
+                      key={`${rcpt.id}-${idx}`}
                       initial={{ scale: 0.95, y: 10 }}
                       animate={{ scale: 1, y: 0 }}
                       className="bg-white border-2 border-dashed border-zinc-300 rounded-lg p-4 font-mono text-zinc-900 shadow-xl overflow-hidden relative"

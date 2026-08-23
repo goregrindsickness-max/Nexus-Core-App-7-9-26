@@ -191,8 +191,8 @@ export default function BandAffiliateMetrics({
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-950">
-                {listRows.map((row) => (
-                  <tr key={`split-row-${row.id}`} className="hover:bg-zinc-900/10">
+                {listRows.map((row, idx) => (
+                  <tr key={`split-row-${row.id}-${idx}`} className="hover:bg-zinc-900/10">
                     <td className="py-3.5 pr-2 font-bold text-white uppercase">{row.name}</td>
                     <td className="py-3.5 text-center text-zinc-300 font-black">{row.qty} qty</td>
                     <td className="py-3.5 text-right text-zinc-400">${row.gross.toLocaleString()}</td>
@@ -244,8 +244,8 @@ export default function BandAffiliateMetrics({
                   className="w-full bg-black border border-zinc-800 text-white rounded-xl p-3 text-xs sm:text-sm font-mono focus:border-purple-400 focus:ring-1 focus:ring-purple-400/35 cursor-pointer text-ellipsis"
                 >
                   <option value="">🏠 Direct Venue / General Storefront (No Partner)</option>
-                  {bandsForLink.map(b => (
-                    <option key={`opt-aff-band-${b.band_id}`} value={b.band_id}>
+                  {bandsForLink.map((b, bIdx) => (
+                    <option key={`opt-aff-band-${b.band_id}-${bIdx}`} value={b.band_id}>
                       🎸 {b.band_name} (Attributed affiliate)
                     </option>
                   ))}
@@ -262,8 +262,8 @@ export default function BandAffiliateMetrics({
                   className="w-full bg-black border border-zinc-800 text-white rounded-xl p-3 text-xs sm:text-sm font-mono focus:border-purple-400 focus:ring-1 focus:ring-purple-400/35 cursor-pointer text-ellipsis"
                 >
                   <option value="all">🎁 Entire Venue Shopping Catalog (Generic Link)</option>
-                  {storefrontItems.map(item => (
-                    <option key={`opt-aff-sku-${item.id}`} value={item.sku}>
+                  {storefrontItems.map((item, idx) => (
+                    <option key={`opt-aff-sku-${item.id}-${idx}`} value={item.sku}>
                       🎟️ {item?.name} (${item.price} USD) — SKU: {item.sku}
                     </option>
                   ))}

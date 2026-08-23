@@ -420,7 +420,7 @@ export default function PromoHubView({
 
     const uniqueCodeSuffix = Math.floor(Math.random() * 9000 + 1000);
     const firstName = fanName.split(' ')[0].replace(/[^a-zA-Z]/g, '').toUpperCase();
-    const immediateCode = `VIP20-${firstName || 'MEMBER'}-${uniqueCodeSuffix}`;
+    const immediateCode = `VIP20-${firstName || 'MEMBER'}`;
 
     const newMember: LoyaltyMember = {
       id: `loyalty_${Date.now()}`,
@@ -735,9 +735,9 @@ export default function PromoHubView({
                   { id: 'merch', label: '👕 Merch' },
                   { id: 'shows', label: '🎟️ Gig Alert' },
                   { id: 'custom', label: '🎨 Custom Flyer' }
-                ].map(mode => (
+                ].map((mode, idx) => (
                   <button
-                    key={mode.id}
+                    key={`${mode.id}-${idx}`}
                     type="button"
                     onClick={() => {
                       setPromoType(mode.id as any);
@@ -758,9 +758,9 @@ export default function PromoHubView({
                   { id: 'story', label: '📱 Story (9:16)' },
                   { id: 'feed', label: '🔳 Post (1:1)' },
                   { id: 'landscape', label: '🗺️ Wide (16:9)' }
-                ].map(format => (
+                ].map((format, idx) => (
                   <button
-                    key={format.id}
+                    key={`${format.id}-${idx}`}
                     type="button"
                     onClick={() => setStoryFormat(format.id as any)}
                     className={`flex-1 sm:flex-initial text-[10px] font-mono uppercase px-3 py-1.5 rounded-lg transition-all font-black cursor-pointer ${
@@ -1031,8 +1031,8 @@ export default function PromoHubView({
                       }}
                       className="w-full bg-zinc-950 p-2.5 border border-[#00ffcc]/35 hover:border-[#00ffcc]/60 focus:border-[#00ffcc] rounded-xl text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#00ffcc]/25 font-mono transition-all"
                     >
-                      {inventory.map(item => (
-                        <option key={item.id} value={item.id}>
+                      {inventory.map((item, idx) => (
+                        <option key={`${item.id}-${idx}`} value={item.id}>
                           {item?.name} (${item.price} ea) • Stock: {item.van_stock}
                         </option>
                       ))}
@@ -1060,9 +1060,9 @@ export default function PromoHubView({
                         { id: 'TOUR_ONLY', label: 'TOUR-ONLY' },
                         { id: 'LAST_CHANCE', label: 'CLOSING' },
                         { id: 'NONE', label: 'BLANK' }
-                      ].map((item) => (
+                      ].map((item, idx) => (
                         <button
-                          key={item.id}
+                          key={`${item.id}-${idx}`}
                           type="button"
                           onClick={() => setStickerType(item.id as any)}
                           className={`py-1.5 text-[9px] font-mono rounded-lg border text-center transition-all cursor-pointer ${
@@ -1093,8 +1093,8 @@ export default function PromoHubView({
                       }}
                       className="w-full bg-zinc-950 p-2.5 border border-[#00ffcc]/35 hover:border-[#00ffcc]/60 focus:border-[#00ffcc] rounded-xl text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#00ffcc]/25 font-mono transition-all"
                     >
-                      {activeShowsList.map(s => (
-                        <option key={s.id} value={s.id}>
+                      {activeShowsList.map((s, sIdx) => (
+                        <option key={`${s.id}-${sIdx}`} value={s.id}>
                           {s.city}, {s.state_province} • {s.venue_name} ({s.date})
                         </option>
                       ))}
@@ -1123,9 +1123,9 @@ export default function PromoHubView({
                         { id: 'TONIGHT', label: 'TONIGHT' },
                         { id: 'SOLD_OUT', label: 'SOLD OUT' },
                         { id: 'NONE', label: 'BLANK' }
-                      ].map((item) => (
+                      ].map((item, idx) => (
                         <button
-                          key={item.id}
+                          key={`${item.id}-${idx}`}
                           type="button"
                           onClick={() => {
                             setShowBadge(item.id as any);
@@ -1206,9 +1206,9 @@ export default function PromoHubView({
                         { id: 'serif', label: 'SERIF' },
                         { id: 'display', label: 'DISP' },
                         { id: 'heavy', label: 'HEAVY' }
-                      ].map((item) => (
+                      ].map((item, idx) => (
                         <button
-                          key={item.id}
+                          key={`${item.id}-${idx}`}
                           type="button"
                           onClick={() => setFontTheme(item.id as any)}
                           className={`py-1 text-[8px] font-mono rounded border text-center transition-all cursor-pointer ${
@@ -1231,9 +1231,9 @@ export default function PromoHubView({
                         { id: 'left', label: 'LEFT' },
                         { id: 'center', label: 'CENTER' },
                         { id: 'right', label: 'RIGHT' }
-                      ].map((item) => (
+                      ].map((item, idx) => (
                         <button
-                          key={item.id}
+                          key={`${item.id}-${idx}`}
                           type="button"
                           onClick={() => setTextAlignment(item.id as any)}
                           className={`py-1.5 text-[8.5px] font-mono rounded border text-center transition-all cursor-pointer ${
@@ -1257,9 +1257,9 @@ export default function PromoHubView({
                         { id: 'middle', label: 'MID' },
                         { id: 'bottom', label: 'BOT' },
                         { id: 'split', label: 'SPLIT' }
-                      ].map((item) => (
+                      ].map((item, idx) => (
                         <button
-                          key={item.id}
+                          key={`${item.id}-${idx}`}
                           type="button"
                           onClick={() => setTextPosition(item.id as any)}
                           className={`py-1 text-[8.5px] font-mono rounded border text-center transition-all cursor-pointer ${
@@ -1285,9 +1285,9 @@ export default function PromoHubView({
                         { id: 'purple', label: 'PURPLE', bg: 'bg-purple-400' },
                         { id: 'yellow', label: 'YELLOW', bg: 'bg-yellow-400' },
                         { id: 'green', label: 'GREEN', bg: 'bg-emerald-400' }
-                      ].map((item) => (
+                      ].map((item, idx) => (
                         <button
-                          key={item.id}
+                          key={`${item.id}-${idx}`}
                           type="button"
                           onClick={() => setTextColor(item.id as any)}
                           className={`p-1 border rounded transition-all cursor-pointer flex flex-col items-center gap-1 ${
@@ -1310,9 +1310,9 @@ export default function PromoHubView({
                         { id: 'black-glow', label: 'GLOW' },
                         { id: 'block-shadow', label: 'BLOCK' },
                         { id: 'stencil', label: 'STROKE' }
-                      ].map((item) => (
+                      ].map((item, idx) => (
                         <button
-                          key={item.id}
+                          key={`${item.id}-${idx}`}
                           type="button"
                           onClick={() => setTextShadowStyle(item.id as any)}
                           className={`py-1 text-[8.5px] font-mono rounded border text-center transition-all cursor-pointer ${
@@ -1364,9 +1364,9 @@ export default function PromoHubView({
                     { id: 'cyberpunk', label: 'NEON', color: 'bg-gradient-to-tr from-cyan-400/60 via-purple-500 to-pink-500' },
                     { id: 'monochrome', label: 'MONO', color: 'bg-white opacity-40' },
                     { id: 'sepia', label: 'SEPIA', color: 'bg-[#704214] opacity-50' }
-                  ].map(item => (
+                  ].map((item, idx) => (
                     <button
-                      key={item.id}
+                      key={`${item.id}-${idx}`}
                       type="button"
                       onClick={() => {
                         setColorFilter(item.id as any);
@@ -1530,9 +1530,9 @@ export default function PromoHubView({
                     { id: 'hype', label: '📣 HYPE' },
                     { id: 'heavy-metal', label: '💀 METAL' },
                     { id: 'minimal', label: '🔮 MINIMAL' }
-                  ].map((v) => (
+                  ].map((v, vIdx) => (
                     <button
-                      key={v.id}
+                      key={`${v.id}-${vIdx}`}
                       type="button"
                       onClick={() => setCaptionVibe(v.id as any)}
                       className={`px-2.5 py-1 rounded text-[8.5px] font-mono uppercase tracking-wider transition ${
@@ -1705,8 +1705,8 @@ export default function PromoHubView({
                     </thead>
                     <tbody className="divide-y divide-purple-900/20">
                       {filteredMembers.length > 0 ? (
-                        filteredMembers.map((member) => (
-                          <tr key={member.id} className="hover:bg-purple-900/10 transition-colors">
+                        filteredMembers.map((member, idx) => (
+                          <tr key={`${member.id}-${idx}`} className="hover:bg-purple-900/10 transition-colors">
                             <td className="py-2.5 px-3">
                               <span className="font-bold text-white block">{member?.name}</span>
                               <span className="text-[9px] text-purple-300">Joined: {new Date(member.created_at).toLocaleDateString()}</span>

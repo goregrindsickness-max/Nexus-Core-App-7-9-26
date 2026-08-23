@@ -525,7 +525,7 @@ export function WalletOAuthModal({
 
             {/* LIST OF CARDS */}
             <div className="space-y-2 max-h-56 overflow-y-auto custom-scrollbar pr-1">
-              {cards.map((card) => {
+              {cards.map((card, cIdx) => {
                 const isSelected = card.id === selectedCardId;
                 return (
                   <div

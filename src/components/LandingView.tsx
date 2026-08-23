@@ -131,8 +131,8 @@ export const LandingView: React.FC<LandingViewProps> = ({ onEnterApp }) => {
 
       {/* Monochromatic Camera Flashes Effect */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-5 mix-blend-screen opacity-60">
-        {flashes.map((flash) => (
-          <div key={flash.id}>
+        {flashes.map((flash, idx) => (
+          <div key={`${flash.id}-${idx}`}>
             {/* Primary flash center core */}
             <motion.div
               className="absolute bg-white rounded-full filter blur-[8px] shadow-[0_0_40px_20px_rgba(255,255,255,0.9)]"

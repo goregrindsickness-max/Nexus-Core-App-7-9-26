@@ -383,9 +383,9 @@ export default function VanToTableTransferModal({
 
                 {/* SPEED QUICK CONFIGS */}
                 <div className="flex justify-center gap-2 mt-2 w-full">
-                  {[1, 5, 10, 25].map(preset => (
+                  {[1, 5, 10, 25].map((preset, idx) => (
                     <button
-                      key={preset}
+                      key={`${preset}-${idx}`}
                       type="button"
                       disabled={preset > maxLimit}
                       onClick={() => setTransferQty(Math.min(maxLimit, preset))}
@@ -431,9 +431,9 @@ export default function VanToTableTransferModal({
               </div>
 
               <div className="space-y-2">
-                {getVariants(selectedItem).map(v => (
+                {getVariants(selectedItem).map((v, vIdx) => (
                   <div 
-                    key={v.name}
+                    key={`${v.name}-${vIdx}`}
                     onClick={() => handleVariantSelect(v)}
                     className="bg-[#181a21]/80 hover:bg-[#1a1d26] border border-zinc-850 hover:border-[#00ffcc]/40 rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition-colors group select-none"
                   >
@@ -458,14 +458,14 @@ export default function VanToTableTransferModal({
                   No matching items found in tour catalog.
                 </div>
               ) : (
-                filteredInventory.map(item => {
+                filteredInventory.map((item, idx) => {
                   const variants = getVariants(item);
                   const hasVariants = variants.length > 0;
                   const itemVanStock = item.van_stock;
                   
                   return (
                     <div 
-                      key={item.id}
+                      key={`${item.id}-${idx}`}
                       onClick={() => handleItemSelect(item)}
                       className="bg-[#181a21]/90 hover:bg-[#1d212b]/80 border border-zinc-850 hover:border-zinc-700 rounded-xl p-3 flex items-center gap-3 cursor-pointer transition-all group relative select-none"
                     >

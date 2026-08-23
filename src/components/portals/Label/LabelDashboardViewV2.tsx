@@ -956,7 +956,7 @@ export default function LabelDashboardViewV2({
   useEffect(() => {
     if (activeTab === 'SALES' && subTab === 'warehouse' && highlightItemId) {
       setTimeout(() => {
-        const element = document.getElementById(`warehouse-${highlightItemId}`);
+        const element = document.getElementById(`warehouse`);
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
@@ -2313,7 +2313,7 @@ export default function LabelDashboardViewV2({
                             { key: 'promoter', icon: '🏟️', name: 'Venue Promoter Gateway', desc: 'Calendars, lineups & finance', bgClass: 'bg-yellow-950/40 text-yellow-400 border-yellow-500/30', hoverBorderClass: 'hover:border-yellow-500/50', textClass: 'text-yellow-400', activeIndicator: 'bg-yellow-500 shadow-[0_0_8px_#eab308]' },
                             { key: 'creative', icon: '🛠️', name: 'Creative Hub & Crew', desc: 'Contracts, portfolio & sound crew', bgClass: 'bg-fuchsia-950/40 text-fuchsia-400 border-fuchsia-500/30', hoverBorderClass: 'hover:border-fuchsia-500/50', textClass: 'text-fuchsia-400', activeIndicator: 'bg-fuchsia-500 shadow-[0_0_8px_#d946ef]' },
                             { key: 'label', icon: '💿', name: 'Record Label Console', desc: 'Oversee rosters & releases', bgClass: 'bg-orange-950/40 text-orange-400 border-orange-500/30', hoverBorderClass: 'hover:border-orange-500/50', textClass: 'text-orange-400', activeIndicator: 'bg-orange-500 shadow-[0_0_8px_#f97316]' }
-                          ].map((portal) => {
+                          ].map((portal, idx) => {
                             const registeredWorkspaces = userProfile?.registered_workspaces || [];
                             const allowedWorkspaces = userProfile?.allowed_workspaces || [];
                             const currentRole = userProfile?.active_workspace || userProfile?.account_type;
@@ -2386,7 +2386,7 @@ export default function LabelDashboardViewV2({
                             // Not allowed/locked
                             return (
                               <button
-                                key={portal.key}
+                                key={`${portal.key}-${idx}`}
                                 type="button"
                                 onClick={() => {
                                   setV2RoleMenuOpen(false);
@@ -2433,12 +2433,12 @@ export default function LabelDashboardViewV2({
             { id: 'FINANCE', label: 'Finance', icon: TrendingUp },
             { id: 'SOCIAL', label: 'Social', icon: Globe },
             { id: 'SETTINGS', label: 'Settings', icon: Settings },
-          ].map((item) => {
+          ].map((item, idx) => {
             const IconComponent = item.icon;
             const isActive = activeTab === item.id;
             return (
               <button
-                key={item.id}
+                key={`${item.id}-${idx}`}
                 type="button"
                 onClick={() => {
                   setActiveTab(item.id as any);
@@ -2887,7 +2887,7 @@ export default function LabelDashboardViewV2({
                     }
 
                     return (
-                      <div key={band.id} className="relative bg-[#000000] border border-[#FF9900]/45 hover:border-[#FF9900] shadow-[0_0_10px_rgba(255,153,0,0.03)] transition-colors rounded-xl flex flex-col overflow-hidden">
+                      <div key={`${band.id}-${index}`} className="relative bg-[#000000] border border-[#FF9900]/45 hover:border-[#FF9900] shadow-[0_0_10px_rgba(255,153,0,0.03)] transition-colors rounded-xl flex flex-col overflow-hidden">
                         <div className="px-4 py-2.5 pr-14 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 relative">
                           <button
                             onClick={() => setExpandedBands(prev => ({ ...prev, [band.id]: !prev[band.id] }))}
@@ -3162,8 +3162,8 @@ export default function LabelDashboardViewV2({
                       </div>
                     ) : (
                       <div className="flex flex-col divide-y divide-[#1A1A1A] max-h-[300px] overflow-y-auto">
-                        {pendingSyncEvents.map(event => (
-                          <div key={event.id} className="p-4 hover:bg-[#1A1A1A]/30 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        {pendingSyncEvents.map((event, idx) => (
+                          <div key={`${event.id}-${idx}`} className="p-4 hover:bg-[#1A1A1A]/30 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div className="flex flex-col font-mono">
                               <div className="text-[11px] font-black text-white uppercase">{event.bandName} • {event.date} • {event.title}</div>
                               <div className="text-[9px] text-zinc-500 uppercase mt-1">"{event.details}"</div>
@@ -3218,9 +3218,9 @@ export default function LabelDashboardViewV2({
                 >
                   SHOW ALL ROSTER
                 </button>
-                {labelRosterData.map(band => (
+                {labelRosterData.map((band, idx) => (
                   <button
-                    key={band.id}
+                    key={`${band.id}-${idx}`}
                     onClick={() => setCalendarFilter(band.id)}
                     className={`px-4 py-1.5 rounded-full text-[10px] font-mono font-bold uppercase whitespace-nowrap transition-all border ${calendarFilter === band.id ? 'bg-[#FF9900] text-black border-[#FF9900]' : 'bg-[#000000] text-zinc-500 border-[#1A1A1A] hover:border-zinc-700'}`}
                   >
@@ -3283,8 +3283,8 @@ export default function LabelDashboardViewV2({
               <div className="bg-[#000000] border-2 border-[#FF9900] rounded-xl overflow-hidden flex flex-col w-full shadow-[0_0_25px_rgba(255,153,0,0.18)]">
                 {/* Calendar Header */}
                 <div className="grid grid-cols-7 border-b border-[#1A1A1A] bg-zinc-950">
-                  {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(day => (
-                     <div key={day} className="py-2 text-center text-[9px] sm:text-[10px] font-mono font-black text-zinc-500 tracking-widest border-r border-[#1A1A1A] last:border-0 uppercase">
+                  {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((day, idx) => (
+                     <div key={`${day}-${idx}`} className="py-2 text-center text-[9px] sm:text-[10px] font-mono font-black text-zinc-500 tracking-widest border-r border-[#1A1A1A] last:border-0 uppercase">
                        {day}
                      </div>
                   ))}
@@ -3343,8 +3343,8 @@ export default function LabelDashboardViewV2({
                           
                           {/* Event Markers Container */}
                           <div className="flex flex-col gap-1 overflow-y-auto max-h-[46px] sm:max-h-[64px] md:max-h-[82px] hide-scrollbar select-none">
-                            {dayEvents.map(event => (
-                              <div key={event.id} className="w-full">
+                            {dayEvents.map((event, idx) => (
+                              <div key={`${event.id}-${idx}`} className="w-full">
                                 {/* Desktop indicator: Text labels */}
                                 <div 
                                   className={`hidden sm:block text-[7.5px] md:text-[8px] font-extrabold font-mono tracking-wider px-1.5 py-0.5 rounded truncate border leading-tight ${event.immediateAction ? 'animate-pulse border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : ''}`}
@@ -3420,14 +3420,14 @@ export default function LabelDashboardViewV2({
 
                   return (
                     <div className="flex flex-col gap-3">
-                      {filteredList.map(event => {
+                      {filteredList.map((event, idx) => {
                         const dayPart = parseInt(event.date.split('-')[2]);
                         const isBandActive = labelRosterData.find(b => b.id === event.bandId);
                         const isExpanded = activeOpenId === event.id;
                         
                         return (
                           <div 
-                            key={event.id}
+                            key={`${event.id}-${idx}`}
                             onClick={() => {
                               setOpenEventId(event.id);
                             }}
@@ -3624,8 +3624,8 @@ export default function LabelDashboardViewV2({
                             onChange={(e) => setFormBandId(e.target.value)}
                           >
                             <option value="general">GENERAL LABEL TASK</option>
-                            {labelRosterData.map(band => (
-                              <option key={band.id} value={band.id}>{band.name}</option>
+                            {labelRosterData.map((band, idx) => (
+                              <option key={`${band.id}-${idx}`} value={band.id}>{band.name}</option>
                             ))}
                           </select>
                         </div>
@@ -3641,9 +3641,9 @@ export default function LabelDashboardViewV2({
                             { type: 'STUDIO', label: 'STUDIO BLOCK', border: 'border-purple-500/25 text-purple-400 bg-purple-500/5', activeBorder: 'border-purple-500 text-purple-400 bg-purple-500/10' },
                             { type: 'PRODUCTION', label: 'PRODUCTION', border: 'border-blue-500/25 text-blue-400 bg-blue-500/5', activeBorder: 'border-blue-500 text-blue-400 bg-blue-500/10' },
                             { type: 'GENERAL', label: 'GENERAL LP', border: 'border-sky-500/25 text-sky-400 bg-sky-500/5', activeBorder: 'border-sky-500 text-sky-400 bg-sky-500/10' }
-                          ].map(cat => (
+                          ].map((cat, idx) => (
                             <button
-                              key={cat.type}
+                              key={`${cat.type}-${idx}`}
                               type="button"
                               onClick={() => setFormType(cat.type)}
                               className={`p-2 rounded-lg border text-center font-mono text-[9px] font-black uppercase transition-all flex items-center justify-center cursor-pointer select-none ${
@@ -3838,8 +3838,8 @@ export default function LabelDashboardViewV2({
                         onChange={(e) => setNewTxnBandId(e.target.value)}
                         className="bg-black border border-zinc-800 text-zinc-400 rounded-md py-1.5 px-2 text-[10px] font-mono w-full focus:outline-none focus:text-white"
                       >
-                        {labelRosterData.map(b => (
-                          <option key={b.id} value={b.id}>{b.name}</option>
+                        {labelRosterData.map((b, bIdx) => (
+                          <option key={`${b.id}-${bIdx}`} value={b.id}>{b.name}</option>
                         ))}
                       </select>
                     </div>
@@ -3879,7 +3879,7 @@ export default function LabelDashboardViewV2({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-zinc-900/60 text-zinc-300">
-                        {transactions.map(txn => {
+                        {transactions.map((txn, idx) => {
                           const gross = txn.gross ?? 0;
                           const netValue = gross;
                           
@@ -3890,7 +3890,7 @@ export default function LabelDashboardViewV2({
                           const labelPayout = netValue * (labelPct / 100);
 
                           return (
-                            <tr key={txn.id} className="hover:bg-zinc-900/10 transition-colors">
+                            <tr key={`${txn.id}-${idx}`} className="hover:bg-zinc-900/10 transition-colors">
                               <td className="py-4">
                                 <div className="text-[#FF9900] font-black">{txn.id}</div>
                                 <div className="text-zinc-200 font-bold mt-1">{txn.source}</div>
@@ -3933,7 +3933,7 @@ export default function LabelDashboardViewV2({
                   </div>
 
                   <div className="space-y-4">
-                    {labelRosterData.map(band => {
+                    {labelRosterData.map((band, idx) => {
                       // Calculate cumulative payouts across the transaction register for this band id
                       const cumulativeArtistPayout = transactions
                         .filter(t => t.bandId === band.id)
@@ -3947,7 +3947,7 @@ export default function LabelDashboardViewV2({
                       const isOverExceedLimit = cumulativeArtistPayout > 600;
 
                       return (
-                        <div key={`tax-mon-${band.id}`} className="bg-zinc-950/40 border border-zinc-850 p-5 rounded-2xl shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all hover:border-zinc-750">
+                        <div key={`tax-mon-${band.id}-${idx}`} className="bg-zinc-950/40 border border-zinc-850 p-5 rounded-2xl shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all hover:border-zinc-750">
                           <div className="min-w-0">
                             <span className="text-zinc-200 font-bold block uppercase text-sm">{band.name}</span>
                             <div className="text-[8px] font-mono text-zinc-500 uppercase flex flex-wrap gap-x-4 gap-y-1 mt-1.5">
@@ -4047,7 +4047,7 @@ export default function LabelDashboardViewV2({
 
                 {/* The predictive marquee row warnings container */}
                 <div className="space-y-4">
-                  {Object.entries(vanApparelStocks).map(([bandId, statsRaw]) => {
+                  {Object.entries(vanApparelStocks).map(([bandId, statsRaw], idx) => {
                     const stats = statsRaw as {
                       bandName: string;
                       route: string;
@@ -4072,7 +4072,7 @@ export default function LabelDashboardViewV2({
                     const extremelyCriticalAlert = (sizeCriticalArray || []).some(s => stats.sizes[s as keyof typeof stats.sizes] <= 1);
 
                     return (
-                      <div key={`runway-row-${bandId}`} className={`p-6 rounded-2xl border text-[10px] font-mono relative overflow-hidden transition-all hover:border-zinc-700/50 shadow-xl ${
+                      <div key={`runway-row-${idx}`} className={`p-6 rounded-2xl border text-[10px] font-mono relative overflow-hidden transition-all hover:border-zinc-700/50 shadow-xl ${
                         !isTouring 
                           ? 'bg-zinc-950/20 text-zinc-550 border-zinc-900/60' 
                           : burnProjectAlert 
@@ -4123,10 +4123,10 @@ export default function LabelDashboardViewV2({
                         <div className="mt-4 pt-3.5 w-full border-t border-zinc-900/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 bg-zinc-950/30 p-3 rounded-xl border border-zinc-900/40">
                           <span className="text-[8px] text-zinc-500 uppercase tracking-widest font-black">Adjust Size Stock Demo:</span>
                           <div className="flex flex-wrap gap-2">
-                            {(['S','M','L','XL','2XL'] as const).map(sz => {
+                            {(['S','M','L','XL','2XL'] as const).map((sz, idx) => {
                               const currentVal = stats.sizes[sz];
                               return (
-                                <div key={sz} className="flex items-center gap-1.5 bg-black border border-zinc-800 rounded-lg p-1.5 px-2.5 text-[10.5px] font-bold">
+                                <div key={`${sz}-${idx}`} className="flex items-center gap-1.5 bg-black border border-zinc-800 rounded-lg p-1.5 px-2.5 text-[10.5px] font-bold">
                                   <span className="font-bold text-[#FF9900] text-[10px]">{sz}:</span>
                                   <button
                                     onClick={() => handleUpdateVanStockSize(bandId, sz, Math.max(0, currentVal - 1))}
@@ -4191,11 +4191,11 @@ export default function LabelDashboardViewV2({
                         { sector: "DENVER-CO-03", label: "CO", x: '45%', y: '50%' },
                         { sector: "LONDON-UK-02", label: "UK", x: '75%', y: '30%' },
                         { sector: "BERLIN-DE-09", label: "DE", x: '80%', y: '45%' },
-                      ].map((p) => {
+                      ].map((p, pIdx) => {
                         const isSelected = selectedTelemetrySector === p.sector;
                         return (
                           <button
-                            key={p.sector}
+                            key={`${p.sector}-${pIdx}`}
                             type="button"
                             onClick={() => {
                               setSelectedTelemetrySector(p.sector);
@@ -4396,8 +4396,8 @@ export default function LabelDashboardViewV2({
                   { sector: "DENVER-CO-03", city: "Denver, Colorado", streams: "64,888", sales: "$6,120.00", index: 76, status: "RISING 📈" },
                   { sector: "LONDON-UK-02", city: "London, Great Britain", streams: "230,110", sales: "$4,250.00", index: 64, status: "STABLE 📊" },
                   { sector: "BERLIN-DE-09", city: "Berlin, European Sector", streams: "112,500", sales: "$3,800.00", index: 59, status: "STABLE 📊" }
-                ].map(loc => (
-                  <div key={loc.sector} className="bg-zinc-950/40 border border-zinc-850 rounded-2xl p-5 shadow-xl flex flex-col lg:flex-row lg:items-center justify-between gap-4 transition-all hover:border-zinc-750">
+                ].map((loc, idx) => (
+                  <div key={`${loc.sector}-${idx}`} className="bg-zinc-950/40 border border-zinc-850 rounded-2xl p-5 shadow-xl flex flex-col lg:flex-row lg:items-center justify-between gap-4 transition-all hover:border-zinc-750">
                     <div className="min-w-0">
                       <span className="text-zinc-200 font-bold block uppercase text-sm">{loc.city}</span>
                       <span className="text-[8px] text-zinc-500 font-mono block uppercase tracking-widest mt-1">SECTOR_ID: {loc.sector}</span>
@@ -4600,9 +4600,9 @@ export default function LabelDashboardViewV2({
                     >
                       ALL ROSTER
                     </button>
-                    {labelRosterData.map(band => (
+                    {labelRosterData.map((band, idx) => (
                       <button
-                        key={band.id}
+                        key={`${band.id}-${idx}`}
                         onClick={() => setPosBandFilter(band.name)}
                         className={`shrink-0 px-5 py-1.5 rounded-full border text-[10px] font-black font-sans tracking-wide uppercase transition-all ${posBandFilter === band.name ? 'bg-[#1A1A1A] text-white border-zinc-600' : 'bg-transparent text-zinc-600 border-zinc-800 hover:border-zinc-700 hover:text-zinc-400'}`}
                       >
@@ -4615,8 +4615,8 @@ export default function LabelDashboardViewV2({
                   <div className="flex flex-col mb-32">
                     {/* INVENTORY GRID MATRIX */}
                     <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-max">
-                      {(posCategory === 'ALL ITEMS' || posCategory === 'VINYL / MEDIA') && (Object.values(catalogReleases).flat() as any[]).filter(r => posBandFilter === 'ALL ROSTER' || r.band_id === labelRosterData.find(b => b.name === posBandFilter)?.id).map(release => (
-                        <ErrorBoundary key={release.id}>
+                      {(posCategory === 'ALL ITEMS' || posCategory === 'VINYL / MEDIA') && (Object.values(catalogReleases).flat() as any[]).filter(r => posBandFilter === 'ALL ROSTER' || r.band_id === labelRosterData.find(b => b.name === posBandFilter)?.id).map((release, idx) => (
+                        <ErrorBoundary key={`${release.id}-${idx}`}>
                           <div className="bg-[#0D0D0D] border border-[#1A1A1A] rounded-xl flex flex-col justify-between hover:border-zinc-800 transition-colors overflow-hidden h-full">
                             <div className="relative aspect-square bg-zinc-900 w-full flex items-center justify-center p-4">
                               <Disc className="w-16 h-16 text-zinc-800" />
@@ -4650,8 +4650,8 @@ export default function LabelDashboardViewV2({
                         </ErrorBoundary>
                       ))}
 
-                      {(posCategory === 'ALL ITEMS' || posCategory === 'APPAREL') && (Object.values(catalogApparel).flat() as any[]).filter(a => posBandFilter === 'ALL ROSTER' || a.band_id === labelRosterData.find(b => b.name === posBandFilter)?.id).map(apparel => (
-                        <ErrorBoundary key={apparel.id}>
+                      {(posCategory === 'ALL ITEMS' || posCategory === 'APPAREL') && (Object.values(catalogApparel).flat() as any[]).filter(a => posBandFilter === 'ALL ROSTER' || a.band_id === labelRosterData.find(b => b.name === posBandFilter)?.id).map((apparel, idx) => (
+                        <ErrorBoundary key={`${apparel.id}-${idx}`}>
                           <div className="bg-[#0D0D0D] border border-[#1A1A1A] rounded-xl flex flex-col justify-between hover:border-zinc-800 transition-colors overflow-hidden h-full">
                             <div className="relative aspect-square bg-zinc-900 w-full flex items-center justify-center p-4">
                               <div className="absolute inset-0 flex items-center justify-center opacity-30">
@@ -4668,9 +4668,9 @@ export default function LabelDashboardViewV2({
                             <div className="p-3 pt-0 mt-auto relative">
                               {activeSizeSelector === apparel.id ? (
                                 <div className="grid grid-cols-5 gap-1.5 h-10">
-                                  {['S', 'M', 'L', 'XL', '2XL'].map(size => (
+                                  {['S', 'M', 'L', 'XL', '2XL'].map((size, idx) => (
                                     <button 
-                                      key={size}
+                                      key={`${size}-${idx}`}
                                       onClick={() => {
                                         if (navigator.vibrate) navigator.vibrate(50);
                                         showLocalToast(`ADDED [ ${apparel.title} - ${size} ] TO CART`);
@@ -4741,7 +4741,7 @@ export default function LabelDashboardViewV2({
                           <div className="space-y-4">
                             <h4 className="text-[10px] font-black font-sans text-zinc-500 uppercase tracking-widest border-b border-[#1A1A1A] pb-2">CART MANIFEST</h4>
                             {posCart.map((item, idx) => (
-                              <div key={`${item.id}-${item.variant}`} className="flex items-start justify-between gap-3 pb-3">
+                              <div key={`${item.id}-${item.variant}-${idx}`} className="flex items-start justify-between gap-3 pb-3">
                                 <div className="flex-1">
                                   <h5 className="text-sm font-black font-sans text-zinc-200 uppercase leading-tight line-clamp-2">{item.title}</h5>
                                   <div className="text-[10px] font-sans text-zinc-500 tracking-widest uppercase mt-1">VARIANT: {item.variant}</div>
@@ -4905,11 +4905,11 @@ export default function LabelDashboardViewV2({
                     const ageInfo = getOrderAgeInfo(order.date);
                     const isPending = order.status === 'UNFULFILLED';
                     const isExpanded = !!expandedOrders[order.id];
-                    const itemsList = order.items.split(',').map(item => item.trim());
+                    const itemsList = order.items.split(',').map((item) => item.trim());
                     
                     return (
                       <div 
-                        key={order.id} 
+                        key={`${order.id || ''}-${index}`} 
                         className={`border p-5 rounded-xl shadow-xl relative overflow-hidden transition-all duration-300 group ${
                           isSelected ? 'ring-2 ring-[#00ffcc]' : ''
                         } ${ageInfo.bgClass}`}
@@ -5414,9 +5414,9 @@ export default function LabelDashboardViewV2({
                          <div>
                            <label className="text-[9px] uppercase font-mono tracking-widest text-zinc-500 block mb-1">Accent Color</label>
                            <div className="flex gap-2">
-                             {['#00ffcc', '#FF9900', '#FF0055', '#9933FF', '#FFFFFF'].map(color => (
+                             {['#00ffcc', '#FF9900', '#FF0055', '#9933FF', '#FFFFFF'].map((color, idx) => (
                                <button
-                                 key={color}
+                                 key={`${color}-${idx}`}
                                  onClick={() => setStorefrontAccentColor(color)}
                                  className={`w-6 h-6 rounded-full border-2 ${storefrontAccentColor === color ? 'border-white scale-110 shadow-lg' : 'border-transparent'} transition-all`}
                                  style={{ backgroundColor: color }}
@@ -5482,11 +5482,11 @@ export default function LabelDashboardViewV2({
 
                 {isCatalogSyncExpanded ? (
                   <div className="space-y-2 mt-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                    {([...(Object.values(catalogReleases).flat() as any[]), ...(Object.values(catalogApparel).flat() as any[])]).map(item => {
+                    {([...(Object.values(catalogReleases).flat() as any[]), ...(Object.values(catalogApparel).flat() as any[])]).map((item, idx) => {
                       const isSynced = storefrontSyncRecord[item.id] || false;
                       const bandName = labelRosterData.find(b => b.id === item.band_id)?.name || 'UNKNOWN BAND';
                       return (
-                        <div key={item.id} className="bg-[#0A0A0C] border border-zinc-900 hover:border-zinc-850 px-3.5 py-1.5 rounded-lg flex items-center justify-between transition-colors w-full">
+                        <div key={`${item.id}-${idx}`} className="bg-[#0A0A0C] border border-zinc-900 hover:border-zinc-850 px-3.5 py-1.5 rounded-lg flex items-center justify-between transition-colors w-full">
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="w-6 h-6 rounded bg-black border border-zinc-900 flex items-center justify-center shrink-0">
                               {item.type === 'Apparel' || item.type === 'Hoodie' || item.type === 'T-Shirt' ? <Layers className="w-3.5 h-3.5 text-zinc-600" /> : <Disc className="w-3.5 h-3.5 text-zinc-600" />}
@@ -5621,8 +5621,8 @@ export default function LabelDashboardViewV2({
                   >
                     <option value="ALL_ROSTER">ALL LABEL MERCHANDISE & ROSTER</option>
                     <option value="LABEL_ONLY">LABEL / NON-BAND MERCH</option>
-                    {labelRosterData.map(b => (
-                      <option key={b.id} value={b.id}>{b.name.toUpperCase()} CATALOG</option>
+                    {labelRosterData.map((b, bIdx) => (
+                      <option key={`${b.id}-${bIdx}`} value={b.id}>{b.name.toUpperCase()} CATALOG</option>
                     ))}
                   </select>
                 </div>
@@ -5684,14 +5684,14 @@ export default function LabelDashboardViewV2({
                      );
                   }
 
-                  return filteredItems.map((item) => {
+                  return filteredItems.map((item, idx) => {
                     const isPod = podItems[item.id] || false;
                     const isSynced = storefrontSyncRecord[item.id] || false;
                     const isHighlighted = highlightItemId === item.id;
                     
                     return (
                       <div 
-                        key={item.id} 
+                        key={`${item.id}-${idx}`} 
                         id={`warehouse-${item.id}`}
                         onClick={() => setEditingWarehouseItem(item as any)}
                         className={`bg-[#0b0c0f] rounded-2xl relative overflow-hidden transition-all duration-300 group hover:-translate-y-1 hover:shadow-2xl flex flex-col justify-between cursor-pointer border-[1.5px] border-zinc-800/80 hover:border-zinc-700 ${
@@ -6157,8 +6157,8 @@ export default function LabelDashboardViewV2({
                       onChange={(e) => setUserProfile({ ...userProfile, label_legal_entity_type: e.target.value })}
                       className="w-full bg-[#0c0e12] border border-[#1A1A1A] text-zinc-200 px-3 py-2 rounded focus:outline-none focus:border-[#f97316] font-mono text-xs"
                     >
-                      {['SOLE_PROPRIETORSHIP', 'LLC', 'C_CORP', 'S_CORP', 'PARTNERSHIP'].map(t => (
-                        <option key={t} value={t} className="bg-black text-xs">{t.replace(/_/g, ' ')}</option>
+                      {['SOLE_PROPRIETORSHIP', 'LLC', 'C_CORP', 'S_CORP', 'PARTNERSHIP'].map((t, tIdx) => (
+                        <option key={`${t}-${tIdx}`} value={t} className="bg-black text-xs">{t.replace(/_/g, ' ')}</option>
                       ))}
                     </select>
                   </div>
@@ -6181,8 +6181,8 @@ export default function LabelDashboardViewV2({
                       onChange={(e) => setUserProfile({ ...userProfile, label_master_distro_model: e.target.value })}
                       className="w-full bg-[#0c0e12] border border-[#1A1A1A] text-zinc-200 px-3 py-2 rounded focus:outline-none focus:border-[#f97316] font-mono text-xs select-none"
                     >
-                      {['IN_HOUSE_FULFILLMENT', 'THIRD_PARTY_DISTRIBUTION', 'PRINT_ON_DEMAND_DROP_SHIP'].map(t => (
-                        <option key={t} value={t} className="bg-black text-xs">{t.replace(/_/g, ' ')}</option>
+                      {['IN_HOUSE_FULFILLMENT', 'THIRD_PARTY_DISTRIBUTION', 'PRINT_ON_DEMAND_DROP_SHIP'].map((t, tIdx) => (
+                        <option key={`${t}-${tIdx}`} value={t} className="bg-black text-xs">{t.replace(/_/g, ' ')}</option>
                       ))}
                     </select>
                   </div>
@@ -6248,8 +6248,8 @@ export default function LabelDashboardViewV2({
                       onChange={(e) => setUserProfile({ ...userProfile, label_digital_accreditation_scheme: e.target.value })}
                       className="w-full bg-[#0c0e12] border border-[#1A1A1A] text-zinc-200 px-3 py-2 rounded focus:outline-none focus:border-[#f97316] font-mono text-xs select-none"
                     >
-                      {['LABEL_PROVIDES_INDEPENDENT_CODES', 'PLATFORM_GENERATES_AUTOMATICALLY'].map(t => (
-                        <option key={t} value={t} className="bg-black text-xs">{t.replace(/_/g, ' ')}</option>
+                      {['LABEL_PROVIDES_INDEPENDENT_CODES', 'PLATFORM_GENERATES_AUTOMATICALLY'].map((t, tIdx) => (
+                        <option key={`${t}-${tIdx}`} value={t} className="bg-black text-xs">{t.replace(/_/g, ' ')}</option>
                       ))}
                     </select>
                   </div>
@@ -6288,13 +6288,13 @@ export default function LabelDashboardViewV2({
                       name: 'CLUSTER 06: HIP HOP/RAP',
                       genres: ['UNDERGROUND RAP', 'TRAP', 'BOOM BAP', 'PHONK', 'DRILL', 'CLOUD RAP', 'EXPERIMENTAL', 'GRIME']
                     }
-                  ].map(cluster => {
+                  ].map((cluster, idx) => {
                     const currentGenres = userProfile.label_genres || [];
                     const activeInCluster = cluster.genres.filter(genre => currentGenres.includes(genre));
                     const isExpanded = !!expandedClusters[cluster.name];
                     
                     return (
-                      <div key={cluster.name} className="p-3 bg-black border border-zinc-900 rounded-lg space-y-3">
+                      <div key={`${cluster.name}-${idx}`} className="p-3 bg-black border border-zinc-900 rounded-lg space-y-3">
                         <button
                           type="button"
                           onClick={() => setExpandedClusters(prev => {
@@ -6320,11 +6320,11 @@ export default function LabelDashboardViewV2({
                         
                         {isExpanded && (
                           <div className="flex flex-wrap gap-1.5 pt-1 animate-fade-in">
-                            {cluster.genres.map(genre => {
+                            {cluster.genres.map((genre, idx) => {
                               const isActive = currentGenres.includes(genre);
                               return (
                                 <button
-                                  key={genre}
+                                  key={`${genre}-${idx}`}
                                   type="button"
                                   onClick={() => {
                                     const updated = isActive 
@@ -6605,7 +6605,7 @@ export default function LabelDashboardViewV2({
                 </div>
 
                 <div className="space-y-3 mt-4">
-                  {INBOX_CHANNELS.map((channel) => {
+                  {INBOX_CHANNELS.map((channel, idx) => {
                     const isCurrentlyActive = activeInboxChatId === channel.id;
                     const threadMsgs = inboxMessages[channel.id] || [];
                     const lastMsg = threadMsgs.length > 0 ? threadMsgs[threadMsgs.length - 1] : null;
@@ -6613,7 +6613,7 @@ export default function LabelDashboardViewV2({
                     
                     return (
                       <div
-                        key={channel.id}
+                        key={`${channel.id}-${idx}`}
                         className={`w-full relative transition-all rounded-2xl border group ${
                           isCurrentlyActive 
                             ? 'bg-zinc-900/40 border-[#f97316]/40 text-white shadow-md shadow-orange-950/5' 
@@ -6781,11 +6781,11 @@ export default function LabelDashboardViewV2({
                       {/* Message stream */}
                       <div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col justify-end bg-black/40">
                         <div className="space-y-4 max-w-3xl mx-auto w-full">
-                          {textStream.map((msg: any) => {
+                          {textStream.map((msg: any, idx) => {
                             const isMe = msg.sender === 'label';
                             return (
                               <div
-                                key={msg.id}
+                                key={`${msg.id}-${idx}`}
                                 className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} space-y-1`}
                               >
                                 <div className="flex items-center gap-2">

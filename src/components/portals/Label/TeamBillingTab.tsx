@@ -551,8 +551,8 @@ export default function TeamBillingTab({
                         onChange={(e) => setUserProfile({ ...userProfile, label_legal_entity_type: e.target.value })}
                         className="w-full bg-[#090b0e] border border-zinc-900 text-zinc-200 px-3 py-2 rounded focus:outline-none focus:border-orange-500 font-mono text-xs"
                       >
-                        {['SOLE_PROPRIETORSHIP', 'LLC', 'C_CORP', 'S_CORP', 'PARTNERSHIP'].map(t => (
-                          <option key={t} value={t} className="bg-black text-xs">{t.replace(/_/g, ' ')}</option>
+                        {['SOLE_PROPRIETORSHIP', 'LLC', 'C_CORP', 'S_CORP', 'PARTNERSHIP'].map((t, tIdx) => (
+                          <option key={`${t}-${tIdx}`} value={t} className="bg-black text-xs">{t.replace(/_/g, ' ')}</option>
                         ))}
                       </select>
                     </div>
@@ -575,8 +575,8 @@ export default function TeamBillingTab({
                         onChange={(e) => setUserProfile({ ...userProfile, label_master_distro_model: e.target.value })}
                         className="w-full bg-[#090b0e] border border-zinc-900 text-zinc-200 px-3 py-2 rounded focus:outline-none focus:border-orange-500 font-mono text-xs select-none"
                       >
-                        {['IN_HOUSE_FULFILLMENT', 'THIRD_PARTY_DISTRIBUTION', 'PRINT_ON_DEMAND_DROP_SHIP'].map(t => (
-                          <option key={t} value={t} className="bg-black text-xs">{t.replace(/_/g, ' ')}</option>
+                        {['IN_HOUSE_FULFILLMENT', 'THIRD_PARTY_DISTRIBUTION', 'PRINT_ON_DEMAND_DROP_SHIP'].map((t, tIdx) => (
+                          <option key={`${t}-${tIdx}`} value={t} className="bg-black text-xs">{t.replace(/_/g, ' ')}</option>
                         ))}
                       </select>
                     </div>
@@ -654,8 +654,8 @@ export default function TeamBillingTab({
                         onChange={(e) => setUserProfile({ ...userProfile, label_digital_accreditation_scheme: e.target.value })}
                         className="w-full bg-[#090b0e] border border-zinc-900 text-zinc-200 px-3 py-2 rounded focus:outline-none focus:border-orange-500 font-mono text-xs select-none"
                       >
-                        {['LABEL_PROVIDES_INDEPENDENT_CODES', 'PLATFORM_GENERATES_AUTOMATICALLY'].map(t => (
-                          <option key={t} value={t} className="bg-black text-xs">{t.replace(/_/g, ' ')}</option>
+                        {['LABEL_PROVIDES_INDEPENDENT_CODES', 'PLATFORM_GENERATES_AUTOMATICALLY'].map((t, tIdx) => (
+                          <option key={`${t}-${tIdx}`} value={t} className="bg-black text-xs">{t.replace(/_/g, ' ')}</option>
                         ))}
                       </select>
                     </div>
@@ -706,13 +706,13 @@ export default function TeamBillingTab({
                         name: 'CLUSTER 06: HIP HOP/RAP',
                         genres: ['UNDERGROUND RAP', 'TRAP', 'BOOM BAP', 'PHONK', 'DRILL', 'CLOUD RAP', 'EXPERIMENTAL', 'GRIME']
                       }
-                    ].map(cluster => {
+                    ].map((cluster, idx) => {
                       const currentGenres = userProfile.label_genres || [];
                       const activeInCluster = cluster.genres.filter(genre => currentGenres.includes(genre));
                       const isExpanded = !!expandedClusters[cluster.name];
                       
                       return (
-                        <div key={cluster.name} className="p-3 bg-[#090b0e] border border-zinc-900 rounded-lg space-y-3">
+                        <div key={`${cluster.name}-${idx}`} className="p-3 bg-[#090b0e] border border-zinc-900 rounded-lg space-y-3">
                           <button
                             type="button"
                             onClick={() => setExpandedClusters(prev => {
@@ -738,11 +738,11 @@ export default function TeamBillingTab({
                           
                           {isExpanded && (
                             <div className="flex flex-wrap gap-1.5 pt-1 animate-fade-in">
-                              {cluster.genres.map(genre => {
+                              {cluster.genres.map((genre, idx) => {
                                 const isActive = currentGenres.includes(genre);
                                 return (
                                   <button
-                                    key={genre}
+                                    key={`${genre}-${idx}`}
                                     type="button"
                                     onClick={() => {
                                       const updated = isActive 
@@ -864,8 +864,8 @@ export default function TeamBillingTab({
                   </h4>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                    {teamMembers.map(member => (
-                      <div key={member.id} className="bg-[#090b0e] border border-zinc-900 rounded-xl p-5 flex flex-col justify-between">
+                    {teamMembers.map((member, idx) => (
+                      <div key={`${member.id}-${idx}`} className="bg-[#090b0e] border border-zinc-900 rounded-xl p-5 flex flex-col justify-between">
                         <div className="flex justify-between items-start mb-4">
                           <div>
                             <h5 className="text-xs font-bold text-white font-mono uppercase tracking-wider">{member?.name}</h5>
@@ -1138,10 +1138,10 @@ export default function TeamBillingTab({
 
                 {/* Plan pricing grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-                  {plans.map(plan => {
+                  {plans.map((plan, idx) => {
                     const isCurrent = currentPlan === plan.id;
                     return (
-                      <div key={plan.id} className="bg-[#000000] border border-[#1A1A1A] rounded-xl p-5 flex flex-col justify-between h-full hover:border-zinc-700 transition-all">
+                      <div key={`${plan.id}-${idx}`} className="bg-[#000000] border border-[#1A1A1A] rounded-xl p-5 flex flex-col justify-between h-full hover:border-zinc-700 transition-all">
                         <div className="space-y-4 mb-6 text-left">
                           <div className="flex justify-between items-start">
                             <h5 className="text-xs font-black text-white font-mono uppercase tracking-widest">{plan.title}</h5>
@@ -1286,8 +1286,8 @@ export default function TeamBillingTab({
                 {userReviews && userReviews.length > 0 && (
                   <div className="space-y-2 text-left">
                     <span className="text-[8.5px] font-mono font-bold text-zinc-500 uppercase tracking-widest">My Recent Reviews ({userReviews.length})</span>
-                    {userReviews.map((rev: any) => (
-                      <div key={rev.id} className="bg-zinc-900/60 border border-zinc-800 p-2.5 rounded-xl space-y-1 text-xs">
+                    {userReviews.map((rev: any, idx) => (
+                      <div key={`${rev.id}-${idx}`} className="bg-zinc-900/60 border border-zinc-800 p-2.5 rounded-xl space-y-1 text-xs">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-0.5">
                             {Array.from({ length: 5 }).map((_, i) => (
@@ -1337,9 +1337,9 @@ export default function TeamBillingTab({
                 <label className="text-[8.5px] font-mono text-zinc-500 uppercase tracking-widest block font-bold">Tap Star Rating</label>
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
+                    {[1, 2, 3, 4, 5].map((star, idx) => (
                       <button
-                        key={star}
+                        key={`${star}-${idx}`}
                         type="button"
                         onClick={() => setReviewScore(star)}
                         className="p-1 text-orange-500 transition-transform active:scale-90 hover:scale-110"

@@ -454,12 +454,12 @@ export default function ExportReportsSetup({
                         { id: 'financial', label: 'Financial', icon: Coins },
                         { id: 'tax', label: 'Tax Report', icon: Landmark },
                         { id: 'reconciliation', label: 'Reconciliation', icon: RefreshCw },
-                      ].map(type => {
+                      ].map((type, idx) => {
                         const IconComponent = type.icon;
                         const isSel = reportType === type.id;
                         return (
                           <button
-                            key={type.id}
+                            key={`${type.id}-${idx}`}
                             onClick={() => setReportType(type.id as any)}
                             className={`flex items-center gap-2 px-3 py-2 border rounded-xl text-xs font-medium cursor-pointer transition-all active:scale-95 ${
                               isSel 
@@ -484,11 +484,11 @@ export default function ExportReportsSetup({
                         { id: 'CSV', label: 'CSV', color: 'text-emerald-400 border-emerald-950 bg-emerald-500/5', iconColor: 'text-emerald-500' },
                         { id: 'Excel', label: 'Excel', color: 'text-teal-400 border-teal-950 bg-teal-500/5', iconColor: 'text-[#22c55e]' },
                         { id: 'JSON', label: 'JSON', color: 'text-orange-400 border-orange-950 bg-orange-500/5', iconColor: 'text-amber-500' },
-                      ].map(fmt => {
+                      ].map((fmt, idx) => {
                         const isSel = exportFormat === fmt.id;
                         return (
                           <button
-                            key={fmt.id}
+                            key={`${fmt.id}-${idx}`}
                             onClick={() => setExportFormat(fmt.id as any)}
                             className={`py-3.5 border rounded-xl text-center cursor-pointer transition-all active:scale-95 flex flex-col items-center gap-1.5 ${
                               isSel 
@@ -545,11 +545,11 @@ export default function ExportReportsSetup({
                         { key: 'venueName', label: 'Venue Name' },
                         { key: 'teamMember', label: 'Team Member' },
                         { key: 'notes', label: 'Notes' },
-                      ].map(field => {
+                      ].map((field, idx) => {
                         const active = (customFields as any)[field.key];
                         return (
                           <button
-                            key={field.key}
+                            key={`${field.key}-${idx}`}
                             type="button"
                             onClick={() => setCustomFields(prev => ({ ...prev, [field.key]: !active }))}
                             className={`flex items-center gap-2 p-2 px-3 border rounded-xl text-[11px] leading-snug cursor-pointer select-none transition-colors border-zinc-850/60 ${
@@ -575,11 +575,11 @@ export default function ExportReportsSetup({
                         { key: 'paymentMethod', label: 'Payment Method' },
                         { key: 'avgTransaction', label: 'Avg Transaction' },
                         { key: 'profitMargin', label: 'Profit Margin' },
-                      ].map(field => {
+                      ].map((field, idx) => {
                         const active = (customFields as any)[field.key];
                         return (
                           <button
-                            key={field.key}
+                            key={`${field.key}-${idx}`}
                             type="button"
                             onClick={() => setCustomFields(prev => ({ ...prev, [field.key]: !active }))}
                             className={`flex items-center gap-2 p-2 px-3 border rounded-xl text-[11px] leading-snug cursor-pointer select-none transition-colors border-zinc-850/60 ${
@@ -604,11 +604,11 @@ export default function ExportReportsSetup({
                         { key: 'itemsSold', label: 'Items Sold' },
                         { key: 'customerCount', label: 'Customer Count' },
                         { key: 'topProducts', label: 'Top Products' },
-                      ].map(field => {
+                      ].map((field, idx) => {
                         const active = (customFields as any)[field.key];
                         return (
                           <button
-                            key={field.key}
+                            key={`${field.key}-${idx}`}
                             type="button"
                             onClick={() => setCustomFields(prev => ({ ...prev, [field.key]: !active }))}
                             className={`flex items-center gap-2 p-2 px-3 border rounded-xl text-[11px] leading-snug cursor-pointer select-none transition-colors border-zinc-850/60 ${
@@ -786,9 +786,9 @@ export default function ExportReportsSetup({
                         { id: 'grid', label: 'Modern Monolith' },
                         { id: 'neon', label: 'Symmetric Crown' },
                         { id: 'none', label: 'No Logo' },
-                      ].map(logo => (
+                      ].map((logo, idx) => (
                         <button
-                          key={logo.id}
+                          key={`${logo.id}-${idx}`}
                           type="button"
                           onClick={() => { setLogoOption(logo.id as any); triggerNotification(`Brand logo set to: ${logo.label}`); }}
                           className={`text-[9.5px] p-1.5 px-3 rounded-lg border cursor-pointer select-none transition-all font-mono uppercase ${
@@ -935,9 +935,9 @@ export default function ExportReportsSetup({
                 className="overflow-hidden"
               >
                 <div className="p-4 space-y-2 text-left">
-                  {schedules.map((sch) => (
+                  {schedules.map((sch, idx) => (
                     <div 
-                      key={sch.id}
+                      key={`${sch.id}-${idx}`}
                       className="p-3 bg-zinc-950/60 rounded-xl border border-zinc-900/80 flex items-center justify-between"
                     >
                       <div>
@@ -1009,9 +1009,9 @@ export default function ExportReportsSetup({
                     </div>
                   ) : (
                     <div className="w-full space-y-2 text-left font-sans">
-                      {recentExports.map((exportItem) => (
+                      {recentExports.map((exportItem, idx) => (
                         <div 
-                          key={exportItem.id}
+                          key={`${exportItem.id}-${idx}`}
                           className="p-2.5 rounded-xl border border-zinc-900 bg-zinc-950/40 hover:border-zinc-800 transition-colors flex items-center justify-between text-xs"
                         >
                           <div className="truncate pr-2">

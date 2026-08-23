@@ -100,7 +100,7 @@ export const ViewEpksModal: React.FC<ViewEpksModalProps> = ({
                   );
                 }
 
-                return filtered.map((epk) => {
+                return filtered.map((epk, epkIdx) => {
                   const isExpanded = expandedEpkId === epk.id;
                   const isPending = epk.status === 'pending';
                   const isAccepted = epk.status === 'accepted';

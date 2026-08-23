@@ -1233,7 +1233,7 @@ export default function CreativeDashboardViewV2({
       }
 
       const newItem = {
-        id: `gal-${Date.now()}-${i}-${Math.random()}`,
+        id: `gal-${Date.now()}-${Math.random()}`,
         title: newGalTitle.trim(),
         subtitle: newGalSubtitle.trim(),
         imageUrl: finalUrl,
@@ -1419,8 +1419,8 @@ export default function CreativeDashboardViewV2({
 
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-900/60 pt-3 relative z-10 select-none">
                   <div className="flex flex-wrap gap-1">
-                    {gig.tags.map(t => (
-                      <span key={t} className="bg-zinc-950 border border-zinc-850 text-[9px] text-zinc-400 hover:text-white px-2.5 py-0.5 rounded font-mono transition-colors shadow">
+                    {gig.tags.map((t, tIdx) => (
+                      <span key={`${t}-${tIdx}`} className="bg-zinc-950 border border-zinc-850 text-[9px] text-zinc-400 hover:text-white px-2.5 py-0.5 rounded font-mono transition-colors shadow">
                         #{t}
                       </span>
                     ))}
@@ -1607,7 +1607,7 @@ export default function CreativeDashboardViewV2({
                             { key: 'promoter', icon: '🏟️', name: 'Venue Promoter Gateway', desc: 'Calendars, lineups & finance', bgClass: 'bg-yellow-950/40 text-yellow-400 border-yellow-500/30', hoverBorderClass: 'hover:border-yellow-500/50', textClass: 'text-yellow-400', activeIndicator: 'bg-yellow-500 shadow-[0_0_8px_#eab308]' },
                             { key: 'creative', icon: '🛠️', name: 'Creative Hub & Crew', desc: 'Contracts, portfolio & sound crew', bgClass: 'bg-fuchsia-950/40 text-fuchsia-400 border-fuchsia-500/30', hoverBorderClass: 'hover:border-fuchsia-500/50', textClass: 'text-fuchsia-400', activeIndicator: 'bg-fuchsia-500 shadow-[0_0_8px_#d946ef]' },
                             { key: 'label', icon: '💿', name: 'Record Label Console', desc: 'Oversee rosters & releases', bgClass: 'bg-orange-950/40 text-orange-400 border-orange-500/30', hoverBorderClass: 'hover:border-orange-500/50', textClass: 'text-orange-400', activeIndicator: 'bg-orange-500 shadow-[0_0_8px_#f97316]' }
-                          ].map((portal) => {
+                          ].map((portal, idx) => {
                             const registeredWorkspaces = userProfile?.registered_workspaces || [];
                             const allowedWorkspaces = userProfile?.allowed_workspaces || [];
                             const currentRole = userProfile?.active_workspace || userProfile?.account_type;
@@ -1684,7 +1684,7 @@ export default function CreativeDashboardViewV2({
                             // Not allowed/locked
                             return (
                               <button
-                                key={portal.key}
+                                key={`${portal.key}-${idx}`}
                                 type="button"
                                 onClick={() => {
                                   setV2RoleMenuOpen(false);
@@ -1731,12 +1731,12 @@ export default function CreativeDashboardViewV2({
             { id: 'TEAMS', label: 'Teams', icon: Users },
             { id: 'SOCIAL', label: 'Social', icon: Globe },
             { id: 'SETTINGS', label: 'Settings', icon: Settings },
-          ].map((item) => {
+          ].map((item, idx) => {
             const IconComponent = item.icon;
             const isActive = activeTab === item.id;
             return (
               <button
-                key={item.id}
+                key={`${item.id}-${idx}`}
                 type="button"
                 onClick={() => {
                   setActiveTab(item.id as any);
@@ -2248,8 +2248,8 @@ export default function CreativeDashboardViewV2({
                               <div>
                                 <span className="block text-[8px] uppercase text-zinc-500 font-extrabold mb-1">Assigned Specialized Skills ({selectedSkills.length})</span>
                                 <div className="flex flex-wrap gap-1">
-                                  {selectedSkills.map(tag => (
-                                    <span key={tag} className="bg-zinc-950 border border-zinc-900 text-[9px] text-zinc-300 px-2 py-0.5 rounded">
+                                  {selectedSkills.map((tag, idx) => (
+                                    <span key={`${tag}-${idx}`} className="bg-zinc-950 border border-zinc-900 text-[9px] text-zinc-300 px-2 py-0.5 rounded">
                                       ⚡ {tag}
                                     </span>
                                   ))}
@@ -2261,8 +2261,8 @@ export default function CreativeDashboardViewV2({
                               <div>
                                 <span className="block text-[8px] uppercase text-zinc-500 font-extrabold mb-1">Gear Inventory & Tech Specs</span>
                                 <div className="flex flex-wrap gap-1">
-                                  {gearTags.map(tag => (
-                                    <span key={tag} className="bg-zinc-950 border border-zinc-900 text-[9px] text-zinc-300 px-2 py-0.5 rounded">
+                                  {gearTags.map((tag, idx) => (
+                                    <span key={`${tag}-${idx}`} className="bg-zinc-950 border border-zinc-900 text-[9px] text-zinc-300 px-2 py-0.5 rounded">
                                       🔧 {tag}
                                     </span>
                                   ))}
@@ -2274,8 +2274,8 @@ export default function CreativeDashboardViewV2({
                               <div>
                                 <span className="block text-[8px] uppercase text-zinc-500 font-extrabold mb-1">Underground Genres Supported</span>
                                 <div className="flex flex-wrap gap-1">
-                                  {genreTags.map(tag => (
-                                    <span key={tag} className="bg-zinc-950 border border-fuchsia-950 text-[9px] text-fuchsia-300 px-2 py-0.5 rounded">
+                                  {genreTags.map((tag, idx) => (
+                                    <span key={`${tag}-${idx}`} className="bg-zinc-950 border border-fuchsia-950 text-[9px] text-fuchsia-300 px-2 py-0.5 rounded">
                                       🎵 {tag}
                                     </span>
                                   ))}
@@ -2395,7 +2395,7 @@ export default function CreativeDashboardViewV2({
 
                                 return (
                                   <button
-                                    key={temp.id}
+                                    key={`${temp.id}-${index}`}
                                     type="button"
                                     onClick={() => {
                                       if (editingTemplateId === temp.id) {
@@ -2770,7 +2770,7 @@ export default function CreativeDashboardViewV2({
                           const isLookbookSelected = activeLookbookItemIds.includes(item.id);
                           return (
                             <div 
-                              key={item.id} 
+                              key={`${item.id}-${idx}`} 
                               className={`group h-20 rounded-xl cursor-pointer overflow-hidden transition-all relative border-2 ${
                                 isLookbookSelected 
                                   ? 'border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.5)] ring-1 ring-amber-400/30' 
@@ -2958,8 +2958,8 @@ export default function CreativeDashboardViewV2({
                         }}
                         className="w-full bg-zinc-950 border border-zinc-855 rounded-xl p-2.5 text-xs text-white cursor-pointer hover:border-zinc-700 transition"
                       >
-                        {Object.keys(GENRE_MICRO_GENRES).map((g) => (
-                          <option key={g} value={g}>{g}</option>
+                        {Object.keys(GENRE_MICRO_GENRES).map((g, gIdx) => (
+                          <option key={`${g}-${gIdx}`} value={g}>{g}</option>
                         ))}
                       </select>
                     </div>
@@ -2970,8 +2970,8 @@ export default function CreativeDashboardViewV2({
                         onChange={(e) => setNewGalMicroGenre(e.target.value)}
                         className="w-full bg-zinc-950 border border-zinc-855 rounded-xl p-2.5 text-xs text-white cursor-pointer hover:border-zinc-700 transition"
                       >
-                        {(GENRE_MICRO_GENRES[newGalGenre] || []).map((mg) => (
-                          <option key={mg} value={mg}>{mg}</option>
+                        {(GENRE_MICRO_GENRES[newGalGenre] || []).map((mg, idx) => (
+                          <option key={`${mg}-${idx}`} value={mg}>{mg}</option>
                         ))}
                       </select>
                     </div>
@@ -3111,8 +3111,8 @@ export default function CreativeDashboardViewV2({
 
                 {/* Portfolio Cards Grid - custom stylized portfolio badges */}
                 <div className="grid grid-cols-1 gap-3.5">
-                  {portfolioItems.map(item => (
-                    <div key={item.id} className="bg-gradient-to-r from-[#0d0d12] to-[#12121a] border border-zinc-855 hover:border-violet-500/40 p-4 rounded-xl flex items-center justify-between font-mono transition-all duration-200 shadow-md group">
+                  {portfolioItems.map((item, idx) => (
+                    <div key={`${item.id}-${idx}`} className="bg-gradient-to-r from-[#0d0d12] to-[#12121a] border border-zinc-855 hover:border-violet-500/40 p-4 rounded-xl flex items-center justify-between font-mono transition-all duration-200 shadow-md group">
                       <div className="space-y-1">
                         <span className="text-[8.5px] bg-zinc-900 border border-zinc-800 text-zinc-505 font-extrabold px-2 py-0.5 rounded-md uppercase">{item.client} • {item.year}</span>
                         <h4 className="text-xs font-black text-white uppercase mt-1.5 transition-colors group-hover:text-[#ff6b00]">{item.title}</h4>
@@ -3271,7 +3271,7 @@ export default function CreativeDashboardViewV2({
 
                         // Empty start offsets
                         for (let i = 0; i < startOffset; i++) {
-                          daysArr.push(<div key={`empty-leads-cal-${i}`} className="aspect-square bg-transparent rounded-xl" />);
+                          daysArr.push(<div key={`empty-leads-cal`} className="aspect-square bg-transparent rounded-xl" />);
                         }
 
                         // Generate actual days
@@ -3308,7 +3308,7 @@ export default function CreativeDashboardViewV2({
 
                           daysArr.push(
                             <button
-                              key={`leads-cal-day-${d}`}
+                              key={`leads-cal-day`}
                               type="button"
                               onClick={() => {
                                 setCalendarSelectedDate(dayDate);
@@ -3552,10 +3552,10 @@ export default function CreativeDashboardViewV2({
 
                 {/* PROPOSALS OFFER CARDS */}
                 <div className="space-y-3.5">
-                  {proposals.map(prop => {
+                  {proposals.map((prop, idx) => {
                     const isExpanded = !!expandedProposals[prop.id];
                     return (
-                      <div key={prop.id} className="bg-gradient-to-br from-[#0c181f] via-[#070d10] to-[#050608] border border-sky-500/25 hover:border-sky-400/50 rounded-2xl shadow-[0_4px_25px_rgba(14,165,233,0.05)] transition-all duration-300 relative overflow-hidden flex flex-col">
+                      <div key={`${prop.id}-${idx}`} className="bg-gradient-to-br from-[#0c181f] via-[#070d10] to-[#050608] border border-sky-500/25 hover:border-sky-400/50 rounded-2xl shadow-[0_4px_25px_rgba(14,165,233,0.05)] transition-all duration-300 relative overflow-hidden flex flex-col">
                         <div className="absolute -top-12 -left-12 w-24 h-24 rounded-full bg-sky-500/5 blur-2xl pointer-events-none" />
                         
                         {/* COLLAPSIBLE HEADER (Always visible) */}
@@ -3884,7 +3884,7 @@ export default function CreativeDashboardViewV2({
                       <div className="grid grid-cols-1 gap-2">
                         {pitchTemplates.map((temp, index) => (
                           <button
-                            key={temp.id}
+                            key={`${temp.id}-${index}`}
                             type="button"
                             onClick={() => {
                               setSelectedTemplateIndex(index);
@@ -3991,9 +3991,9 @@ export default function CreativeDashboardViewV2({
                           { id: 'Sound Engineer/Recording', label: 'Sound / Recording' },
                           { id: 'Media/Photography', label: 'Photo / Video / Social' },
                           { id: 'Session Musician/Techs', label: 'Session / Tech' }
-                        ].map(cat => (
+                        ].map((cat, idx) => (
                           <button
-                            key={cat.id}
+                            key={`${cat.id}-${idx}`}
                             type="button"
                             onClick={() => {
                               setPrimaryCategory(cat.id);
@@ -4026,9 +4026,9 @@ export default function CreativeDashboardViewV2({
                           { id: 'Media/Photography', label: 'Photo / Video / Social' },
                           { id: 'Session Musician/Techs', label: 'Session / Tech' },
                           { id: '', label: 'None' }
-                        ].map(cat => (
+                        ].map((cat, idx) => (
                           <button
-                            key={cat.id}
+                            key={`${cat.id}-${idx}`}
                             type="button"
                             onClick={() => {
                               if (cat.id === '') {
@@ -4111,8 +4111,8 @@ export default function CreativeDashboardViewV2({
                             className="w-full bg-zinc-950 border border-zinc-900 p-2.5 rounded-lg text-white font-mono focus:outline-none focus:border-fuchsia-500 text-xs"
                           >
                             <option value="">SELECT STATE...</option>
-                            {US_STATES.map((st) => (
-                              <option key={st.code} value={st.code}>{st.name.toUpperCase()} ({st.code})</option>
+                            {US_STATES.map((st, idx) => (
+                              <option key={`${st.code}-${idx}`} value={st.code}>{st.name.toUpperCase()} ({st.code})</option>
                             ))}
                             <option value="OUTSIDE_US">Outside US / Int'l</option>
                           </select>
@@ -4125,8 +4125,8 @@ export default function CreativeDashboardViewV2({
                             onChange={(e) => setCountry(e.target.value)} 
                             className="w-full bg-zinc-950 border border-zinc-900 p-2.5 rounded-lg text-white font-mono focus:outline-none focus:border-fuchsia-500 text-xs"
                           >
-                            {COUNTRIES.map((c) => (
-                              <option key={c.code} value={c.code}>{c.name.toUpperCase()}</option>
+                            {COUNTRIES.map((c, cIdx) => (
+                              <option key={`${c.code}-${cIdx}`} value={c.code}>{c.name.toUpperCase()}</option>
                             ))}
                           </select>
                         </div>
@@ -4180,11 +4180,11 @@ export default function CreativeDashboardViewV2({
                     <div className="space-y-1.5 border-t border-zinc-900 pt-3">
                       <label className="block text-[9px] uppercase font-black text-fuchsia-300">Assign Specialized Skills</label>
                       <div className="flex flex-wrap gap-1 pt-1 font-sans">
-                        {(categoryTags[primaryCategory as keyof typeof categoryTags] || []).map(tag => {
+                        {(categoryTags[primaryCategory as keyof typeof categoryTags] || []).map((tag, idx) => {
                           const selected = selectedSkills.includes(tag);
                           return (
                             <button
-                              key={tag}
+                              key={`${tag}-${idx}`}
                               type="button"
                               onClick={() => toggleSkillTag(tag)}
                               className={`px-2.5 py-1.5 rounded-md text-[10px] font-black uppercase transition-all flex items-center gap-1 border cursor-pointer ${
@@ -4224,8 +4224,8 @@ export default function CreativeDashboardViewV2({
                     <div className="space-y-1.5 border-t border-zinc-900 pt-3">
                       <label className="block text-[9px] uppercase font-black text-fuchsia-400">Gear Specifications & Equipment Inventory</label>
                       <div className="flex flex-wrap gap-1.5 font-sans">
-                        {gearTags.map(g => (
-                          <span key={g} className="bg-zinc-950 border border-zinc-900 text-[10px] text-zinc-300 px-2.5 py-1 rounded flex items-center gap-1.5 font-mono">
+                        {gearTags.map((g, gIdx) => (
+                          <span key={`${g}-${gIdx}`} className="bg-zinc-950 border border-zinc-900 text-[10px] text-zinc-300 px-2.5 py-1 rounded flex items-center gap-1.5 font-mono">
                             🔧 {g}
                             <button type="button" onClick={() => removeGearTag(g)} className="text-zinc-500 hover:text-red-400 cursor-pointer">
                               <X className="w-3 h-3" />
@@ -4259,11 +4259,11 @@ export default function CreativeDashboardViewV2({
                         {[
                           'Grindcore', 'Hardcore', 'Death Metal', 'Crust Punk', 'Doom Metal', 
                           'Sludge', 'Darkwave', 'Synthwave', 'Post-Punk', 'Indie Rock'
-                        ].map(genre => {
+                        ].map((genre, idx) => {
                           const selected = genreTags.includes(genre);
                           return (
                             <button
-                              key={genre}
+                              key={`${genre}-${idx}`}
                               type="button"
                               onClick={() => toggleGenrePreset(genre)}
                               className={`px-2.5 py-1.5 rounded-md text-[10px] font-black uppercase transition-all flex items-center gap-1 border cursor-pointer ${

@@ -167,9 +167,9 @@ export const CreatePost: React.FC<CreatePostProps> = ({
             </span>
           </div>
           <div className="flex items-center gap-1.5">
-            {['ANNOUNCEMENT', 'LIVE RITUAL', 'MERCH DROP', 'SLAM'].map((t) => (
+            {['ANNOUNCEMENT', 'LIVE RITUAL', 'MERCH DROP', 'SLAM'].map((t, tIdx) => (
               <button
-                key={t}
+                key={`${t}-${tIdx}`}
                 type="button"
                 onClick={() => setSelectedTag(t)}
                 className={`px-2 py-0.5 text-[9px] font-mono font-bold uppercase rounded border transition-all ${

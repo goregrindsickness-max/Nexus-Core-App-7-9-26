@@ -429,9 +429,9 @@ export default function OnRouteEssentialsView({ onBack, venueAddress }: OnRouteE
         {/* INPUT DECK */}
         <div className="space-y-4">
           <div className="grid grid-rows-2 grid-flow-col gap-2 overflow-x-auto py-1 scrollbar-none hide-scrollbar">
-            {['HOTELS', 'GROCERY', 'PHARMACY', 'CONVENIENCE', 'RESTAURANTS', 'HARDWARE', 'LIQUOR STORE', 'REPAIR SHOP', 'HOSPITALS', 'INSTRUMENTS'].map((macro) => (
+            {['HOTELS', 'GROCERY', 'PHARMACY', 'CONVENIENCE', 'RESTAURANTS', 'HARDWARE', 'LIQUOR STORE', 'REPAIR SHOP', 'HOSPITALS', 'INSTRUMENTS'].map((macro, idx) => (
               <button
-                key={macro}
+                key={`${macro}-${idx}`}
                 onClick={() => handleMacroTrigger(macro)}
                 className={
                   activeMacro === macro
@@ -461,9 +461,9 @@ export default function OnRouteEssentialsView({ onBack, venueAddress }: OnRouteE
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-mono text-orange-300/65 font-bold uppercase tracking-wider">Search Radius</span>
               <div className="flex gap-1.5 flex-wrap">
-                {[1, 3, 5, 10, 15, 25, 35, 45, 55].map((miles) => (
+                {[1, 3, 5, 10, 15, 25, 35, 45, 55].map((miles, idx) => (
                   <button
-                    key={miles}
+                    key={`${miles}-${idx}`}
                     onClick={() => {
                       setRadialRangeMiles(miles);
                       if (lastExecutedType) {

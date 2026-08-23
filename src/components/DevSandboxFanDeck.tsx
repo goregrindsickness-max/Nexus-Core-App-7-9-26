@@ -290,9 +290,9 @@ ALTER TABLE public.staged_tickets ENABLE ROW LEVEL SECURITY;
               <div className="space-y-1.5">
                 <span className="text-[8px] font-mono text-zinc-550 uppercase block font-black">SHIFT SIMULATED RADIUS VECTOR</span>
                 <div className="grid grid-cols-4 gap-1">
-                  {(['Chicago', 'Brooklyn', 'Denver', 'LA'] as const).map((loc) => (
+                  {(['Chicago', 'Brooklyn', 'Denver', 'LA'] as const).map((loc, lIdx) => (
                     <button
-                      key={loc}
+                      key={`${loc}-${lIdx}`}
                       type="button"
                       onClick={() => {
                         setGpsSimLocation(loc);
@@ -320,8 +320,8 @@ ALTER TABLE public.staged_tickets ENABLE ROW LEVEL SECURITY;
                   No active tour stops in 50M range vector
                 </div>
               ) : (
-                shows.filter(s => getDistanceMiles(s.city) < 50).map(s => (
-                  <div key={s.id} className="flex justify-between items-center p-2 bg-black/40 rounded border border-zinc-900 text-[10px] font-mono">
+                shows.filter(s => getDistanceMiles(s.city) < 50).map((s, sIdx) => (
+                  <div key={`${s.id}-${sIdx}`} className="flex justify-between items-center p-2 bg-black/40 rounded border border-zinc-900 text-[10px] font-mono">
                     <span className="text-white font-bold max-w-[130px] truncate">{s.name || s.city}</span>
                     <span className="text-[#00ffcc] font-black shrink-0">~{getDistanceMiles(s.city).toFixed(1)} MILES</span>
                   </div>
@@ -351,12 +351,12 @@ ALTER TABLE public.staged_tickets ENABLE ROW LEVEL SECURITY;
                   <span className="text-[10px] font-mono text-zinc-650 uppercase">No Dates Registered in memory.</span>
                 </div>
               ) : (
-                shows.map((show) => {
+                shows.map((show, shIdx) => {
                   const distance = getDistanceMiles(show.city);
                   const isInRange = distance < 50;
                   return (
                     <div 
-                      key={show.id} 
+                      key={`${show.id}-${shIdx}`} 
                       className={`p-2.5 rounded-xl border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 transition-all bg-black/40 ${
                         isInRange ? 'border-zinc-800' : 'border-zinc-950 opacity-60'
                       }`}
@@ -423,10 +423,10 @@ ALTER TABLE public.staged_tickets ENABLE ROW LEVEL SECURITY;
               </form>
 
               <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
-                {simFans.map((fan) => {
+                {simFans.map((fan, idx) => {
                   const details = getLoyaltyTierDetails(fan.scans_count);
                   return (
-                    <div key={fan.id} className="p-2 bg-black rounded-lg border border-zinc-900 flex items-center justify-between gap-1.5 text-left">
+                    <div key={`${fan.id}-${idx}`} className="p-2 bg-black rounded-lg border border-zinc-900 flex items-center justify-between gap-1.5 text-left">
                       <div className="space-y-1 min-w-0">
                         <span className="text-[10px] font-mono text-zinc-300 font-bold block truncate">@{fan.username}</span>
                         <div className="flex items-center gap-1.5 flex-wrap">

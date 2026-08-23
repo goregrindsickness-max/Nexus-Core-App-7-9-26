@@ -541,7 +541,7 @@ export default function NotificationCenterView({
                   <span className="text-[10px] font-bold font-mono text-zinc-500 mr-1 uppercase flex items-center gap-0.5">
                     <Tag className="w-3 h-3 text-purple-500" /> Tags:
                   </span>
-                  {['ALL', 'INVENTORY REFILL', 'CURFEW UPDATE', 'MARKET OFFER', 'SYSTEM'].map((catName) => {
+                  {['ALL', 'INVENTORY REFILL', 'CURFEW UPDATE', 'MARKET OFFER', 'SYSTEM'].map((catName, cIdx) => {
                     const isSelected = selectedCategory === catName;
                     const count = catName === 'ALL' 
                       ? notifications.length 
@@ -549,7 +549,7 @@ export default function NotificationCenterView({
                     
                     return (
                       <button
-                        key={catName}
+                        key={`${catName}-${cIdx}`}
                         onClick={() => {
                           playBeep(650, 'sine', 0.05);
                           setSelectedCategory(catName);
@@ -619,7 +619,7 @@ export default function NotificationCenterView({
 
                       return (
                         <motion.div
-                          key={notif.id}
+                          key={`${notif.id}-${index}`}
                           initial={{ opacity: 0, x: 20, y: 5 }}
                           animate={{ opacity: isUnread ? 1 : 0.65, x: 0, y: 0 }}
                           exit={{ opacity: 0, x: -20, transition: { duration: 0.15 } }}
