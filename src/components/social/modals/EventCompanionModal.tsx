@@ -559,7 +559,7 @@ export const EventCompanionModal: React.FC<EventCompanionModalProps> = ({
                         const isSupport = idx === 1;
                         return (
                           <div
-                            key={idx}
+                            key={`lineup-band-${band}-${idx}`}
                             className={`p-2 rounded-xl flex items-center justify-between border ${
                               isHeadliner
                                 ? 'bg-rose-950/20 border-rose-500/40 text-white'
@@ -661,7 +661,7 @@ export const EventCompanionModal: React.FC<EventCompanionModalProps> = ({
                               {tracks && tracks.length > 0 ? (
                                 tracks.map((song, songIdx) => (
                                   <div
-                                    key={songIdx}
+                                    key={`song-${song}-${songIdx}`}
                                     className="flex items-center justify-between py-2.5 px-2 hover:bg-zinc-900/30 transition-all rounded-lg"
                                   >
                                     <div className="flex items-center gap-2.5 min-w-0">
@@ -719,7 +719,7 @@ export const EventCompanionModal: React.FC<EventCompanionModalProps> = ({
                   {venueMessages.map((msg, i) => {
                     const isMe = msg.user_id === userProfile?.id;
                     return (
-                      <div key={i} className={`flex items-start gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
+                      <div key={msg.id ? `venue-msg-${msg.id}-${i}` : `venue-msg-${i}`} className={`flex items-start gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
                         <div className={`w-8 h-8 rounded-full ${isMe ? 'bg-rose-600' : 'bg-zinc-800'} flex items-center justify-center text-xs text-white font-bold shrink-0 overflow-hidden`}>
                           {msg.avatar_url ? (
                             <img src={msg.avatar_url} alt="" className="w-full h-full object-cover" />

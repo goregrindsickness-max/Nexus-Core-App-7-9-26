@@ -368,6 +368,7 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
               <div className="flex gap-1.5 mb-6 overflow-x-auto pb-2 justify-start select-none scrollbar-thin scrollbar-thumb-zinc-800">
                 {[
                   { id: 'all', label: 'All Merch' },
+                  { id: 'limited', label: '⚡ Limited Drops' },
                   { id: 'label', label: 'Label Gear 🏷️' },
                   { id: 't-shirts', label: 'T-Shirts' },
                   { id: 'longsleeve', label: 'Longsleeves' },
@@ -396,7 +397,9 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
                 const filteredMerchItems = activeStoreItems.filter(item => {
                   if ((item as any).hidden) return false;
                   if (item.category !== 'apparel' && item.category !== 'media' && item.category !== 'label') return false;
-                  const matchesCategory = shopCategory === 'all' || item.category === shopCategory || item.subcategory === shopCategory;
+                  const matchesCategory = 
+                    shopCategory === 'all' || 
+                    (shopCategory === 'limited' ? (Boolean((item as any).isLimited || (item as any).stock || item.category === 'vinyl' || item.category === 'cassettes')) : (item.category === shopCategory || item.subcategory === shopCategory));
                   const matchesSearch = (item?.name || '').toLowerCase().includes(shopSearchQuery.toLowerCase()) || 
                                         item.description.toLowerCase().includes(shopSearchQuery.toLowerCase());
                   
@@ -430,9 +433,9 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
                 return (
                   <>
                     <div className="grid grid-cols-3 gap-3 md:gap-4 mb-6 items-stretch">
-                      {paginatedItems.map(item => (
+                      {paginatedItems.map((item, itmIdx) => (
                         <div 
-                          key={item.id} 
+                          key={item.id ? `shop-item-${item.id}-${itmIdx}` : `shop-item-${itmIdx}`} 
                           onClick={() => {
                             setSelectedShopItem(item);
                             if (item.sizes && item.sizes.length > 0) {
@@ -446,6 +449,14 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
                             {isDemoMode && (
                               <div className="absolute top-1.5 left-1.5 bg-black/85 backdrop-blur-md border border-rose-900/60 px-1.5 py-0.5 rounded z-10">
                                 <span className="text-[8px] font-black text-rose-400 font-mono uppercase">DEMO</span>
+                              </div>
+                            )}
+                            {((item as any).isLimited || (item as any).stock || item.category === 'vinyl' || item.category === 'cassettes') && (
+                              <div className="absolute bottom-1.5 left-1.5 bg-red-950/90 backdrop-blur-md border border-red-500/50 px-1.5 py-0.5 rounded z-10 flex items-center gap-1 shadow-md">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                                <span className="text-[8px] font-black text-red-300 font-mono uppercase">
+                                  {((item as any).stock) ? `ONLY ${(item as any).stock} LEFT` : 'LTD PRESSING'}
+                                </span>
                               </div>
                             )}
                             <div className="absolute inset-0 flex items-center justify-center p-2">
@@ -570,9 +581,9 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
                                             item.description.toLowerCase().includes(shopSearchQuery.toLowerCase());
                       return matchesCategory && matchesSearch;
                     })
-                    .map(item => (
+                    .map((item, itmIdx) => (
                       <div 
-                        key={item.id}
+                        key={item.id ? `merch-item-${item.id}-${itmIdx}` : `merch-item-${itmIdx}`}
                         onClick={() => {
                           setSelectedShopItem(item);
                           if (item.sizes && item.sizes.length > 0) {

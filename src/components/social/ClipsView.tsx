@@ -222,9 +222,9 @@ export const ClipsView: React.FC<ClipsViewProps> = ({
       {/* Main Reels Container */}
       <div className="w-full max-w-[480px] h-[calc(100vh-140px)] max-h-[900px] relative bg-black sm:rounded-2xl overflow-hidden shadow-2xl flex flex-col snap-y snap-mandatory overflow-y-scroll no-scrollbar mb-8 border border-zinc-900">
         {/* Clips Loop */}
-        {clips.map((clip) => (
+        {clips.map((clip, cIdx) => (
           <div
-            key={clip.id}
+            key={clip.id ? `clip-${clip.id}-${cIdx}` : `clip-${cIdx}`}
             className="h-full w-full shrink-0 snap-start snap-always relative flex items-center justify-center bg-zinc-950/80 border-b border-zinc-900 group"
           >
             {/* Video Placeholder or Player */}
@@ -535,8 +535,8 @@ export const ClipsView: React.FC<ClipsViewProps> = ({
               </div>
 
               <div className="p-4 flex-1 overflow-y-auto space-y-3">
-                {(clipCommentsList[activeClipComments] || []).map((comm) => (
-                  <div key={comm.id} className="bg-zinc-950/60 p-3 rounded-xl border border-zinc-900 space-y-1">
+                {(clipCommentsList[activeClipComments] || []).map((comm, commIdx) => (
+                  <div key={comm.id ? `comm-${comm.id}-${commIdx}` : `comm-${commIdx}`} className="bg-zinc-950/60 p-3 rounded-xl border border-zinc-900 space-y-1">
                     <div className="flex justify-between items-center text-[10px]">
                       <span className="font-bold text-rose-400">{comm.author}</span>
                       <span className="text-zinc-600 font-mono">{comm.time}</span>
@@ -655,9 +655,9 @@ export const ClipsView: React.FC<ClipsViewProps> = ({
                     { id: '3', title: 'Scourge of Iron', band: 'Cannibal Corpse', duration: '4:44' },
                     { id: '4', title: 'Altars of Madness', band: 'Morbid Angel', duration: '5:12' },
                     { id: '5', title: 'Pierced From Within', band: 'Suffocation', duration: '4:26' },
-                  ].map((track) => (
+                  ].map((track, trkIdx) => (
                     <div
-                      key={track.id}
+                      key={track.id ? `trk-${track.id}-${trkIdx}` : `trk-${trkIdx}`}
                       onClick={() => {
                         triggerNotification?.(`Audio "${track.title}" attached to Clip reel!`);
                         setShowSongModal(false);

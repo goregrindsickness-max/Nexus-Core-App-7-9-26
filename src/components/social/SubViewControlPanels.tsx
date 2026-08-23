@@ -93,13 +93,13 @@ export const SubViewControlPanels: React.FC<SubViewControlPanelsProps> = ({
 
         {isLiveTonightOpen && (
           <div className="overflow-x-auto no-scrollbar px-4 flex gap-3 pb-1 animate-in slide-in-from-top-2 fade-in duration-200">
-            {liveEvents.map((gig) => {
+            {liveEvents.map((gig, idx) => {
               const isTonight = gig.date?.toLowerCase() === 'tonight' || (!gig.date && gig.time.toLowerCase().includes('tonight'));
               const isTomorrow = gig.date?.toLowerCase() === 'tomorrow';
               
               return (
                 <div
-                  key={gig.id}
+                  key={`gig-${gig.id}-${idx}`}
                   className={`shrink-0 bg-[#0a0c10] border rounded-xl px-3 py-2 flex items-center gap-3 shadow-lg shadow-black/50 transition-all group cursor-pointer ${
                     gig.isFollowed 
                       ? 'border-amber-500/50 hover:border-amber-400/80 bg-gradient-to-r from-amber-950/20 to-[#0a0c10]' 

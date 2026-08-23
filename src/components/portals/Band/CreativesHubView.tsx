@@ -139,10 +139,10 @@ interface CreativeTalent {
 const DEFAULT_CREATIVE_TALENT: CreativeTalent[] = [
   {
     id: "c-vortex",
-    name: "Vortex Graphic Design",
+    name: "Vortex Graphics",
     category: "visual",
     categoryLabel: "Visual Arts",
-    title_block: "Vortex Graphic Design // VISUAL",
+    title_block: "Vortex Graphics // VISUAL",
     skills: [
       "Logo Art",
       "Vector Conversion",
@@ -1250,7 +1250,7 @@ export default function CreativesHubView({
           created_at: new Date().toISOString(),
           project_title: "Unclean Soul Album Cover Design",
           creative_id: "c-vortex",
-          creative_name: "Vortex Graphic Design",
+          creative_name: "Vortex Graphics",
           creative_category: "visual",
           band_name: activeBandName,
           fee: 350,
@@ -1314,7 +1314,7 @@ export default function CreativesHubView({
               {
                 id: "pitch-1",
                 creative_id: "c-vortex",
-                creative_name: "Vortex Graphic Design",
+                creative_name: "Vortex Graphics",
                 pitch_text:
                   "I can execute this perfectly. I specialize in old-school xerox halftone style and already have a dynamic template ready for standard 3-panel J-cards. Take a look at my mock sketch showing distressed black border alignments: [vector_proof_v1.tiff]",
                 sketch_ref:

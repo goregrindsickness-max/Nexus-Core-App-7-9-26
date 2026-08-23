@@ -236,24 +236,13 @@ export function getEmbedUrl(url: string | undefined | null): string | null {
     return cleanedUrl.replace(/open\.spotify\.com\/(track|playlist|album|artist)\/([a-zA-Z0-9]+)/i, 'open.spotify.com/embed/$1/$2');
   }
 
-  // YouTube
-  if (cleanedUrl.includes('youtube.com/watch')) {
-    try {
-      const urlObj = new URL(cleanedUrl);
-      const videoId = urlObj.searchParams.get('v');
-      if (videoId) {
-        return `https://www.youtube.com/embed/${videoId}`;
-      }
-    } catch (e) {}
+  // YouTube (supports watch, shorts, live, youtu.be, embed, mobile)
+  const ytMatch = cleanedUrl.match(/(?:youtube(?:-nocookie)?\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?|shorts|live)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i);
+  if (ytMatch && ytMatch[1]) {
+    return `https://www.youtube.com/embed/${ytMatch[1]}`;
   }
-  if (cleanedUrl.includes('youtu.be/')) {
-    const parts = cleanedUrl.split('youtu.be/');
-    const idAndParams = parts[1]?.split('?')[0];
-    if (idAndParams) {
-      return `https://www.youtube.com/embed/${idAndParams}`;
-    }
-  }
-  if (cleanedUrl.includes('youtube.com/embed/')) {
+
+  if (cleanedUrl.includes('youtube.com/embed/') || cleanedUrl.includes('youtube-nocookie.com/embed/')) {
     return cleanedUrl;
   }
 

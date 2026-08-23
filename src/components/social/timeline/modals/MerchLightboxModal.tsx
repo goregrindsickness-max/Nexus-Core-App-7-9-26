@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { X, ZoomIn, ZoomOut, RotateCcw, ChevronLeft, ChevronRight, Sparkles, Zap } from 'lucide-react';
+import { X, ZoomIn, ZoomOut, RotateCcw, ChevronLeft, ChevronRight, Sparkles, Zap, Timer, Flame, ShieldAlert } from 'lucide-react';
 import { FeedPost } from '../types';
 import { usePinchZoom } from '../../../../hooks/usePinchZoom';
 
@@ -37,6 +37,11 @@ export const MerchLightboxModal: React.FC<MerchLightboxModalProps> = ({
     reset();
   }, [activeMerchLightbox.activeIndex, reset]);
 
+  const merchData = activeMerchLightbox.post.merchData;
+  const currentStock = merchData?.stock ?? 4;
+  const totalLimit = merchData?.totalStock || (merchData?.stock ? Math.max(merchData.stock + 15, 25) : 30);
+  const isCriticalStock = currentStock <= 5;
+
   return (
     <div 
       className="fixed inset-0 z-[9999999] bg-black/95 backdrop-blur-xl flex flex-col justify-between p-4 sm:p-6 animate-in fade-in duration-200 select-none overflow-hidden"
@@ -47,13 +52,22 @@ export const MerchLightboxModal: React.FC<MerchLightboxModalProps> = ({
     >
       {/* Top Bar / Header Controls */}
       <div className="flex items-center justify-between gap-4 border-b border-zinc-800/80 pb-3 z-20">
-        <div className="min-w-0">
-          <span className="text-[10px] font-mono font-bold text-orange-400 uppercase tracking-widest block">
-            {activeMerchLightbox.post.merchData?.category || 'MERCH DESIGN INSPECTION'}
-          </span>
-          <h3 className="text-sm sm:text-base font-mono font-black text-white truncate">
-            {activeMerchLightbox.post.merchData?.name}
-          </h3>
+        <div className="min-w-0 flex items-center gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono font-bold text-orange-400 uppercase tracking-widest block">
+                {merchData?.category || 'MERCH DESIGN INSPECTION'}
+              </span>
+              <span className={`px-2 py-0.2 rounded text-[9px] font-mono font-black uppercase ${
+                isCriticalStock ? 'bg-red-500 text-black shadow-sm' : 'bg-amber-500 text-black'
+              }`}>
+                ⚡ {currentStock} / {totalLimit} UNITS REMAINING
+              </span>
+            </div>
+            <h3 className="text-sm sm:text-base font-mono font-black text-white truncate">
+              {merchData?.name}
+            </h3>
+          </div>
         </div>
 
         {/* Zoom Controls Bar */}
@@ -106,7 +120,7 @@ export const MerchLightboxModal: React.FC<MerchLightboxModalProps> = ({
         <div className="relative max-w-full max-h-full flex items-center justify-center">
           <img
             src={activeMerchLightbox.images[activeMerchLightbox.activeIndex]}
-            alt={activeMerchLightbox.post.merchData?.name}
+            alt={merchData?.name}
             style={{
               ...imageStyle,
               maxHeight: 'calc(80vh - 120px)',
@@ -176,7 +190,7 @@ export const MerchLightboxModal: React.FC<MerchLightboxModalProps> = ({
           <div className="text-right">
             <span className="text-xs font-mono font-bold text-zinc-400 block">TOTAL PRICE</span>
             <span className="text-lg font-mono font-black text-orange-400">
-              ${(activeMerchLightbox.post.merchData?.price || 0).toFixed(2)}
+              ${(merchData?.price || 0).toFixed(2)}
             </span>
           </div>
 
@@ -191,7 +205,7 @@ export const MerchLightboxModal: React.FC<MerchLightboxModalProps> = ({
             }}
             className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-black font-mono font-black text-xs uppercase tracking-wider rounded-xl flex items-center gap-2 shadow-[0_0_20px_rgba(249,115,22,0.4)] cursor-pointer transition-all transform hover:scale-105"
           >
-            <Zap className="w-4 h-4 fill-black" /> BUY NOW
+            <Zap className="w-4 h-4 fill-black" /> 1-CLICK STRIPE CHECKOUT
           </button>
         </div>
       </div>

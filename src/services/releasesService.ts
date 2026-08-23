@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
 import { labelCatalogStore } from '../utils/indexedDB';
+import { uploadBase64ToStorage } from './storageService';
 
 export interface ReleaseTrack {
   id: string;
@@ -97,6 +98,24 @@ export async function upsertReleaseToDatabase(
     const isValidUUID = (str?: string | null) => 
       str ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str) : false;
 
+    // Process cover image Base64 strings to save into 'audio-vault' bucket
+    let finalCoverUrl = release.coverUrl || release.coverImage || null;
+    if (finalCoverUrl && finalCoverUrl.startsWith('data:')) {
+      try {
+        const uploadedUrl = await uploadBase64ToStorage(
+          finalCoverUrl,
+          'audio-vault',
+          targetBandId,
+          `release-${release.id || 'new'}-cover`
+        );
+        if (uploadedUrl) {
+          finalCoverUrl = uploadedUrl;
+        }
+      } catch (uploadErr) {
+        console.warn('[releasesService] Error uploading cover image to audio-vault storage, falling back to original string:', uploadErr);
+      }
+    }
+
     const payload: Record<string, any> = {
       id: release.id,
       band_id: targetBandId,
@@ -107,8 +126,8 @@ export async function upsertReleaseToDatabase(
       release_date: release.releaseDate || null,
       label: release.label || null,
       genre: release.genre || null,
-      cover_image: release.coverImage || release.coverUrl || null,
-      cover_url: release.coverUrl || release.coverImage || null,
+      cover_image: finalCoverUrl,
+      cover_url: finalCoverUrl,
       cover_color: release.coverColor || null,
       tracks: release.tracks || [],
       formats: release.formats || {},

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { getSupabase } from '../supabase';
 import { getValidUserId, handleSendMessage } from '../store/useChatStore';
 import { markChatAsRead, handleMarkAllAsRead } from '../lib/chat';
+import { pushManager } from '../lib/pushNotifications';
 
 export interface ChatMessage {
   id: string;
@@ -131,6 +132,21 @@ export const useChats = () => {
                 if (prev.some((m) => m.id === incomingMessage.id)) return prev;
                 return [...prev, incomingMessage];
               });
+
+              // Dispatch real device push notification if incoming from another user
+              if (incomingMessage.sender_id !== activeUid) {
+                const previewText = incomingMessage.content || incomingMessage.message || 'Sent an attachment';
+                pushManager.sendPushNotification({
+                  title: '💬 New Direct Message',
+                  body: previewText.length > 80 ? `${previewText.substring(0, 77)}...` : previewText,
+                  category: 'direct_messages',
+                  priority: 'P1',
+                  targetTab: 'messages',
+                  data: {
+                    senderId: incomingMessage.sender_id,
+                  }
+                });
+              }
             }
           }
         )

@@ -79,6 +79,9 @@ CREATE TABLE public."bands" (
     "homebase" TEXT,
     "logo_url" TEXT,
     "label_id" UUID,
+    "live_update" TEXT,
+    "featured_video_band_name" TEXT,
+    "featured_video_track_name" TEXT,
     FOREIGN KEY ("label_id") REFERENCES public."labels"("id") ON DELETE SET NULL
 );
 

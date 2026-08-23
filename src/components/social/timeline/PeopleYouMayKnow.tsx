@@ -498,7 +498,7 @@ export const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({
         style={{ scrollSnapType: 'x mandatory' }}
       >
         <AnimatePresence mode="popLayout">
-          {filteredProfiles.map((profile) => {
+          {filteredProfiles.map((profile, pIdx) => {
             const isFollowed = localFollowedMap[profile.id] !== undefined
               ? localFollowedMap[profile.id]
               : Boolean(profile.followed);
@@ -508,7 +508,7 @@ export const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({
 
             return (
               <motion.div
-                key={profile.id}
+                key={profile.id ? `pymk-${profile.id}-${pIdx}` : `pymk-${profile.name}-${pIdx}`}
                 layout
                 initial={{ opacity: 0, scale: 0.92, y: 6 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}

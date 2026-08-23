@@ -1,9 +1,10 @@
-import React, { useRef } from 'react';
-import { Upload, Camera, Users, Star, CheckSquare, Settings, DollarSign, Pin, X, Plus, ChevronDown, ChevronUp, ShieldCheck, ShieldAlert, CheckCircle2, BadgeCheck } from 'lucide-react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { Upload, Camera, Users, Star, CheckSquare, Settings, DollarSign, Pin, X, Plus, ChevronDown, ChevronUp, ShieldCheck, ShieldAlert, CheckCircle2, BadgeCheck, Disc, Trash2, Edit2, FileText, Sparkles } from 'lucide-react';
 import { V2ExpandableCard } from './V2ExpandableCard';
 import SettingsView from './SettingsView';
 import HelpDeskView from './HelpDeskView';
 import TermsOfServiceView from './TermsOfServiceView';
+import { fetchReleasesFromDatabase, upsertReleaseToDatabase, deleteReleaseFromDatabase } from '../services/releasesService';
 const concertBg = "https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/public-assets/High%20energy%20concert%202.png";
 import { profileStore } from '../utils/indexedDB';
 import { getSupabase, executeWithSchemaResilience, uploadBase64ToStorage, sanitizeBandPayload, sanitizeMicroGenres, parseLocationFields } from '../supabase';
@@ -76,6 +77,52 @@ export default function SettingsWorkspace(props: any) {
     () => props.activeBand?.verification_platform || 'Spotify Official Artist'
   );
   const [verificationUrlInput, setVerificationUrlInput] = React.useState<string>('');
+
+  // Discography & Releases Manager state variables
+  const [releasesList, setReleasesList] = useState<any[]>([]);
+  const [isReleasesLoading, setIsReleasesLoading] = useState(false);
+  const [editingRelease, setEditingRelease] = useState<any | null>(null);
+  const [releaseCoverDragActive, setReleaseCoverDragActive] = useState(false);
+
+  const loadReleasesData = useCallback(async () => {
+    const supabase = getSupabase();
+    if (!supabase || !props.activeBand?.id) return;
+    setIsReleasesLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('releases')
+        .select('*')
+        .eq('band_id', props.activeBand.id);
+      if (data && !error) {
+        setReleasesList(data.map((row: any) => ({
+          id: row.id,
+          catalogId: row.catalog_id || row.catalogId || '',
+          title: row.title || '',
+          coverColor: row.cover_color || '',
+          type: row.type || 'Album',
+          year: row.release_date ? new Date(row.release_date).getFullYear().toString() : (row.release_year || '2026'),
+          releaseDate: row.release_date || '',
+          label: row.label || '',
+          genre: row.genre || '',
+          coverImage: row.cover_image || row.cover_url || '',
+          coverUrl: row.cover_url || row.cover_image || '',
+          image_url: row.cover_url || row.cover_image || '',
+          tracks: Array.isArray(row.tracks) ? row.tracks : (typeof row.tracks === 'string' ? JSON.parse(row.tracks) : []),
+          formats: typeof row.formats === 'object' && row.formats ? row.formats : (typeof row.formats === 'string' ? JSON.parse(row.formats) : {}),
+          digital: Array.isArray(row.digital) ? row.digital : (typeof row.digital === 'string' ? JSON.parse(row.digital) : []),
+          status: row.status || 'active'
+        })));
+      }
+    } catch (e) {
+      console.warn('[loadReleasesData error]:', e);
+    } finally {
+      setIsReleasesLoading(false);
+    }
+  }, [props.activeBand?.id]);
+
+  useEffect(() => {
+    loadReleasesData();
+  }, [loadReleasesData]);
 
   React.useEffect(() => {
     if (props.activeBand) {
@@ -907,6 +954,452 @@ export default function SettingsWorkspace(props: any) {
                 Save Band Profile
               </button>
             </div>
+          </div>
+        </div>
+      </V2ExpandableCard>
+
+      <V2ExpandableCard title="Discography & Releases" defaultExpanded={false}>
+        <div className="bg-[#090b0e] border-t border-zinc-900/60 p-5 space-y-6">
+          <div className="space-y-4 text-left">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">Release Catalog</h3>
+                <p className="text-[10.5px] text-zinc-400 font-sans mt-1">
+                  Manage the official music catalog of your band. These releases will display live on your public profile.
+                </p>
+              </div>
+              {!editingRelease && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingRelease({
+                      id: `rel-${Date.now()}`,
+                      title: '',
+                      type: 'Album',
+                      releaseDate: new Date().toISOString().split('T')[0],
+                      label: props.activeBand?.label || '',
+                      coverUrl: '',
+                      coverImage: '',
+                      catalogId: '',
+                      tracks: []
+                    });
+                  }}
+                  className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-mono font-bold text-[10px] uppercase tracking-wider rounded-lg transition-all flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer border-none"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add Release
+                </button>
+              )}
+            </div>
+
+            {/* List View */}
+            {!editingRelease ? (
+              isReleasesLoading ? (
+                <div className="py-8 text-center space-y-2">
+                  <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <p className="text-[10px] text-zinc-500 font-mono">Retrieving releases from database...</p>
+                </div>
+              ) : releasesList.length === 0 ? (
+                <div className="border border-zinc-850 rounded-xl p-8 text-center space-y-3 bg-zinc-950/40">
+                  <Disc className="w-10 h-10 text-zinc-600 mx-auto animate-spin-slow" />
+                  <p className="text-xs text-zinc-400 font-mono">No releases found in the database releases table.</p>
+                  <p className="text-[10px] text-zinc-500 max-w-xs mx-auto">Click 'Add Release' to publish your first album, EP, single, or demo.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {releasesList.map((rel: any, idx: number) => {
+                    const linkedProduct = props.inventory?.find((inv: any) => inv.id === rel.catalogId || inv.id === rel.catalog_id);
+                    return (
+                      <div key={rel.id ? `rel-${rel.id}-${idx}` : `rel-${idx}`} className="p-3 bg-zinc-950/80 border border-zinc-850 rounded-xl flex items-center justify-between gap-3 hover:border-zinc-700 transition-colors">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-12 h-12 rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
+                            {rel.coverUrl ? (
+                              <img src={rel.coverUrl} alt={rel.title} className="w-full h-full object-cover" />
+                            ) : (
+                              <Disc className="w-5 h-5 text-zinc-600" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="px-1 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[8px] font-mono font-bold uppercase">{rel.type}</span>
+                              <span className="text-[9px] font-mono text-zinc-500">{rel.year}</span>
+                            </div>
+                            <h4 className="text-xs font-bold text-white uppercase tracking-wider truncate mt-0.5">{rel.title}</h4>
+                            <p className="text-[9px] font-mono text-zinc-400 truncate mt-0.5">
+                              {rel.label || 'No Label'} {rel.tracks?.length ? `• ${rel.tracks.length} Tracks` : '• No Tracks'}
+                            </p>
+                            {linkedProduct ? (
+                              <div className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[8px] font-mono font-bold">
+                                <CheckCircle2 className="w-2.5 h-2.5" /> Synced: {linkedProduct.name}
+                              </div>
+                            ) : (
+                              <div className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 text-[8px] font-mono">
+                                Not Synced to Store
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setEditingRelease(JSON.parse(JSON.stringify(rel)))}
+                            className="p-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-lg border border-zinc-800 transition-colors cursor-pointer"
+                            title="Edit Release"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (confirm(`Are you sure you want to delete "${rel.title}"?`)) {
+                                const ok = await deleteReleaseFromDatabase(rel.id);
+                                if (ok) {
+                                  props.triggerNotification?.(`🗑️ Deleted release "${rel.title}" successfully.`);
+                                  loadReleasesData();
+                                } else {
+                                  props.triggerNotification?.(`❌ Failed to delete release from database.`);
+                                }
+                              }
+                            }}
+                            className="p-2 bg-zinc-900 hover:bg-rose-950/30 text-zinc-400 hover:text-rose-400 rounded-lg border border-zinc-800 hover:border-rose-900/50 transition-colors cursor-pointer"
+                            title="Delete Release"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            ) : (
+              /* Editor View */
+              <div className="space-y-5 bg-zinc-950/40 p-4 border border-zinc-850 rounded-xl">
+                <div className="flex items-center justify-between border-b border-zinc-850 pb-3">
+                  <h4 className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest flex items-center gap-2">
+                    <Disc className="w-4 h-4 text-amber-500" />
+                    {editingRelease.id.startsWith('rel-') ? 'New Release Draft' : 'Edit Release Record'}
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => setEditingRelease(null)}
+                    className="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-lg transition-colors cursor-pointer border-none"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  {/* Left Column: Cover Uploader */}
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-mono uppercase text-amber-400 tracking-widest block font-bold">Release Cover Image</label>
+                    <div className="aspect-square w-full rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden relative group shadow-md flex flex-col items-center justify-center">
+                      {editingRelease.coverUrl || editingRelease.coverImage ? (
+                        <>
+                          <img src={editingRelease.coverUrl || editingRelease.coverImage} alt="Cover Preview" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => setEditingRelease((prev: any) => ({ ...prev, coverUrl: '', coverImage: '' }))}
+                            className="absolute top-2 right-2 p-1.5 bg-black/80 hover:bg-black text-rose-400 rounded-lg transition-colors shadow-md border-none"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      ) : (
+                        <div
+                          onDragEnter={(e) => { e.preventDefault(); setReleaseCoverDragActive(true); }}
+                          onDragOver={(e) => { e.preventDefault(); setReleaseCoverDragActive(true); }}
+                          onDragLeave={(e) => { e.preventDefault(); setReleaseCoverDragActive(false); }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            setReleaseCoverDragActive(false);
+                            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                              const file = e.dataTransfer.files[0];
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                if (reader.result) {
+                                  setEditingRelease((prev: any) => ({ ...prev, coverUrl: reader.result as string, coverImage: reader.result as string }));
+                                }
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          onClick={() => {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = 'image/*';
+                            input.onchange = (e: any) => {
+                              if (e.target.files && e.target.files[0]) {
+                                const file = e.target.files[0];
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  if (reader.result) {
+                                    setEditingRelease((prev: any) => ({ ...prev, coverUrl: reader.result as string, coverImage: reader.result as string }));
+                                  }
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            };
+                            input.click();
+                          }}
+                          className={`w-full h-full flex flex-col items-center justify-center p-4 text-center cursor-pointer border-2 border-dashed transition-all ${
+                            releaseCoverDragActive ? 'border-amber-500 bg-amber-500/5' : 'border-zinc-800 hover:border-zinc-700 bg-zinc-950/50'
+                          }`}
+                        >
+                          <Upload className="w-6 h-6 text-zinc-500 mb-2 group-hover:text-amber-400 transition-colors" />
+                          <p className="text-[10px] font-mono text-zinc-400 font-bold">DRAG & DROP COVER ART</p>
+                          <p className="text-[8px] font-mono text-zinc-600 mt-1">Accepts PNG, JPG or Base64</p>
+                        </div>
+                      )}
+                    </div>
+                    {/* Manual URL Input */}
+                    <div className="space-y-1">
+                      <span className="text-[9px] font-mono text-zinc-500 uppercase font-bold">Or cover image URL</span>
+                      <input
+                        type="text"
+                        value={editingRelease.coverUrl || ''}
+                        onChange={(e) => setEditingRelease((prev: any) => ({ ...prev, coverUrl: e.target.value, coverImage: e.target.value }))}
+                        placeholder="https://example.com/cover.jpg"
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-[10px] font-mono text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-amber-500/50"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Middle/Right Column: Metadata Form */}
+                  <div className="md:col-span-2 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Title */}
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-mono uppercase text-zinc-400 tracking-widest block font-bold">Release Title</label>
+                        <input
+                          type="text"
+                          value={editingRelease.title}
+                          onChange={(e) => setEditingRelease((prev: any) => ({ ...prev, title: e.target.value }))}
+                          placeholder="e.g. Onset of Putrefaction"
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-[10.5px] font-mono text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-amber-500/50"
+                        />
+                      </div>
+
+                      {/* Format Type */}
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-mono uppercase text-zinc-400 tracking-widest block font-bold">Format Type</label>
+                        <select
+                          value={editingRelease.type}
+                          onChange={(e) => setEditingRelease((prev: any) => ({ ...prev, type: e.target.value }))}
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-[10.5px] font-mono text-zinc-100 focus:outline-none focus:border-amber-500/50"
+                        >
+                          <option value="Album">Album</option>
+                          <option value="EP">EP</option>
+                          <option value="Demo">Demo</option>
+                          <option value="Split">Split</option>
+                          <option value="Single">Single</option>
+                        </select>
+                      </div>
+
+                      {/* Release Date */}
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-mono uppercase text-zinc-400 tracking-widest block font-bold">Release Date</label>
+                        <input
+                          type="date"
+                          value={editingRelease.releaseDate}
+                          onChange={(e) => setEditingRelease((prev: any) => ({ ...prev, releaseDate: e.target.value }))}
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-[10.5px] font-mono text-zinc-100 focus:outline-none focus:border-amber-500/50"
+                        />
+                      </div>
+
+                      {/* Record Label */}
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-mono uppercase text-zinc-400 tracking-widest block font-bold">Record Label</label>
+                        <input
+                          type="text"
+                          value={editingRelease.label}
+                          onChange={(e) => setEditingRelease((prev: any) => ({ ...prev, label: e.target.value }))}
+                          placeholder="e.g. Willowtip Records"
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-[10.5px] font-mono text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-amber-500/50"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Sync Section */}
+                    <div className="bg-zinc-900/60 border border-zinc-850 p-3 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono font-bold text-teal-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-teal-400" />
+                          Platform Catalog Sync (Tied Store Product)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!editingRelease.title) {
+                              props.triggerNotification?.('⚠️ Enter a release title first to auto-sync.');
+                              return;
+                            }
+                            const matched = props.inventory?.find((inv: any) => 
+                              inv.name?.toLowerCase().includes(editingRelease.title.toLowerCase()) ||
+                              editingRelease.title.toLowerCase().includes(inv.name?.toLowerCase())
+                            );
+                            if (matched) {
+                              setEditingRelease((prev: any) => ({ ...prev, catalogId: matched.id }));
+                              props.triggerNotification?.(`⚡ Smart Sync Matched: "${matched.name}"`);
+                            } else {
+                              props.triggerNotification?.('⚠️ No store matching product found in inventory.');
+                            }
+                          }}
+                          className="px-2 py-1 bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/20 rounded text-[9px] font-mono font-bold transition-all cursor-pointer border-none"
+                        >
+                          Smart Auto-Sync
+                        </button>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <select
+                          value={editingRelease.catalogId || ''}
+                          onChange={(e) => setEditingRelease((prev: any) => ({ ...prev, catalogId: e.target.value }))}
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-[10px] font-mono text-zinc-100 focus:outline-none focus:border-teal-500/50"
+                        >
+                          <option value="">-- No Sync (Show Standalone Discography) --</option>
+                          {props.inventory?.map((inv: any, idx: number) => (
+                            <option key={inv.id ? `inv-${inv.id}-${idx}` : `inv-${idx}`} value={inv.id}>
+                              {inv.name} ({inv.item_type || 'Merch'} • ${inv.price ? inv.price.toFixed(2) : '0.00'} • Qty: {inv.quantity ?? 0})
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-[8px] text-zinc-500 font-mono mt-0.5">
+                          Linking this release with a store product lets fans download or purchase directly from the profile card.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tracklist Builder Section */}
+                <div className="border border-zinc-850 rounded-xl p-3 bg-zinc-950/20 space-y-3">
+                  <div className="flex items-center justify-between border-b border-zinc-850 pb-2">
+                    <span className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest">
+                      Tracklist Builder ({editingRelease.tracks?.length || 0})
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const trks = editingRelease.tracks ? [...editingRelease.tracks] : [];
+                        trks.push({
+                          id: `trk-${Date.now()}`,
+                          title: '',
+                          duration: '',
+                          lyrics: ''
+                        });
+                        setEditingRelease((prev: any) => ({ ...prev, tracks: trks }));
+                      }}
+                      className="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-850 rounded text-[9px] font-mono font-bold flex items-center gap-1 transition-all cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3" /> Add Track
+                    </button>
+                  </div>
+
+                  <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                    {(!editingRelease.tracks || editingRelease.tracks.length === 0) ? (
+                      <p className="text-[10px] text-zinc-500 font-mono text-center py-4">No tracks added to this release. Click 'Add Track' to begin building the tracklist.</p>
+                    ) : (
+                      editingRelease.tracks.map((trk: any, tIdx: number) => (
+                        <div key={trk.id || tIdx} className="p-2.5 bg-zinc-950 border border-zinc-850 rounded-lg space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-mono text-zinc-500 font-black shrink-0">{tIdx + 1}.</span>
+                            <input
+                              type="text"
+                              value={trk.title}
+                              onChange={(e) => {
+                                const trks = [...editingRelease.tracks];
+                                trks[tIdx].title = e.target.value;
+                                setEditingRelease((prev: any) => ({ ...prev, tracks: trks }));
+                              }}
+                              placeholder="Track Title"
+                              className="flex-grow bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-[10px] font-mono text-zinc-100 placeholder-zinc-600 focus:outline-none"
+                            />
+                            <input
+                              type="text"
+                              value={trk.duration || ''}
+                              onChange={(e) => {
+                                const trks = [...editingRelease.tracks];
+                                trks[tIdx].duration = e.target.value;
+                                setEditingRelease((prev: any) => ({ ...prev, tracks: trks }));
+                              }}
+                              placeholder="Time (e.g. 4:12)"
+                              className="w-24 bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-[10px] font-mono text-zinc-100 placeholder-zinc-600 focus:outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const trks = editingRelease.tracks.filter((_: any, i: number) => i !== tIdx);
+                                setEditingRelease((prev: any) => ({ ...prev, tracks: trks }));
+                              }}
+                              className="p-1 bg-zinc-900 hover:bg-rose-950/20 text-zinc-500 hover:text-rose-400 rounded transition-colors border-none"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          
+                          {/* Lyrics Section */}
+                          <div className="pl-4">
+                            <details className="group">
+                              <summary className="text-[8px] font-mono text-zinc-500 hover:text-zinc-400 cursor-pointer list-none flex items-center gap-1 select-none">
+                                <FileText className="w-2.5 h-2.5" />
+                                <span className="group-open:hidden">Add/Edit Lyrics</span>
+                                <span className="hidden group-open:inline">Hide Lyrics Editor</span>
+                              </summary>
+                              <div className="mt-1 pt-1 border-t border-zinc-900">
+                                <textarea
+                                  value={trk.lyrics || ''}
+                                  onChange={(e) => {
+                                    const trks = [...editingRelease.tracks];
+                                    trks[tIdx].lyrics = e.target.value;
+                                    setEditingRelease((prev: any) => ({ ...prev, tracks: trks }));
+                                  }}
+                                  rows={3}
+                                  placeholder="Paste track lyrics here..."
+                                  className="w-full bg-zinc-900 border border-zinc-800 rounded p-1.5 text-[9px] font-mono text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-amber-500/40"
+                                />
+                              </div>
+                            </details>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-850">
+                  <button
+                    type="button"
+                    onClick={() => setEditingRelease(null)}
+                    className="px-3.5 py-1.5 bg-zinc-900 hover:bg-zinc-850 text-zinc-400 hover:text-white rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer border-none"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!editingRelease.title) {
+                        props.triggerNotification?.('⚠️ Release title is required.');
+                        return;
+                      }
+                      if (!props.activeBand?.id) return;
+                      
+                      const ok = await upsertReleaseToDatabase(editingRelease, props.activeBand.id);
+                      if (ok.success) {
+                        props.triggerNotification?.(`⚡ Successfully saved release "${editingRelease.title}"!`);
+                        setEditingRelease(null);
+                        loadReleasesData();
+                      } else {
+                        props.triggerNotification?.(`❌ Failed to save release: ${ok.error || 'Unknown error'}`);
+                      }
+                    }}
+                    className="px-4 py-1.5 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-white rounded-lg text-[10px] font-mono font-bold transition-all shadow-md cursor-pointer border-none"
+                  >
+                    Save Release to Database
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </V2ExpandableCard>

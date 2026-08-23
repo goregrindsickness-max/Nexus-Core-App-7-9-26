@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Bell,
   X,
@@ -17,8 +17,12 @@ import {
   ShieldAlert,
   Megaphone,
   Radio,
-  Volume2
+  Volume2,
+  Zap,
+  Smartphone,
+  Check
 } from 'lucide-react';
+import { pushManager, PushPermissionStatus } from '../../../lib/pushNotifications';
 
 interface RightNotificationsDrawerProps {
   rightDrawerOpen: boolean;
@@ -51,6 +55,31 @@ export const RightNotificationsDrawer: React.FC<RightNotificationsDrawerProps> =
   setSelectedChatId,
   userProfile
 }) => {
+  const [permissionStatus, setPermissionStatus] = useState<PushPermissionStatus>('default');
+  const [isRequesting, setIsRequesting] = useState(false);
+  const [showSimModal, setShowSimModal] = useState(false);
+
+  useEffect(() => {
+    setPermissionStatus(pushManager.getPermissionStatus());
+
+    const handleInAppNotice = (e: any) => {
+      const notice = e.detail;
+      if (notice) {
+        setNotifications((prev) => [notice, ...prev]);
+      }
+    };
+
+    window.addEventListener('nexus_in_app_notice', handleInAppNotice);
+    return () => window.removeEventListener('nexus_in_app_notice', handleInAppNotice);
+  }, []);
+
+  const handleEnablePush = async () => {
+    setIsRequesting(true);
+    const status = await pushManager.requestPermission();
+    setPermissionStatus(status);
+    setIsRequesting(false);
+  };
+
   if (!rightDrawerOpen) return null;
 
   const filteredNotifs = notifications.filter((n) => {
@@ -119,6 +148,99 @@ export const RightNotificationsDrawer: React.FC<RightNotificationsDrawerProps> =
 
         {/* Filter Bar & Quick Actions */}
         <div className="p-3 border-b border-zinc-900/60 bg-[#06070a]/80 backdrop-blur z-10 flex flex-col gap-2.5">
+          {/* Device Push Status Banner */}
+          <div className="p-2.5 rounded-xl border border-zinc-850 bg-gradient-to-r from-zinc-950 via-zinc-900/60 to-zinc-950 flex flex-col gap-2 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Smartphone className="w-3.5 h-3.5 text-rose-400" />
+                <span className="text-[11px] font-mono font-bold text-white uppercase tracking-wider">
+                  Device Push Alerts
+                </span>
+              </div>
+              <span className={`text-[9px] font-mono font-black uppercase px-2 py-0.5 rounded-full border ${
+                permissionStatus === 'granted'
+                  ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-400'
+                  : permissionStatus === 'denied'
+                  ? 'bg-red-950/60 border-red-500/40 text-red-400'
+                  : 'bg-amber-950/60 border-amber-500/40 text-amber-400 animate-pulse'
+              }`}>
+                {permissionStatus === 'granted' ? 'ACTIVE' : permissionStatus === 'denied' ? 'BLOCKED' : 'OFFLINE'}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between gap-2 pt-1 border-t border-zinc-900/80">
+              {permissionStatus !== 'granted' ? (
+                <button
+                  onClick={handleEnablePush}
+                  disabled={isRequesting}
+                  className="w-full py-1.5 px-3 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-mono font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer"
+                >
+                  <Zap className="w-3 h-3 fill-current" />
+                  {isRequesting ? 'Authorizing...' : 'Arm Device Push Alerts'}
+                </button>
+              ) : (
+                <div className="w-full flex items-center justify-between gap-1.5">
+                  <span className="text-[9px] font-mono text-zinc-400">
+                    Pro & Fan Triggers Live
+                  </span>
+                  <button
+                    onClick={() => setShowSimModal(!showSimModal)}
+                    className="py-1 px-2.5 rounded bg-zinc-800 hover:bg-zinc-700 text-rose-300 font-mono font-bold text-[9px] uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer border border-zinc-700"
+                  >
+                    <Zap className="w-2.5 h-2.5" /> Test Triggers
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Test Trigger Quick Tray */}
+            {showSimModal && (
+              <div className="mt-1 pt-2 border-t border-zinc-850 space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                <span className="text-[9px] font-mono text-zinc-500 font-bold uppercase block">
+                  Simulate Live Device Push:
+                </span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    onClick={() => {
+                      pushManager.simulatePush('ticket_velocity');
+                    }}
+                    className="p-1.5 rounded bg-purple-950/40 border border-purple-800/40 text-purple-300 hover:bg-purple-900/60 font-mono text-[9px] font-bold text-left truncate flex items-center gap-1 cursor-pointer"
+                    title="Simulate Pro Box Office Velocity Spike"
+                  >
+                    💰 <span>Pro: Sell-Out Spike</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      pushManager.simulatePush('routing_beacon');
+                    }}
+                    className="p-1.5 rounded bg-purple-950/40 border border-purple-800/40 text-purple-300 hover:bg-purple-900/60 font-mono text-[9px] font-bold text-left truncate flex items-center gap-1 cursor-pointer"
+                    title="Simulate Pro Tour Routing Beacon Match"
+                  >
+                    📍 <span>Pro: Route Beacon</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      pushManager.simulatePush('tour_proximity');
+                    }}
+                    className="p-1.5 rounded bg-cyan-950/40 border border-cyan-800/40 text-cyan-300 hover:bg-cyan-900/60 font-mono text-[9px] font-bold text-left truncate flex items-center gap-1 cursor-pointer"
+                    title="Simulate Fan Band Inbound City Alert"
+                  >
+                    🤘 <span>Fan: Band Inbound</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      pushManager.simulatePush('scarcity_merch_drop');
+                    }}
+                    className="p-1.5 rounded bg-cyan-950/40 border border-cyan-800/40 text-cyan-300 hover:bg-cyan-900/60 font-mono text-[9px] font-bold text-left truncate flex items-center gap-1 cursor-pointer"
+                    title="Simulate Fan Limited Vinyl Flash Drop"
+                  >
+                    ⚡ <span>Fan: Vinyl Drop</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
             {[
               { id: 'all', label: 'ALL' },
@@ -169,9 +291,9 @@ export const RightNotificationsDrawer: React.FC<RightNotificationsDrawerProps> =
               </div>
             </div>
           ) : (
-            filteredNotifs.map((n) => (
+            filteredNotifs.map((n, nIdx) => (
               <div
-                key={n.id}
+                key={n.id ? `notif-${n.id}-${nIdx}` : `notif-${nIdx}`}
                 onClick={() => {
                   if (!n.read) {
                     setNotifications((prev) =>

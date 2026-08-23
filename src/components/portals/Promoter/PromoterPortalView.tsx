@@ -226,7 +226,7 @@ const ALL_PROMOTERS_AND_FANS = [
 ];
 
 const OTHER_CREATIVES = [
-  { id: 'c-vortex', name: "Vortex Graphic Design", handle: 'vortex_design', type: 'creative', avatarText: 'VX', color: 'text-indigo-400 bg-indigo-950/20 border-indigo-500/30', bio: 'Heavy vector specialist, halftone master, custom punk typography.', location: "Detroit, MI Market Hub", rate: "$300/design" },
+  { id: 'c-vortex', name: "Vortex Graphics", handle: 'vortex_design', type: 'creative', avatarText: 'VX', color: 'text-indigo-400 bg-indigo-950/20 border-indigo-500/30', bio: 'Heavy vector specialist, halftone master, custom punk typography.', location: "Detroit, MI Market Hub", rate: "$300/design" },
   { id: 'c-gain', name: "Crust Gain Mastering", handle: 'crust_gain', type: 'creative', avatarText: 'CG', color: 'text-emerald-400 bg-emerald-950/20 border-emerald-500/30', bio: 'Unforgiving tape saturation, pristine dynamic high shelf optimization.', location: "Portland, OR Market Hub", rate: "$80/stem" },
   { id: 'c-drone', name: "Hyper-Sect Video System", handle: 'hyper_sect', type: 'creative', avatarText: 'HS', color: 'text-pink-400 bg-pink-950/20 border-pink-500/30', bio: 'High-speed action camera systems, live set cutdowns.', location: "New York, NY Market Hub", rate: "$500/day" }
 ];

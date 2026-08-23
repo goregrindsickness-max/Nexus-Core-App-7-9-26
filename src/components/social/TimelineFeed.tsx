@@ -394,7 +394,7 @@ export const TimelineFeed: React.FC<TimelineFeedProps> = ({
             {processedPosts.map((post, index) => {
               const showSuggestionsAfterThis = (index === 3) || (processedPosts.length < 4 && index === processedPosts.length - 1);
               return (
-                <React.Fragment key={post.id}>
+                <React.Fragment key={post.id ? `feed-post-${post.id}-${index}` : `feed-post-${index}`}>
                   <PostCard
                     post={post}
                     currentUserId={currentUserId}

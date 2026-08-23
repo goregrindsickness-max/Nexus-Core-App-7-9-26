@@ -531,11 +531,7 @@ export function useSocialFeedState({
         success = true;
       }
 
-      if (!success) {
-        alert(`Could not delete post: ${errorMsg || 'Failed to delete post: Post not found or permission denied.'}`);
-        return false;
-      }
-
+      // Always perform local deletion to guarantee duplicates and mock posts can be cleaned up
       try {
         const saved = localStorage.getItem('nexus_deleted_posts');
         const deletedPosts = saved ? JSON.parse(saved) : [];
@@ -552,6 +548,18 @@ export function useSocialFeedState({
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('nexus_post_deleted', { detail: { id: postId } }));
+      }
+
+      if (success) {
+        if (triggerNotification) {
+          triggerNotification("🗑️ Post deleted successfully.");
+        }
+      } else {
+        if (triggerNotification) {
+          triggerNotification("🗑️ Post removed locally.");
+        } else {
+          console.warn(`Could not delete post from DB: ${errorMsg}. Post was removed from local view instead.`);
+        }
       }
 
       return true;

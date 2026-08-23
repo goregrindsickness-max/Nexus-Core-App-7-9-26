@@ -44,9 +44,9 @@ export const StoriesCarouselSection: React.FC<StoriesCarouselSectionProps> = ({
           </span>
         </div>
 
-        {stories.map((story) => (
+        {stories.map((story, sIdx) => (
           <div
-            key={story.id}
+            key={story.id ? `story-${story.id}-${sIdx}` : `story-${sIdx}`}
             onClick={() => onSelectStory(story)}
             className={`w-28 h-40 rounded-xl relative overflow-hidden flex-shrink-0 cursor-pointer group border transition-all duration-200 ${
               story.border || 'border-zinc-800'

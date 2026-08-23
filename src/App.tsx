@@ -1906,106 +1906,9 @@ export default function App() {
   };
 
   const handleOpenMyProfile = () => {
-    const isBandWorkspace = userProfile?.account_type === 'band' || userProfile?.active_workspace === 'band';
-    const isCreativeWorkspace = userProfile?.account_type === 'creative' || userProfile?.active_workspace === 'creative';
-    const isPromoterWorkspace = userProfile?.account_type === 'promoter' || userProfile?.active_workspace === 'promoter';
-    const isLabelWorkspace = userProfile?.account_type === 'label' || userProfile?.active_workspace === 'label';
-
-    const detailPayload = isBandWorkspace ? {
-      id: activeBand?.id || userProfile?.id,
-      name: activeBand?.name || 'Artist',
-      band_name: activeBand?.name || 'Artist',
-      avatar: activeBand?.logo_url || activeBand?.logo || null,
-      avatar_url: activeBand?.logo_url || activeBand?.logo || null,
-      logo_url: activeBand?.logo_url || activeBand?.logo || null,
-      banner: activeBand?.cover_url || activeBand?.banner || null,
-      banner_url: activeBand?.cover_url || activeBand?.banner || null,
-      cover_url: activeBand?.cover_url || activeBand?.banner || null,
-      location: activeBand?.location || activeBand?.homebase || 'Global Scene',
-      role: 'Artist',
-      type: 'band',
-      isBandProfile: true,
-      isPersonal: false,
-      isYou: true,
-      badges: activeBand?.badges || ['🎸 Artist'],
-      customBadges: activeBand?.badges || ['🎸 Artist'],
-      bio: activeBand?.bio || activeBand?.description || `${activeBand?.name || 'Artist'} profile on Nexus.`,
-      genres: activeBand?.genres || (activeBand?.genre ? [activeBand?.genre] : ['Metal']),
-      genre: activeBand?.genre || 'Metal',
-      lineup: activeBand?.lineup || activeBand?.members || []
-    } : isCreativeWorkspace ? {
+    const detailPayload = {
       id: userProfile?.id,
-      name: userProfile?.creative_metadata?.business_name || (userProfile as any)?.creative_name || userProfile?.name || 'Vortex Graphics',
-      creative_name: (userProfile as any)?.creative_name || userProfile?.name,
-      business_name: userProfile?.creative_metadata?.business_name || (userProfile as any)?.creative_name || userProfile?.name || 'Vortex Graphics',
-      legalName: userProfile?.full_name || userProfile?.name,
-      avatar: (userProfile as any)?.creative_avatar || userProfile?.avatar_url || null,
-      avatar_url: (userProfile as any)?.creative_avatar || userProfile?.avatar_url || null,
-      banner: (userProfile as any)?.creative_banner || userProfile?.banner_url || null,
-      banner_url: (userProfile as any)?.creative_banner || userProfile?.banner_url || null,
-      cover_url: (userProfile as any)?.creative_banner || userProfile?.banner_url || null,
-      location: (userProfile as any)?.location || userProfile?.city || 'USA / Global',
-      role: 'Creative',
-      account_type: 'creative',
-      type: 'creative',
-      isPersonal: false,
-      isCreativeProfile: true,
-      isYou: true,
-      badges: ['🛠️ Creative Pro', '🎨 Designer'],
-      customBadges: ['🛠️ Creative Pro', '🎨 Designer'],
-      bio: userProfile?.bio || (userProfile as any)?.creative_metadata?.bio || 'Professional creative specialist on the Nexus network.',
-      handle: (userProfile as any)?.creative_handle || userProfile?.console_handle || 'vortexgraphics',
-      console_handle: (userProfile as any)?.creative_handle || userProfile?.console_handle || 'vortexgraphics',
-      creative_metadata: (userProfile as any)?.creative_metadata || {}
-    } : isPromoterWorkspace ? {
-      id: userProfile?.id,
-      name: (userProfile as any)?.promoter_metadata?.brand_name || (userProfile as any)?.promoter_brand || userProfile?.name || 'Nexus Promotions',
-      promoter_name: (userProfile as any)?.promoter_metadata?.brand_name || userProfile?.name,
-      legalName: userProfile?.full_name || userProfile?.name,
-      avatar: (userProfile as any)?.promoter_metadata?.avatar_url || userProfile?.avatar_url || null,
-      avatar_url: (userProfile as any)?.promoter_metadata?.avatar_url || userProfile?.avatar_url || null,
-      banner: (userProfile as any)?.promoter_metadata?.banner_url || userProfile?.banner_url || null,
-      banner_url: (userProfile as any)?.promoter_metadata?.banner_url || userProfile?.banner_url || null,
-      cover_url: (userProfile as any)?.promoter_metadata?.banner_url || userProfile?.banner_url || null,
-      location: (userProfile as any)?.location || userProfile?.city || 'USA / Global',
-      role: 'Promoter',
-      account_type: 'promoter',
-      type: 'promoter',
-      isPersonal: false,
-      isPromoterProfile: true,
-      isYou: true,
-      badges: ['🏟️ Promoter', '🎟️ Venue Pro'],
-      customBadges: ['🏟️ Promoter', '🎟️ Venue Pro'],
-      bio: userProfile?.bio || 'Concert promoter & booking agent on the Nexus network.',
-      handle: userProfile?.console_handle || 'promoter_pro',
-      console_handle: userProfile?.console_handle || 'promoter_pro',
-      promoter_metadata: (userProfile as any)?.promoter_metadata || {}
-    } : isLabelWorkspace ? {
-      id: userProfile?.id,
-      name: (userProfile as any)?.label_company_name || userProfile?.name || 'NEXUS CORE RECORDS',
-      label_name: (userProfile as any)?.label_company_name || userProfile?.name,
-      legalName: userProfile?.full_name || userProfile?.name,
-      avatar: (userProfile as any)?.label_avatar || userProfile?.avatar_url || null,
-      avatar_url: (userProfile as any)?.label_avatar || userProfile?.avatar_url || null,
-      banner: (userProfile as any)?.label_banner || userProfile?.banner_url || null,
-      banner_url: (userProfile as any)?.label_banner || userProfile?.banner_url || null,
-      cover_url: (userProfile as any)?.label_banner || userProfile?.banner_url || null,
-      location: (userProfile as any)?.location || userProfile?.city || 'Global Scene',
-      role: 'Label',
-      account_type: 'label',
-      type: 'label',
-      isPersonal: false,
-      isLabelProfile: true,
-      isYou: true,
-      badges: ['💿 Label Exec', '🎧 A&R'],
-      customBadges: ['💿 Label Exec', '🎧 A&R'],
-      bio: userProfile?.bio || 'Record label executive on the Nexus network.',
-      handle: (userProfile as any)?.label_url_slug || userProfile?.console_handle || 'nexus_label',
-      console_handle: (userProfile as any)?.label_url_slug || userProfile?.console_handle || 'nexus_label',
-      label_metadata: (userProfile as any)?.label_metadata || {}
-    } : {
-      id: userProfile?.id,
-      name: userProfile?.name || 'User',
+      name: userProfile?.name || userProfile?.full_name || 'User',
       legalName: userProfile?.full_name || userProfile?.name,
       avatar: userProfile?.avatar_url || null,
       avatar_url: userProfile?.avatar_url || null,
@@ -2028,20 +1931,8 @@ export default function App() {
       bio: userProfile?.bio || userProfile?.blurb || 'User profile on the Nexus network.',
     };
 
-    if (isBandWorkspace) {
-      setActiveTab('home-v2');
-      setDashboardV2ActiveNav('SOCIAL');
-    } else if (isCreativeWorkspace) {
-      setActiveTab('creative');
-    } else if (isPromoterWorkspace) {
-      setActiveTab('promoter');
-    } else if (isLabelWorkspace) {
-      setActiveTab('label');
-    } else {
-      setActiveTab('social');
-    }
-
-    triggerNotification?.("⚡ Opening your public profile...");
+    setActiveTab('social');
+    triggerNotification?.("⚡ Opening your personal profile...");
 
     setTimeout(() => {
       window.dispatchEvent(new CustomEvent('openPublicProfile', {
@@ -3960,8 +3851,8 @@ list.push({
                     {[
                       ...(Array.isArray(bandLineup) ? bandLineup : []).map((m: any) => ({ ...m, type: 'Lineup', lvl: m.clearanceLevel || 5 })),
                       ...(Array.isArray(crewMembers) ? crewMembers : []).map((c: any) => ({ ...c, type: 'Crew', lvl: c.clearanceLevel || 1 }))
-                    ].map((member: any) => (
-                      <option key={member.id} value={member.id}>
+                    ].map((member: any, idx: number) => (
+                      <option key={member.id ? `${member.type}-${member.id}-${idx}` : `${member.type}-${idx}`} value={member.id}>
                         [{member.type}] {member?.name || 'Unnamed'} ({member.role || 'Crew'}) - Lvl {member.lvl}
                       </option>
                     ))}

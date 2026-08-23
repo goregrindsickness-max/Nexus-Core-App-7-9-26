@@ -180,7 +180,7 @@ export const InlineReactionsModal: React.FC<InlineReactionsModalProps> = ({
                       return uniqueReactors.map((reactor, i) => {
                         const token = matrix[reactor.type] || matrix['hype'];
                         return (
-                          <div key={i} className="flex items-center justify-between p-2.5 bg-black/40 border border-zinc-900 rounded-xl hover:border-zinc-800 transition-all">
+                          <div key={reactor.name ? `reactor-${reactor.name}-${reactor.type || ''}-${i}` : `reactor-${i}`} className="flex items-center justify-between p-2.5 bg-black/40 border border-zinc-900 rounded-xl hover:border-zinc-800 transition-all">
                             <div className="flex items-center gap-3">
                               <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center font-bold text-xs text-white overflow-hidden shrink-0 border border-zinc-800">
                                 {reactor?.avatar && (reactor?.avatar.startsWith('http') || reactor?.avatar.startsWith('/') || reactor?.avatar.startsWith('data:image')) ? (

@@ -72,8 +72,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                           <span className="text-[10px] font-mono text-zinc-400">${bandSubtotal.toFixed(2)}</span>
                         </div>
                         <div className="divide-y divide-zinc-800/50">
-                          {bandItems.map((item) => (
-                            <div key={item.id} className="p-4 flex gap-4">
+                          {bandItems.map((item, itemIdx) => (
+                            <div key={item.id ? `cart-item-${item.id}-${item.size || ''}-${itemIdx}` : `cart-item-${itemIdx}`} className="p-4 flex gap-4">
                               <div className="w-16 h-16 rounded-md overflow-hidden bg-zinc-900 shrink-0 border border-zinc-800">
                                 <img src={item.image} alt={item?.name} className="w-full h-full object-cover" />
                               </div>

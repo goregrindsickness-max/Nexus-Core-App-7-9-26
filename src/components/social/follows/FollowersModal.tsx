@@ -279,9 +279,9 @@ export const FollowersModal: React.FC<FollowersModalProps> = ({
     { key: 'promoter', label: 'Promoters', icon: Ticket, count: counts.promoter },
   ];
 
-  const renderUserRow = (user: any) => (
+  const renderUserRow = (user: any, index: number, groupKey: string = 'general') => (
     <div 
-      key={user.id} 
+      key={user.id ? `follower-${groupKey}-${user.id}-${index}` : `follower-${groupKey}-${index}`} 
       onClick={() => handleNavigateToProfile(user)}
       className="flex items-center justify-between p-2.5 bg-zinc-900/90 border border-zinc-800/80 rounded-xl hover:border-violet-500/50 hover:bg-zinc-800/60 transition-all text-left cursor-pointer group"
     >
@@ -470,7 +470,7 @@ export const FollowersModal: React.FC<FollowersModalProps> = ({
                               </span>
                             </div>
                             <div className="space-y-2">
-                              {group.items.map(renderUserRow)}
+                              {group.items.map((user, idx) => renderUserRow(user, idx, group.key))}
                             </div>
                           </div>
                         );
@@ -480,7 +480,7 @@ export const FollowersModal: React.FC<FollowersModalProps> = ({
                 }
 
                 // Standard list rendering
-                return filteredItems.map(renderUserRow);
+                return filteredItems.map((user, idx) => renderUserRow(user, idx, activeCategory));
               })()}
             </div>
           </motion.div>

@@ -1,12 +1,15 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Check, Pencil, X, ArrowLeft, Edit2, AlertTriangle, Briefcase, Plus, Ticket, MapPin, Disc, Tag, Pause, Play, Search, Volume2, ChevronDown, Music, Download, PlayCircle, ShoppingCart, SkipBack, Square, SkipForward, UserCheck, UserPlus, MessageSquare, Shield, ShoppingBag, Calendar, Award, Network, Activity, Camera, ArrowUpRight, FileUp, Users, CheckCircle, Flame, Shirt, Building2 } from 'lucide-react';
+import { Check, Pencil, X, ArrowLeft, Edit2, AlertTriangle, Briefcase, Plus, Ticket, MapPin, Disc, Tag, Pause, Play, Search, Volume2, ChevronDown, Music, Download, PlayCircle, ShoppingCart, SkipBack, Square, SkipForward, UserCheck, UserPlus, MessageSquare, Shield, ShoppingBag, Calendar, Award, Network, Activity, Camera, ArrowUpRight, FileUp, Users, CheckCircle, Flame, Shirt, Building2, ShieldCheck, Sparkles } from 'lucide-react';
 import { hasRegisteredWorkspace } from '../../../types';
 import { getProfileGlowInfo } from '../../../utils/profileGlow';
 import { formatLocationDisplay } from '../../../constants/location';
 import { ROSTER_CATALOGS } from '../../../data/socialFeedMockData';
 import { normalizeLoadedProfile, getSupabase, executeWithSchemaResilience, executeSanitizedProfileUpsert } from '../../../supabase';
 import { getEmbedUrl, getCollectionsTrackDuration, extractUUID } from '../../../utils/socialFeedUtils';
+import { communityBandManager, CommunityBandRecord } from '../../../lib/communityBands';
+import CommunityBandCuratorModal from '../../social/modals/CommunityBandCuratorModal';
+import BandClaimHandoverModal from '../../social/modals/BandClaimHandoverModal';
 import MarqueeText from '../../MarqueeText';
 import { SonicFootprint, ListenerMetric, calculateListenerMetrics } from '../../profile/SonicFootprint';
 import { TimelineTab } from '../../profile/TimelineTab';
@@ -91,6 +94,65 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
   const [isEditingBio, setIsEditingBio] = React.useState(false);
   const [isEditingTopSong, setIsEditingTopSong] = React.useState(false);
   const [isEditingTicker, setIsEditingTicker] = React.useState(false);
+
+  // Community Archive and Claim Modals State
+  const [communityArchiveMatch, setCommunityArchiveMatch] = useState<CommunityBandRecord | null>(null);
+  const [dbReleases, setDbReleases] = useState<any[]>([]);
+  const [showClaimModal, setShowClaimModal] = useState(false);
+  const [showCuratorModal, setShowCuratorModal] = useState(false);
+  const [selectedRelease, setSelectedRelease] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    async function fetchReleases() {
+      const supabase = getSupabase ? getSupabase() : null;
+      if (!supabase) return;
+      
+      const targetId = selectedUserProfile?.id || targetProfile?.id;
+      const validUUID = targetId && extractUUID(targetId);
+      
+      const bandIdToUse = fetchedBandData?.id || selectedUserProfile?.band_id || selectedUserProfile?.id || targetProfile?.band_id || targetProfile?.id;
+      const validBandUUID = bandIdToUse && extractUUID(bandIdToUse);
+
+      if (validBandUUID) {
+        const { data, error } = await supabase
+          .from('releases')
+          .select('*')
+          .eq('band_id', validBandUUID);
+        
+        if (data && !error) {
+          const mapped = data.map((row: any) => ({
+            id: row.id,
+            catalog_id: row.catalog_id || row.catalogId || '',
+            catalogId: row.catalog_id || row.catalogId || '',
+            title: row.title || '',
+            coverColor: row.cover_color || '',
+            type: row.type || 'Album',
+            year: row.release_date ? new Date(row.release_date).getFullYear().toString() : (row.release_year || '2026'),
+            releaseDate: row.release_date || '',
+            label: row.label || '',
+            genre: row.genre || '',
+            coverImage: row.cover_image || row.cover_url || '',
+            coverUrl: row.cover_url || row.cover_image || '',
+            image_url: row.cover_url || row.cover_image || '',
+            tracks: Array.isArray(row.tracks) ? row.tracks : (typeof row.tracks === 'string' ? JSON.parse(row.tracks) : []),
+            formats: typeof row.formats === 'object' && row.formats ? row.formats : (typeof row.formats === 'string' ? JSON.parse(row.formats) : {}),
+            digital: Array.isArray(row.digital) ? row.digital : (typeof row.digital === 'string' ? JSON.parse(row.digital) : []),
+            status: row.status || 'active'
+          }));
+          if (isMounted) {
+            setDbReleases(mapped);
+          }
+        }
+      } else {
+        if (isMounted) {
+          setDbReleases([]);
+        }
+      }
+    }
+    fetchReleases();
+    return () => { isMounted = false; };
+  }, [selectedUserProfile?.id, targetProfile?.id, fetchedBandData?.id]);
   const [tickerUpdateText, setTickerUpdateText] = React.useState<string>(() => {
     const targetId = selectedUserProfile?.id || 'guest';
     const stored = localStorage.getItem(`nexus_active_ticker_${targetId}`);
@@ -268,6 +330,15 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
           if (isMounted && record) {
             setFetchedBandData(record);
           }
+
+          // C) Lookup if this profile corresponds to a Fan / Community Archive
+          const candidateName = targetBandName || targetName || effTarget?.name || effTarget?.band_name;
+          if (candidateName) {
+            const foundComm = communityBandManager.findByName(candidateName);
+            if (isMounted) {
+              setCommunityArchiveMatch(foundComm);
+            }
+          }
         } catch (err) {
           // Fallback silently
         }
@@ -364,9 +435,9 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
     } catch (e) {}
   }
 
-  const bData = isCurrentUserBand ? (fetchedBandData || localSavedBand) : null;
+  const bData = fetchedBandData || (isCurrentUserBand ? localSavedBand : null);
 
-  const isBandTarget = Boolean(
+  const isBandTarget = !isExplicitPersonal && Boolean(
     baseTarget?.isBandProfile ||
     baseTarget?.type === 'band' ||
     baseTarget?.account_type === 'band' ||
@@ -391,7 +462,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
     ...(fetchedProfileData ? {
       full_name: isBandTarget && rawResolvedBandName ? rawResolvedBandName : (fetchedProfileData.full_name || fetchedProfileData.name || baseTarget.full_name || baseTarget.name),
       name: isBandTarget && rawResolvedBandName ? rawResolvedBandName : (fetchedProfileData.full_name || fetchedProfileData.name || baseTarget.name),
-      band_name: rawResolvedBandName || baseTarget?.band_name,
+      band_name: isBandTarget ? (rawResolvedBandName || baseTarget?.band_name) : baseTarget?.band_name,
       console_handle: fetchedProfileData.console_handle || fetchedProfileData.username || fetchedProfileData.handle || baseTarget.console_handle,
       handle: fetchedProfileData.console_handle || fetchedProfileData.username || fetchedProfileData.handle || baseTarget.handle,
       registered_workspaces: fetchedProfileData.registered_workspaces || baseTarget.registered_workspaces,
@@ -401,14 +472,10 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
       country: fetchedProfileData.country || baseTarget.country,
       homebase: fetchedProfileData.homebase || baseTarget.homebase,
       location: formatLocationDisplay(fetchedProfileData) || baseTarget.location,
-      bio: (fetchedProfileData.bio !== undefined && fetchedProfileData.bio !== null && fetchedProfileData.bio !== '')
-        ? fetchedProfileData.bio
-        : ((baseTarget?.isYou || selectedUserProfile?.isYou || (userProfile?.id && (baseTarget?.id === userProfile.id || selectedUserProfile?.id === userProfile.id)))
-            ? (profileBlurb || (userProfile as any)?.bio || baseTarget?.bio || '')
-            : (baseTarget?.bio || '')),
+      bio: (isBandTarget && bData?.bio) || fetchedProfileData?.bio || baseTarget?.bio || '',
       avatar: isBandTarget && rawResolvedBandLogo ? rawResolvedBandLogo : (fetchedProfileData.avatar_url || fetchedProfileData.avatar || baseTarget.avatar),
       avatar_url: isBandTarget && rawResolvedBandLogo ? rawResolvedBandLogo : (fetchedProfileData.avatar_url || fetchedProfileData.avatar || baseTarget.avatar_url),
-      logo_url: rawResolvedBandLogo || baseTarget?.logo_url,
+      logo_url: isBandTarget ? (rawResolvedBandLogo || baseTarget?.logo_url) : baseTarget?.logo_url,
       top_song_url: fetchedProfileData.top_song_url !== undefined && fetchedProfileData.top_song_url !== null && fetchedProfileData.top_song_url !== '' ? fetchedProfileData.top_song_url : baseTarget?.top_song_url,
       top_song_title: fetchedProfileData.top_song_title || fetchedProfileData.favoriteSong || baseTarget?.top_song_title || baseTarget?.favoriteSong,
       favoriteSong: fetchedProfileData.favoriteSong || fetchedProfileData.top_song_title || baseTarget?.favoriteSong || baseTarget?.top_song_title,
@@ -416,25 +483,26 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
       featured_youtube_url: fetchedProfileData.featured_youtube_url || fetchedProfileData.top_song_url || baseTarget?.featured_youtube_url,
     } : {}),
     ...(bData ? {
-      name: bData.band_name || bData.name || baseTarget.name,
+      name: isBandTarget ? (bData.band_name || bData.name || baseTarget.name) : (fetchedProfileData?.full_name || fetchedProfileData?.name || baseTarget.name),
       band_name: bData.band_name || bData.name || baseTarget.band_name,
-      avatar: bData.logo_url || bData.avatar_url || baseTarget.avatar || baseTarget.avatar_url,
-      avatar_url: bData.logo_url || bData.avatar_url || baseTarget.avatar_url || baseTarget.avatar,
-      banner: bData.cover_url || bData.banner_url || baseTarget.banner || baseTarget.banner_url,
-      banner_url: bData.cover_url || bData.banner_url || baseTarget.banner_url || baseTarget.banner,
-      cover_url: bData.cover_url || baseTarget.cover_url,
-      logo_url: bData.logo_url || baseTarget.logo_url,
-      city: bData.city || baseTarget.city,
-      state_province: bData.state_province || baseTarget.state_province,
-      country: bData.country || baseTarget.country,
-      homebase: bData.homebase || formatLocationDisplay(bData) || baseTarget.homebase,
-      bio: bData.bio || baseTarget.bio,
-      custom_slug: bData.custom_slug || baseTarget.custom_slug,
-      console_handle: bData.custom_slug ? `@${bData.custom_slug.replace('@', '')}` : (baseTarget.console_handle || baseTarget.handle),
+      avatar: isBandTarget ? (bData.logo_url || bData.avatar_url || baseTarget.avatar || baseTarget.avatar_url) : (fetchedProfileData?.avatar_url || fetchedProfileData?.avatar || baseTarget.avatar),
+      avatar_url: isBandTarget ? (bData.logo_url || bData.avatar_url || baseTarget.avatar_url || baseTarget.avatar) : (fetchedProfileData?.avatar_url || fetchedProfileData?.avatar || baseTarget.avatar_url),
+      banner: isBandTarget ? (bData.cover_url || bData.banner_url || baseTarget.banner || baseTarget.banner_url) : (fetchedProfileData?.banner_url || fetchedProfileData?.banner || baseTarget.banner),
+      banner_url: isBandTarget ? (bData.cover_url || bData.banner_url || baseTarget.banner_url || baseTarget.banner) : (fetchedProfileData?.banner_url || fetchedProfileData?.banner || baseTarget.banner_url),
+      cover_url: isBandTarget ? (bData.cover_url || baseTarget.cover_url) : (fetchedProfileData?.cover_url || baseTarget.cover_url),
+      logo_url: isBandTarget ? (bData.logo_url || baseTarget.logo_url) : baseTarget.logo_url,
+      city: isBandTarget ? (bData.city || baseTarget.city) : (fetchedProfileData?.city || baseTarget.city),
+      state_province: isBandTarget ? (bData.state_province || baseTarget.state_province) : (fetchedProfileData?.state_province || baseTarget.state_province),
+      country: isBandTarget ? (bData.country || baseTarget.country) : (fetchedProfileData?.country || baseTarget.country),
+      homebase: isBandTarget ? (bData.homebase || formatLocationDisplay(bData) || baseTarget.homebase) : (fetchedProfileData?.homebase || formatLocationDisplay(fetchedProfileData) || baseTarget.homebase || 'Global Scene'),
+      bio: isBandTarget ? (bData.bio || baseTarget.bio) : (fetchedProfileData?.bio || baseTarget.bio || ''),
+      custom_slug: isBandTarget ? (bData.custom_slug || baseTarget.custom_slug) : (fetchedProfileData?.custom_slug || baseTarget.custom_slug),
+      console_handle: isBandTarget ? (bData.custom_slug ? `@${bData.custom_slug.replace('@', '')}` : (baseTarget.console_handle || baseTarget.handle)) : (fetchedProfileData?.console_handle || fetchedProfileData?.username || fetchedProfileData?.handle || baseTarget.console_handle || baseTarget.handle),
       genre: bData.genre || baseTarget.genre,
       genre_tags: bData.genre_tags || (bData.genre ? [bData.genre] : baseTarget.genre_tags),
       micro_genres: bData.micro_genres || baseTarget.micro_genres || baseTarget.profileMicroGenres || [],
       record_label: bData.record_label || bData.label_name || baseTarget.record_label || baseTarget.label_name || baseTarget.labelName || baseTarget.label,
+      founded_year: bData.founded_year || bData.year_formed || baseTarget.founded_year || baseTarget.year_formed,
       lineup: bData.lineup || baseTarget.lineup,
       streaming_url: bData.streaming_url || baseTarget.streaming_url,
       featured_youtube_url: bData.featured_youtube_url || fetchedProfileData?.featured_youtube_url || baseTarget.featured_youtube_url,
@@ -459,6 +527,91 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
   const isPro = prof?.is_pro === true;
   const r = (prof?.portalRole || prof?.role || prof?.account_type || targetRole || '').toLowerCase();
   const isBandProfile = !!(prof?.isBandProfile || prof?.type === 'band' || ((r.includes('artist') || r.includes('band')) && !prof?.isPersonal && prof?.type !== 'user' && !r.includes('industry') && !r.includes('creative') && !r.includes('pro')));
+
+  const parseLineup = (raw: any): any[] => {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === 'string') {
+      const trimmed = raw.trim();
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) return parsed;
+        } catch (_) {}
+      }
+      
+      // Parse as comma separated list of "Name (Role - Lvl X)"
+      return trimmed.split(',').map((part, idx) => {
+        const itemStr = part.trim();
+        if (!itemStr) return null;
+        
+        const match = itemStr.match(/^(.*?)\s*\((.*?)\)$/);
+        if (match) {
+          const name = match[1].trim();
+          const inner = match[2].trim();
+          let role = inner;
+          let level = 5;
+          
+          if (inner.includes('- Lvl')) {
+            const roleParts = inner.split('- Lvl');
+            role = roleParts[0].trim();
+            const levelVal = parseInt(roleParts[1].trim(), 10);
+            if (!isNaN(levelVal)) {
+              level = levelVal;
+            }
+          }
+          
+          return {
+            id: `db-mem-${idx}`,
+            name,
+            role,
+            clearanceLevel: level,
+            status: 'active',
+            activeOnNexus: true
+          };
+        }
+        
+        return {
+          id: `db-mem-${idx}`,
+          name: itemStr,
+          role: 'Member',
+          clearanceLevel: 5,
+          status: 'active',
+          activeOnNexus: true
+        };
+      }).filter(Boolean) as any[];
+    }
+    return [];
+  };
+
+  const rawLineupSource = bData?.lineup || communityArchiveMatch?.lineup || selectedUserProfile?.lineup || '';
+  
+  const displayLineup = parseLineup(rawLineupSource);
+
+  const hasLineup = displayLineup.length > 0;
+
+  const handleLineupMemberClick = (mem: any) => {
+    const matchedProf = allProfiles.find((p: any) => {
+      if (!p) return false;
+      if (mem.id && p.id === mem.id) return true;
+      const mName = (mem.name || '').toLowerCase().trim();
+      const pName = (p.full_name || p.name || '').toLowerCase().trim();
+      const pUser = (p.username || '').toLowerCase().trim();
+      const pEmail = (p.email || '').toLowerCase().trim();
+      if (isMiguelNameOrProfile(mem)) {
+        return pEmail.includes('goregrindsickness') || pUser.includes('goregrinder') || pName.includes('miguel');
+      }
+      if (mName && pName && (pName === mName || pName.includes(mName) || mName.includes(pName))) {
+        return true;
+      }
+      return false;
+    });
+
+    if (matchedProf) {
+      setSelectedUserProfile(matchedProf);
+      triggerNotification?.(`🔗 Opening ${mem.name}'s Profile...`);
+    }
+  };
 
   const isProAccount = !!(
     prof?.account_type === 'industry pro' ||
@@ -623,12 +776,14 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
 
                 {/* Identity: Band Name, Handle, Location right under avatar */}
                 <div className="w-full mt-1">
-                  <h2 className="text-xl font-black text-white uppercase tracking-tight font-display flex items-center gap-1.5">
-                    {isBandTarget
-                      ? (effTarget.band_name || effTarget.name || effTarget.full_name || (selectedUserProfile as any)?.band_name || selectedUserProfile.name || 'Band')
-                      : (effTarget.full_name || effTarget.name || effTarget.legalName || effTarget.band_name || (selectedUserProfile as any)?.full_name || selectedUserProfile.name || 'User')}
-                    {selectedUserProfile.isYou && <Shield className={`w-4 h-4 ${(selectedUserProfile?.role || '').toLowerCase().includes('label') ? 'text-orange-400 shadow-[0_0_8px_rgba(249,115,22,0.4)]' : 'text-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.4)]'}`} />}
-                  </h2>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h2 className="text-xl font-black text-white uppercase tracking-tight font-display flex items-center gap-1.5">
+                      {isBandTarget
+                        ? (effTarget.band_name || effTarget.name || effTarget.full_name || (selectedUserProfile as any)?.band_name || selectedUserProfile.name || 'Band')
+                        : (effTarget.full_name || effTarget.name || effTarget.legalName || effTarget.band_name || (selectedUserProfile as any)?.full_name || selectedUserProfile.name || 'User')}
+                      {selectedUserProfile.isYou && <Shield className={`w-4 h-4 ${(selectedUserProfile?.role || '').toLowerCase().includes('label') ? 'text-orange-400 shadow-[0_0_8px_rgba(249,115,22,0.4)]' : 'text-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.4)]'}`} />}
+                    </h2>
+                  </div>
 
                   <div className="text-xs font-mono text-[#39ff14] font-bold mt-0.5">
                     <span className="text-green-400 font-mono text-sm">
@@ -639,6 +794,45 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                         : '@user'}
                     </span>
                   </div>
+
+                  {/* Verification Status Badge or Claim/Curate Action */}
+                  {isBandTarget && (
+                    <div className="flex items-center gap-2 mt-1.5">
+                      {communityArchiveMatch?.verification_status === 'verified_official' || (!communityArchiveMatch && !selectedUserProfile?.is_community_archive) ? (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-mono font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                          <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                          Official Verified
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <span className="inline-flex items-center gap-1 text-[9px] font-mono font-black uppercase px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                            <Users className="w-3 h-3 text-amber-400" />
+                            Fan-Curated Archive
+                          </span>
+
+                          {/* Button for real band members to Claim & Take Over */}
+                          <button
+                            type="button"
+                            onClick={() => setShowClaimModal(true)}
+                            className="px-2.5 py-0.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-black text-[9px] uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-all shadow-sm"
+                            title="Are you in this band? Claim official ownership and verification"
+                          >
+                            <ShieldCheck className="w-2.5 h-2.5" /> Claim Page
+                          </button>
+
+                          {/* Button for fans to edit/curate without forms */}
+                          <button
+                            type="button"
+                            onClick={() => setShowCuratorModal(true)}
+                            className="px-2 py-0.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono font-bold text-[9px] uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-all"
+                            title="Edit fan archive info & discography"
+                          >
+                            <Edit2 className="w-2.5 h-2.5" /> Curate
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-2 text-zinc-400 text-xs font-mono mt-1">
                     <span className="flex items-center gap-1">
@@ -708,8 +902,18 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                           </div>
                         )}
 
+                        {/* Location and Founded Year */}
+                        {effTarget?.founded_year && (
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-zinc-400 text-xs mt-1">
+                            <div className="flex items-center">
+                              <Calendar className="w-3.5 h-3.5 mr-1.5 flex-shrink-0 text-amber-500" />
+                              <span className="font-mono text-[11px] text-zinc-300 font-bold">Year Formed: {effTarget?.founded_year}</span>
+                            </div>
+                          </div>
+                        )}
+
                         {labelName && typeof labelName === 'string' && labelName.trim() && (
-                          <div className="flex items-center text-zinc-400 text-xs">
+                          <div className="flex items-center text-zinc-400 text-xs mt-1">
                             <Building2 className="w-3.5 h-3.5 mr-1.5 flex-shrink-0 text-violet-400" />
                             <span className="font-mono text-[11px] text-violet-300 font-bold truncate">
                               Label: {labelName.trim()}
@@ -723,7 +927,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                   {/* Metal Archives Link right under genres */}
                   {(() => {
                     const maUrl = effTarget?.metal_archives_url || selectedUserProfile?.metal_archives_url || (selectedUserProfile as any)?.metal_archives;
-                    if (!maUrl) return null;
+                    if (!isBandTarget || !maUrl) return null;
                     return (
                       <div className="mt-2 mb-1">
                         <a
@@ -1005,7 +1209,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                     <div className="mt-2.5 flex flex-wrap gap-1.5">
                       {uniqueBadges.map((b, idx) => (
                         <span 
-                          key={idx} 
+                          key={`badge-${b.label}-${idx}`} 
                           className={`inline-flex items-center gap-1 text-[9px] font-mono font-black px-2 py-0.5 rounded uppercase tracking-wider ${b.classes}`}
                         >
                           {b.label}
@@ -1015,8 +1219,162 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                   );
                 })()}
 
-                {/* ASSOCIATED ENTITIES (2x2 GRID) */}
-                {(() => {
+                {/* DISCOGRAPHY & LINEUP SECTIONS (BANDS ONLY) / ASSOCIATED ENTITIES (INDUSTRY PROS & PERSONAL) */}
+                {isBandProfile ? (() => {
+                  const resolvedDiscography = dbReleases;
+
+                  return (
+                    <div className="space-y-6 text-left">
+                      {/* Discography Section (Horizontal Scroll) */}
+                      <div className="mt-4">
+                        <div className="flex items-center justify-between mb-2 pb-1 border-b border-zinc-800/80">
+                          <span className="text-[10px] font-mono font-black text-amber-300 uppercase tracking-widest flex items-center gap-1.5">
+                            <Disc className="w-3.5 h-3.5 text-amber-400" />
+                            Official Discography
+                          </span>
+                          <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider font-semibold">
+                            {resolvedDiscography.length} {resolvedDiscography.length === 1 ? 'Release' : 'Releases'}
+                          </span>
+                        </div>
+
+                        {resolvedDiscography.length === 0 ? (
+                          <div className="border border-zinc-900/60 rounded-xl p-6 text-center space-y-2 bg-zinc-950/20">
+                            <Disc className="w-6 h-6 text-zinc-600 mx-auto" />
+                            <p className="text-[10px] text-zinc-400 font-mono font-bold uppercase tracking-wider">No Catalog Releases Published</p>
+                            <p className="text-[9px] text-zinc-500 font-sans">The band has not added any detailed records to their discography yet.</p>
+                          </div>
+                        ) : (
+                          <div className="flex gap-3 overflow-x-auto pb-3 pt-1 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent snap-x snap-mandatory">
+                            {resolvedDiscography.map((release: any, rIdx: number) => (
+                              <div
+                                key={release.id ? `disco-${release.id}-${rIdx}` : `disco-${rIdx}`}
+                                onClick={() => setSelectedRelease(release)}
+                                className="w-[145px] shrink-0 bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-850 hover:border-amber-500/40 rounded-xl p-2.5 transition-all duration-200 cursor-pointer group snap-start shadow-md hover:shadow-amber-950/15"
+                              >
+                                <div className="aspect-square w-full rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden relative mb-2 flex items-center justify-center">
+                                  {release.coverUrl || release.coverImage || release.image_url ? (
+                                    <img
+                                      src={release.coverUrl || release.coverImage || release.image_url}
+                                      alt={release.title}
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                      referrerPolicy="no-referrer"
+                                    />
+                                  ) : (
+                                    <Disc className="w-7 h-7 text-zinc-600 group-hover:text-amber-400 transition-colors" />
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <h4 className="text-[11px] font-black text-white truncate font-display group-hover:text-amber-300 transition-colors uppercase tracking-tight">
+                                    {release.title}
+                                  </h4>
+                                  <div className="flex items-center justify-between mt-1 text-[9px] font-mono text-zinc-400">
+                                    <span className="uppercase tracking-wider text-[8px] bg-amber-500/10 text-amber-400 px-1.5 py-0.2 rounded border border-amber-500/20">
+                                      {release.type || 'LP'}
+                                    </span>
+                                    <span>{release.year || '2024'}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Band Lineup Section */}
+                      {hasLineup && isBandProfile && (
+                        <div className="mt-4 text-left">
+                          <div className="flex items-center justify-between mb-2 pb-1 border-b border-zinc-800/80">
+                            <span className="text-[10px] font-mono font-black text-amber-300 uppercase tracking-widest flex items-center gap-1.5">
+                              <Users className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                              Band Lineup & Musician Roster ({displayLineup.length})
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+                            {displayLineup.map((mem: any, mIdx: number) => {
+                              const matchedProf = allProfiles.find((p: any) => {
+                                if (!p) return false;
+                                if (mem.id && p.id === mem.id) return true;
+                                const mName = (mem.name || '').toLowerCase().trim();
+                                const pName = (p.full_name || p.name || '').toLowerCase().trim();
+                                const pUser = (p.username || '').toLowerCase().trim();
+                                const pEmail = (p.email || '').toLowerCase().trim();
+                                if (isMiguelNameOrProfile(mem)) {
+                                  return pEmail.includes('goregrindsickness') || pUser.includes('goregrinder') || pName.includes('miguel');
+                                }
+                                if (mName && pName && (pName === mName || pName.includes(mName) || mName.includes(pName))) {
+                                  return true;
+                                }
+                                return false;
+                              });
+
+                              const isActive = !!matchedProf;
+                              const avatarUrl = matchedProf?.avatar_url || matchedProf?.avatar;
+
+                              const initials = mem.name
+                                ? mem.name
+                                    .split(' ')
+                                    .map((n: string) => n[0])
+                                    .join('')
+                                    .slice(0, 2)
+                                    .toUpperCase()
+                                : '?';
+                              return (
+                                <div
+                                  key={mem.id ? `mem-${mem.id}-${mIdx}` : `mem-${mIdx}`}
+                                  onClick={() => isActive && handleLineupMemberClick(mem)}
+                                  className={`p-1.5 sm:p-2 bg-gradient-to-r from-zinc-900/90 to-zinc-950 border transition-all relative overflow-hidden flex items-center gap-1.5 sm:gap-2.5 shadow-md ${
+                                    isActive
+                                      ? 'border-emerald-500/30 hover:border-emerald-500/70 hover:shadow-emerald-950/20 hover:scale-[1.01] cursor-pointer group'
+                                      : 'border-zinc-900/40 opacity-50 cursor-not-allowed select-none grayscale'
+                                  } rounded-lg sm:rounded-xl`}
+                                >
+                                  {/* Avatar initials or image */}
+                                  <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-md sm:rounded-lg bg-zinc-950 border overflow-hidden shrink-0 transition-colors shadow-inner flex items-center justify-center font-mono text-[10px] sm:text-xs font-black ${
+                                    isActive ? 'border-emerald-500/40 text-emerald-400 group-hover:border-emerald-400' : 'border-zinc-800 text-zinc-600'
+                                  }`}>
+                                    {avatarUrl && (avatarUrl.startsWith('http') || avatarUrl.startsWith('data:') || avatarUrl.startsWith('/')) ? (
+                                      <img src={avatarUrl} alt={mem.name} className="w-full h-full object-cover rounded-md sm:rounded-lg" referrerPolicy="no-referrer" />
+                                    ) : (
+                                      initials
+                                    )}
+                                  </div>
+
+                                  {/* Info */}
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1">
+                                      <span className={`text-[7px] sm:text-[8px] font-mono font-black uppercase px-1 sm:px-1.5 py-0.2 rounded border ${
+                                        isActive
+                                          ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300'
+                                          : 'bg-zinc-900 border-zinc-800 text-zinc-500'
+                                      }`}>
+                                        {isActive ? '⚡ Active' : '💤 Inactive'}
+                                      </span>
+                                    </div>
+                                    <h5 className={`text-[10px] sm:text-xs font-black truncate tracking-tight mt-0.5 font-display ${
+                                      isActive ? 'text-white group-hover:text-emerald-300' : 'text-zinc-400'
+                                    }`}>
+                                      {mem.name}
+                                    </h5>
+                                    <p className="text-[7.5px] sm:text-[9px] font-mono text-zinc-400 truncate leading-tight">
+                                      {mem.role || 'Member'}
+                                    </p>
+                                  </div>
+
+                                  {/* Arrow */}
+                                  {isActive && (
+                                    <div className="shrink-0 pr-0.5 sm:pr-1 text-zinc-500 group-hover:text-emerald-300 transition-colors text-[10px] sm:text-xs font-bold hidden xs:block sm:block">
+                                      →
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })() : (() => {
                   const registeredWorkspaces = effTarget?.registered_workspaces || effTarget?.allowed_workspaces || effTarget?.workspaces || (effTarget?.isYou || effTarget?.id === userProfile?.id ? userProfile?.registered_workspaces || userProfile?.allowed_workspaces : []) || [];
 
                   const hasWorkspaceType = (type: string) => {
@@ -1164,7 +1522,16 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                     return false;
                   }) : null;
 
-                  const rawPromoterName = matchingPromoterProfile?.agency_name || matchingPromoterProfile?.name || effTarget.agency_name || effTarget.promoter_name || effTarget.promoterName || (typeof promoterWsRef === 'object' && promoterWsRef?.name ? promoterWsRef.name : null) || (hasWorkspaceType('promoter') ? (effTarget.name ? `${effTarget.name} Booking` : 'Promoter Agency') : null);
+                  const rawPromoterName = 
+                    matchingPromoterProfile?.promoter_name || 
+                    matchingPromoterProfile?.promoterName || 
+                    matchingPromoterProfile?.agency_name || 
+                    effTarget.promoter_name || 
+                    effTarget.promoterName || 
+                    effTarget.agency_name || 
+                    matchingPromoterProfile?.name || 
+                    (typeof promoterWsRef === 'object' && promoterWsRef?.name ? promoterWsRef.name : null) || 
+                    (hasWorkspaceType('promoter') ? (effTarget.name ? `${effTarget.name} Booking` : 'Promoter Agency') : null);
                   const hasPromoterWorkspace = (hasWorkspaceType('promoter') || Boolean(matchingPromoterProfile) || Boolean(effTarget.agency_name) || Boolean(effTarget.promoter_name) || Boolean(effTarget.promoter_id)) && Boolean(rawPromoterName) && String(rawPromoterName).trim() !== '';
 
                   const hasPromoter = !isCurrentProfilePromoter && hasPromoterWorkspace;
@@ -1216,53 +1583,74 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                     const isCreativeType = p.type === 'creative' || p.role === 'Creative' || p.category === 'creatives' || p.account_type === 'creative';
                     if (!isCreativeType) return false;
                     if (effTarget.creative_id && (p.id === effTarget.creative_id || p.creative_id === effTarget.creative_id)) return true;
-                    if (effTarget.id && (p.user_id === effTarget.id || p.owner_id === effTarget.id || p.creator_id === effTarget.id)) return true;
+                    if (effTarget.id && (p.user_id === effTarget.id || p.owner_id === effTarget.id)) return true;
                     if (typeof creativeWsRef === 'object' && creativeWsRef?.workspace_id && (p.id === creativeWsRef.workspace_id || p.creative_id === creativeWsRef.workspace_id)) return true;
                     return false;
                   }) : null;
 
-                  const rawCreativeName = matchingCreativeProfile?.business_name || matchingCreativeProfile?.creative_name || matchingCreativeProfile?.name || effTarget.creative_business_name || effTarget.creative_name || effTarget.business_name || (effTarget?.isYou ? (userProfile?.creative_business_name || userProfile?.creative_name) : null) || (typeof creativeWsRef === 'object' && creativeWsRef?.name ? creativeWsRef.name : null) || (hasWorkspaceType('creative') ? (effTarget.creative_business_name || effTarget.creative_name || (effTarget.name ? `${effTarget.name} Studios` : 'Creative Studio')) : null);
-                  const hasCreativeWorkspace = (hasWorkspaceType('creative') || Boolean(matchingCreativeProfile) || Boolean(effTarget.creative_business_name) || Boolean(effTarget.creative_name) || Boolean(effTarget.creative_id) || Boolean(userProfile?.creative_id)) && Boolean(rawCreativeName) && String(rawCreativeName).trim() !== '';
+                  const rawCreativeName = 
+                    matchingCreativeProfile?.creative_name || 
+                    matchingCreativeProfile?.creative_business_name || 
+                    matchingCreativeProfile?.business_name || 
+                    effTarget.creative_name || 
+                    effTarget.creative_business_name || 
+                    effTarget.business_name || 
+                    (effTarget?.isYou ? (userProfile?.creative_business_name || userProfile?.creative_name || userProfile?.creative_metadata?.business_name) : null) ||
+                    matchingCreativeProfile?.name || 
+                    (typeof creativeWsRef === 'object' && creativeWsRef?.name ? creativeWsRef.name : null) || 
+                    (hasWorkspaceType('creative') ? (effTarget.name && !['user', 'user name', 'industry pro', 'pro_user', 'fan listener', 'member', 'fan_core', 'listener'].includes(String(effTarget.name).toLowerCase().trim()) ? `${effTarget.name} Studios` : 'Vortex Graphics') : null);
+                  const hasCreativeWorkspace = (hasWorkspaceType('creative') || Boolean(matchingCreativeProfile) || Boolean(effTarget.business_name) || Boolean(effTarget.creative_name) || Boolean(effTarget.creative_id)) && Boolean(rawCreativeName) && String(rawCreativeName).trim() !== '';
 
                   const hasCreative = !isCurrentProfileCreative && hasCreativeWorkspace;
 
                   if (hasCreative) {
                     const name = String(rawCreativeName).trim();
-                    const logo = matchingCreativeProfile?.creative_avatar || matchingCreativeProfile?.avatar_url || matchingCreativeProfile?.avatar || effTarget?.creative_avatar || (effTarget?.isYou ? userProfile?.creative_avatar : null) || userProfile?.creative_avatar || 'https://images.unsplash.com/photo-1626544827763-d516dce335e2?w=150';
-                    const subtitle = matchingCreativeProfile?.specialty || effTarget.creative_primary_specialty || effTarget.specialty || 'Creative Media & Sound Design';
+                    const logo = matchingCreativeProfile?.creative_avatar || effTarget?.creative_avatar || userProfile?.creative_avatar || 'https://images.unsplash.com/photo-1626544827763-d516dce335e2?w=150';
+                    const subtitle = effTarget.primary_specialty || effTarget.specialty || 'Creative Media & Sound Design';
 
                     entities.push({
                       key: 'creative',
                       icon: '🎨',
-                      badgeClass: 'bg-pink-950/80 border border-pink-500/50 text-pink-300',
-                      borderHoverClass: 'hover:border-pink-400/80',
+                      badgeClass: 'bg-amber-950/80 border border-amber-500/50 text-amber-300',
+                      borderHoverClass: 'hover:border-amber-400/80',
                       typeLabel: 'Creative',
                       name,
                       logo,
                       subtitle,
                       onClick: () => {
+                        const creativeBanner = matchingCreativeProfile?.creative_banner || matchingCreativeProfile?.banner_url || matchingCreativeProfile?.cover_url || effTarget?.creative_banner || (effTarget?.isYou ? userProfile?.creative_banner : null) || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200';
+                        const creativeHandle = matchingCreativeProfile?.creative_handle || matchingCreativeProfile?.console_handle || matchingCreativeProfile?.handle || effTarget?.creative_handle || (effTarget?.isYou ? userProfile?.creative_handle : null) || 'vortexgraphics';
+                        const creativeName = name || matchingCreativeProfile?.business_name || matchingCreativeProfile?.creative_name || effTarget?.creative_name || (effTarget?.isYou ? userProfile?.creative_business_name : null) || 'Vortex Graphics';
+
                         const creativeProfileObj = {
-                          ...effTarget,
-                          id: effTarget.creative_id || (typeof creativeWsRef === 'object' && creativeWsRef?.id) || `creative_${effTarget.id || Date.now()}`,
-                          name,
-                          business_name: name,
-                          creative_name: name,
-                          creative_business_name: name,
+                          ...(matchingCreativeProfile || {}),
+                          ...(!matchingCreativeProfile ? effTarget : {}),
+                          id: matchingCreativeProfile?.id || effTarget.creative_id || (typeof creativeWsRef === 'object' && creativeWsRef?.id) || `creative_${effTarget.id || Date.now()}`,
+                          name: creativeName,
+                          business_name: creativeName,
+                          creative_name: creativeName,
+                          creative_business_name: creativeName,
                           type: 'creative',
                           role: 'Creative',
                           portalRole: 'creative',
                           account_type: 'creative',
                           isPersonal: false,
+                          isIndustryProPersonal: false,
                           avatar: logo,
                           avatar_url: logo,
                           creative_avatar: logo,
-                          banner: matchingCreativeProfile?.banner_url || matchingCreativeProfile?.cover_url || effTarget.creative_banner || userProfile?.creative_banner || effTarget.banner_url,
-                          banner_url: matchingCreativeProfile?.banner_url || matchingCreativeProfile?.cover_url || effTarget.creative_banner || userProfile?.creative_banner || effTarget.banner_url,
+                          creative_banner: creativeBanner,
+                          banner: creativeBanner,
+                          banner_url: creativeBanner,
+                          cover_url: creativeBanner,
+                          creative_handle: creativeHandle,
+                          console_handle: creativeHandle,
+                          handle: creativeHandle,
                           specialty: subtitle,
-                          bio: matchingCreativeProfile?.bio || matchingCreativeProfile?.biography || effTarget.creative_bio || effTarget.bio || `Official Creative Specialist Profile for ${name}.`
+                          bio: matchingCreativeProfile?.bio || effTarget.bio || `Official Creative Specialist Profile for ${creativeName}.`
                         };
                         setSelectedUserProfile(creativeProfileObj);
-                        triggerNotification?.(`🎨 Opening Creative Profile for ${name}...`);
+                        triggerNotification?.(`🎨 Opening Creative Profile for ${creativeName}...`);
                       }
                     });
                   }
@@ -1283,7 +1671,16 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                     return false;
                   }) : null;
 
-                  const rawLabelName = matchingLabelProfile?.label_company_name || matchingLabelProfile?.name || effTarget.label_name || effTarget.labelName || (typeof labelWsRef === 'object' && labelWsRef?.name ? labelWsRef.name : null) || (hasWorkspaceType('label') ? (effTarget.name ? `${effTarget.name} Records` : 'Record Label') : null);
+                  const rawLabelName = 
+                    matchingLabelProfile?.label_company_name || 
+                    matchingLabelProfile?.label_name || 
+                    matchingLabelProfile?.labelName || 
+                    effTarget.label_company_name || 
+                    effTarget.label_name || 
+                    effTarget.labelName || 
+                    matchingLabelProfile?.name || 
+                    (typeof labelWsRef === 'object' && labelWsRef?.name ? labelWsRef.name : null) || 
+                    (hasWorkspaceType('label') ? (effTarget.name ? `${effTarget.name} Records` : 'Record Label') : null);
                   const hasLabelWorkspace = (hasWorkspaceType('label') || Boolean(matchingLabelProfile) || Boolean(effTarget?.label_name) || Boolean(effTarget?.labelName) || Boolean(effTarget?.label_id)) && Boolean(rawLabelName) && String(rawLabelName).trim() !== '';
 
                   const hasLabel = !isCurrentProfileLabel && hasLabelWorkspace;
@@ -1340,9 +1737,9 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                       </div>
 
                       <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
-                        {entities.map((item) => (
+                        {entities.map((item, idx) => (
                           <div
-                            key={item.key}
+                            key={`assoc-${item.key}-${idx}`}
                             onClick={item.onClick}
                             className={`p-1.5 sm:p-2 bg-gradient-to-r from-zinc-900/90 to-zinc-950 border border-zinc-800 ${item.borderHoverClass} rounded-lg sm:rounded-xl transition-all cursor-pointer group relative overflow-hidden flex items-center gap-1.5 sm:gap-2.5 shadow-md hover:shadow-purple-950/30 hover:scale-[1.01]`}
                           >
@@ -1381,8 +1778,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                   );
                 })()}
 
-
-                {/* Custom badges */}
+                                {/* Custom badges */}
                 {selectedUserProfile.customBadges && selectedUserProfile.customBadges.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {selectedUserProfile.customBadges
@@ -1408,7 +1804,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                         return true;
                       })
                       .map((badge: string, idx: number) => (
-                        <span key={idx} className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full uppercase tracking-widest ${
+                        <span key={`badge-${badge}-${idx}`} className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full uppercase tracking-widest ${
                           (selectedUserProfile?.role || '').toLowerCase().includes('label') 
                             ? 'bg-orange-500/5 text-orange-400 border border-orange-950' 
                             : 'bg-rose-500/5 text-rose-400 border border-rose-950'
@@ -1526,7 +1922,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                            (userProfile?.id && (selectedUserProfile?.id === userProfile.id || effTarget?.id === userProfile.id || baseTarget?.id === userProfile.id))
                          );
                          if (isOwner) {
-                           const b = (profileBlurb || effTarget?.bio || (userProfile as any)?.bio || '').trim();
+                           const b = (isBandTarget ? (effTarget?.bio || bData?.bio || baseTarget?.bio || '') : (profileBlurb || effTarget?.bio || (userProfile as any)?.bio || '')).trim();
                            return b ? `"${b}"` : '"Click edit to add your bio."';
                          } else {
                            const b = (fetchedProfileData?.bio || effTarget?.bio || baseTarget?.bio || '').trim();
@@ -1734,7 +2130,8 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                       <div className="flex flex-wrap gap-1 max-h-48 overflow-y-auto custom-scrollbar p-0.5">
                         {allGenres.map((genre, idx) => (
                           <span
-                            key={idx}
+                            key={`genre-${genre}-${idx}`}
+
                             className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] leading-tight font-mono font-bold tracking-tight border transition-all shadow-sm ${
                               isFanOnly
                                 ? 'bg-blue-950/40 border-blue-800/40 text-blue-300 hover:border-blue-500 hover:text-blue-200'
@@ -2219,7 +2616,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                           desc: "Limited edition screenprinted posters for 18 North American tour dates."
                         }
                       ].map((project, idx) => (
-                        <div key={idx} className="bg-zinc-950 border border-zinc-900 hover:border-fuchsia-500/40 rounded-xl overflow-hidden transition-all group">
+                        <div key={`project-${project.title}-${idx}`} className="bg-zinc-950 border border-zinc-900 hover:border-fuchsia-500/40 rounded-xl overflow-hidden transition-all group">
                           <div className="relative h-36 overflow-hidden bg-black">
                             <img src={project.image} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100" />
                             <div className="absolute top-2 right-2 px-2 py-0.5 bg-black/80 border border-fuchsia-500/40 text-fuchsia-400 rounded text-[8px] font-mono font-bold uppercase">
@@ -2273,7 +2670,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                           thumbnail: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=200"
                         }
                       ].map((event, idx) => (
-                        <div key={idx} className="bg-zinc-950 border border-zinc-900 hover:border-yellow-500/40 rounded-xl p-3.5 flex flex-col sm:flex-row items-center gap-4 transition-all">
+                        <div key={`event-${event.title}-${idx}`} className="bg-zinc-950 border border-zinc-900 hover:border-yellow-500/40 rounded-xl p-3.5 flex flex-col sm:flex-row items-center gap-4 transition-all">
                           <img src={event.thumbnail} alt={event.title} className="w-20 h-20 rounded-lg object-cover border border-zinc-800 shrink-0" />
                           <div className="flex-1 min-w-0 text-left">
                             <div className="flex items-center gap-2">
@@ -2392,9 +2789,9 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                                 </div>
                               </div>
                               <div className="space-y-2">
-                                {musicItems.map(item => (
+                                {musicItems.map((item, mIdx) => (
                                   <div
-                                    key={item.id}
+                                    key={item.id ? `music-${item.id}-${mIdx}` : `music-${mIdx}`}
                                     onClick={() => {
                                       setCollPlayerActiveId(item.id);
                                       setCollPlayerActiveTrackId(`${item.id}_t1`);
@@ -2452,8 +2849,8 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                                 </div>
                               ) : (
                                 <div className="space-y-2">
-                                  {filteredItems.map(item => (
-                                    <div key={item.id} className="p-3 bg-zinc-950/60 border border-zinc-900 hover:border-zinc-700 transition-colors rounded-xl flex items-center gap-3 cursor-pointer">
+                                  {filteredItems.map((item, fIdx) => (
+                                    <div key={item.id ? `item-${item.id}-${fIdx}` : `item-${fIdx}`} className="p-3 bg-zinc-950/60 border border-zinc-900 hover:border-zinc-700 transition-colors rounded-xl flex items-center gap-3 cursor-pointer">
                                       <img src={item.data.thumbnail || item.data.coverUrl || "https://placehold.co/150x150/18181b/ffffff?text=MERCH"} className="w-12 h-12 rounded-lg object-cover shrink-0 border border-zinc-800" alt="" />
                                       <div className="flex-1 min-w-0 text-left">
                                         <div className="text-xs font-black text-zinc-100 truncate uppercase tracking-wider">{item.data.name || item.data.title || 'Nexus Item'}</div>
@@ -2530,8 +2927,8 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                           }}
                           className="bg-zinc-950 text-orange-400 text-[11px] font-black font-mono px-2 py-1 rounded-lg border border-orange-950/50 outline-none focus:border-orange-500/50 cursor-pointer"
                         >
-                          {selectedUserProfile.associatedProfiles?.map((ap: any) => (
-                            <option key={ap?.name} value={ap?.name}>{ap?.name}</option>
+                          {selectedUserProfile.associatedProfiles?.map((ap: any, apIdx: number) => (
+                            <option key={ap?.name ? `ap-${ap.name}-${apIdx}` : `ap-${apIdx}`} value={ap?.name}>{ap?.name}</option>
                           ))}
                           {(!selectedUserProfile.associatedProfiles || selectedUserProfile.associatedProfiles.length === 0) && (
                              <option value="None">No Active Roster</option>
@@ -2578,7 +2975,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                               <div className="space-y-1.5 max-h-80 overflow-y-auto no-scrollbar pr-1">
                                 {currentAlbum.tracks?.map((track: any, trackIdx: number) => (
                                   <div
-                                    key={trackIdx}
+                                    key={track.id ? `track-${track.id}-${trackIdx}` : `track-${trackIdx}`}
                                     onClick={() => {
                                       triggerNotification?.(`Playing preview of "${track.title}" by ${selectedLabelBand}...`);
                                     }}
@@ -2607,12 +3004,12 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                   ) : (
                     selectedUserProfile.musicCatalog && selectedUserProfile.musicCatalog.length > 0 ? (
                       <div className="space-y-6">
-                        {selectedUserProfile.musicCatalog.map((release: any) => {
+                        {selectedUserProfile.musicCatalog.map((release: any, rIdx: number) => {
                           const isPlayingRelease = (release?.tracks || []).some((t: any) => t.id === profileActivePlaybackTrackId);
                           const activeTrackObj = isPlayingRelease ? release.tracks.find((t: any) => t.id === profileActivePlaybackTrackId) : null;
                           
                           return (
-                            <div key={release.id} className="bg-[#0c0e12] border border-zinc-800/80 rounded-2xl overflow-hidden shadow-2xl relative flex flex-col">
+                            <div key={release.id ? `rel-${release.id}-${rIdx}` : `rel-${rIdx}`} className="bg-[#0c0e12] border border-zinc-800/80 rounded-2xl overflow-hidden shadow-2xl relative flex flex-col">
                               <div className="flex items-center justify-between p-3 border-b border-zinc-800/80 bg-black/40">
                                 <div className="flex items-center gap-2">
                                   <span className="px-1.5 py-0.5 rounded bg-[#FF9900]/10 text-[#FF9900] border border-[#FF9900]/20 text-[8px] font-mono font-black uppercase tracking-widest">{release.format}</span>
@@ -2676,22 +3073,202 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                         })}
                       </div>
                     ) : (
-                      <div className="bg-[#0c0e12] border border-orange-500/20 rounded-2xl p-8 text-center space-y-3">
-                        <Disc className="w-12 h-12 text-orange-500/80 animate-spin-slow mx-auto" />
-                        <h4 className="text-sm font-bold font-mono text-white uppercase tracking-wider">No Catalog Releases Published</h4>
-                        <p className="text-xs text-zinc-500 font-mono max-w-sm mx-auto">
-                          Official digital downloads and physical merch releases will be listed here. Use the highlight player on the profile header to stream featured audio.
-                        </p>
-                        {selectedUserProfile.isYou && (
-                          <button
-                            onClick={() => triggerNotification?.("Catalog release manager opened.")}
-                            className="px-3 py-1.5 bg-orange-600 hover:bg-orange-500 text-white rounded text-xs font-mono font-bold transition-colors inline-flex items-center gap-1.5"
-                          >
-                            <Plus className="w-3.5 h-3.5" /> Upload Release Catalog
-                          </button>
-                        )}
-                      </div>
-                    )
+                    (() => {
+                      const communityDiscography = dbReleases;
+
+                      if ((communityDiscography && communityDiscography.length > 0) || hasLineup) {
+                        return (
+                          <div className="space-y-6">
+                            {/* Band Lineup Section */}
+                            {hasLineup && (
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between px-1">
+                                  <span className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <Users className="w-3.5 h-3.5 text-amber-400" />
+                                    Band Lineup & Musician Roster ({displayLineup.length})
+                                  </span>
+                                  <button
+                                    onClick={() => setShowCuratorModal(true)}
+                                    className="text-[9px] font-mono font-bold text-zinc-400 hover:text-amber-300 flex items-center gap-1 transition-colors cursor-pointer"
+                                  >
+                                    <Edit2 className="w-2.5 h-2.5" /> Edit Lineup
+                                  </button>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+                                  {displayLineup.map((mem: any, mIdx: number) => {
+                                    const matchedProf = allProfiles.find((p: any) => {
+                                      if (!p) return false;
+                                      if (mem.id && p.id === mem.id) return true;
+                                      const mName = (mem.name || '').toLowerCase().trim();
+                                      const pName = (p.full_name || p.name || '').toLowerCase().trim();
+                                      const pUser = (p.username || '').toLowerCase().trim();
+                                      const pEmail = (p.email || '').toLowerCase().trim();
+                                      if (isMiguelNameOrProfile(mem)) {
+                                        return pEmail.includes('goregrindsickness') || pUser.includes('goregrinder') || pName.includes('miguel');
+                                      }
+                                      if (mName && pName && (pName === mName || pName.includes(mName) || mName.includes(pName))) {
+                                        return true;
+                                      }
+                                      return false;
+                                    });
+
+                                    const isActive = !!matchedProf;
+                                    const avatarUrl = matchedProf?.avatar_url || matchedProf?.avatar;
+
+                                    const initials = mem.name
+                                      ? mem.name
+                                          .split(' ')
+                                          .map((n: string) => n[0])
+                                          .join('')
+                                          .slice(0, 2)
+                                          .toUpperCase()
+                                      : '?';
+                                    return (
+                                      <div
+                                        key={mem.id ? `mem-${mem.id}-${mIdx}` : `mem-${mIdx}`}
+                                        onClick={() => isActive && handleLineupMemberClick(mem)}
+                                        className={`p-1.5 sm:p-2 bg-gradient-to-r from-zinc-900/90 to-zinc-950 border transition-all relative overflow-hidden flex items-center gap-1.5 sm:gap-2.5 shadow-md ${
+                                          isActive
+                                            ? 'border-emerald-500/30 hover:border-emerald-500/70 hover:shadow-emerald-950/20 hover:scale-[1.01] cursor-pointer group'
+                                            : 'border-zinc-900/40 opacity-50 cursor-not-allowed select-none grayscale'
+                                        } rounded-lg sm:rounded-xl`}
+                                      >
+                                        {/* Avatar initials or image */}
+                                        <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-md sm:rounded-lg bg-zinc-950 border overflow-hidden shrink-0 transition-colors shadow-inner flex items-center justify-center font-mono text-[10px] sm:text-xs font-black ${
+                                          isActive ? 'border-emerald-500/40 text-emerald-400 group-hover:border-emerald-400' : 'border-zinc-800 text-zinc-600'
+                                        }`}>
+                                          {avatarUrl && (avatarUrl.startsWith('http') || avatarUrl.startsWith('data:') || avatarUrl.startsWith('/')) ? (
+                                            <img src={avatarUrl} alt={mem.name} className="w-full h-full object-cover rounded-md sm:rounded-lg" referrerPolicy="no-referrer" />
+                                          ) : (
+                                            initials
+                                          )}
+                                        </div>
+
+                                        {/* Info */}
+                                        <div className="min-w-0 flex-1">
+                                          <div className="flex items-center gap-1">
+                                            <span className={`text-[7px] sm:text-[8px] font-mono font-black uppercase px-1 sm:px-1.5 py-0.2 rounded border ${
+                                              isActive
+                                                ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300'
+                                                : 'bg-zinc-900 border-zinc-800 text-zinc-500'
+                                            }`}>
+                                              {isActive ? '⚡ Active' : '💤 Inactive'}
+                                            </span>
+                                          </div>
+                                          <h5 className={`text-[10px] sm:text-xs font-black truncate tracking-tight mt-0.5 font-display ${
+                                            isActive ? 'text-white group-hover:text-emerald-300' : 'text-zinc-400'
+                                          }`}>
+                                            {mem.name}
+                                          </h5>
+                                          <p className="text-[7.5px] sm:text-[9px] font-mono text-zinc-400 truncate leading-tight">
+                                            {mem.role || 'Member'}
+                                          </p>
+                                        </div>
+
+                                        {/* Arrow */}
+                                        {isActive && (
+                                          <div className="shrink-0 pr-0.5 sm:pr-1 text-zinc-500 group-hover:text-emerald-300 transition-colors text-[10px] sm:text-xs font-bold hidden xs:block sm:block">
+                                            →
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Discography Releases */}
+                            {communityDiscography && communityDiscography.length > 0 && (
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between px-1">
+                                  <span className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <Disc className="w-3.5 h-3.5 text-amber-400" />
+                                    Official Discography ({communityDiscography.length})
+                                  </span>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  {communityDiscography.map((release: any, rIdx: number) => (
+                                    <div
+                                      key={release.id ? `rel-${release.id}-${rIdx}` : `rel-${rIdx}`}
+                                      className="p-3.5 rounded-xl bg-zinc-950/80 border border-zinc-850 flex flex-col gap-2.5 shadow-lg group hover:border-zinc-700 transition-colors"
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0 shadow-inner relative">
+                                          {release.coverUrl || release.coverImage || release.image_url ? (
+                                            <img src={release.coverUrl || release.coverImage || release.image_url} alt={release.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                          ) : (
+                                            <Disc className="w-6 h-6 text-zinc-600 group-hover:text-amber-400 transition-colors" />
+                                          )}
+                                        </div>
+
+                                        <div className="min-w-0 flex-1">
+                                          <div className="flex items-center gap-1.5">
+                                            <span className="px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[8px] font-mono font-bold uppercase tracking-widest">
+                                              {release.type || 'Release'}
+                                            </span>
+                                            <span className="text-[9px] font-mono text-zinc-400">{release.year}</span>
+                                          </div>
+                                          <h4 className="text-xs font-bold text-white uppercase tracking-wider truncate mt-1 group-hover:text-amber-300 transition-colors font-display">
+                                            {release.title}
+                                          </h4>
+                                          {release.label && (
+                                            <p className="text-[9px] text-zinc-400 font-mono truncate mt-0.5">
+                                              {release.label} {release.catalog_id ? `• Cat #${release.catalog_id}` : ''}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {/* Tracklist Preview if available */}
+                                      {Array.isArray(release.tracks) && release.tracks.length > 0 && (
+                                        <div className="p-2 rounded-lg bg-black/50 border border-zinc-900 space-y-1">
+                                          <div className="text-[8px] font-mono font-bold uppercase text-zinc-500 tracking-wider">
+                                            Tracklist ({release.tracks.length})
+                                          </div>
+                                          <div className="space-y-0.5 max-h-24 overflow-y-auto pr-1">
+                                            {release.tracks.map((trk: any, tIdx: number) => (
+                                              <div key={trk.id ? `trk-${trk.id}-${tIdx}` : `trk-${tIdx}`} className="flex items-center justify-between text-[10px] font-mono text-zinc-300">
+                                                <span className="truncate flex items-center gap-1.5">
+                                                  <span className="text-zinc-500 text-[8px]">{tIdx + 1}.</span>
+                                                  <span>{trk.title}</span>
+                                                </span>
+                                                {trk.duration && <span className="text-zinc-500 text-[9px] shrink-0">{trk.duration}</span>}
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="bg-[#0c0e12] border border-orange-500/20 rounded-2xl p-8 text-center space-y-3">
+                          <Disc className="w-12 h-12 text-orange-500/80 animate-spin-slow mx-auto" />
+                          <h4 className="text-sm font-bold font-mono text-white uppercase tracking-wider">No Catalog Releases Published</h4>
+                          <p className="text-xs text-zinc-500 font-mono max-w-sm mx-auto">
+                            Official digital downloads and physical merch releases will be listed here. Use the highlight player on the profile header to stream featured audio.
+                          </p>
+                          {selectedUserProfile.isYou && (
+                            <button
+                              onClick={() => triggerNotification?.("Catalog release manager opened.")}
+                              className="px-3 py-1.5 bg-orange-600 hover:bg-orange-500 text-white rounded text-xs font-mono font-bold transition-colors inline-flex items-center gap-1.5"
+                            >
+                              <Plus className="w-3.5 h-3.5" /> Upload Release Catalog
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()
+                  )
                   )
                 )}
               </div>
@@ -2856,9 +3433,9 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                     ORDER FORMATS
                   </div>
                   <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                    {formatOptions.map((link: any) => (
+                    {formatOptions.map((link: any, idx: number) => (
                       <button
-                        key={link.format}
+                        key={`format-${link.format || idx}-${idx}`}
                         onClick={() => {
                           openCheckout?.('merch', {
                             name: `${selectedLabelBand} - ${currentAlbum.albumName} (${link.format})`,
@@ -2892,6 +3469,143 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
             );
           })()}
         </motion.div>
+      )}
+
+      {/* Community Band Curator Modal (Lightweight Fan Archiving - No forms required) */}
+      <CommunityBandCuratorModal
+        isOpen={showCuratorModal}
+        onClose={() => setShowCuratorModal(false)}
+        initialBand={communityArchiveMatch}
+        onSaved={(updatedBand) => {
+          setCommunityArchiveMatch(updatedBand);
+          triggerNotification?.(`Community archive for "${updatedBand.name}" updated!`);
+        }}
+      />
+
+      {/* Band Claim Handover Modal (For official band members/managers claiming community pages) */}
+      {communityArchiveMatch && (
+        <BandClaimHandoverModal
+          isOpen={showClaimModal}
+          onClose={() => setShowClaimModal(false)}
+          bandRecord={communityArchiveMatch}
+          currentUserId={userProfile?.id || 'official_claimant'}
+          onClaimSuccess={(claimedBand, mode) => {
+            setCommunityArchiveMatch(claimedBand);
+            triggerNotification?.(
+              mode === 'clean_slate'
+                ? `⚡ Claimed "${claimedBand.name}" with a Clean Official Slate! Followers linked.`
+                : `⚡ Claimed and Adopted "${claimedBand.name}" fan foundation! All releases & followers verified.`
+            );
+          }}
+        />
+      )}
+
+      {/* DISCOGRAPHY DETAILS MODAL */}
+      {selectedRelease && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[110] flex items-center justify-center p-4 animate-in fade-in duration-300" onClick={() => setSelectedRelease(null)}>
+          <div 
+            className="bg-zinc-950 border border-zinc-800 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header Cover */}
+            <div className="relative aspect-video bg-zinc-900 flex items-center justify-center overflow-hidden border-b border-zinc-850">
+              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/60 to-transparent z-10" />
+              {selectedRelease.image_url ? (
+                <img
+                  src={selectedRelease.image_url}
+                  alt={selectedRelease.title}
+                  className="w-full h-full object-cover blur-sm opacity-50 absolute inset-0 scale-105"
+                  referrerPolicy="no-referrer"
+                />
+              ) : null}
+              
+              {/* Core Album Image */}
+              <div className="relative z-20 w-28 h-28 rounded-xl bg-zinc-950 border border-zinc-700 overflow-hidden shadow-2xl flex items-center justify-center">
+                {selectedRelease.image_url ? (
+                  <img
+                    src={selectedRelease.image_url}
+                    alt={selectedRelease.title}
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <Disc className="w-12 h-12 text-zinc-600" />
+                )}
+              </div>
+            </div>
+
+            {/* Release Details Content */}
+            <div className="p-5 text-left space-y-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px] font-mono font-bold uppercase tracking-widest">
+                    {selectedRelease.type || 'LP'}
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-400">{selectedRelease.year}</span>
+                </div>
+                <h3 className="text-lg font-black text-white font-display mt-1 tracking-wide uppercase">
+                  {selectedRelease.title}
+                </h3>
+              </div>
+
+              {/* Metadata Grid */}
+              <div className="grid grid-cols-2 gap-3 bg-zinc-900/50 border border-zinc-850 rounded-xl p-3 text-[10px] font-mono">
+                <div>
+                  <span className="text-zinc-500 block uppercase text-[8px] tracking-wider">Record Label</span>
+                  <span className="text-zinc-200 truncate block">{selectedRelease.label || 'Self-Released'}</span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block uppercase text-[8px] tracking-wider">Catalog ID</span>
+                  <span className="text-zinc-200 truncate block">{selectedRelease.catalog_id || 'N/A'}</span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block uppercase text-[8px] tracking-wider">Release Date</span>
+                  <span className="text-zinc-200 truncate block">{selectedRelease.release_date || selectedRelease.year || 'N/A'}</span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block uppercase text-[8px] tracking-wider">Format</span>
+                  <span className="text-zinc-200 truncate block">{selectedRelease.format || 'Digital / CD'}</span>
+                </div>
+              </div>
+
+              {/* Tracklist */}
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-mono font-bold uppercase text-zinc-400 tracking-wider flex items-center gap-1.5">
+                  <Disc className="w-3.5 h-3.5 text-zinc-400" />
+                  Tracklist ({Array.isArray(selectedRelease.tracks) ? selectedRelease.tracks.length : 0})
+                </span>
+                
+                {Array.isArray(selectedRelease.tracks) && selectedRelease.tracks.length > 0 ? (
+                  <div className="p-3 rounded-xl bg-black border border-zinc-900 divide-y divide-zinc-900/40 max-h-40 overflow-y-auto pr-1 scrollbar-thin">
+                    {selectedRelease.tracks.map((trk: any, tIdx: number) => (
+                      <div key={trk.id ? `modal-trk-${trk.id}-${tIdx}` : `modal-trk-${tIdx}`} className="flex items-center justify-between py-1.5 text-xs font-mono text-zinc-300">
+                        <span className="truncate flex items-center gap-2">
+                          <span className="text-zinc-500 text-[10px]">{String(tIdx + 1).padStart(2, '0')}.</span>
+                          <span className="text-white font-medium">{trk.title}</span>
+                        </span>
+                        {trk.duration && <span className="text-zinc-400 text-xs shrink-0">{trk.duration}</span>}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 border border-dashed border-zinc-900 rounded-xl bg-black/40 text-zinc-500 text-[10px] font-mono">
+                    No track list available for this release
+                  </div>
+                )}
+              </div>
+
+              {/* Footer actions */}
+              <div className="pt-2 flex justify-end">
+                <button
+                  onClick={() => setSelectedRelease(null)}
+                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-white rounded-xl text-xs font-bold font-mono uppercase tracking-wider transition-all cursor-pointer"
+                >
+                  Close Details
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </AnimatePresence>
   );

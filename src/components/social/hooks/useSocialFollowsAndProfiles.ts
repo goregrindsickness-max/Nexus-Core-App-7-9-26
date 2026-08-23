@@ -4,6 +4,7 @@ import { loadDiscoverProfilesCache, saveDiscoverProfilesCache } from '../utils/f
 import { extractUUID } from '../../../utils/socialFeedUtils';
 import { getSupabase, executeWithSchemaResilience, sanitizeBandPayload } from '../../../supabase';
 import { isMiguelNameOrProfile } from '../utils/profileUtils';
+import { communityBandManager } from '../../../lib/communityBands';
 
 const isValidUUID = (str: string | null | undefined): boolean => {
   return typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str.trim());
@@ -305,6 +306,35 @@ export function useSocialFollowsAndProfiles({
               });
             });
           }
+
+          // Also inject fan/community-curated band archives
+          const commBands = communityBandManager.getAll();
+          commBands.forEach((cb) => {
+            if ((list || []).some(x => x.name.toLowerCase() === cb.name.toLowerCase())) return;
+            list.push({
+              ...cb,
+              id: cb.id,
+              band_id: cb.id,
+              name: cb.name,
+              band_name: cb.name,
+              role: 'Band',
+              portalRole: 'band',
+              isBandProfile: true,
+              is_community_archive: cb.verification_status === 'community_archive',
+              verification_status: cb.verification_status,
+              type: 'band',
+              category: 'bands',
+              desc: cb.bio || cb.genre,
+              avatar: cb.avatar_url,
+              image: cb.avatar_url,
+              banner: cb.cover_url || '',
+              followers_count: cb.followers_count || 120,
+              discography: cb.discography || [],
+              curated_by: cb.curated_by,
+              followed: !!localFollows[cb.id] || !!localFollows[cb.name.toLowerCase()],
+              isYou: false
+            });
+          });
         } catch (err) {
           console.error("Error fetching bands from Supabase:", err);
         }

@@ -1,4 +1,5 @@
 import { getSupabase } from './clientService';
+import { ensureUUID } from './schemaResilienceService';
 
 export const PRIMARY_GENRE_KEYWORDS = new Set([
   'extreme metal',
@@ -115,6 +116,9 @@ export const VALID_BAND_COLUMNS = new Set([
   'apple_music',
   'bandcamp',
   'website',
+  'live_update',
+  'featured_video_band_name',
+  'featured_video_track_name',
   'created_at',
   'updated_at',
 ]);
@@ -124,10 +128,16 @@ export function sanitizeBandPayload(rawPayload: any): Record<string, any> {
 
   const clean: Record<string, any> = { ...rawPayload };
 
+  // 0. Ensure id is a valid UUID
+  if (clean.id) {
+    clean.id = ensureUUID(clean.id);
+  }
+
   // 1. Single micro_genres column
   const rawGenreSources = [
     clean.micro_genres,
     clean.sub_genres,
+    clean.subgenres,
     clean.genre_tags,
     clean.genres,
     clean.genre,
@@ -147,6 +157,7 @@ export function sanitizeBandPayload(rawPayload: any): Record<string, any> {
   delete clean.genres;
   delete clean.genre_tags;
   delete clean.sub_genres;
+  delete clean.subgenres;
 
   // 2. Location columns (city, state_province, country)
   let city = clean.city || '';
@@ -178,9 +189,28 @@ export function sanitizeBandPayload(rawPayload: any): Record<string, any> {
   clean.metal_archives_url = maUrl || null;
   delete clean.metal_archives;
 
+  // Social URLs (spotify, bandcamp)
+  const spotUrl = clean.spotify || clean.spotify_url || '';
+  clean.spotify = spotUrl || null;
+  delete clean.spotify_url;
+
+  const bcUrl = clean.bandcamp || clean.bandcamp_url || '';
+  clean.bandcamp = bcUrl || null;
+  delete clean.bandcamp_url;
+
+  // Verification status mapping
+  if (clean.verification_status !== undefined) {
+    clean.is_verified = (clean.verification_status === 'verified_official') || clean.is_verified || false;
+    delete clean.verification_status;
+  }
+  delete clean.curated_by;
+  delete clean.curator_name;
+  delete clean.followers_count;
+  delete clean.discography;
+
   // 5. Single Creator ID (creator_id)
-  const creatorId = clean.creator_id || clean.user_id || clean.owner_id || null;
-  clean.creator_id = creatorId;
+  const rawCreatorId = clean.creator_id || clean.user_id || clean.owner_id || null;
+  clean.creator_id = rawCreatorId ? ensureUUID(rawCreatorId) : null;
   delete clean.user_id;
   delete clean.owner_id;
   delete clean.profile_id;

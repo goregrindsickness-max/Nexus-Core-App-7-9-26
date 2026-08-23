@@ -1,8 +1,9 @@
-import React from 'react';
-import { RefreshCw, Plus, X, ShieldCheck, CheckCircle2, Upload, FileText, Truck, Shirt } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { RefreshCw, Plus, X, ShieldCheck, CheckCircle2, Upload, FileText, Truck, Shirt, AlertCircle, Sparkles, Layers, Users } from 'lucide-react';
 import { COUNTRIES, US_STATES } from '../../constants/location';
 import { MASTER_GENRES } from '../../constants/genres';
 import { uploadBase64ToStorage } from '../../supabase';
+import { communityBandManager, CommunityBandRecord } from '../../lib/communityBands';
 
 export interface BandRegistrationSectionProps {
   bandSectionAOpen: boolean;
@@ -152,6 +153,43 @@ export const BandRegistrationSection: React.FC<BandRegistrationSectionProps> = (
 }) => {
   const allSizes = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
 
+  const [matchedArchive, setMatchedArchive] = useState<CommunityBandRecord | null>(null);
+  const [claimModeChoice, setClaimModeChoice] = useState<'adopt' | 'clean' | 'none'>('none');
+  const [claimedNotice, setClaimedNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!bandName || bandName.trim().length < 2) {
+      setMatchedArchive(null);
+      return;
+    }
+    const found = communityBandManager.findByName(bandName);
+    if (found && found.verification_status === 'community_archive') {
+      setMatchedArchive(found);
+    } else {
+      setMatchedArchive(null);
+    }
+  }, [bandName]);
+
+  const handleAdoptArchive = (archive: CommunityBandRecord) => {
+    setClaimModeChoice('adopt');
+    if (archive.city && setBandCity) setBandCity(archive.city);
+    if (archive.country && setBandCountry) setBandCountry(archive.country);
+    if (archive.state && setBandStateProvince) setBandStateProvince(archive.state);
+    if (archive.genre && setBandGenre) setBandGenre(archive.genre);
+    if (archive.bio && setBandBiography) setBandBiography(archive.bio);
+    if (archive.spotify_url && setBandSpotify) setBandSpotify(archive.spotify_url);
+    if (archive.bandcamp_url && setBandBandcamp) setBandBandcamp(archive.bandcamp_url);
+    if (archive.metal_archives_url && setBandMetalArchivesUrl) setBandMetalArchivesUrl(archive.metal_archives_url);
+    if (archive.subgenres && setBandTags) setBandTags(archive.subgenres);
+    setClaimedNotice(`Adopted ${archive.name} archive foundation! (${archive.followers_count || 120} followers & discography linked)`);
+  };
+
+  const handleCleanSlate = (archive: CommunityBandRecord) => {
+    setClaimModeChoice('clean');
+    if (setBandBiography) setBandBiography('');
+    setClaimedNotice(`Claimed official handle for ${archive.name}! Starting with a clean official slate while inheriting ${archive.followers_count || 120} followers.`);
+  };
+
   return (
     <div className="px-0 py-4 space-y-4 bg-[#0a0a0c] w-full">
       {/* STEP A MODULE */}
@@ -226,14 +264,84 @@ export const BandRegistrationSection: React.FC<BandRegistrationSectionProps> = (
 
             <div className="space-y-4">
               <div className="space-y-1.5 text-left">
-                <label className="text-[8px] font-mono tracking-wider text-zinc-500 uppercase">Artist / Band Name</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[8px] font-mono tracking-wider text-zinc-500 uppercase">Artist / Band Name</label>
+                  {matchedArchive && (
+                    <span className="text-[9px] font-mono font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/30 animate-pulse">
+                      COMMUNITY ARCHIVE FOUND
+                    </span>
+                  )}
+                </div>
                 <input 
                   type="text" 
                   placeholder="ENTER OFFICIAL BAND NAME"
                   value={bandName}
-                  onChange={(e) => setBandName(e.target.value)}
+                  onChange={(e) => {
+                    setBandName(e.target.value);
+                    setClaimModeChoice('none');
+                    setClaimedNotice(null);
+                  }}
                   className="w-full bg-zinc-950 border border-zinc-800 rounded p-2.5 text-xs font-mono text-emerald-400 focus:border-emerald-500 outline-none placeholder-zinc-700"
                 />
+
+                {/* REAL-TIME COLLISION / COMMUNITY ARCHIVE ALERT */}
+                {matchedArchive && (
+                  <div className="p-3 rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-950/40 via-zinc-900 to-amber-950/30 space-y-2.5 animate-in fade-in slide-in-from-top-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-amber-400 shrink-0" />
+                        <div>
+                          <span className="text-xs font-bold text-white font-mono block">
+                            Fan Archive Detected: "{matchedArchive.name}"
+                          </span>
+                          <span className="text-[10px] text-zinc-400 font-sans">
+                            {matchedArchive.followers_count || 120} followers • {matchedArchive.discography?.length || 0} catalog releases • Curated by {matchedArchive.curated_by || 'Fan Community'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {claimedNotice ? (
+                      <div className="p-2 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-[10px] font-mono text-emerald-300 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        {claimedNotice}
+                      </div>
+                    ) : (
+                      <div className="space-y-2 pt-1 border-t border-zinc-800">
+                        <span className="text-[9px] font-mono font-bold text-zinc-300 uppercase block">
+                          Are you an official band member or manager? Claim this page:
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleAdoptArchive(matchedArchive)}
+                            className="p-2 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/50 text-emerald-300 font-mono text-[10px] font-bold text-left flex items-center justify-between cursor-pointer transition-all"
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <Layers className="w-3 h-3 text-emerald-400" />
+                              Adopt & Keep Fan Data
+                            </span>
+                            <span className="text-[8px] bg-emerald-800/60 px-1 py-0.2 rounded uppercase">Fast</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleCleanSlate(matchedArchive)}
+                            className="p-2 rounded-lg bg-purple-950/60 hover:bg-purple-900/80 border border-purple-500/50 text-purple-300 font-mono text-[10px] font-bold text-left flex items-center justify-between cursor-pointer transition-all"
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <Sparkles className="w-3 h-3 text-purple-400" />
+                              Clean Slate (Fresh Start)
+                            </span>
+                            <span className="text-[8px] bg-purple-800/60 px-1 py-0.2 rounded uppercase">Fresh</span>
+                          </button>
+                        </div>
+                        <p className="text-[9px] text-zinc-500 italic">
+                          * Both options preserve all existing followers, subscribers, and community tags for your official launch.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

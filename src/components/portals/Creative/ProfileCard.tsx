@@ -1038,26 +1038,6 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                     );
                   })()}
 
-                  {/* Metal Archives Link right under genres */}
-                  {(() => {
-                    const maUrl = effTarget?.metal_archives_url || selectedUserProfile?.metal_archives_url || (selectedUserProfile as any)?.metal_archives;
-                    if (!maUrl) return null;
-                    return (
-                      <div className="mt-2 mb-1">
-                        <a
-                          href={maUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-600/40 hover:border-rose-500 text-rose-300 hover:text-white rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all shadow-sm group cursor-pointer"
-                        >
-                          <Disc className="w-3.5 h-3.5 text-rose-400 group-hover:rotate-45 transition-transform" />
-                          <span>Metal Archives Encyclopaedia</span>
-                          <ArrowUpRight className="w-3 h-3 text-rose-400" />
-                        </a>
-                      </div>
-                    );
-                  })()}
-
                   {/* Action Buttons Grid: Follow & Message */}
                   {(() => {
                     const isYou = Boolean(selectedUserProfile?.isYou || effTarget?.isYou);
@@ -1476,7 +1456,16 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                     return false;
                   }) : null;
 
-                  const rawPromoterName = matchingPromoterProfile?.agency_name || matchingPromoterProfile?.name || effTarget.agency_name || effTarget.promoter_name || effTarget.promoterName || (typeof promoterWsRef === 'object' && promoterWsRef?.name ? promoterWsRef.name : null) || (hasWorkspaceType('promoter') ? (effTarget.name ? `${effTarget.name} Booking` : 'Promoter Agency') : null);
+                  const rawPromoterName = 
+                    matchingPromoterProfile?.promoter_name || 
+                    matchingPromoterProfile?.promoterName || 
+                    matchingPromoterProfile?.agency_name || 
+                    effTarget.promoter_name || 
+                    effTarget.promoterName || 
+                    effTarget.agency_name || 
+                    matchingPromoterProfile?.name || 
+                    (typeof promoterWsRef === 'object' && promoterWsRef?.name ? promoterWsRef.name : null) || 
+                    (hasWorkspaceType('promoter') ? (effTarget.name ? `${effTarget.name} Booking` : 'Promoter Agency') : null);
                   const hasPromoterWorkspace = (hasWorkspaceType('promoter') || Boolean(matchingPromoterProfile) || Boolean(effTarget.agency_name) || Boolean(effTarget.promoter_name) || Boolean(effTarget.promoter_id)) && Boolean(rawPromoterName) && String(rawPromoterName).trim() !== '';
 
                   const hasPromoter = !isCurrentProfilePromoter && hasPromoterWorkspace;
@@ -1533,7 +1522,17 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                     return false;
                   }) : null;
 
-                  const rawCreativeName = matchingCreativeProfile?.business_name || matchingCreativeProfile?.name || effTarget.business_name || effTarget.creative_name || (typeof creativeWsRef === 'object' && creativeWsRef?.name ? creativeWsRef.name : null) || (hasWorkspaceType('creative') ? (effTarget.name ? `${effTarget.name} Studios` : 'Creative Studio') : null);
+                  const rawCreativeName = 
+                    matchingCreativeProfile?.creative_name || 
+                    matchingCreativeProfile?.creative_business_name || 
+                    matchingCreativeProfile?.business_name || 
+                    effTarget.creative_name || 
+                    effTarget.creative_business_name || 
+                    effTarget.business_name || 
+                    (effTarget?.isYou ? (userProfile?.creative_business_name || userProfile?.creative_name || userProfile?.creative_metadata?.business_name) : null) ||
+                    matchingCreativeProfile?.name || 
+                    (typeof creativeWsRef === 'object' && creativeWsRef?.name ? creativeWsRef.name : null) || 
+                    (hasWorkspaceType('creative') ? (effTarget.name && !['user', 'user name', 'industry pro', 'pro_user', 'fan listener', 'member', 'fan_core', 'listener'].includes(String(effTarget.name).toLowerCase().trim()) ? `${effTarget.name} Studios` : 'Vortex Graphics') : null);
                   const hasCreativeWorkspace = (hasWorkspaceType('creative') || Boolean(matchingCreativeProfile) || Boolean(effTarget.business_name) || Boolean(effTarget.creative_name) || Boolean(effTarget.creative_id)) && Boolean(rawCreativeName) && String(rawCreativeName).trim() !== '';
 
                   const hasCreative = !isCurrentProfileCreative && hasCreativeWorkspace;
@@ -1553,23 +1552,39 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                       logo,
                       subtitle,
                       onClick: () => {
+                        const creativeBanner = matchingCreativeProfile?.creative_banner || matchingCreativeProfile?.banner_url || matchingCreativeProfile?.cover_url || effTarget?.creative_banner || (effTarget?.isYou ? userProfile?.creative_banner : null) || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200';
+                        const creativeHandle = matchingCreativeProfile?.creative_handle || matchingCreativeProfile?.console_handle || matchingCreativeProfile?.handle || effTarget?.creative_handle || (effTarget?.isYou ? userProfile?.creative_handle : null) || 'vortexgraphics';
+                        const creativeName = name || matchingCreativeProfile?.business_name || matchingCreativeProfile?.creative_name || effTarget?.creative_name || (effTarget?.isYou ? userProfile?.creative_business_name : null) || 'Vortex Graphics';
+
                         const creativeProfileObj = {
-                          ...effTarget,
-                          id: effTarget.creative_id || (typeof creativeWsRef === 'object' && creativeWsRef?.id) || `creative_${effTarget.id || Date.now()}`,
-                          name,
-                          business_name: name,
+                          ...(matchingCreativeProfile || {}),
+                          ...(!matchingCreativeProfile ? effTarget : {}),
+                          id: matchingCreativeProfile?.id || effTarget.creative_id || (typeof creativeWsRef === 'object' && creativeWsRef?.id) || `creative_${effTarget.id || Date.now()}`,
+                          name: creativeName,
+                          business_name: creativeName,
+                          creative_name: creativeName,
+                          creative_business_name: creativeName,
                           type: 'creative',
                           role: 'Creative',
                           portalRole: 'creative',
                           account_type: 'creative',
                           isPersonal: false,
+                          isIndustryProPersonal: false,
                           avatar: logo,
                           avatar_url: logo,
+                          creative_avatar: logo,
+                          creative_banner: creativeBanner,
+                          banner: creativeBanner,
+                          banner_url: creativeBanner,
+                          cover_url: creativeBanner,
+                          creative_handle: creativeHandle,
+                          console_handle: creativeHandle,
+                          handle: creativeHandle,
                           specialty: subtitle,
-                          bio: effTarget.bio || `Official Creative Specialist Profile for ${name}.`
+                          bio: matchingCreativeProfile?.bio || effTarget.bio || `Official Creative Specialist Profile for ${creativeName}.`
                         };
                         setSelectedUserProfile(creativeProfileObj);
-                        triggerNotification?.(`🎨 Opening Creative Profile for ${name}...`);
+                        triggerNotification?.(`🎨 Opening Creative Profile for ${creativeName}...`);
                       }
                     });
                   }
@@ -1590,7 +1605,16 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                     return false;
                   }) : null;
 
-                  const rawLabelName = matchingLabelProfile?.label_company_name || matchingLabelProfile?.name || effTarget.label_name || effTarget.labelName || (typeof labelWsRef === 'object' && labelWsRef?.name ? labelWsRef.name : null) || (hasWorkspaceType('label') ? (effTarget.name ? `${effTarget.name} Records` : 'Record Label') : null);
+                  const rawLabelName = 
+                    matchingLabelProfile?.label_company_name || 
+                    matchingLabelProfile?.label_name || 
+                    matchingLabelProfile?.labelName || 
+                    effTarget.label_company_name || 
+                    effTarget.label_name || 
+                    effTarget.labelName || 
+                    matchingLabelProfile?.name || 
+                    (typeof labelWsRef === 'object' && labelWsRef?.name ? labelWsRef.name : null) || 
+                    (hasWorkspaceType('label') ? (effTarget.name ? `${effTarget.name} Records` : 'Record Label') : null);
                   const hasLabelWorkspace = (hasWorkspaceType('label') || Boolean(matchingLabelProfile) || Boolean(effTarget?.label_name) || Boolean(effTarget?.labelName) || Boolean(effTarget?.label_id)) && Boolean(rawLabelName) && String(rawLabelName).trim() !== '';
 
                   const hasLabel = !isCurrentProfileLabel && hasLabelWorkspace;
@@ -1647,9 +1671,9 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                       </div>
 
                       <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
-                        {entities.map((item) => (
+                        {entities.map((item, idx) => (
                           <div
-                            key={item.key}
+                            key={`assoc-${item.key}-${idx}`}
                             onClick={item.onClick}
                             className={`p-1.5 sm:p-2 bg-gradient-to-r from-zinc-900/90 to-zinc-950 border border-zinc-800 ${item.borderHoverClass} rounded-lg sm:rounded-xl transition-all cursor-pointer group relative overflow-hidden flex items-center gap-1.5 sm:gap-2.5 shadow-md hover:shadow-purple-950/30 hover:scale-[1.01]`}
                           >
@@ -3208,9 +3232,9 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                                 </div>
                               </div>
                               <div className="space-y-2">
-                                {musicItems.map(item => (
+                                {musicItems.map((item, mIdx) => (
                                   <div
-                                    key={item.id}
+                                    key={item.id ? `music-${item.id}-${mIdx}` : `music-${mIdx}`}
                                     onClick={() => {
                                       setCollPlayerActiveId(item.id);
                                       setCollPlayerActiveTrackId(`${item.id}_t1`);
@@ -3268,8 +3292,8 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                                 </div>
                               ) : (
                                 <div className="space-y-2">
-                                  {filteredItems.map(item => (
-                                    <div key={item.id} className="p-3 bg-zinc-950/60 border border-zinc-900 hover:border-zinc-700 transition-colors rounded-xl flex items-center gap-3 cursor-pointer">
+                                  {filteredItems.map((item, fIdx) => (
+                                    <div key={item.id ? `item-${item.id}-${fIdx}` : `item-${fIdx}`} className="p-3 bg-zinc-950/60 border border-zinc-900 hover:border-zinc-700 transition-colors rounded-xl flex items-center gap-3 cursor-pointer">
                                       <img src={item.data.thumbnail || item.data.coverUrl || "https://placehold.co/150x150/18181b/ffffff?text=MERCH"} className="w-12 h-12 rounded-lg object-cover shrink-0 border border-zinc-800" alt="" />
                                       <div className="flex-1 min-w-0 text-left">
                                         <div className="text-xs font-black text-zinc-100 truncate uppercase tracking-wider">{item.data.name || item.data.title || 'Nexus Item'}</div>
@@ -3346,8 +3370,8 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                           }}
                           className="bg-zinc-950 text-orange-400 text-[11px] font-black font-mono px-2 py-1 rounded-lg border border-orange-950/50 outline-none focus:border-orange-500/50 cursor-pointer"
                         >
-                          {selectedUserProfile.associatedProfiles?.map((ap: any) => (
-                            <option key={ap?.name} value={ap?.name}>{ap?.name}</option>
+                          {selectedUserProfile.associatedProfiles?.map((ap: any, apIdx: number) => (
+                            <option key={ap?.name ? `ap-${ap.name}-${apIdx}` : `ap-${apIdx}`} value={ap?.name}>{ap?.name}</option>
                           ))}
                           {(!selectedUserProfile.associatedProfiles || selectedUserProfile.associatedProfiles.length === 0) && (
                              <option value="None">No Active Roster</option>
@@ -3423,12 +3447,12 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                   ) : (
                     selectedUserProfile.musicCatalog && selectedUserProfile.musicCatalog.length > 0 ? (
                       <div className="space-y-6">
-                        {selectedUserProfile.musicCatalog.map((release: any) => {
+                        {selectedUserProfile.musicCatalog.map((release: any, rIdx: number) => {
                           const isPlayingRelease = (release?.tracks || []).some((t: any) => t.id === profileActivePlaybackTrackId);
                           const activeTrackObj = isPlayingRelease ? release.tracks.find((t: any) => t.id === profileActivePlaybackTrackId) : null;
                           
                           return (
-                            <div key={release.id} className="bg-[#0c0e12] border border-zinc-800/80 rounded-2xl overflow-hidden shadow-2xl relative flex flex-col">
+                            <div key={release.id ? `rel-${release.id}-${rIdx}` : `rel-${rIdx}`} className="bg-[#0c0e12] border border-zinc-800/80 rounded-2xl overflow-hidden shadow-2xl relative flex flex-col">
                               <div className="flex items-center justify-between p-3 border-b border-zinc-800/80 bg-black/40">
                                 <div className="flex items-center gap-2">
                                   <span className="px-1.5 py-0.5 rounded bg-[#FF9900]/10 text-[#FF9900] border border-[#FF9900]/20 text-[8px] font-mono font-black uppercase tracking-widest">{release.format}</span>
@@ -3672,9 +3696,9 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                     ORDER FORMATS
                   </div>
                   <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                    {formatOptions.map((link: any) => (
+                    {formatOptions.map((link: any, idx: number) => (
                       <button
-                        key={link.format}
+                        key={`format-${link.format || idx}-${idx}`}
                         onClick={() => {
                           openCheckout?.('merch', {
                             name: `${selectedLabelBand} - ${currentAlbum.albumName} (${link.format})`,

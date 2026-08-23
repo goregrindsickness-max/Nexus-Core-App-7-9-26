@@ -38,6 +38,7 @@ import {
   Users
 } from 'lucide-react';
 import { InboxPreferences } from './InboxPreferences';
+import { useUserPresence, presenceManager, formatPresenceStatus } from '../../lib/presence';
 
 export interface InboxConversation {
   contactId: string;
@@ -53,6 +54,93 @@ export interface InboxConversation {
   isRestricted?: boolean;
   nickname?: string;
 }
+
+// Dedicated row with real-time live presence tracking
+const InboxConversationRow: React.FC<{
+  chat: InboxConversation;
+  displayName: string;
+  isMuted?: boolean;
+  isPinned?: boolean;
+  isBlocked?: boolean;
+  isUnread: boolean;
+  onSelect: () => void;
+}> = ({ chat, displayName, isMuted, isPinned, isBlocked, isUnread, onSelect }) => {
+  const { formatted, isOnline } = useUserPresence(chat);
+
+  return (
+    <div
+      onClick={onSelect}
+      className={`p-3 rounded-xl cursor-pointer flex items-center justify-between transition-all group shadow-sm ${
+        isUnread
+          ? 'border-2 border-red-500 shadow-[0_0_14px_rgba(239,68,68,0.45)] bg-rose-950/45 hover:bg-rose-900/60'
+          : 'border border-zinc-800/80 bg-zinc-900/60 hover:bg-rose-950/20 hover:border-rose-900/40'
+      }`}
+    >
+      <div className="flex items-center gap-3 min-w-0 pr-2">
+        <div className="relative shrink-0">
+          <div className={`w-10 h-10 rounded-full bg-zinc-800 border flex items-center justify-center font-black text-xs text-rose-400 overflow-hidden shadow-md ${isUnread ? 'border-red-500 ring-2 ring-red-500/30' : 'border-zinc-700'}`}>
+            {chat.avatarUrl ? (
+              <img src={chat.avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+            ) : (
+              displayName.substring(0, 2).toUpperCase()
+            )}
+          </div>
+          <span
+            className={`w-2.5 h-2.5 rounded-full border-2 border-zinc-950 absolute -bottom-0.5 -right-0.5 shadow-sm transition-colors ${
+              isBlocked ? 'bg-rose-500' : formatted.dotClass
+            }`}
+            title={formatted.text}
+          />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className={`text-xs font-black truncate transition-colors ${isUnread ? 'text-white font-extrabold' : 'text-zinc-200 group-hover:text-rose-300'}`}>
+              {displayName}
+            </span>
+            {isUnread && (
+              <span className="text-[8px] font-mono font-black uppercase px-1.5 py-0.2 rounded bg-red-600 text-white shadow-sm animate-pulse shrink-0">
+                UNREAD
+              </span>
+            )}
+            {isPinned && (
+              <Pin className="w-3 h-3 text-rose-400 shrink-0 fill-rose-400/20" />
+            )}
+            {isMuted && (
+              <VolumeX className="w-3 h-3 text-zinc-500 shrink-0" />
+            )}
+            {chat.roleBadge && (
+              <span className="text-[8px] font-mono font-bold px-1.5 py-0.2 rounded bg-zinc-800/90 border border-zinc-700 text-zinc-400">
+                {chat.roleBadge}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <div className={`text-[11px] truncate max-w-[220px] font-sans ${isUnread ? 'text-zinc-100 font-semibold' : 'text-zinc-400'}`}>
+              {isBlocked ? '[Signal Blocked]' : chat.lastMessage}
+            </div>
+            <span className="text-[9px] font-mono text-zinc-500 shrink-0">
+              {isOnline ? (
+                <span className="text-emerald-400 font-bold">Active now</span>
+              ) : (
+                formatted.shortText
+              )}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col items-end shrink-0 gap-1 pl-1">
+        <span className={`text-[9px] font-mono ${isUnread ? 'text-red-400 font-bold' : 'text-zinc-500'}`}>
+          {new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </span>
+        {isUnread && (
+          <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444] animate-pulse" />
+        )}
+      </div>
+    </div>
+  );
+};
 
 interface InboxTerminalProps {
   onBack?: () => void;
@@ -81,6 +169,7 @@ export const InboxTerminal: React.FC<InboxTerminalProps> = ({
 
   // Active conversation & messages
   const [selectedContact, setSelectedContact] = useState<InboxConversation | null>(null);
+  const selectedPresence = useUserPresence(selectedContact);
   const [threadMessages, setThreadMessages] = useState<any[]>([]);
   const [threadLoading, setThreadLoading] = useState(false);
   const [messageText, setMessageText] = useState('');
@@ -1096,9 +1185,9 @@ export const InboxTerminal: React.FC<InboxTerminalProps> = ({
           </div>
 
           {/* Real Profiles Notes / Stories Carousel */}
-          {realStories.map(story => (
+          {realStories.map((story, sIdx) => (
             <div 
-              key={story.id || story.profileName} 
+              key={story.id ? `story-${story.id}-${sIdx}` : `story-${story.profileName}-${sIdx}`} 
               onClick={() => {
                 setExpandedThought({
                   id: story.id,
@@ -1155,7 +1244,7 @@ export const InboxTerminal: React.FC<InboxTerminalProps> = ({
               </p>
             </div>
           ) : (
-            filteredConversations.map((chat) => {
+            filteredConversations.map((chat, cIdx) => {
               const displayName = threadNicknames[chat.contactId] || chat.profileName;
               const isMuted = mutedThreads[chat.contactId];
               const isPinned = pinnedThreads[chat.contactId];
@@ -1163,64 +1252,16 @@ export const InboxTerminal: React.FC<InboxTerminalProps> = ({
               const isUnread = !chat.isRead || Boolean((chat as any).unread && (chat as any).unread > 0);
 
               return (
-                <div
-                  key={chat.contactId}
-                  onClick={() => handleSelectContact(chat)}
-                  className={`p-3 rounded-xl cursor-pointer flex items-center justify-between transition-all group shadow-sm ${
-                    isUnread
-                      ? 'border-2 border-red-500 shadow-[0_0_14px_rgba(239,68,68,0.45)] bg-rose-950/45 hover:bg-rose-900/60'
-                      : 'border border-zinc-800/80 bg-zinc-900/60 hover:bg-rose-950/20 hover:border-rose-900/40'
-                  }`}
-                >
-                  <div className="flex items-center gap-3 min-w-0 pr-2">
-                    <div className="relative shrink-0">
-                      <div className={`w-10 h-10 rounded-full bg-zinc-800 border flex items-center justify-center font-black text-xs text-rose-400 overflow-hidden shadow-md ${isUnread ? 'border-red-500 ring-2 ring-red-500/30' : 'border-zinc-700'}`}>
-                        {chat.avatarUrl ? (
-                          <img src={chat.avatarUrl} alt={displayName} className="w-full h-full object-cover" />
-                        ) : (
-                          displayName.substring(0, 2).toUpperCase()
-                        )}
-                      </div>
-                      <span className={`w-2.5 h-2.5 rounded-full border-2 border-zinc-950 absolute -bottom-0.5 -right-0.5 shadow-sm ${isBlocked ? 'bg-rose-500' : 'bg-emerald-500'}`} />
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className={`text-xs font-black truncate transition-colors ${isUnread ? 'text-white font-extrabold' : 'text-zinc-200 group-hover:text-rose-300'}`}>
-                          {displayName}
-                        </span>
-                        {isUnread && (
-                          <span className="text-[8px] font-mono font-black uppercase px-1.5 py-0.2 rounded bg-red-600 text-white shadow-sm animate-pulse shrink-0">
-                            UNREAD
-                          </span>
-                        )}
-                        {isPinned && (
-                          <Pin className="w-3 h-3 text-rose-400 shrink-0 fill-rose-400/20" />
-                        )}
-                        {isMuted && (
-                          <VolumeX className="w-3 h-3 text-zinc-500 shrink-0" />
-                        )}
-                        {chat.roleBadge && (
-                          <span className="text-[8px] font-mono font-bold px-1.5 py-0.2 rounded bg-zinc-800/90 border border-zinc-700 text-zinc-400">
-                            {chat.roleBadge}
-                          </span>
-                        )}
-                      </div>
-                      <div className={`text-[11px] truncate max-w-[280px] font-sans ${isUnread ? 'text-zinc-100 font-semibold' : 'text-zinc-400'}`}>
-                        {isBlocked ? '[Signal Blocked]' : chat.lastMessage}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-end shrink-0 gap-1">
-                    <span className={`text-[9px] font-mono ${isUnread ? 'text-red-400 font-bold' : 'text-zinc-500'}`}>
-                      {new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    {isUnread && (
-                      <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444] animate-pulse" />
-                    )}
-                  </div>
-                </div>
+                <InboxConversationRow
+                  key={chat.contactId ? `chat-${chat.contactId}-${cIdx}` : `chat-${cIdx}`}
+                  chat={chat}
+                  displayName={displayName}
+                  isMuted={isMuted}
+                  isPinned={isPinned}
+                  isBlocked={isBlocked}
+                  isUnread={isUnread}
+                  onSelect={() => handleSelectContact(chat)}
+                />
               );
             })
           )}
@@ -1254,7 +1295,11 @@ export const InboxTerminal: React.FC<InboxTerminalProps> = ({
                       selectedContact.profileName.substring(0, 2).toUpperCase()
                     )}
                   </div>
-                  <span className={`w-2.5 h-2.5 rounded-full border-2 border-zinc-950 absolute -bottom-0.5 -right-0.5 shadow-sm ${blockedContacts[selectedContact.contactId] ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+                  <span
+                    className={`w-2.5 h-2.5 rounded-full border-2 border-zinc-950 absolute -bottom-0.5 -right-0.5 shadow-sm transition-colors ${
+                      blockedContacts[selectedContact.contactId] ? 'bg-rose-500' : selectedPresence.formatted.dotClass
+                    }`}
+                  />
                 </div>
 
                 <div className="min-w-0">
@@ -1268,10 +1313,21 @@ export const InboxTerminal: React.FC<InboxTerminalProps> = ({
                       </span>
                     )}
                   </div>
-                  <span className="text-[10px] text-emerald-400 font-mono font-bold flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    ENCRYPTED SIGNAL CHANNEL
-                  </span>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className={`w-1.5 h-1.5 rounded-full ${selectedPresence.formatted.dotClass}`} />
+                    <span className={`text-[10px] font-mono font-bold tracking-wider uppercase ${
+                      selectedPresence.formatted.isOnline
+                        ? 'text-emerald-400'
+                        : selectedPresence.formatted.isRecentlyActive
+                        ? 'text-amber-400'
+                        : 'text-zinc-500'
+                    }`}>
+                      {selectedPresence.formatted.text}
+                    </span>
+                    {!selectedPresence.formatted.isOnline && (
+                      <span className="text-[9px] font-mono text-zinc-600">• ENCRYPTED</span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -1321,7 +1377,7 @@ export const InboxTerminal: React.FC<InboxTerminalProps> = ({
 
                   return (
                     <div
-                      key={msg.id || idx}
+                      key={msg.id ? `msg-${msg.id}-${idx}` : `msg-${idx}`}
                       className={`flex flex-col ${isSentByMe ? 'items-end' : 'items-start'}`}
                     >
                       <div
@@ -1515,7 +1571,18 @@ export const InboxTerminal: React.FC<InboxTerminalProps> = ({
                     {selectedContact.roleBadge}
                   </span>
                 )}
-                <span className="text-[10px] text-emerald-400 font-mono font-bold">● ACTIVE SIGNAL</span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${selectedPresence.formatted.dotClass}`} />
+                  <span className={`text-[10px] font-mono font-bold uppercase tracking-wider ${
+                    selectedPresence.formatted.isOnline
+                      ? 'text-emerald-400'
+                      : selectedPresence.formatted.isRecentlyActive
+                      ? 'text-amber-400'
+                      : 'text-zinc-500'
+                  }`}>
+                    {selectedPresence.formatted.text}
+                  </span>
+                </div>
               </div>
 
               <div className="mt-3 text-[10px] font-mono text-zinc-500 bg-zinc-900/80 px-3 py-1 rounded-full border border-zinc-800">
@@ -1962,9 +2029,9 @@ export const InboxTerminal: React.FC<InboxTerminalProps> = ({
                   </button>
                 </div>
               ) : (
-                availableRecipientProfiles.map((contact) => (
+                availableRecipientProfiles.map((contact, cIdx) => (
                   <div
-                    key={contact.id}
+                    key={contact.id ? `recip-${contact.id}-${cIdx}` : `recip-${cIdx}`}
                     onClick={() => handleStartNewMessageWithContact(contact)}
                     className="p-2.5 rounded-xl hover:bg-zinc-900/90 transition-all flex items-center justify-between gap-3 cursor-pointer group"
                   >

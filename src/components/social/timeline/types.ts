@@ -116,6 +116,7 @@ export interface FeedPost {
     discount?: number;
     expiresAt?: string;
     stock?: number;
+    totalStock?: number;
     allowNegotiation?: boolean;
     condition?: string;
     category?: string;

@@ -2,11 +2,20 @@ import { socialFeedStore, creativeNodesStore, profileStore } from './indexedDB';
 import { getDeletedPostIdsLocal, addDeletedPostIdLocal } from '../components/social/utils/feedCacheUtils';
 
 /**
- * Normalizes an image URL for deduplication comparisons (removes query strings, trims, lowercases).
+ * Normalizes an image URL for deduplication comparisons (removes query strings, trims, lowercases, decodes, standardizes protocol/formatting).
  */
 export function normalizeImageUrl(url: string): string {
   if (!url || typeof url !== 'string') return '';
-  return url.split('?')[0].trim().toLowerCase();
+  try {
+    let dec = decodeURIComponent(url).trim().toLowerCase();
+    dec = dec.split('?')[0];
+    dec = dec.replace(/^https?:\/\//, '');
+    dec = dec.replace(/\/+/g, '/');
+    if (dec.endsWith('/')) dec = dec.slice(0, -1);
+    return dec;
+  } catch (_) {
+    return url.split('?')[0].trim().toLowerCase();
+  }
 }
 
 /**
@@ -150,8 +159,74 @@ export async function cleanDeletedPhotoFromStores(targetUrl: string, parentPostI
         }
       }
     }
+
+    // Clean active userProfile fields in localStorage
+    const cachedProfRaw = localStorage.getItem('nexus_core_user_profile');
+    if (cachedProfRaw) {
+      try {
+        const prof = JSON.parse(cachedProfRaw);
+        if (prof && typeof prof === 'object') {
+          let profChanged = false;
+
+          const avatarField = prof.avatar_url || prof.avatar;
+          if (avatarField && normalizeImageUrl(avatarField) === normTarget) {
+            profChanged = true;
+            if (prof.avatar_url) prof.avatar_url = '';
+            if (prof.avatar) prof.avatar = '';
+          }
+
+          const coverField = prof.banner_url || prof.cover_url || prof.creative_banner || prof.label_banner || prof.banner;
+          if (coverField && normalizeImageUrl(coverField) === normTarget) {
+            profChanged = true;
+            if (prof.banner_url) prof.banner_url = '';
+            if (prof.cover_url) prof.cover_url = '';
+            if (prof.creative_banner) prof.creative_banner = '';
+            if (prof.label_banner) prof.label_banner = '';
+            if (prof.banner) prof.banner = '';
+          }
+
+          if (profChanged) {
+            localStorage.setItem('nexus_core_user_profile', JSON.stringify(prof));
+          }
+        }
+      } catch (_) {}
+    }
   } catch (e) {
     console.warn('[photoPitSyncUtils] Error cleaning localStorage caches:', e);
+  }
+
+  // 4. Clean userProfile avatar/banner fields in profileStore if they match the deleted URL
+  try {
+    const profKeys = await profileStore.keys();
+    for (const pk of profKeys) {
+      const prof = await profileStore.getItem<any>(pk);
+      if (prof && typeof prof === 'object') {
+        let profChanged = false;
+
+        const avatarField = prof.avatar_url || prof.avatar;
+        if (avatarField && normalizeImageUrl(avatarField) === normTarget) {
+          profChanged = true;
+          if (prof.avatar_url) prof.avatar_url = '';
+          if (prof.avatar) prof.avatar = '';
+        }
+
+        const coverField = prof.banner_url || prof.cover_url || prof.creative_banner || prof.label_banner || prof.banner;
+        if (coverField && normalizeImageUrl(coverField) === normTarget) {
+          profChanged = true;
+          if (prof.banner_url) prof.banner_url = '';
+          if (prof.cover_url) prof.cover_url = '';
+          if (prof.creative_banner) prof.creative_banner = '';
+          if (prof.label_banner) prof.label_banner = '';
+          if (prof.banner) prof.banner = '';
+        }
+
+        if (profChanged) {
+          await profileStore.setItem(pk, prof);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[photoPitSyncUtils] Error cleaning profileStore entries:', e);
   }
 }
 

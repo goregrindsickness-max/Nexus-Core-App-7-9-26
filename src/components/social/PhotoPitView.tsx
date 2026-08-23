@@ -140,8 +140,21 @@ const loadSavedFolders = (userProfile?: any): string[] => {
     .map((f) => normalizeFolderName(f))
     .filter((f) => f && !MOCK_FOLDERS_TO_REMOVE.has(f.toLowerCase()));
 
-  const uniqueWithoutAll = Array.from(new Set(filtered)).filter((f) => f !== 'All Photos');
-  return ['All Photos', 'Profile Pics', 'Cover Images', ...uniqueWithoutAll.filter((f) => f !== 'Profile Pics' && f !== 'Cover Images')];
+  // Deduplicate folders case-insensitively to prevent duplicates like "My Folder" and "my folder"
+  const cleanedFolders: string[] = [];
+  filtered.forEach((f) => {
+    if (!cleanedFolders.some((existing) => existing.toLowerCase() === f.toLowerCase())) {
+      cleanedFolders.push(f);
+    }
+  });
+
+  const uniqueWithoutAll = cleanedFolders.filter((f) => f !== 'All Photos');
+  return [
+    'All Photos',
+    'Profile Pics',
+    'Cover Images',
+    ...uniqueWithoutAll.filter((f) => f.toLowerCase() !== 'profile pics' && f.toLowerCase() !== 'cover images')
+  ];
 };
 
 // Subcomponent for interactive pinch-to-zoom lightbox stage in PhotoPit
@@ -259,8 +272,16 @@ export const PhotoPitView: React.FC<PhotoPitViewProps> = ({
       .map((f) => normalizeFolderName(f))
       .filter((f) => f && !MOCK_FOLDERS_TO_REMOVE.has(f.toLowerCase()));
 
-    const unique = Array.from(new Set(normalized));
-    const finalFolders = unique.includes('All Photos') ? unique : ['All Photos', ...unique];
+    // Deduplicate folders case-insensitively
+    const unique: string[] = [];
+    normalized.forEach((f) => {
+      if (!unique.some((existing) => existing.toLowerCase() === f.toLowerCase())) {
+        unique.push(f);
+      }
+    });
+
+    const filteredUnique = unique.filter((f) => f.toLowerCase() !== 'all photos');
+    const finalFolders = ['All Photos', ...filteredUnique];
 
     setFoldersList(finalFolders);
 
@@ -501,9 +522,15 @@ export const PhotoPitView: React.FC<PhotoPitViewProps> = ({
         .filter((f): f is string => typeof f === 'string' && f.trim().length > 0 && !MOCK_FOLDERS_TO_REMOVE.has(f.toLowerCase()));
 
       if (feedFolders.length > 0) {
-        const setFolders = new Set([...foldersList, ...feedFolders]);
-        const updated = Array.from(setFolders);
-        if (updated.length !== foldersList.length) {
+        const updated = [...foldersList];
+        let changed = false;
+        feedFolders.forEach((f) => {
+          if (!updated.some((existing) => existing.toLowerCase() === f.toLowerCase())) {
+            updated.push(f);
+            changed = true;
+          }
+        });
+        if (changed) {
           saveFolders(updated);
         }
       }
@@ -692,26 +719,26 @@ export const PhotoPitView: React.FC<PhotoPitViewProps> = ({
 
   // Calculate photo counts per folder
   const folderCounts = foldersList.reduce((acc: Record<string, number>, folder) => {
-    if (folder === 'All Photos') {
+    if (folder.toLowerCase() === 'all photos') {
       acc[folder] = galleryItems.length;
     } else {
-      acc[folder] = galleryItems.filter((item: any) => item.folder === folder).length;
+      acc[folder] = galleryItems.filter((item: any) => item.folder && item.folder.toLowerCase() === folder.toLowerCase()).length;
     }
     return acc;
   }, {});
 
   // Helper to get latest preview image for a folder
   const getLatestImageForFolder = (folder: string) => {
-    const items = folder === 'All Photos'
+    const items = folder.toLowerCase() === 'all photos'
       ? galleryItems
-      : galleryItems.filter((item: any) => item.folder === folder);
+      : galleryItems.filter((item: any) => item.folder && item.folder.toLowerCase() === folder.toLowerCase());
     return items[0]?.url || null;
   };
 
   // Filter items based on active folder selection and search query
-  const folderItems = selectedFolder === 'All Photos'
+  const folderItems = selectedFolder.toLowerCase() === 'all photos'
     ? galleryItems
-    : galleryItems.filter((item: any) => item.folder === selectedFolder);
+    : galleryItems.filter((item: any) => item.folder && item.folder.toLowerCase() === selectedFolder.toLowerCase());
 
   const filteredItems = folderItems.filter((item: any) =>
     item.authorName.toLowerCase().includes(gallerySearchQuery.toLowerCase()) ||
@@ -1110,6 +1137,71 @@ export const PhotoPitView: React.FC<PhotoPitViewProps> = ({
       try {
         await cleanDeletedPhotoFromStores(targetUrl);
       } catch (_) {}
+    }
+
+    // Clean active user profile fields if they match the deleted photo URL
+    if (userProfile && setUserProfile) {
+      const normTarget = normalizeImageUrl(targetUrl);
+      const avatarField = userProfile.avatar_url || userProfile.avatar;
+      const isAvatar = avatarField && normalizeImageUrl(avatarField) === normTarget;
+
+      const coverField = userProfile.banner_url || userProfile.cover_url || userProfile.creative_banner || userProfile.label_banner || userProfile.banner;
+      const isCover = coverField && normalizeImageUrl(coverField) === normTarget;
+
+      if (isAvatar || isCover) {
+        const updatedProf = { ...userProfile };
+        if (isAvatar) {
+          if (updatedProf.avatar_url) updatedProf.avatar_url = '';
+          if (updatedProf.avatar) updatedProf.avatar = '';
+        }
+        if (isCover) {
+          if (updatedProf.banner_url) updatedProf.banner_url = '';
+          if (updatedProf.cover_url) updatedProf.cover_url = '';
+          if (updatedProf.creative_banner) updatedProf.creative_banner = '';
+          if (updatedProf.label_banner) updatedProf.label_banner = '';
+          if (updatedProf.banner) updatedProf.banner = '';
+        }
+
+        setUserProfile(updatedProf);
+        localStorage.setItem('nexus_core_user_profile', JSON.stringify(updatedProf));
+
+        const activeKey = 'nexus_core_user_profile';
+        const userId = userProfile.id || userProfile.uuid || userProfile.user_id;
+        try {
+          await profileStore.setItem(activeKey, updatedProf);
+          if (userId) {
+            await profileStore.setItem(`nexus_core_${userId}_profile`, updatedProf);
+          }
+        } catch (dbErr) {
+          console.warn('[handleDeletePhoto] Failed to sync profile update to IndexedDB:', dbErr);
+        }
+
+        const supabase = getSupabase();
+        if (supabase) {
+          try {
+            if (userProfile.user_id) {
+              const profilePayload: any = {};
+              if (isAvatar) profilePayload.avatar_url = null;
+              if (isCover) profilePayload.banner_url = null;
+              await supabase.from('profiles').update(profilePayload).eq('user_id', userProfile.user_id);
+            }
+
+            const creativeId = userProfile.creative_id || userProfile.registered_creative_id;
+            if (creativeId) {
+              const creativePayload: any = {};
+              if (isAvatar) creativePayload.avatar_url = null;
+              if (isCover) {
+                creativePayload.cover_url = null;
+                creativePayload.creative_banner = null;
+                creativePayload.label_banner = null;
+              }
+              await supabase.from('creatives').update(creativePayload).eq('id', creativeId);
+            }
+          } catch (supaErr) {
+            console.warn('[handleDeletePhoto] Failed to sync profile updates to Supabase:', supaErr);
+          }
+        }
+      }
     }
 
     if (selectedGalleryItem && selectedGalleryItem.id === targetItem.id) {

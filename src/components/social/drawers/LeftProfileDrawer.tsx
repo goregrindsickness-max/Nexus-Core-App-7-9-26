@@ -19,6 +19,7 @@ import {
 } from "../../../services/digitalWalletService";
 import { WalletOAuthModal } from "../modals/WalletOAuthModal";
 import { PaymentMethodsSettings } from "../../PaymentMethodsSettings";
+import { CommunityBandCuratorModal } from "../modals/CommunityBandCuratorModal";
 import {
   X, Check, User, Shield, ShieldAlert, Key, Sparkles, MapPin, Calendar, Building,
   Camera, Globe, Instagram, Music2, Mail, Lock, Settings, LogOut, ChevronRight,
@@ -292,6 +293,7 @@ export const LeftProfileDrawer: React.FC<LeftProfileDrawerProps> = (props) => {
   const [cropperImageSrc, setCropperImageSrc] = React.useState<string | null>(null);
   const [cropperType, setCropperType] = React.useState<'avatar' | 'cover'>('avatar');
   const [expandedClusters, setExpandedClusters] = React.useState<Record<string, boolean>>({});
+  const [isCommunityCuratorOpen, setIsCommunityCuratorOpen] = React.useState(false);
 
   const [loyaltyProgramEnabled, setLoyaltyProgramEnabled] = React.useState(true);
   const [loyaltyPointMultiplier, setLoyaltyPointMultiplier] = React.useState('10');
@@ -502,6 +504,22 @@ if (!leftDrawerOpen) return null;
                     <button onClick={() => setDrawerCurrentView('following')} className="w-full flex items-center gap-3 px-3 py-3.5 text-sm font-bold text-zinc-300 hover:text-white hover:bg-zinc-900/80 rounded-lg transition-colors">
                       <Users className="w-4 h-4 text-zinc-500" /> Following Lists
                     </button>
+
+                    <button 
+                      type="button"
+                      onClick={() => setIsCommunityCuratorOpen(true)} 
+                      className="w-full flex items-center justify-between px-3 py-3.5 text-sm font-bold text-zinc-300 hover:text-white hover:bg-zinc-900/80 rounded-xl transition-colors group cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 group-hover:border-amber-500/40">
+                          <Disc className="w-4 h-4" />
+                        </div>
+                        <span>Band Archivist</span>
+                      </div>
+                      <span className="text-[8px] font-mono font-bold uppercase tracking-wider text-amber-300 bg-amber-950/60 border border-amber-800/40 px-1.5 py-0.5 rounded">
+                        Curator Hub
+                      </span>
+                    </button>
                   </div>
                   <div className="p-4 border-t border-zinc-900 bg-zinc-950/50 mt-auto shrink-0">
                     <button onClick={() => { setLeftDrawerOpen(false); onLogout?.(); }} className="w-full py-3.5 bg-zinc-900 text-rose-500 text-xs font-black uppercase tracking-wider rounded-lg hover:bg-zinc-800 transition-colors">
@@ -666,9 +684,9 @@ if (!leftDrawerOpen) return null;
                                       }
                                     }
                                     const listToDisplay = bandGenreList.length > 0 ? bandGenreList : (labelPrimaryGenres.length > 0 ? labelPrimaryGenres : ['Metal']);
-                                    return listToDisplay.map((genre) => (
+                                    return listToDisplay.map((genre, idx) => (
                                       <span
-                                        key={genre}
+                                        key={`genre-${genre}-${idx}`}
                                         className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider rounded border bg-orange-950/40 text-orange-400 border-orange-500/40 shadow-[0_0_8px_rgba(249,115,22,0.15)]"
                                       >
                                         {genre}
@@ -2056,11 +2074,11 @@ if (!leftDrawerOpen) return null;
                             </div>
 
                             <div className="space-y-2.5">
-                              {teamMembers.map((member) => {
+                              {teamMembers.map((member, mIdx) => {
                                 const isExpanded = expandedMemberId === member.id;
                                 return (
                                   <div 
-                                    key={member.id} 
+                                    key={member.id ? `team-member-${member.id}-${mIdx}` : `team-member-${mIdx}`} 
                                     className={`p-3.5 bg-zinc-950/40 border rounded-xl transition-all duration-200 ${isExpanded ? 'border-orange-500/30 bg-zinc-950/70' : 'border-zinc-900 hover:border-zinc-800'}`}
                                   >
                                     {/* Main row card click to expand */}
@@ -2548,12 +2566,12 @@ if (!leftDrawerOpen) return null;
                                       <div className="border-t border-zinc-900/80 pt-2.5">
                                         <div className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest font-black mb-1.5 pl-1">TRACK LIST:</div>
                                         <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
-                                          {tracks.map((track) => {
+                                          {tracks.map((track, trkIdx) => {
                                             const isCurrent = track.id === activeTrack.id;
                                             const duration = getCollectionsTrackDuration(track.id);
                                             return (
                                               <div 
-                                                key={track.id} 
+                                                key={track.id ? `trk-${track.id}-${trkIdx}` : `trk-${trkIdx}`} 
                                                 onClick={() => {
                                                   setCollPlayerActiveTrackId(track.id);
                                                   setCollPlayerProgress(0);
@@ -2581,11 +2599,11 @@ if (!leftDrawerOpen) return null;
                                         <Library className="w-4 h-4 text-rose-500" /> Purchased Releases ({musicItems.length})
                                       </div>
                                       <div className="grid grid-cols-1 gap-3">
-                                        {musicItems.map((item) => {
+                                        {musicItems.map((item, mIdx) => {
                                           const isActive = item.id === activeMusicItem.id;
                                           return (
                                             <div 
-                                              key={item.id} 
+                                              key={item.id ? `item-${item.id}-${mIdx}` : `item-${mIdx}`} 
                                               onClick={() => {
                                                 setCollPlayerActiveId(item.id);
                                                 setCollPlayerActiveTrackId(`${item.id}_t1`);
@@ -2687,8 +2705,8 @@ if (!leftDrawerOpen) return null;
                                       </div>
                                     ) : (
                                       <div className="space-y-3">
-                                        {filteredItems.map(item => (
-                                          <div key={item.id} className="bg-[#121214] border border-zinc-800 hover:border-zinc-700 transition-colors rounded-xl overflow-hidden relative cursor-pointer" onClick={() => {
+                                        {filteredItems.map((item, fIdx) => (
+                                          <div key={item.id ? `merch-item-${item.id}-${fIdx}` : `merch-item-${fIdx}`} className="bg-[#121214] border border-zinc-800 hover:border-zinc-700 transition-colors rounded-xl overflow-hidden relative cursor-pointer" onClick={() => {
                                             if (item.type === 'ticket' || item.type === 'merch') {
                                               setViewingReceipt(item);
                                             }
@@ -2972,8 +2990,8 @@ if (!leftDrawerOpen) return null;
                                 </div>
                               ) : (
                                 <div className="space-y-2">
-                                  {activeFollowed.map((profile) => (
-                                    <div key={profile.id} className="flex items-center justify-between p-2.5 bg-zinc-900/40 rounded-xl border border-zinc-800/40 hover:border-zinc-800 transition-all">
+                                  {activeFollowed.map((profile, pIdx) => (
+                                    <div key={profile.id ? `foll-${profile.id}-${pIdx}` : `foll-${pIdx}`} className="flex items-center justify-between p-2.5 bg-zinc-900/40 rounded-xl border border-zinc-800/40 hover:border-zinc-800 transition-all">
                                       <div className="flex items-center gap-2.5 min-w-0">
                                         {/* Avatar image with indicator */}
                                         <div className="relative w-9 h-9 rounded-lg overflow-hidden border border-zinc-800 shrink-0">
@@ -3088,8 +3106,8 @@ if (!leftDrawerOpen) return null;
                               <div className="pt-3 border-t border-zinc-900 space-y-2">
                                 <div className="text-[9px] text-zinc-500 font-black uppercase tracking-wider font-mono">Suggested to Follow</div>
                                 <div className="space-y-1.5 max-h-48 overflow-y-auto no-scrollbar pr-0.5">
-                                  {activeSuggested.map((profile) => (
-                                    <div key={profile.id} className="flex items-center justify-between p-2 bg-zinc-950/40 rounded-lg border border-zinc-900 hover:border-zinc-850 transition-all">
+                                  {activeSuggested.map((profile, pIdx) => (
+                                    <div key={profile.id ? `sugg-${profile.id}-${pIdx}` : `sugg-${pIdx}`} className="flex items-center justify-between p-2 bg-zinc-950/40 rounded-lg border border-zinc-900 hover:border-zinc-850 transition-all">
                                       <div className="flex items-center gap-2 min-w-0">
                                         <div className="w-7 h-7 rounded overflow-hidden border border-zinc-900 shrink-0">
                                           <img src={profile.image} alt={profile?.name} className="w-full h-full object-cover opacity-50" />
@@ -3259,6 +3277,16 @@ if (!leftDrawerOpen) return null;
                   setWalletsState(refreshed);
                   const name = prov === 'google' ? 'Google Pay' : prov === 'apple' ? 'Apple Pay' : 'PayPal Wallet';
                   triggerNotification?.(`⚡ ${name} verified and live! Ready for real 1-tap checkout.`);
+                }}
+              />
+
+              {/* Community Band Archivist Modal (Direct Fan Curating / Editing - No registration forms required) */}
+              <CommunityBandCuratorModal
+                isOpen={isCommunityCuratorOpen}
+                onClose={() => setIsCommunityCuratorOpen(false)}
+                userProfile={userProfile}
+                onSaved={(band) => {
+                  triggerNotification?.(`⚡ Saved community archive for "${band.name}"!`);
                 }}
               />
             </div>

@@ -214,10 +214,12 @@ export async function uploadBase64ToStorage(
     const cleanRequested = bucketName ? bucketName.toLowerCase().trim() : '';
 
     let primaryBucket = 'photo-pit';
-    if (cleanRequested.includes('banner') || cleanRequested.includes('cover')) {
+    if (cleanRequested.includes('banner') || cleanRequested.includes('cover') && !cleanRequested.includes('release') && !cleanRequested.includes('album')) {
       primaryBucket = 'bannersv2';
     } else if (cleanRequested.includes('avatar') || cleanRequested.includes('logo')) {
       primaryBucket = 'avatars';
+    } else if (cleanRequested.includes('release') || cleanRequested.includes('album') || cleanRequested.includes('disc')) {
+      primaryBucket = 'releases';
     } else if (cleanRequested.includes('audio') || cleanRequested.includes('track') || cleanRequested.includes('music')) {
       primaryBucket = 'audio-vault';
     } else if (cleanRequested.includes('photo') || cleanRequested.includes('gallery') || cleanRequested.includes('pit') || cleanRequested.includes('asset')) {
@@ -231,6 +233,7 @@ export async function uploadBase64ToStorage(
         [
           cleanRequested,
           primaryBucket,
+          'releases',
           'photo-pit',
           'photopit',
           'photo_pit',

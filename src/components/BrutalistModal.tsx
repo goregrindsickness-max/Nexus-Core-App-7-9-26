@@ -103,8 +103,8 @@ export default function BrutalistModal({ isOpen, onClose, type, onSubmit, invent
                   className="w-full bg-[#1c202a] border border-[#2e3444] rounded p-2 text-sm text-white focus:outline-none focus:border-emerald-400 font-mono"
                 >
                   {inventory && inventory.length > 0 ? (
-                    inventory.map(item => (
-                      <option key={item.id} value={item?.name}>
+                    inventory.map((item, idx) => (
+                      <option key={item.id ? `inv-${item.id}-${idx}` : `inv-${idx}`} value={item?.name}>
                         {item?.name} (${item.price.toFixed(2)} - {item.item_type})
                       </option>
                     ))
@@ -278,8 +278,8 @@ export default function BrutalistModal({ isOpen, onClose, type, onSubmit, invent
                     className="w-full bg-[#1c202a] border border-[#2e3444] rounded p-2 text-sm text-zinc-300 focus:outline-none focus:border-amber-400 font-mono appearance-none"
                   >
                     <option value="">-- General Tour Note --</option>
-                    {shows && shows.map(show => (
-                      <option key={show.id} value={show.id}>
+                    {shows && shows.map((show, idx) => (
+                      <option key={show.id ? `show-${show.id}-${idx}` : `show-${idx}`} value={show.id}>
                         {show.name} ({new Date(show.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
                       </option>
                     ))}

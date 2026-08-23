@@ -21,9 +21,28 @@ import {
   X,
   Plus,
   Loader2,
-  Trash2
+  Trash2,
+  Smartphone,
+  Zap,
+  BellRing,
+  Radio,
+  MapPin,
+  Ticket,
+  ShoppingBag,
+  DollarSign,
+  Clock,
+  Flame,
+  Sparkles
 } from 'lucide-react';
 import { getSupabase } from '../../supabase';
+import {
+  pushManager,
+  INDUSTRY_PRO_PUSH_CATEGORIES,
+  FAN_PUSH_CATEGORIES,
+  PushNotificationPreferences,
+  getDefaultPushPreferences,
+  PushPermissionStatus
+} from '../../lib/pushNotifications';
 
 interface MessageType { 
   id: string; 
@@ -157,6 +176,12 @@ export const InboxPreferences: React.FC<InboxPreferencesProps> = ({
   const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(true);
   const [autoDownloadMedia, setAutoDownloadMedia] = useState(true);
   const [autoplayAudio, setAutoplayAudio] = useState(false);
+
+  // Section 5: Device Push Matrix states
+  const [pushPrefs, setPushPrefs] = useState<PushNotificationPreferences>(pushManager.getPreferences());
+  const [permissionStatus, setPermissionStatus] = useState<PushPermissionStatus>(pushManager.getPermissionStatus());
+  const [pushWorkspaceTab, setPushWorkspaceTab] = useState<'industry_pro' | 'fan_only' | 'device'>('industry_pro');
+  const [isRequestingPush, setIsRequestingPush] = useState(false);
 
   // DB Sync status
   const [syncing, setSyncing] = useState(false);
@@ -796,6 +821,335 @@ export const InboxPreferences: React.FC<InboxPreferencesProps> = ({
             <span className={`w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${autoplayAudio ? 'translate-x-4' : 'translate-x-0'}`} />
           </button>
         </div>
+      </Accordion>
+
+      {/* 5. REAL-TIME DEVICE PUSH MATRIX (INDUSTRY PRO & FAN) */}
+      <Accordion
+        title="5. Real-Time Device Push Matrix"
+        subtitle="Manage hardware device push alerts for Pro & Fan operations"
+        icon={<Smartphone className="w-4 h-4 text-rose-500" />}
+        badge={
+          permissionStatus === 'granted'
+            ? pushPrefs.enabled ? 'ARMED' : 'MUTED'
+            : permissionStatus === 'denied'
+            ? 'BLOCKED'
+            : 'AUTHORIZE'
+        }
+      >
+        {/* Permission Request Header */}
+        <div className="p-3 rounded-xl border border-zinc-850 bg-gradient-to-r from-zinc-950 via-zinc-900/40 to-zinc-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-white flex items-center gap-1.5 font-mono">
+                <BellRing className="w-3.5 h-3.5 text-rose-500" /> Device Notification Engine
+              </span>
+              <span className={`text-[9px] font-mono font-black uppercase px-2 py-0.5 rounded-full border ${
+                permissionStatus === 'granted'
+                  ? 'bg-emerald-950/80 border-emerald-500/40 text-emerald-400'
+                  : permissionStatus === 'denied'
+                  ? 'bg-red-950/80 border-red-500/40 text-red-400'
+                  : 'bg-amber-950/80 border-amber-500/40 text-amber-400 animate-pulse'
+              }`}>
+                {permissionStatus === 'granted' ? 'GRANTED' : permissionStatus === 'denied' ? 'DENIED BY BROWSER' : 'PROMPT NEEDED'}
+              </span>
+            </div>
+            <p className="text-[10px] text-zinc-400 leading-normal">
+              Sends native system banners, sound pings, and vibration patterns to your mobile or desktop device.
+            </p>
+          </div>
+
+          {permissionStatus !== 'granted' ? (
+            <button
+              onClick={async () => {
+                setIsRequestingPush(true);
+                const status = await pushManager.requestPermission();
+                setPermissionStatus(status);
+                setIsRequestingPush(false);
+                if (status === 'granted') {
+                  triggerNotification?.('✨ Device Push Notifications authorized!');
+                } else if (status === 'denied') {
+                  triggerNotification?.('⚠️ Device Push blocked by browser settings.');
+                }
+              }}
+              disabled={isRequestingPush}
+              className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-mono font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-md shrink-0 cursor-pointer"
+            >
+              <Zap className="w-3 h-3 fill-current" />
+              {isRequestingPush ? 'Authorizing...' : 'Request Permission'}
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={async () => {
+                  const updated = await pushManager.updatePreferences({ enabled: !pushPrefs.enabled }, userProfile?.id);
+                  setPushPrefs(updated);
+                  triggerNotification?.(updated.enabled ? '🔔 Push notifications enabled.' : '🔕 Push notifications muted.');
+                }}
+                className={`w-10 h-6 rounded-full transition-colors flex items-center p-0.5 cursor-pointer shrink-0 ${pushPrefs.enabled ? 'bg-rose-600' : 'bg-zinc-800'}`}
+              >
+                <span className={`w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${pushPrefs.enabled ? 'translate-x-4' : 'translate-x-0'}`} />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Tab Navigator */}
+        <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-900 mt-2">
+          <button
+            onClick={() => setPushWorkspaceTab('industry_pro')}
+            className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              pushWorkspaceTab === 'industry_pro'
+                ? 'bg-purple-950/80 border border-purple-600/50 text-purple-300 shadow-sm'
+                : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            <span>💼</span> Industry Pro Triggers
+          </button>
+          <button
+            onClick={() => setPushWorkspaceTab('fan_only')}
+            className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              pushWorkspaceTab === 'fan_only'
+                ? 'bg-cyan-950/80 border border-cyan-600/50 text-cyan-300 shadow-sm'
+                : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            <span>🤘</span> Fan Triggers
+          </button>
+          <button
+            onClick={() => setPushWorkspaceTab('device')}
+            className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              pushWorkspaceTab === 'device'
+                ? 'bg-zinc-850 border border-zinc-700 text-white shadow-sm'
+                : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            <span>⚙️</span> Device & Audio
+          </button>
+        </div>
+
+        {/* TAB 1: INDUSTRY PRO TRIGGERS */}
+        {pushWorkspaceTab === 'industry_pro' && (
+          <div className="space-y-2.5 pt-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-wider">
+                Qualified Industry Pro Event Channels
+              </span>
+              <span className="text-[9px] font-mono text-purple-400 bg-purple-950/40 px-2 py-0.5 rounded border border-purple-800/30">
+                HIGH SIGNAL • TIME SENSITIVE
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2">
+              {INDUSTRY_PRO_PUSH_CATEGORIES.map((cat) => {
+                const isEnabled = pushPrefs.categories[cat.id] !== false;
+                return (
+                  <div
+                    key={cat.id}
+                    className="p-3 rounded-xl border border-zinc-900 hover:border-zinc-800 bg-zinc-950/50 flex items-start justify-between gap-3 transition-colors"
+                  >
+                    <div className="space-y-1 min-w-0 pr-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{cat.icon}</span>
+                        <span className="text-xs font-bold text-zinc-200 font-mono">{cat.label}</span>
+                        <span className={`text-[8px] font-mono font-bold px-1.5 py-0.2 rounded ${
+                          cat.priority === 'P0' ? 'bg-red-950/80 text-red-400 border border-red-800/40' : 'bg-zinc-900 text-zinc-400'
+                        }`}>
+                          {cat.priority}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-zinc-500 leading-normal font-sans">{cat.description}</p>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => {
+                          pushManager.simulatePush(cat.id as any);
+                        }}
+                        className="p-1 rounded bg-zinc-900 hover:bg-zinc-800 text-purple-400 border border-zinc-800 text-[9px] font-mono font-bold px-2 py-1 cursor-pointer transition-colors"
+                        title={`Send test push for ${cat.label}`}
+                      >
+                        TEST
+                      </button>
+                      <button
+                        onClick={async () => {
+                          const updatedCats = { ...pushPrefs.categories, [cat.id]: !isEnabled };
+                          const updated = await pushManager.updatePreferences({ categories: updatedCats }, userProfile?.id);
+                          setPushPrefs(updated);
+                        }}
+                        className={`w-9 h-5 rounded-full transition-colors flex items-center p-0.5 cursor-pointer ${isEnabled ? 'bg-purple-600' : 'bg-zinc-800'}`}
+                      >
+                        <span className={`w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${isEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: FAN TRIGGERS */}
+        {pushWorkspaceTab === 'fan_only' && (
+          <div className="space-y-2.5 pt-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-wider">
+                Qualified Fan Event Channels
+              </span>
+              <span className="text-[9px] font-mono text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-800/30">
+                SCARCITY & LIVE ACCESS
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2">
+              {FAN_PUSH_CATEGORIES.map((cat) => {
+                const isEnabled = pushPrefs.categories[cat.id] !== false;
+                return (
+                  <div
+                    key={cat.id}
+                    className="p-3 rounded-xl border border-zinc-900 hover:border-zinc-800 bg-zinc-950/50 flex items-start justify-between gap-3 transition-colors"
+                  >
+                    <div className="space-y-1 min-w-0 pr-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{cat.icon}</span>
+                        <span className="text-xs font-bold text-zinc-200 font-mono">{cat.label}</span>
+                        <span className={`text-[8px] font-mono font-bold px-1.5 py-0.2 rounded ${
+                          cat.priority === 'P0' ? 'bg-red-950/80 text-red-400 border border-red-800/40' : 'bg-zinc-900 text-zinc-400'
+                        }`}>
+                          {cat.priority}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-zinc-500 leading-normal font-sans">{cat.description}</p>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => {
+                          pushManager.simulatePush(cat.id as any);
+                        }}
+                        className="p-1 rounded bg-zinc-900 hover:bg-zinc-800 text-cyan-400 border border-zinc-800 text-[9px] font-mono font-bold px-2 py-1 cursor-pointer transition-colors"
+                        title={`Send test push for ${cat.label}`}
+                      >
+                        TEST
+                      </button>
+                      <button
+                        onClick={async () => {
+                          const updatedCats = { ...pushPrefs.categories, [cat.id]: !isEnabled };
+                          const updated = await pushManager.updatePreferences({ categories: updatedCats }, userProfile?.id);
+                          setPushPrefs(updated);
+                        }}
+                        className={`w-9 h-5 rounded-full transition-colors flex items-center p-0.5 cursor-pointer ${isEnabled ? 'bg-cyan-600' : 'bg-zinc-800'}`}
+                      >
+                        <span className={`w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${isEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: DEVICE & AUDIO CONTROLS */}
+        {pushWorkspaceTab === 'device' && (
+          <div className="space-y-3 pt-2">
+            {/* Sound Effects for Push */}
+            <div className="p-3 rounded-xl border border-zinc-900 bg-zinc-950/50 flex items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <span className="text-xs font-bold text-zinc-200 font-mono flex items-center gap-2">
+                  <Volume2 className="w-3.5 h-3.5 text-purple-400" /> Push Alert Chimes
+                </span>
+                <p className="text-[10px] text-zinc-500 leading-normal">
+                  Play harmonic frequencies based on priority level (P0 double beep vs melodic Fan chime).
+                </p>
+              </div>
+              <button
+                onClick={async () => {
+                  const updated = await pushManager.updatePreferences({ soundEnabled: !pushPrefs.soundEnabled }, userProfile?.id);
+                  setPushPrefs(updated);
+                  triggerNotification?.(updated.soundEnabled ? '🔊 Push audio chimes enabled.' : '🔇 Push audio chimes muted.');
+                }}
+                className={`w-9 h-5 rounded-full transition-colors flex items-center p-0.5 cursor-pointer shrink-0 ${pushPrefs.soundEnabled ? 'bg-purple-600' : 'bg-zinc-800'}`}
+              >
+                <span className={`w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${pushPrefs.soundEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+              </button>
+            </div>
+
+            {/* Device Vibration Patterns */}
+            <div className="p-3 rounded-xl border border-zinc-900 bg-zinc-950/50 flex items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <span className="text-xs font-bold text-zinc-200 font-mono flex items-center gap-2">
+                  <Smartphone className="w-3.5 h-3.5 text-cyan-400" /> Haptic Vibration Feedback
+                </span>
+                <p className="text-[10px] text-zinc-500 leading-normal">
+                  Trigger tactical motor pulses on supported mobile devices and tablets.
+                </p>
+              </div>
+              <button
+                onClick={async () => {
+                  const updated = await pushManager.updatePreferences({ vibrationEnabled: !pushPrefs.vibrationEnabled }, userProfile?.id);
+                  setPushPrefs(updated);
+                  triggerNotification?.(updated.vibrationEnabled ? '📳 Device vibration enabled.' : '📴 Vibration muted.');
+                }}
+                className={`w-9 h-5 rounded-full transition-colors flex items-center p-0.5 cursor-pointer shrink-0 ${pushPrefs.vibrationEnabled ? 'bg-cyan-600' : 'bg-zinc-800'}`}
+              >
+                <span className={`w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${pushPrefs.vibrationEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+              </button>
+            </div>
+
+            {/* Quiet Hours */}
+            <div className="p-3 rounded-xl border border-zinc-900 bg-zinc-950/50 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <span className="text-xs font-bold text-zinc-200 font-mono flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5 text-amber-400" /> Quiet Hours Suppressor
+                  </span>
+                  <p className="text-[10px] text-zinc-500 leading-normal">
+                    Suppress non-critical P1 alerts during rest hours. P0 critical logistics still pass through.
+                  </p>
+                </div>
+                <button
+                  onClick={async () => {
+                    const updated = await pushManager.updatePreferences({ quietHoursEnabled: !pushPrefs.quietHoursEnabled }, userProfile?.id);
+                    setPushPrefs(updated);
+                    triggerNotification?.(updated.quietHoursEnabled ? '🌙 Quiet hours activated.' : '☀️ Quiet hours disabled.');
+                  }}
+                  className={`w-9 h-5 rounded-full transition-colors flex items-center p-0.5 cursor-pointer shrink-0 ${pushPrefs.quietHoursEnabled ? 'bg-amber-600' : 'bg-zinc-800'}`}
+                >
+                  <span className={`w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${pushPrefs.quietHoursEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+                </button>
+              </div>
+
+              {pushPrefs.quietHoursEnabled && (
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-900">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-mono text-zinc-400 uppercase">Start Time</label>
+                    <input
+                      type="time"
+                      value={pushPrefs.quietHoursStart}
+                      onChange={async (e) => {
+                        const updated = await pushManager.updatePreferences({ quietHoursStart: e.target.value }, userProfile?.id);
+                        setPushPrefs(updated);
+                      }}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-xs font-mono text-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-mono text-zinc-400 uppercase">End Time</label>
+                    <input
+                      type="time"
+                      value={pushPrefs.quietHoursEnd}
+                      onChange={async (e) => {
+                        const updated = await pushManager.updatePreferences({ quietHoursEnd: e.target.value }, userProfile?.id);
+                        setPushPrefs(updated);
+                      }}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-xs font-mono text-white"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </Accordion>
 
       {/* DETACHED SUB-DRAWERS (AnimatePresence slide-over) */}

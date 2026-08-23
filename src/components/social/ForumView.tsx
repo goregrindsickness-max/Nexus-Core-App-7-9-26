@@ -1848,8 +1848,8 @@ export const ForumView: React.FC<ForumViewProps> = ({
                     </div>
 
                     <div className="space-y-4 pt-2">
-                      {thread.comments.slice().reverse().map((comment: any) => (
-                        <div key={comment.id} className="bg-zinc-950/40 border border-[#00ffcc]/30 rounded-xl p-3.5 space-y-2 hover:border-[#00ffcc]/40 transition-all">
+                      {thread.comments.slice().reverse().map((comment: any, cIdx: number) => (
+                        <div key={comment.id ? `fcomm-${comment.id}-${cIdx}` : `fcomm-${cIdx}`} className="bg-zinc-950/40 border border-[#00ffcc]/30 rounded-xl p-3.5 space-y-2 hover:border-[#00ffcc]/40 transition-all">
                           <div className="flex justify-between items-center">
                             <div className="flex items-center gap-1.5">
                               {renderAvatarForName(comment.author)}
@@ -1905,8 +1905,8 @@ export const ForumView: React.FC<ForumViewProps> = ({
 
                           {comment.replies && comment.replies.length > 0 && (
                             <div className="border-l border-[#00ffcc]/30 pl-3 ml-6.5 mt-2 space-y-2 bg-black/15 p-2 rounded-lg">
-                              {comment.replies.map((rep: any) => (
-                                <div key={rep.id} className="text-[11px] space-y-0.5">
+                              {comment.replies.map((rep: any, rIdx: number) => (
+                                <div key={rep.id ? `frep-${rep.id}-${rIdx}` : `frep-${rIdx}`} className="text-[11px] space-y-0.5">
                                   <div className="flex justify-between items-center">
                                     <div className="flex items-center gap-1.5">
                                       {renderAvatarForName(rep.author)}
@@ -2062,7 +2062,7 @@ export const ForumView: React.FC<ForumViewProps> = ({
                   );
                 }
 
-                return filteredList.map((thread) => {
+                return filteredList.map((thread, tIdx) => {
                   const hasImage = thread.image && !isAudioUrl(thread.image) && !isVideoUrl(thread.image);
                   const hasVideo = thread.image && isVideoUrl(thread.image);
                   const hasAudio = thread.image && isAudioUrl(thread.image);
@@ -2070,7 +2070,7 @@ export const ForumView: React.FC<ForumViewProps> = ({
 
                   return (
                     <div
-                      key={thread.id}
+                      key={thread.id ? `thread-${thread.id}-${tIdx}` : `thread-${tIdx}`}
                       onClick={() => setExpandedThreadId(thread.id)}
                       className="bg-[#121214] hover:bg-[#15161a] border border-zinc-900/90 hover:border-zinc-800 rounded-xl p-3 sm:p-3.5 cursor-pointer transition-all duration-150 flex flex-col justify-between gap-2.5 relative group shadow-sm"
                     >

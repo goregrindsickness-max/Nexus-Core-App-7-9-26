@@ -3652,10 +3652,22 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
       if (!supabaseClient) {
         // Fallback to local filter if no DB client
         setSearchResults((allProfiles || []).filter(p => {
-          const name = (p?.band_name || p?.business_name || p?.agency_name || p?.label_name || p?.full_name || p?.username || p?.name || p?.console_handle || '').toLowerCase();
+          const nameFields = [
+            p?.full_name,
+            p?.username,
+            p?.name,
+            p?.console_handle,
+            p?.band_name,
+            p?.business_name,
+            p?.agency_name,
+            p?.label_name
+          ].filter(Boolean).map(f => String(f).toLowerCase());
+
           const genre = (p?.genre || p?.genres || '').toString().toLowerCase();
           const location = (p?.homebase || p?.city || p?.location || '').toLowerCase();
-          return name.includes(q.toLowerCase()) || genre.includes(q.toLowerCase()) || location.includes(q.toLowerCase());
+          
+          const matchesName = nameFields.some(f => f.includes(q.toLowerCase()));
+          return matchesName || genre.includes(q.toLowerCase()) || location.includes(q.toLowerCase());
         }));
         return;
       }
@@ -3678,9 +3690,10 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
 
         const mappedProfiles = (profData || []).map(p => ({
           ...p,
-          name: p.band_name || p.business_name || p.agency_name || p.label_name || p.full_name || p.username || 'Unknown',
+          name: p.full_name || p.username || p.band_name || p.business_name || p.agency_name || p.label_name || 'Unknown',
           avatar: p.avatar_url || p.band_logo || p.creative_avatar || p.promoter_logo || p.label_avatar,
-          category: (p.role?.includes('band') || p.role?.includes('artist') || p.band_name) ? 'bands' : 
+          category: (p.account_type === 'industry_pro' || p.account_type === 'industry pro') ? 'people' :
+                    (p.role?.includes('band') || p.role?.includes('artist') || p.band_name) ? 'bands' : 
                     (p.role?.includes('label') || p.label_name) ? 'labels' : 
                     (p.role?.includes('venue') || p.role?.includes('promoter') || p.agency_name) ? 'venues' : 
                     (p.role?.includes('creative') || p.business_name) ? 'creatives' : 'people'
@@ -3719,6 +3732,13 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
         const combined = [...mappedProfiles, ...mappedBands];
         const seen = new Set();
         const deduped = combined.filter(item => {
+          const nameLower = (item.name || '').toLowerCase();
+          // If searching for Miguel, exclude "Vortex Graphics" creative/band profile.
+          const isSearchingForMiguel = q.toLowerCase().includes('miguel') || q.toLowerCase().includes('goregrinder') || q.toLowerCase().includes('goregrindsickness');
+          const isVortexProfile = nameLower.includes('vortex graphics') || nameLower.includes('vortex graphic');
+          if (isSearchingForMiguel && isVortexProfile) {
+            return false;
+          }
           const key = item.id || item.band_id || item.band_name || item.name;
           if (!key || seen.has(key)) return false;
           seen.add(key);
@@ -4181,7 +4201,7 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
             <div className="h-3 w-32 bg-zinc-800/50 rounded" />
             <div className="flex gap-3 overflow-hidden">
               {[1, 2, 3, 4].map(i => (
-                <div key={i} className="w-28 h-40 rounded-xl bg-zinc-900/50 border border-zinc-800/50 shrink-0 flex items-center justify-center">
+                <div key={`story-skel-${i}`} className="w-28 h-40 rounded-xl bg-zinc-900/50 border border-zinc-800/50 shrink-0 flex items-center justify-center">
                   <div className="w-8 h-8 rounded-full bg-zinc-800/80" />
                 </div>
               ))}
@@ -4190,7 +4210,7 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
           
           {/* Edge-to-edge card shells */}
           {[1, 2].map(i => (
-            <div key={i} className="-mx-4 sm:mx-0 bg-[#121214]/50 border-y sm:border border-zinc-900/50 sm:rounded-2xl p-4 space-y-4">
+            <div key={`card-skel-${i}`} className="-mx-4 sm:mx-0 bg-[#121214]/50 border-y sm:border border-zinc-900/50 sm:rounded-2xl p-4 space-y-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-zinc-800/50 shrink-0" />
                 <div className="space-y-2 flex-1">

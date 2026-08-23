@@ -1,22 +1,35 @@
-// Nexus Core Service Worker for Push Notifications and Handshake Core FCM
+// Nexus Core Service Worker for Real-Time Device Push Notifications
 self.addEventListener('push', function(event) {
   let data = {};
   if (event.data) {
     try {
       data = event.data.json();
     } catch (e) {
-      data = { title: 'Nexus Core', body: event.data.text() };
+      data = { title: 'Nexus Core Alert', body: event.data.text() };
     }
   }
 
-  const title = data.title || 'Nexus Core Push Alert';
- const options = {
-    body: data.body || 'New message from Nexus Core.',
-    icon: '/icon-192.png',   // <-- Swapped from /favicon.ico
-    badge: '/icon-192.png',  // <-- Swapped from /favicon.ico
-    tag: 'nexus-core-alert',
-    renotify: true,
-    data: data
+  const title = data.title || '⚡ Nexus Push Alert';
+  const options = {
+    body: data.body || 'New operational update from Nexus Core.',
+    icon: data.icon || '/icon-192.png',
+    badge: data.badge || '/icon-192.png',
+    image: data.image || undefined,
+    tag: data.tag || 'nexus-alert-' + Date.now(),
+    renotify: data.renotify !== false,
+    vibrate: data.vibrate || [200, 100, 200, 100, 300],
+    data: {
+      url: data.url || '/',
+      targetTab: data.targetTab,
+      category: data.category,
+      workspace: data.workspace,
+      timestamp: Date.now(),
+      ...data
+    },
+    actions: data.actions || [
+      { action: 'view', title: 'Open Alert' },
+      { action: 'dismiss', title: 'Dismiss' }
+    ]
   };
 
   event.waitUntil(
@@ -26,17 +39,41 @@ self.addEventListener('push', function(event) {
 
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
-  // Focus or open application window
+
+  if (event.action === 'dismiss') {
+    return;
+  }
+
+  const targetUrl = event.notification.data?.url || '/';
+  const targetTab = event.notification.data?.targetTab;
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
-      if (clientList.length > 0) {
-        return clientList[0].focus();
+      // If a client window is already open, focus it and post a navigation message
+      for (let i = 0; i < clientList.length; i++) {
+        const client = clientList[i];
+        if ('focus' in client) {
+          if (targetTab) {
+            client.postMessage({
+              type: 'NEXUS_PUSH_NAVIGATE',
+              targetTab: targetTab,
+              data: event.notification.data
+            });
+          }
+          return client.focus();
+        }
       }
+      // If no window is open, open a new one
       if (clients.openWindow) {
-        return clients.openWindow('/');
+        return clients.openWindow(targetUrl);
       }
     })
   );
+});
+
+self.addEventListener('notificationclose', function(event) {
+  // Optional telemetry hook on dismiss
+  console.log('[SW] Notification closed:', event.notification.tag);
 });
 
 /* ==========================================================================
@@ -44,11 +81,13 @@ self.addEventListener('notificationclick', function(event) {
    ========================================================================== */
 
 self.addEventListener('install', (event) => {
-  // Forces the waiting service worker to become active immediately
   self.skipWaiting();
 });
 
+self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim());
+});
+
 self.addEventListener('fetch', (event) => {
-  // Passes requests through to the live network (satisfies Chrome's offline capability rule)
   event.respondWith(fetch(event.request));
 });

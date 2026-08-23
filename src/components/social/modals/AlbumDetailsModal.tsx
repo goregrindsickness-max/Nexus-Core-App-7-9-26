@@ -162,9 +162,9 @@ export const AlbumDetailsModal: React.FC<AlbumDetailsModalProps> = ({
                   ORDER PHYSICAL & DIGITAL FORMATS
                 </div>
                 <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-                  {selectedAlbum.purchaseLinks?.map((link: any) => (
+                  {selectedAlbum.purchaseLinks?.map((link: any, idx: number) => (
                     <button
-                      key={link.format}
+                      key={`format-${link.format || idx}-${idx}`}
                       onClick={() => {
                         openCheckout?.('merch', {
                           name: `${selectedAlbum.band} - ${selectedAlbum.albumName} (${link.format})`,

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { profileStore } from '../utils/indexedDB';
-import { getSupabase, executeWithSchemaResilience, executeSanitizedProfileUpsert, sanitizeCreativePayload, formatCreativePayload, extractGlobalProfilePayload } from '../supabase';
+import { getSupabase, executeWithSchemaResilience, executeSanitizedProfileUpsert, sanitizeCreativePayload, formatCreativePayload, extractGlobalProfilePayload, sanitizeBandPayload } from '../supabase';
 
 export interface UseUserProfileStateProps {
   portalRole: string;
@@ -361,24 +361,131 @@ export function useUserProfileState({
 
         const finalTopSongUrl = profileTopSongUrl.trim() || userProfile?.top_song_url || '';
 
+        // 1. Separate Workspace Save: Save to specific workspace tables if in a professional portal
+        if (portalRole === 'band') {
+          const bandId = activeBand?.id || userProfile?.band_id;
+          if (bandId) {
+            const bandPayload = {
+              id: bandId,
+              band_name: profileFullLegalName,
+              logo_url: profileAvatarUrl,
+              cover_url: profileCoverUrl,
+              bio: profileBlurb,
+              micro_genres: combinedGenres,
+              city: profileLocation,
+            };
+            const sanitizedBand = sanitizeBandPayload(bandPayload);
+            executeWithSchemaResilience(
+              async (payload) => await supabase.from('bands').upsert([payload]),
+              sanitizedBand
+            ).then(({ error }) => {
+              if (error) console.error('[Supabase Band Profile Sync Error]:', error);
+              else console.log('[Supabase Band Profile Sync Success] Band profile saved.');
+            });
+          }
+        } else if (portalRole === 'creative') {
+          const creativeId = userProfile?.creative_id || userProfile?.registered_creative_id;
+          if (creativeId) {
+            const creativePayload = sanitizeCreativePayload({
+              id: creativeId,
+              business_name: profileFullLegalName,
+              avatar_url: profileAvatarUrl,
+              banner_url: profileCoverUrl,
+              bio: profileBlurb,
+              genres: combinedGenres,
+              city: profileLocation,
+            });
+            executeWithSchemaResilience(
+              async (payload) => await supabase.from('creatives').upsert(payload, { onConflict: 'id' }),
+              creativePayload
+            ).then(({ error }) => {
+              if (error) console.error('[Supabase Creative Profile Sync Error]:', error);
+              else console.log('[Supabase Creative Profile Sync Success] Creative profile saved.');
+            });
+          }
+        } else if (portalRole === 'promoter') {
+          const promoterId = userProfile?.promoter_id || userProfile?.registered_promoter_id;
+          if (promoterId) {
+            const promoterPayload = {
+              id: promoterId,
+              brand_name: profileFullLegalName,
+              promoter_logo: profileAvatarUrl,
+              promoter_cover_image: profileCoverUrl,
+              bio: profileBlurb,
+              genres: combinedGenres,
+              city: profileLocation,
+            };
+            executeWithSchemaResilience(
+              async (payload) => await supabase.from('promoters').upsert([payload]),
+              promoterPayload
+            ).then(({ error }) => {
+              if (error) console.error('[Supabase Promoter Profile Sync Error]:', error);
+              else console.log('[Supabase Promoter Profile Sync Success] Promoter profile saved.');
+            });
+          }
+        } else if (portalRole === 'label') {
+          const labelId = userProfile?.label_id || userProfile?.registered_label_id;
+          if (labelId) {
+            const labelPayload = {
+              id: labelId,
+              label_company_name: profileFullLegalName,
+              label_avatar: profileAvatarUrl,
+              label_banner: profileCoverUrl,
+              bio: profileBlurb,
+              genres: combinedGenres,
+              label_headquarters: profileLocation,
+            };
+            executeWithSchemaResilience(
+              async (payload) => await supabase.from('labels').upsert([payload]),
+              labelPayload
+            ).then(({ error }) => {
+              if (error) console.error('[Supabase Label Profile Sync Error]:', error);
+              else console.log('[Supabase Label Profile Sync Success] Label profile saved.');
+            });
+          }
+        }
+
+        // 2. Profiles Table Save: ALWAYS preserve user's global/personal identity if in a professional portal!
+        const isProfessionalPortal = ['band', 'creative', 'promoter', 'label'].includes(portalRole);
+        
+        let personalName = profileFullLegalName || '';
+        let personalHandle = profileHandle || '';
+        let personalAvatar = profileAvatarUrl || null;
+        let personalBanner = profileCoverUrl || null;
+        let personalBio = profileBlurb || '';
+        let personalGenres = combinedGenres;
+        let personalTopSong = fullTopSong;
+        let personalTopSongUrl = finalTopSongUrl;
+
+        if (isProfessionalPortal) {
+          // Use original userProfile values to keep personal rows untouched by professional details
+          personalName = userProfile?.full_name || userProfile?.name || '';
+          personalHandle = userProfile?.console_handle || userProfile?.handle || '';
+          personalAvatar = userProfile?.avatar_url || null;
+          personalBanner = userProfile?.banner_url || null;
+          personalBio = userProfile?.bio || '';
+          personalGenres = userProfile?.genre_tags || userProfile?.genres || [];
+          personalTopSong = userProfile?.top_song_title || '';
+          personalTopSongUrl = userProfile?.top_song_url || '';
+        }
+
         const isCreative = portalRole === 'creative' || userProfile?.account_type === 'creative';
 
-        // 1. Separate Profile Payload: Update profiles table with ONLY global user fields
         const globalProfilePayload = extractGlobalProfilePayload({
           id: userProfile.id,
           email: userProfile.email || profileEmail,
-          full_name: profileFullLegalName || userProfile?.full_name || userProfile?.legal_name || userProfile?.name || '',
-          name: profileFullLegalName || userProfile?.full_name || userProfile?.legal_name || userProfile?.name || '',
-          console_handle: profileHandle || userProfile?.console_handle || '@bdmCEO',
-          bio: profileBlurb || userProfile?.bio || userProfile?.profileBlurb || '',
-          genre_tags: combinedGenres,
-          genres: combinedGenres,
-          top_song_title: fullTopSong,
-          favoriteSong: fullTopSong,
-          top_song_url: finalTopSongUrl,
-          avatar_url: profileAvatarUrl || userProfile?.avatar_url || null,
-          banner_url: profileCoverUrl || userProfile?.banner_url || null,
-          city: profileLocation,
+          full_name: personalName,
+          name: personalName,
+          console_handle: personalHandle,
+          bio: personalBio,
+          genre_tags: personalGenres,
+          genres: personalGenres,
+          top_song_title: personalTopSong,
+          favoriteSong: personalTopSong,
+          top_song_url: personalTopSongUrl,
+          avatar_url: personalAvatar,
+          banner_url: personalBanner,
+          city: isProfessionalPortal ? (userProfile?.city || undefined) : profileLocation,
           zip_code: profileZip,
           pin: profilePin,
           update_ticker: userProfile?.update_ticker || userProfile?.rosterTicker || 'No updates posted yet',

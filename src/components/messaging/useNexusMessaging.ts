@@ -4,6 +4,7 @@ import { extractUUID } from '../../utils/socialFeedUtils';
 import { getValidUserId, sendDirectMessage, openFloatingChat } from '../../store/useChatStore';
 import { markChatAsRead } from '../../lib/chat';
 import { useChats } from '../../hooks/useChats';
+import { presenceManager } from '../../lib/presence';
 
 export type MessageType = {
   id: string;
@@ -250,7 +251,7 @@ export function useNexusMessaging({ userProfile, setAllProfiles, setAllFollows }
           role: roleStr,
           roleBadge: roleStr.toUpperCase().split(' / ')[0],
           roleColor: 'text-purple-400 bg-purple-955/10 border-purple-900/30',
-          online: true,
+          online: presenceManager.isOnline(p || otherEmail),
           unread: 0,
           messages: []
         });
@@ -288,7 +289,7 @@ export function useNexusMessaging({ userProfile, setAllProfiles, setAllFollows }
             role: roleStr,
             roleBadge: roleStr.toUpperCase().split(' / ')[0],
             roleColor: 'text-purple-400 bg-purple-955/10 border-purple-900/30',
-            online: true,
+            online: presenceManager.isOnline(otherProfile || otherEmail),
             unread: 0,
             messages: []
           });

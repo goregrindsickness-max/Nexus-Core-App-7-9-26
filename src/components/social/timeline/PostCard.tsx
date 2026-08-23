@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Pin,
   Rocket,
@@ -36,6 +36,7 @@ import {
   EventEmbedCard,
   MerchEmbedCard,
 } from '../embeds';
+import { GigProximityPill } from './GigProximityPill';
 
 interface PostCardProps {
   post: FeedPost;
@@ -207,6 +208,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 }) => {
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isLongPressRef = useRef<boolean>(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const commentList = post.comments || [];
   const postRoleUpper = (post.authorRole || (post as any).author?.role || '').toUpperCase();
@@ -423,11 +425,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   };
 
   const handleDelete = () => {
-    if (window.confirm("Are you sure you want to delete this signal from the timeline?")) {
-      if (onDeletePost) {
-        onDeletePost(post.id);
-      }
-    }
+    setShowDeleteConfirm(true);
   };
 
   return (
@@ -445,6 +443,38 @@ export const PostCard: React.FC<PostCardProps> = ({
           : 'border-zinc-800/90 hover:border-zinc-700/80'
       }`}
     >
+      {showDeleteConfirm && (
+        <div className="absolute inset-0 bg-[#0d0e11]/98 backdrop-blur-md z-50 flex flex-col items-center justify-center p-5 text-center animate-in fade-in duration-200">
+          <div className="w-12 h-12 rounded-full bg-rose-950/40 border border-rose-500/30 flex items-center justify-center mb-3 text-rose-500 shadow-[0_0_15px_rgba(239,68,68,0.15)]">
+            <Trash2 className="w-5 h-5 animate-pulse" />
+          </div>
+          <h4 className="text-xs font-black text-white font-mono uppercase tracking-widest">Delete Transmission?</h4>
+          <p className="text-[10px] text-zinc-400 mt-2 max-w-[240px] leading-relaxed font-mono">
+            Are you sure you want to permanently delete this signal from the timeline? This action cannot be undone.
+          </p>
+          <div className="flex items-center gap-3 mt-5 w-full max-w-[240px]">
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(false)}
+              className="flex-1 px-3.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-[10px] font-mono font-bold text-zinc-300 hover:bg-zinc-850 hover:text-white transition-all cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowDeleteConfirm(false);
+                if (onDeletePost) {
+                  onDeletePost(post.id);
+                }
+              }}
+              className="flex-1 px-3.5 py-2 rounded-xl bg-rose-950/50 border border-rose-500/60 text-[10px] font-mono font-bold text-rose-400 hover:bg-rose-900/60 transition-all cursor-pointer"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      )}
       {/* Boosted Post Neon Banner Badge */}
       {isPostBoosted && (
         <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
@@ -676,6 +706,14 @@ export const PostCard: React.FC<PostCardProps> = ({
           </span>
         )}
       </div>
+
+      {/* SMART GIG & TOUR PROXIMITY PILL */}
+      <GigProximityPill
+        post={post}
+        userProfile={userProfile}
+        onOpenTicketModal={onOpenTicketModal}
+        onSelectTicketShow={onSelectTicketShow}
+      />
 
       {/* Message Content (or Edit Form) */}
       {isEditing ? (
@@ -958,10 +996,10 @@ export const PostCard: React.FC<PostCardProps> = ({
             ) : (
               commentList
                 .filter(c => !c.parent_comment_id)
-                .map((comment) => {
+                .map((comment, cIdx) => {
                   const replies = commentList.filter(r => r.parent_comment_id === comment.id);
                   return (
-                    <div key={comment.id} className="space-y-1.5">
+                    <div key={comment.id ? `comm-${comment.id}-${cIdx}` : `comm-${cIdx}`} className="space-y-1.5">
                       {/* Top Level Comment */}
                       <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-xl p-2.5 text-xs space-y-1">
                         <div className="flex items-center justify-between font-mono text-[10px]">
@@ -983,8 +1021,8 @@ export const PostCard: React.FC<PostCardProps> = ({
                       {/* Threaded Replies */}
                       {replies.length > 0 && (
                         <div className="ml-4 pl-2.5 border-l-2 border-rose-900/40 space-y-1.5">
-                          {replies.map(reply => (
-                            <div key={reply.id} className="bg-zinc-950/50 border border-zinc-800/50 rounded-lg p-2 text-xs space-y-1">
+                          {replies.map((reply, rIdx) => (
+                            <div key={reply.id ? `reply-${reply.id}-${rIdx}` : `reply-${rIdx}`} className="bg-zinc-950/50 border border-zinc-800/50 rounded-lg p-2 text-xs space-y-1">
                               <div className="flex items-center justify-between font-mono text-[10px]">
                                 <span className="font-bold text-rose-400/90">{reply.username}</span>
                                 <span className="text-zinc-600">{formatPostTimestamp((reply as any).created_at || reply.time, reply.time)}</span>

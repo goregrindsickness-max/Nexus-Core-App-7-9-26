@@ -1040,12 +1040,33 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                     });
 
                     const matchingProfiles = unique.filter(p => {
-                      const name = (p.band_name || p.business_name || p.agency_name || p.label_name || p.full_name || p.username || p.name || p.console_handle || '').toLowerCase();
+                      const nameFields = [
+                        p.full_name,
+                        p.username,
+                        p.name,
+                        p.console_handle,
+                        p.band_name,
+                        p.business_name,
+                        p.agency_name,
+                        p.label_name
+                      ].filter(Boolean).map(f => String(f).toLowerCase());
+
+                      const nameCombined = nameFields.join(' ');
+                      
+                      // If searching for Miguel, exclude "Vortex Graphics" creative/band profile.
+                      const isSearchingForMiguel = q.includes('miguel') || q.includes('goregrinder') || q.includes('goregrindsickness');
+                      const isVortexProfile = nameCombined.includes('vortex graphics') || nameCombined.includes('vortex graphic');
+                      if (isSearchingForMiguel && isVortexProfile) {
+                        return false;
+                      }
+
                       const role = (p.role || p.portalRole || p.type || '').toLowerCase();
                       const genre = (p.genre || p.genres || '').toString().toLowerCase();
                       const location = (p.homebase || p.city || p.location || '').toLowerCase();
                       const bio = (p.bio || p.description || '').toLowerCase();
-                      return name.includes(q) || role.includes(q) || genre.includes(q) || location.includes(q) || bio.includes(q);
+
+                      const matchesName = nameFields.some(f => f.includes(q));
+                      return matchesName || role.includes(q) || genre.includes(q) || location.includes(q) || bio.includes(q);
                     });
 
                     if (matchingProfiles.length === 0) {
@@ -1058,12 +1079,13 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
 
                     const grouped: Record<string, any[]> = {};
                     matchingProfiles.forEach(p => {
-                      const isBand = p.isBandProfile || p.type === 'band' || p.role === 'band' || p.role === 'artist_band' || Boolean(p.band_name);
-                      const isLabel = p.role === 'label' || Boolean(p.label_name);
-                      const isPromoter = p.role === 'promoter' || p.role === 'venue' || Boolean(p.agency_name);
-                      const isCreative = p.role === 'creative' || Boolean(p.business_name);
+                      const isIndustryPro = p.account_type === 'industry_pro' || p.account_type === 'industry pro';
+                      const isBand = !isIndustryPro && (p.isBandProfile || p.type === 'band' || p.role === 'band' || p.role === 'artist_band' || Boolean(p.band_name));
+                      const isLabel = !isIndustryPro && (p.role === 'label' || Boolean(p.label_name));
+                      const isPromoter = !isIndustryPro && (p.role === 'promoter' || p.role === 'venue' || Boolean(p.agency_name));
+                      const isCreative = !isIndustryPro && (p.role === 'creative' || Boolean(p.business_name));
 
-                      const cat = isBand ? 'Bands & Artists' : isLabel ? 'Record Labels' : isPromoter ? 'Promoters & Venues' : isCreative ? 'Creative Media' : 'Community & Scene';
+                      const cat = isIndustryPro ? 'Community & Scene' : isBand ? 'Bands & Artists' : isLabel ? 'Record Labels' : isPromoter ? 'Promoters & Venues' : isCreative ? 'Creative Media' : 'Community & Scene';
                       if (!grouped[cat]) grouped[cat] = [];
                       grouped[cat].push(p);
                     });
@@ -1075,13 +1097,15 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                         </div>
                         <div className="space-y-1 mt-1">
                           {items.map(item => {
-                            const displayName = item.band_name || item.business_name || item.agency_name || item.label_name || item.full_name || item.username || item.name || item.console_handle || 'Unknown Entity';
+                            const displayName = item.full_name || item.band_name || item.business_name || item.agency_name || item.label_name || item.username || item.name || item.console_handle || 'Unknown Entity';
                             const displayAvatar = item.avatar_url || item.avatar || item.logo_url || item.band_logo || item.creative_avatar || item.promoter_logo || item.label_avatar;
                             const subRole = item.genre || item.homebase || item.portalRole || item.role || (catName === 'Bands & Artists' ? 'Registered Band' : 'Scene Member');
 
+                            const uniqueKey = `search-item-${item.id || ''}-${item.band_id || ''}-${item.role || item.portalRole || item.type || ''}-${displayName}-${subRole}`;
+
                             return (
                               <div
-                                key={item.id || item.band_id || displayName}
+                                key={uniqueKey}
                                 onClick={() => {
                                   window.dispatchEvent(new CustomEvent('openPublicProfile', { detail: { profile: item } }));
                                   setGlobalSearchQuery('');
