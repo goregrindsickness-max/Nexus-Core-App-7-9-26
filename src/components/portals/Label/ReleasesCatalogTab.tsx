@@ -706,7 +706,14 @@ export default function ReleasesCatalogTab({
 
   const handleAddFullReleaseSubmit = async (e: React.FormEvent, bandId: string) => {
     e.preventDefault();
-    if (!newReleaseTitle.trim() || !newReleaseCatalogId.trim()) return;
+    if (!newReleaseTitle.trim()) {
+      showLocalToast('⚠️ Please enter an album or release title.');
+      return;
+    }
+    const finalCatalogId = newReleaseCatalogId.trim() || `NX-${Math.floor(1000 + Math.random() * 9000)}`;
+    if (!newReleaseCatalogId.trim()) {
+      setNewReleaseCatalogId(finalCatalogId);
+    }
     if (isSavingRelease) return;
 
     const isEditMode = Boolean(editingFullReleaseId);
@@ -789,7 +796,7 @@ export default function ReleasesCatalogTab({
 
     const newReleaseObj = {
       id: targetReleaseId,
-      catalogId: newReleaseCatalogId,
+      catalogId: finalCatalogId,
       title: newReleaseTitle,
       coverColor: newReleaseColor,
       type: newReleaseFormatType,
@@ -807,7 +814,17 @@ export default function ReleasesCatalogTab({
       digital: digitalTracks
     };
 
-    // Update local state and IndexedDB store immediately (handling insert vs update)
+    // 1. Persist to Supabase 'releases' table FIRST before clearing local inputs or mutating state
+    const dbResult = await upsertReleaseToDatabase(newReleaseObj as any, bandId);
+
+    setIsSavingRelease(false);
+
+    if (!dbResult.success) {
+      showLocalToast(`❌ Failed to save release to Supabase: ${dbResult.error || 'Server rejected batch'}. Local changes preserved.`);
+      return;
+    }
+
+    // 2. Only update local state and IndexedDB store after explicit Supabase confirmation
     setCatalogReleases(prev => {
       const currentList = prev[bandId] || [];
       const existingIdx = currentList.findIndex(r => r.id === targetReleaseId);
@@ -826,10 +843,6 @@ export default function ReleasesCatalogTab({
       return next;
     });
 
-    // Persist to Supabase 'releases' table
-    const dbResult = await upsertReleaseToDatabase(newReleaseObj as any, bandId);
-
-    setIsSavingRelease(false);
     setIsAddingRelease(false);
     setIsReleaseFormExpanded(false);
     setEditingFullReleaseId(null);
@@ -846,15 +859,11 @@ export default function ReleasesCatalogTab({
     setIngestedWavTracks([]);
     setWavUploadLogs([]);
 
-    if (dbResult.success) {
-      showLocalToast(
-        isEditMode
-          ? `✓ UPDATED ${newReleaseFormatType.toUpperCase()} "${newReleaseTitle}" — ALL CHANGES SYNCED WITH AUDIO-VAULT & SUPABASE DATABASE.`
-          : `✓ REGISTERED ${newReleaseFormatType.toUpperCase()} "${newReleaseTitle}" — ALL TRACKS SAVED TO AUDIO-VAULT & SUPABASE DATABASE.`
-      );
-    } else {
-      showLocalToast(`RELEASE SAVED TO LOCAL CATALOG. Database sync notice: ${dbResult.error || 'Check network / credentials'}.`);
-    }
+    showLocalToast(
+      isEditMode
+        ? `✓ UPDATED ${newReleaseFormatType.toUpperCase()} "${newReleaseTitle}" — ALL CHANGES SYNCED WITH AUDIO-VAULT & SUPABASE DATABASE.`
+        : `✓ REGISTERED ${newReleaseFormatType.toUpperCase()} "${newReleaseTitle}" — ALL TRACKS SAVED TO AUDIO-VAULT & SUPABASE DATABASE.`
+    );
   };
 
   const handleDeleteRelease = (bandId: string, releaseId: string, title: string) => {

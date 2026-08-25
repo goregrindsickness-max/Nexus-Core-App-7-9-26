@@ -1001,9 +1001,9 @@ export default function SalesDashboardView({
       {/* High-Priority Critical Stock Alert Banner */}
       {inventory && inventory.filter(item => item.status === 'Critical').length > 0 && (
         <div className="mx-5 mt-4 text-[10.5px] p-2.5 rounded-xl bg-red-950/20 border border-red-500/30 flex flex-col gap-1.5 shadow-lg shadow-red-500/5">
-          {inventory.filter(item => item.status === 'Critical').map(item => (
+          {inventory.filter(item => item.status === 'Critical').map((item, idx) => (
             <button
-              key={item.id}
+              key={item.id ? `crit-${item.id}-${idx}` : `crit-${idx}`}
               onClick={() => onOpenTransferModal && onOpenTransferModal(item.id)}
               className="w-full flex items-center justify-between p-2 rounded-lg bg-red-950/40 hover:bg-red-900/40 border border-red-500/20 hover:border-red-400/50 transition-all text-left group cursor-pointer"
             >
@@ -1080,9 +1080,9 @@ export default function SalesDashboardView({
                 exit={{ opacity: 0, y: 5 }}
                 className="absolute left-0 right-0 mt-1 z-40 bg-[#13161d] border border-zinc-800 rounded-xl overflow-hidden shadow-2xl max-h-56 overflow-y-auto"
               >
-                {shows.map(s => (
+                {shows.map((s, idx) => (
                   <button
-                    key={s.id}
+                    key={s.id ? `show-drop-${s.id}-${idx}` : `show-drop-${idx}`}
                     onClick={() => {
                       setSelectedShowId(s.id);
                       setIsShowDropdownOpen(false);
@@ -1367,14 +1367,14 @@ export default function SalesDashboardView({
             {/* TWO COLUMN GRID BELOW */}
             {gridProducts.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 pb-6">
-                {gridProducts.map(product => {
+                {gridProducts.map((product, idx) => {
                   const variants = getVariantsForProduct(product);
                   const totalLiveQty = variants.reduce((sum, v) => sum + v.stock, 0);
                   const isLow = totalLiveQty <= 10;
                   
                   return (
                     <div 
-                      key={product.id}
+                      key={product.id ? `grid-prod-${product.id}-${idx}` : `grid-prod-${idx}`}
                       className="bg-[#111319] border border-zinc-850/80 rounded-xl overflow-hidden flex flex-col justify-between shadow-lg"
                     >
                       {/* Grid Item Photo Section */}
@@ -2091,9 +2091,9 @@ export default function SalesDashboardView({
                                   Table scanner simulation (Tap registered VIP card to replicate scan):
                                 </p>
                                 <div className="grid grid-cols-2 gap-1.5 max-h-20 overflow-y-auto pr-1">
-                                  {loyaltyMembers.map(m => (
+                                  {loyaltyMembers.map((m, idx) => (
                                     <button
-                                      key={m.id}
+                                      key={m.id ? `loyalty-${m.id}-${idx}` : `loyalty-${idx}`}
                                       type="button"
                                       onClick={() => {
                                         setAppliedLoyaltyMember(m);

@@ -355,3 +355,42 @@ export const getChatThreadBorderClass = (chat: any) => {
 
 export { playAmbientMetalDrone } from './audioEngine';
 
+export const formatTimeTo12h = (input?: string): string => {
+  if (!input) return 'Doors 8:00 PM';
+  let str = String(input);
+  str = str.replace(/\b([01]?[0-9]|2[0-3]):([0-5][0-9])\b/g, (match, h, m) => {
+    let hour = parseInt(h, 10);
+    const minute = m;
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    hour = hour % 12;
+    hour = hour ? hour : 12;
+    return `${hour}:${minute} ${ampm}`;
+  });
+  str = str.replace(/\b([01][0-9]|2[0-3])([0-5][0-9])\b/g, (match, h, m) => {
+    let hour = parseInt(h, 10);
+    const minute = m;
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    hour = hour % 12;
+    hour = hour ? hour : 12;
+    return `${hour}:${minute} ${ampm}`;
+  });
+  return str;
+};
+
+export const hasGigTickets = (gig: any): boolean => {
+  if (!gig) return false;
+  if (gig.ticketsAvailable === false || gig.ticketStatus === 'unlinked') return false;
+  const hasUrl = Boolean(gig.ticketUrl || gig.external_ticket_url || gig.ticket_url || gig.ticket_link);
+  const priceStr = String(gig.price || gig.presale_price || gig.day_of_show_price || '').toLowerCase();
+  const hasPaidPrice = Boolean(
+    priceStr &&
+    !priceStr.includes('free') &&
+    !priceStr.includes('0.00') &&
+    !priceStr.includes('$0') &&
+    !priceStr.includes('tba') &&
+    !priceStr.includes('crowdsourced')
+  );
+  return hasUrl || hasPaidPrice || gig.hasTickets === true;
+};
+
+

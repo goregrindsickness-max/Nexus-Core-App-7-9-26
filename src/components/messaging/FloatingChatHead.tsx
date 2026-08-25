@@ -104,7 +104,7 @@ const isValidUUID = (str: string | undefined | null): boolean => {
 
 export const FloatingChatHead: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isDismissed, setIsDismissed] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [targetUser, setTargetUser] = useState<{ id: string; name: string; avatar_url?: string | null } | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -262,11 +262,8 @@ export const FloatingChatHead: React.FC = () => {
     setConversations(loadedList);
     setTotalUnreadCount(unreadCount);
 
-    if (!hasInitializedOpen.current) {
-      hasInitializedOpen.current = true;
-      if (unreadCount > 0) {
-        setIsOpen(true);
-      }
+    if (unreadCount > 0) {
+      setIsDismissed(false);
     }
 
     // If no targetUser is selected yet, default targetUser to the most recent conversation if present

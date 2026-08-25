@@ -111,5 +111,7 @@ export type { ShopMerchItem } from './services/shopMerchService';
 export {
   fetchReleasesFromDatabase,
   upsertReleaseToDatabase,
+  upsertReleasesBatchToDatabase,
+  sanitizeReleaseForDb,
 } from './services/releasesService';
 export type { CatalogRelease, ReleaseTrack } from './services/releasesService';

@@ -3271,7 +3271,7 @@ export default function CreativeDashboardViewV2({
 
                         // Empty start offsets
                         for (let i = 0; i < startOffset; i++) {
-                          daysArr.push(<div key={`empty-leads-cal`} className="aspect-square bg-transparent rounded-xl" />);
+                          daysArr.push(<div key={`empty-leads-cal-${i}`} className="aspect-square bg-transparent rounded-xl" />);
                         }
 
                         // Generate actual days
@@ -3308,7 +3308,7 @@ export default function CreativeDashboardViewV2({
 
                           daysArr.push(
                             <button
-                              key={`leads-cal-day`}
+                              key={`leads-cal-day-${d}`}
                               type="button"
                               onClick={() => {
                                 setCalendarSelectedDate(dayDate);

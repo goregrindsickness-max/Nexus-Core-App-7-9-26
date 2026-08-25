@@ -177,7 +177,58 @@ export const GENRE_CLUSTERS = [
   }
 ];
 
-export async function ensureAutoFollowMiguel(_supabase: any, _newUserId: string) {
-  // Follows are strictly user-initiated to ensure all database records reflect authentic user interactions
-  return;
+export async function ensureAutoFollowMiguel(supabase: any, newUserId: string) {
+  if (!supabase || !newUserId) return;
+  try {
+    // Query profiles for Miguel / goregrindsickness / industry pro
+    const { data: proProfiles, error } = await supabase
+      .from('profiles')
+      .select('id, email, name, account_type')
+      .or('email.ilike.%goregrindsickness%,name.ilike.%miguel%,account_type.eq.industry pro');
+
+    let targetId: string | null = null;
+    if (proProfiles && proProfiles.length > 0) {
+      const match = proProfiles.find((p: any) => p.email?.toLowerCase().includes('goregrindsickness') || p.name?.toLowerCase().includes('miguel')) || proProfiles[0];
+      if (match?.id) {
+        targetId = match.id;
+      }
+    }
+
+    if (!targetId) {
+      const { data: fallbackProfiles } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('account_type', 'industry pro')
+        .limit(5);
+      if (fallbackProfiles && fallbackProfiles.length > 0) {
+        const validFallback = fallbackProfiles.find((p: any) => p.id !== newUserId);
+        if (validFallback) targetId = validFallback.id;
+      }
+    }
+
+    if (!targetId || targetId === newUserId) return;
+
+    const followId = `follow-${newUserId}-${targetId}`;
+    const payload = {
+      id: followId,
+      follower_id: newUserId,
+      followed_id: targetId,
+      target_type: 'user'
+    };
+
+    await supabase.from('follows').upsert([payload], { onConflict: 'follower_id,followed_id' });
+
+    try {
+      const localFollows = JSON.parse(localStorage.getItem('nexus_local_follows_v1') || '{}');
+      if (!localFollows[newUserId]) localFollows[newUserId] = {};
+      localFollows[newUserId][targetId] = true;
+      localStorage.setItem('nexus_local_follows_v1', JSON.stringify(localFollows));
+    } catch (e) {
+      // ignore
+    }
+
+    console.log(`[Auto-Follow Active] User ${newUserId} successfully auto-followed industry pro profile ${targetId}`);
+  } catch (err) {
+    console.warn('ensureAutoFollowMiguel exception:', err);
+  }
 }

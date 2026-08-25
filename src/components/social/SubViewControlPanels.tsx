@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ChevronDown, MapPin, Ticket, Filter, Map as MapIcon, SlidersHorizontal, Calendar, Star, Clock } from 'lucide-react';
+import { formatTimeTo12h, hasGigTickets } from '../../utils/socialFeedUtils';
 
 export interface LiveTonightGig {
   id: string;
@@ -11,7 +12,14 @@ export interface LiveTonightGig {
   distance?: string;
   isFollowed?: boolean;
   ticketUrl?: string;
+  external_ticket_url?: string;
+  ticket_url?: string;
   price?: string;
+  presale_price?: string;
+  day_of_show_price?: string;
+  ticketsAvailable?: boolean;
+  ticketStatus?: string;
+  hasTickets?: boolean;
 }
 
 export interface SubViewControlPanelsProps {
@@ -27,12 +35,14 @@ export interface SubViewControlPanelsProps {
   filterShowMerchDropsOnlyFromFollowed?: boolean;
   setFilterShowMerchDropsOnlyFromFollowed?: (val: boolean) => void;
   onOpenMapModal?: () => void;
+  onOpenShowCreator?: () => void;
+  onEditShow?: (gig: LiveTonightGig) => void;
 }
 
 export const SubViewControlPanels: React.FC<SubViewControlPanelsProps> = ({
   isLiveTonightOpen,
   setIsLiveTonightOpen,
-  liveEvents,
+  liveEvents = [],
   onSelectLiveTonight,
   onCheckoutTicket,
   filterHideTicketPresales = false,
@@ -42,7 +52,32 @@ export const SubViewControlPanels: React.FC<SubViewControlPanelsProps> = ({
   filterShowMerchDropsOnlyFromFollowed = false,
   setFilterShowMerchDropsOnlyFromFollowed,
   onOpenMapModal,
+  onOpenShowCreator,
+  onEditShow,
 }) => {
+  const uniqueLiveEvents = useMemo(() => {
+    if (!liveEvents || !Array.isArray(liveEvents)) return [];
+    const seenIds = new Set<string>();
+    const seenSigs = new Set<string>();
+    const result: LiveTonightGig[] = [];
+
+    for (const gig of liveEvents) {
+      if (!gig) continue;
+      const gigId = String(gig.id || '').trim();
+      const h = String(gig.headliner || '').toLowerCase().trim();
+      const d = String(gig.date || '').toLowerCase().trim();
+      const sig = `${h}__${d}`;
+
+      if (gigId && seenIds.has(gigId)) continue;
+      if (h && d && seenSigs.has(sig)) continue;
+
+      if (gigId) seenIds.add(gigId);
+      if (h && d) seenSigs.add(sig);
+      result.push(gig);
+    }
+    return result;
+  }, [liveEvents]);
+
   return (
     <div className="w-full bg-black/60 border-b border-zinc-900">
       {/* Upcoming Shows Near You Strip */}
@@ -62,15 +97,27 @@ export const SubViewControlPanels: React.FC<SubViewControlPanelsProps> = ({
                 isLiveTonightOpen ? 'text-rose-400' : 'text-zinc-500'
               }`}
             >
-              Upcoming Shows Near You
+              Upcoming Shows & Tours Near You
             </span>
-            {liveEvents && liveEvents.length > 0 && (
+            {uniqueLiveEvents && uniqueLiveEvents.length > 0 && (
               <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 hidden sm:inline">
-                {liveEvents.length} {liveEvents.length === 1 ? 'Date' : 'Dates'}
+                {uniqueLiveEvents.length} {uniqueLiveEvents.length === 1 ? 'Date' : 'Dates'}
               </span>
             )}
           </div>
           <div className="flex items-center gap-2">
+            {onOpenShowCreator && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenShowCreator();
+                }}
+                className="text-[9px] font-mono uppercase font-bold text-[#00ffcc] hover:text-black hover:bg-[#00ffcc] bg-zinc-900 border border-[#00ffcc]/40 px-2 py-0.5 rounded-md flex items-center gap-1 transition-all cursor-pointer"
+              >
+                + Post Show
+              </button>
+            )}
             {onOpenMapModal && (
               <button
                 type="button"
@@ -93,9 +140,11 @@ export const SubViewControlPanels: React.FC<SubViewControlPanelsProps> = ({
 
         {isLiveTonightOpen && (
           <div className="overflow-x-auto no-scrollbar px-4 flex gap-3 pb-1 animate-in slide-in-from-top-2 fade-in duration-200">
-            {liveEvents.map((gig, idx) => {
+            {uniqueLiveEvents.map((gig, idx) => {
               const isTonight = gig.date?.toLowerCase() === 'tonight' || (!gig.date && gig.time.toLowerCase().includes('tonight'));
               const isTomorrow = gig.date?.toLowerCase() === 'tomorrow';
+              const ticketsAvailable = hasGigTickets(gig);
+              const formattedTime = formatTimeTo12h(gig.time);
               
               return (
                 <div
@@ -143,27 +192,36 @@ export const SubViewControlPanels: React.FC<SubViewControlPanelsProps> = ({
                       )}
                     </div>
 
-                    {/* Time / Doors Schedule - Moved to its own line for compact width */}
+                    {/* Time / Doors Schedule */}
                     <div className="text-[8.5px] text-zinc-300 flex items-center gap-1 font-mono">
                       <Clock className="w-2.5 h-2.5 text-zinc-500 shrink-0" />
-                      <span>{gig.time}</span>
+                      <span>{formattedTime}</span>
                       {gig.price && (
                         <span className="text-emerald-400 font-bold ml-1">{gig.price}</span>
                       )}
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    className="bg-[#006df9] hover:bg-[#005bc3] text-white p-1.5 rounded-lg transition-colors cursor-pointer shrink-0 ml-1 shadow-md shadow-blue-900/30"
-                    title="Get Tickets / Presale"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onCheckoutTicket(gig);
-                    }}
-                  >
-                    <Ticket className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0 ml-1">
+                    <button
+                      type="button"
+                      disabled={!ticketsAvailable}
+                      className={`p-1.5 rounded-lg transition-colors shadow-md ${
+                        ticketsAvailable
+                          ? 'bg-[#006df9] hover:bg-[#005bc3] text-white cursor-pointer shadow-blue-900/30'
+                          : 'bg-zinc-800/80 text-zinc-600 cursor-not-allowed opacity-40'
+                      }`}
+                      title={ticketsAvailable ? "Get Tickets / Box Office" : "Box Office Unlinked / No Tickets Available"}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (ticketsAvailable) {
+                          onCheckoutTicket(gig);
+                        }
+                      }}
+                    >
+                      <Ticket className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               );
             })}

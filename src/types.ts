@@ -67,7 +67,9 @@ export interface Show {
   // Added Fields based on Event input screen:
   event_scope?: 'tour' | 'single';
   tour_id?: string;
+  venue_name?: string;
   venue_address?: string;
+  venue?: string;
   venue_lat?: number;
   venue_lng?: number;
   city?: string;
@@ -82,7 +84,9 @@ export interface Show {
   guarantee_amount?: number;
   currency?: string;
   tax_rate?: number;
-  expected_attendance?: '+100' | '100-300' | '300-700' | '700+';
+  capacity?: number | string;
+  venue_capacity?: number | string;
+  expected_attendance?: '+100' | '100-300' | '300-700' | '700+' | string | number;
   guest_list?: GuestListItem[];
   merch_space_fee?: number;
   seller_cost?: number;
@@ -102,17 +106,26 @@ export interface Show {
   local_pharmacy_info?: string;
   audio_production_requirements?: string;
   stage_backline_requirements?: string;
-  support_lineup?: SupportBand[];
+  support_lineup?: SupportBand[] | any[];
+  support_bands?: string;
   stage_name?: string;
   time_slot?: 'early' | 'late' | 'afternoon' | 'all-day' | string;
   actual_attendance?: number;
   ticket_price?: number;
+  day_of_show_price?: string | number;
+  presale_price?: string | number;
+  price?: string;
+  safety_code?: string;
+  flyer_url?: string;
   ticket_tier_sold?: 'low' | 'normal' | 'sold-out' | string;
   weather_condition?: 'Sunny' | 'Rainy' | 'Cold' | 'Stormy' | 'Snowy' | string;
   promo_effort?: 'none' | 'low' | 'medium' | 'high';
   marketing_medium?: 'flyers' | 'socials' | 'word-of-mouth' | 'radio' | string;
   client_id?: string;
   is_synced?: boolean;
+  is_community_submitted?: boolean;
+  external_ticket_url?: string;
+  collaborator_ids?: string[];
 }
 
 export interface SupportBand {

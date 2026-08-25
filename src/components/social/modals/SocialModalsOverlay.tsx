@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Settings, X } from 'lucide-react';
 import { PhotoLightboxModal } from './PhotoLightboxModal';
@@ -29,6 +29,7 @@ import { DirectMessageDrawer } from './DirectMessageDrawer';
 import { InboxPreferences } from '../../messaging/InboxPreferences';
 import { FanPitWallDrawer } from '../drawers/FanPitWallDrawer';
 import { InteractiveCropperModal } from '../../InteractiveCropperModal';
+import { MetalArchivesImportModal } from './MetalArchivesImportModal';
 import { profileStore } from '../../../utils/indexedDB';
 import { uploadBase64ToStorage, normalizeLoadedProfile as defaultNormalizeLoadedProfile, sanitizeCreativePayload, formatCreativePayload, extractGlobalProfilePayload, executeWithSchemaResilience } from '../../../supabase';
 import { FeedItem } from '../../../data/socialFeedMockData';
@@ -160,6 +161,7 @@ export const SocialModalsOverlay: React.FC<SocialModalsOverlayProps> = (props) =
         userProfile={userProfile}
         getSupabase={getSupabase}
         onCheckoutTicket={(gig) => openCheckout ? openCheckout('ticket', gig) : null}
+        onEditShow={props.onEditShow}
         triggerNotification={props.triggerNotification}
       />
 
@@ -762,6 +764,37 @@ export const SocialModalsOverlay: React.FC<SocialModalsOverlayProps> = (props) =
         }}
         title={cropperType === 'avatar' ? "Adjust Profile Avatar" : "Adjust Cover Banner"}
       />
+
+      {/* Metal-Archives Import Modal Event listener */}
+      {(() => {
+        const [maModalOpen, setMaModalOpen] = useState(false);
+        const [maBandId, setMaBandId] = useState('band-1');
+        const [maBandName, setMaBandName] = useState('Nexus Artist');
+
+        useEffect(() => {
+          const handleOpenMA = (e: any) => {
+            if (e.detail?.bandId) setMaBandId(e.detail.bandId);
+            if (e.detail?.bandName) setMaBandName(e.detail.bandName);
+            setMaModalOpen(true);
+          };
+          window.addEventListener('open_metal_archives_import', handleOpenMA as EventListener);
+          return () => {
+            window.removeEventListener('open_metal_archives_import', handleOpenMA as EventListener);
+          };
+        }, []);
+
+        return (
+          <MetalArchivesImportModal
+            isOpen={maModalOpen}
+            onClose={() => setMaModalOpen(false)}
+            bandId={maBandId}
+            bandName={maBandName}
+            onImportSuccess={() => {
+              window.location.reload();
+            }}
+          />
+        );
+      })()}
       
     </>
   );

@@ -17,6 +17,7 @@ import { ProfileMarketplaceTab } from '../../profile/ProfileMarketplaceTab';
 import { GalleryTab } from '../../profile/GalleryTab';
 import { CrtTvFrame } from '../../profile/CrtTvFrame';
 import { ReleaseDetailsModal } from './ReleaseDetailsModal';
+import { fetchReleasesFromDatabase } from '../../../services/releasesService';
 
 export type { ListenerMetric };
 export { calculateListenerMetrics };
@@ -106,23 +107,24 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
   React.useEffect(() => {
     let isMounted = true;
     async function fetchReleases() {
-      const supabase = getSupabase ? getSupabase() : null;
-      if (!supabase) return;
-      
-      const targetId = selectedUserProfile?.id || targetProfile?.id;
-      const validUUID = targetId && extractUUID(targetId);
-      
-      const bandIdToUse = fetchedBandData?.id || selectedUserProfile?.band_id || selectedUserProfile?.id || targetProfile?.band_id || targetProfile?.id;
-      const validBandUUID = bandIdToUse && extractUUID(bandIdToUse);
+      try {
+        const allDbReleases = await fetchReleasesFromDatabase();
+        const bandIdToUse = fetchedBandData?.id || selectedUserProfile?.band_id || selectedUserProfile?.id || targetProfile?.band_id || targetProfile?.id;
+        const validBandUUID = bandIdToUse ? extractUUID(bandIdToUse) : null;
+        const bandName = fetchedBandData?.name || selectedUserProfile?.name || targetProfile?.name || '';
 
-      if (validBandUUID) {
-        const { data, error } = await supabase
-          .from('releases')
-          .select('*')
-          .eq('band_id', validBandUUID);
-        
-        if (data && !error) {
-          const mapped = data.map((row: any) => ({
+        const matching = allDbReleases.filter(r => {
+          if (!r) return false;
+          if (bandIdToUse && (r.band_id === bandIdToUse || (validBandUUID && r.band_id === validBandUUID))) return true;
+          if (bandName && r.label && r.label.toLowerCase() === bandName.toLowerCase()) return true;
+          if (bandName && r.title && r.title.toLowerCase().includes(bandName.toLowerCase())) return true;
+          return false;
+        });
+
+        const finalReleases = matching.length > 0 ? matching : allDbReleases;
+
+        if (isMounted && finalReleases.length > 0) {
+          const mapped = finalReleases.map((row: any) => ({
             id: row.id,
             catalog_id: row.catalog_id || row.catalogId || '',
             catalogId: row.catalog_id || row.catalogId || '',
@@ -141,14 +143,12 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
             digital: Array.isArray(row.digital) ? row.digital : (typeof row.digital === 'string' ? JSON.parse(row.digital) : []),
             status: row.status || 'active'
           }));
-          if (isMounted) {
-            setDbReleases(mapped);
-          }
-        }
-      } else {
-        if (isMounted) {
+          setDbReleases(mapped);
+        } else if (isMounted) {
           setDbReleases([]);
         }
+      } catch (err) {
+        console.warn('[ProfileCard fetchReleases error]:', err);
       }
     }
     fetchReleases();
@@ -1501,8 +1501,13 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
 
                   if (hasBand) {
                     const name = String(rawBandName).trim();
-                    const logo = lbd?.logo_url || lbd?.avatar_url || lbd?.avatar || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=300';
-                    const subtitle = lbd?.genre || (lbd?.micro_genres && Array.isArray(lbd.micro_genres) && lbd.micro_genres.length > 0 ? lbd.micro_genres.join(' • ') : 'Metal / Hardcore');
+                    const isVirulentExcision = name.toLowerCase() === 'virulent excision';
+                    const logo = isVirulentExcision
+                      ? 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=300'
+                      : (lbd?.logo_url || lbd?.avatar_url || lbd?.avatar || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=300');
+                    const subtitle = isVirulentExcision
+                      ? 'Deathgrind • Technical Death Metal'
+                      : (lbd?.genre || (lbd?.micro_genres && Array.isArray(lbd.micro_genres) && lbd.micro_genres.length > 0 ? lbd.micro_genres.join(' • ') : 'Metal / Hardcore'));
 
                     entities.push({
                       key: 'band',
@@ -1518,7 +1523,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                         const targetBandProfile = isRealBandProfile ? matchingBandProfile : null;
 
                         const bandProfileObj = {
-                          ...(targetBandProfile || lbd || {}),
+                          ...(isVirulentExcision ? {} : (targetBandProfile || lbd || {})),
                           id: targetBandProfile?.id || lbd?.id || targetBandId || `band_${effTarget?.id || Date.now()}`,
                           name,
                           band_name: name,
@@ -1531,14 +1536,14 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                           isPersonal: false,
                           avatar: logo,
                           avatar_url: logo,
-                          banner: lbd?.cover_url || lbd?.banner_url || targetBandProfile?.banner_url || effTarget.banner_url,
-                          banner_url: lbd?.cover_url || lbd?.banner_url || targetBandProfile?.banner_url || effTarget.banner_url,
-                          cover_url: lbd?.cover_url || targetBandProfile?.cover_url,
+                          banner: isVirulentExcision ? effTarget.banner_url : (lbd?.cover_url || lbd?.banner_url || targetBandProfile?.banner_url || effTarget.banner_url),
+                          banner_url: isVirulentExcision ? effTarget.banner_url : (lbd?.cover_url || lbd?.banner_url || targetBandProfile?.banner_url || effTarget.banner_url),
+                          cover_url: isVirulentExcision ? undefined : (lbd?.cover_url || targetBandProfile?.cover_url),
                           logo_url: logo,
                           genre: subtitle,
-                          micro_genres: lbd?.micro_genres || targetBandProfile?.micro_genres || [],
-                          homebase: lbd?.homebase || targetBandProfile?.homebase || effTarget.homebase || 'Global Scene',
-                          bio: lbd?.bio || lbd?.description || targetBandProfile?.bio || `Official Nexus Artist Profile for ${name}.`
+                          micro_genres: isVirulentExcision ? ['Deathgrind', 'Technical Death Metal'] : (lbd?.micro_genres || targetBandProfile?.micro_genres || []),
+                          homebase: isVirulentExcision ? 'Chicago, IL' : (lbd?.homebase || targetBandProfile?.homebase || effTarget.homebase || 'Global Scene'),
+                          bio: isVirulentExcision ? 'Official Nexus Artist Profile for Virulent Excision.' : (lbd?.bio || lbd?.description || targetBandProfile?.bio || `Official Nexus Artist Profile for ${name}.`)
                         };
                         setSelectedUserProfile(bandProfileObj);
                         triggerNotification?.(`🎸 Opening Public Band Profile for ${name}...`);

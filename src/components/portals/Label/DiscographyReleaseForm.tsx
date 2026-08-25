@@ -154,6 +154,78 @@ export const DiscographyReleaseForm: React.FC<DiscographyReleaseFormProps> = ({
   const [isBatchUploading, setIsBatchUploading] = useState(false);
   const [batchProgress, setBatchProgress] = useState(0);
 
+  // Bulk Text / Text File Tracklist Parser State
+  const [isTextParserOpen, setIsTextParserOpen] = useState(false);
+  const [pastedTracklistText, setPastedTracklistText] = useState('');
+  const textFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const parsePastedTracklist = (textToParse?: string) => {
+    const text = textToParse !== undefined ? textToParse : pastedTracklistText;
+    if (!text.trim()) {
+      showLocalToast('Please enter or paste tracklist text.');
+      return;
+    }
+    const lines = text.split('\n');
+    const newTracks: TrackItem[] = [];
+
+    lines.forEach((line, idx) => {
+      let trimmed = line.trim();
+      if (!trimmed) return;
+
+      // Extract duration if present e.g. (3:45), [3:45], - 3:45, or 3:45 at end
+      let duration = '3:30';
+      const durMatch = trimmed.match(/(?:[\(\[\-\s]+)(\d{1,2}:\d{2})(?:[\)\]\s]*)$/);
+      if (durMatch) {
+        duration = durMatch[1];
+        trimmed = trimmed.replace(durMatch[0], '').trim();
+      }
+
+      // Extract leading track number e.g. "1.", "01 -", "1 -"
+      let trackNum = (idx + 1).toString();
+      const numMatch = trimmed.match(/^(\d{1,2})[\.\s\-\)]+(.+)$/);
+      if (numMatch) {
+        trackNum = parseInt(numMatch[1], 10).toString();
+        trimmed = numMatch[2].trim();
+      }
+
+      // Clean trailing dashes or quotes
+      trimmed = trimmed.replace(/^[\-\.\)\s]+|[\-\.\s]+$/g, '');
+
+      newTracks.push({
+        id: `track_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`,
+        num: trackNum,
+        title: trimmed || `Track ${idx + 1}`,
+        duration: duration,
+        lyrics: '',
+        status: 'empty'
+      });
+    });
+
+    if (newTracks.length > 0) {
+      setNewReleaseTracks(newTracks);
+      setIsTextParserOpen(false);
+      setPastedTracklistText('');
+      showLocalToast(`Successfully parsed and loaded ${newTracks.length} tracks into archive tracklist!`);
+    } else {
+      showLocalToast('No valid tracks found in text.');
+    }
+  };
+
+  const handleTextFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (content) {
+        setPastedTracklistText(content);
+        parsePastedTracklist(content);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const batchFileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -644,6 +716,19 @@ export const DiscographyReleaseForm: React.FC<DiscographyReleaseFormProps> = ({
                 />
                 <button 
                   type="button" 
+                  onClick={() => setIsTextParserOpen(prev => !prev)}
+                  className={`text-[8.5px] font-mono px-2.5 py-1 rounded-lg border transition-colors flex items-center gap-1 cursor-pointer shrink-0 ${
+                    isTextParserOpen 
+                      ? 'bg-[#FF9900]/20 text-[#FF9900] border-[#FF9900]/50' 
+                      : 'text-zinc-200 bg-zinc-900 hover:bg-zinc-800 border-zinc-800 hover:border-zinc-700'
+                  }`}
+                  title="Paste text file or raw song list with times"
+                >
+                  <Sparkles className="w-3 h-3 text-[#FF9900]" />
+                  {isTextParserOpen ? 'Close Text Parser [-]' : '+ Bulk Paste / Text File'}
+                </button>
+                <button 
+                  type="button" 
                   onClick={() => batchFileInputRef.current?.click()}
                   className="text-[8.5px] font-mono text-[#FF9900] bg-black hover:bg-zinc-900 px-2.5 py-1 rounded-lg border border-[#FF9900]/40 hover:border-[#FF9900] transition-colors flex items-center gap-1 cursor-pointer"
                   title="Drop or select multiple WAV/MP3 files at once"
@@ -671,6 +756,66 @@ export const DiscographyReleaseForm: React.FC<DiscographyReleaseFormProps> = ({
                 </button>
               </div>
             </div>
+
+            {/* Bulk Text / Text File Parser Box */}
+            {isTextParserOpen && (
+              <div className="p-4 bg-black/90 border border-[#FF9900]/40 rounded-xl space-y-3 animate-fade-in shadow-xl my-2">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#FF9900]" />
+                    <span className="text-[10px] font-mono font-black text-white uppercase tracking-wider">
+                      Bulk Paste Text File / Song Titles & Times
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="file" 
+                      ref={textFileInputRef} 
+                      accept=".txt,.md,.csv,text/*" 
+                      className="hidden" 
+                      onChange={handleTextFileUpload} 
+                    />
+                    <button
+                      type="button"
+                      onClick={() => textFileInputRef.current?.click()}
+                      className="text-[8.5px] font-mono text-[#FF9900] bg-zinc-900 hover:bg-zinc-800 px-2.5 py-1 rounded-lg border border-[#FF9900]/30 transition-colors cursor-pointer"
+                    >
+                      📁 Upload .txt File
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsTextParserOpen(false)}
+                      className="text-[8.5px] font-mono text-zinc-400 hover:text-white px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800"
+                    >
+                      Close [X]
+                    </button>
+                  </div>
+                </div>
+
+                <p className="text-[9px] font-mono text-zinc-400">
+                  Paste your raw tracklist below (e.g., copied from liner notes, setlist, or text file). Each line will be automatically parsed into track number, title, and duration (e.g. <span className="text-amber-400">"1. Intro - 2:15"</span> or <span className="text-amber-400">"Song Title 3:45"</span>).
+                </p>
+
+                <textarea
+                  rows={5}
+                  value={pastedTracklistText}
+                  onChange={e => setPastedTracklistText(e.target.value)}
+                  placeholder={`1. Introduction - 1:20\n2. Casket Decay - 4:15\n3. Putrid Embalming (3:52)\n4. Necro Phobia 5:10`}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-[11px] font-mono text-white focus:outline-none focus:border-[#FF9900] resize-y"
+                />
+
+                <div className="flex justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => parsePastedTracklist()}
+                    className="text-[9.5px] font-mono font-black uppercase tracking-wider bg-[#FF9900] hover:bg-[#FF8800] text-black px-4 py-2 rounded-lg transition-colors shadow-md cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Auto-Parse & Populate Organized Tracklist
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Quick Batch Drag & Drop Zone */}
             <div 

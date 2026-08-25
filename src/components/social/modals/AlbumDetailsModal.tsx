@@ -126,7 +126,7 @@ export const AlbumDetailsModal: React.FC<AlbumDetailsModalProps> = ({
                     const isCurrent = playingTrackIdx === trackIdx;
                     return (
                       <div
-                        key={trackIdx}
+                        key={`track-${track.id || track.title || trackIdx}-${trackIdx}`}
                         onClick={() => handleTrackClick(track, trackIdx)}
                         className={`flex items-center justify-between py-2 px-2.5 rounded-lg cursor-pointer group/track transition-all ${
                           isCurrent

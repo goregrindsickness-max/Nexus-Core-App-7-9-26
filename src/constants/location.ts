@@ -64,10 +64,6 @@ export const US_STATES: StateOption[] = [
 export function formatLocationDisplay(profOrLocation?: any): string {
   if (!profOrLocation) return 'USA / Global';
 
-  if (typeof profOrLocation === 'string' && profOrLocation.trim() === 'USA / Global') {
-    return 'USA / Global';
-  }
-
   let rawString = '';
   let city = '';
   let state = '';
@@ -82,33 +78,37 @@ export function formatLocationDisplay(profOrLocation?: any): string {
     rawString = profOrLocation.location || profOrLocation.city_state || profOrLocation.homebase || profOrLocation.location_code || '';
   }
 
+  if (rawString.includes('/')) {
+    rawString = rawString.split('/')[0].trim();
+  }
+
   const allFragments: string[] = [];
-  if (city) allFragments.push(...city.split(','));
-  if (state) allFragments.push(...state.split(','));
-  if (country) allFragments.push(...country.split(','));
-  if (rawString) allFragments.push(...rawString.split(','));
+  if (city) allFragments.push(city);
+  if (state) allFragments.push(state);
+  if (country) allFragments.push(country);
+  if (rawString) {
+    allFragments.push(...rawString.split(','));
+  }
 
   let detectedCity = '';
   let detectedState = '';
   let detectedCountry = '';
-  const otherParts: string[] = [];
 
   for (const frag of allFragments) {
     if (!frag) continue;
-    const clean = frag.trim();
+    const clean = String(frag).trim();
     if (!clean) continue;
     const upper = clean.toUpperCase();
+    if (upper === 'GLOBAL' || upper === 'REMOTE' || upper === 'ANYWHERE') continue;
 
-    // Check if US state code or full state name
     const foundState = US_STATES.find(s => s.code.toUpperCase() === upper || s.name.toUpperCase() === upper);
     if (foundState) {
       if (!detectedState) {
-        detectedState = foundState.name; // Full state name, e.g. "Texas"
+        detectedState = foundState.name;
       }
       continue;
     }
 
-    // Check if US Country
     if (['US', 'USA', 'UNITED STATES', 'UNITED STATES OF AMERICA'].includes(upper)) {
       if (!detectedCountry) {
         detectedCountry = 'USA';
@@ -116,7 +116,6 @@ export function formatLocationDisplay(profOrLocation?: any): string {
       continue;
     }
 
-    // Check if other country in COUNTRIES
     const foundCountry = COUNTRIES.find(c => c.code.toUpperCase() === upper || c.name.toUpperCase() === upper);
     if (foundCountry) {
       if (!detectedCountry) {
@@ -125,29 +124,34 @@ export function formatLocationDisplay(profOrLocation?: any): string {
       continue;
     }
 
-    // Otherwise it's a city or region name
     if (!detectedCity) {
       detectedCity = clean;
-    } else if (clean.toUpperCase() !== detectedCity.toUpperCase()) {
-      if (!otherParts.some(p => p.toUpperCase() === upper)) {
-        otherParts.push(clean);
-      }
+    } else if (!detectedState && clean.length <= 3) {
+      detectedState = clean;
+    } else if (!detectedState) {
+      detectedState = clean;
+    } else if (!detectedCountry) {
+      detectedCountry = clean;
     }
   }
 
-  // If detectedState is a US state and country was not explicitly provided, default to USA
   if (detectedState && !detectedCountry) {
     detectedCountry = 'USA';
   }
 
-  const finalParts: string[] = [];
-  if (detectedCity) finalParts.push(detectedCity);
-  if (otherParts.length > 0) finalParts.push(...otherParts);
-  if (detectedState) finalParts.push(detectedState);
-  if (detectedCountry) finalParts.push(detectedCountry);
+  const parts: string[] = [];
+  if (detectedCity) parts.push(detectedCity);
+  if (detectedState && detectedState.toUpperCase() !== detectedCity.toUpperCase()) parts.push(detectedState);
+  if (detectedCountry && detectedCountry.toUpperCase() !== detectedState?.toUpperCase() && detectedCountry.toUpperCase() !== detectedCity?.toUpperCase()) {
+    parts.push(detectedCountry);
+  }
 
-  if (finalParts.length === 0) return 'USA / Global';
-  return finalParts.join(', ');
+  if (parts.length === 0) {
+    if (rawString) return rawString.split('/')[0].trim();
+    return 'USA / Global';
+  }
+
+  return parts.join(', ');
 }
 
 export const COUNTRIES: CountryOption[] = [

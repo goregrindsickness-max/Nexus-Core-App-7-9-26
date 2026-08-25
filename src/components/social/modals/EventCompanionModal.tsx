@@ -18,9 +18,15 @@ import {
   Star,
   Sparkles,
   Calendar,
-  Layers
+  Layers,
+  Navigation,
+  ExternalLink,
+  Copy,
+  Check
 } from 'lucide-react';
 import { bandSetlists } from '../../../data/socialFeedMockData';
+import { formatTimeTo12h, hasGigTickets } from '../../../utils/socialFeedUtils';
+
 
 interface EventCompanionModalProps {
   isEventModeActive: boolean;
@@ -40,6 +46,7 @@ interface EventCompanionModalProps {
   userProfile?: any;
   getSupabase?: () => any;
   onCheckoutTicket?: (gig: any) => void;
+  onEditShow?: (gig: any) => void;
   triggerNotification?: (title: string, message: string, icon?: string) => void;
 }
 
@@ -61,18 +68,20 @@ export const EventCompanionModal: React.FC<EventCompanionModalProps> = ({
   userProfile,
   getSupabase,
   onCheckoutTicket,
+  onEditShow,
   triggerNotification
 }) => {
   // RSVP State
   const [rsvpStatus, setRsvpStatus] = useState<'going' | 'maybe' | 'cant_make' | null>(null);
   const [rsvpCounts, setRsvpCounts] = useState<{ going: number; maybe: number; cant_make: number }>({
-    going: 64,
-    maybe: 28,
-    cant_make: 9
+    going: 0,
+    maybe: 0,
+    cant_make: 0
   });
 
   // Collapsed by default setlists state
   const [expandedSetlists, setExpandedSetlists] = useState<Record<string, boolean>>({});
+  const [copiedAddress, setCopiedAddress] = useState(false);
 
   // Initialize RSVP and stats per active event
   useEffect(() => {
@@ -91,12 +100,10 @@ export const EventCompanionModal: React.FC<EventCompanionModalProps> = ({
       setRsvpStatus(null);
     }
 
-    // Deterministic base counts based on event id length & chars
-    const baseSeed = (String(eventId).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 50);
     setRsvpCounts({
-      going: 45 + baseSeed * 2,
-      maybe: 18 + baseSeed,
-      cant_make: 5 + (baseSeed % 7)
+      going: 0,
+      maybe: 0,
+      cant_make: 0
     });
   }, [activeEventData?.id, userProfile?.id]);
 
@@ -162,13 +169,7 @@ export const EventCompanionModal: React.FC<EventCompanionModalProps> = ({
   };
 
   // Determine if tickets are setup for this event
-  const isTicketSetup = Boolean(
-    activeEventData &&
-    activeEventData.ticketsAvailable !== false &&
-    activeEventData.ticketStatus !== 'unlinked' &&
-    activeEventData.ticketStatus !== 'soon' &&
-    (activeEventData.price || activeEventData.ticket_price || activeEventData.ticketUrl || activeEventData.hasTickets === true || activeEventData.priceRange)
-  );
+  const isTicketSetup = hasGigTickets(activeEventData);
 
   // Compute Full Tour Lineup
   const headlinerName = (activeEventData?.headliner || 'Headliner').trim();
@@ -251,12 +252,26 @@ export const EventCompanionModal: React.FC<EventCompanionModalProps> = ({
                 </div>
               </div>
             </div>
-            <button
-              onClick={() => setIsEventModeActive(false)}
-              className="w-9 h-9 bg-zinc-900 hover:bg-zinc-800 rounded-full flex items-center justify-center transition-colors border border-zinc-800 cursor-pointer shrink-0 ml-2"
-            >
-              <X className="w-4 h-4 text-zinc-400" />
-            </button>
+            <div className="flex items-center gap-2">
+              {onEditShow && (
+                <button
+                  onClick={() => {
+                    setIsEventModeActive(false);
+                    onEditShow(activeEventData);
+                  }}
+                  className="w-9 h-9 bg-zinc-900 hover:bg-zinc-800 text-[#00ffcc] rounded-full flex items-center justify-center transition-colors border border-zinc-800 cursor-pointer shrink-0 shadow-md"
+                  title="Edit Show Details"
+                >
+                  <span className="text-sm">✏️</span>
+                </button>
+              )}
+              <button
+                onClick={() => setIsEventModeActive(false)}
+                className="w-9 h-9 bg-zinc-900 hover:bg-zinc-800 rounded-full flex items-center justify-center transition-colors border border-zinc-800 cursor-pointer shrink-0"
+              >
+                <X className="w-4 h-4 text-zinc-400" />
+              </button>
+            </div>
           </div>
 
           {/* Navigation Tabs */}
@@ -306,13 +321,13 @@ export const EventCompanionModal: React.FC<EventCompanionModalProps> = ({
                   <div className="bg-gradient-to-br from-blue-950/50 via-[#0c121e] to-zinc-950 border border-blue-500/40 rounded-2xl p-4 shadow-xl shadow-blue-950/30 space-y-3 relative overflow-hidden">
                     <div className="absolute -right-8 -bottom-8 w-28 h-28 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
                     
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div className="flex items-center gap-2.5">
                         <div className="w-9 h-9 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0 shadow">
                           <Ticket className="w-4 h-4" />
                         </div>
                         <div>
-                          <div className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+                          <div className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5 flex-wrap">
                             <span>Official Box Office</span>
                             <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-1.5 py-0.2 rounded">
                               Active
@@ -323,8 +338,8 @@ export const EventCompanionModal: React.FC<EventCompanionModalProps> = ({
                       </div>
 
                       {activeEventData.price && (
-                        <div className="text-right">
-                          <span className="text-sm font-black text-emerald-400 font-mono px-2 py-0.5 rounded-lg bg-emerald-950/80 border border-emerald-500/40 shadow">
+                        <div className="sm:text-right">
+                          <span className="inline-block text-xs font-black text-emerald-400 font-mono px-2.5 py-1 rounded-lg bg-emerald-950/80 border border-emerald-500/40 shadow break-words max-w-full">
                             {activeEventData.price}
                           </span>
                         </div>
@@ -369,7 +384,148 @@ export const EventCompanionModal: React.FC<EventCompanionModalProps> = ({
                   </div>
                 )}
 
-                {/* 2. PASS & GATE ADMISSION SIMULATOR */}
+                {/* 2. EVENT FLYER RIGHT UNDER OFFICIAL BOX OFFICE */}
+                {activeEventData.flyer_url && (
+                  <div className="bg-[#0b0d10] border border-zinc-800 rounded-2xl overflow-hidden shadow-lg">
+                    <div className="p-2.5 bg-zinc-900/60 border-b border-zinc-800/80 flex items-center justify-between">
+                      <div className="text-[10px] font-mono font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <span>🖼️ Official Event Flyer</span>
+                      </div>
+                    </div>
+                    <div className="p-2 flex justify-center bg-black/40">
+                      <img 
+                        src={activeEventData.flyer_url} 
+                        alt={activeEventData.headliner || 'Event Flyer'}
+                        className="w-full h-auto object-contain rounded-xl border border-zinc-800 max-h-[600px]"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. VENUE INFO BOX */}
+                {(() => {
+                  const venueName = activeEventData.venue_name || activeEventData.venue || activeEventData.name || 'Live Venue';
+                  const streetAddress = activeEventData.venue_address || '';
+                  const city = activeEventData.city || '';
+                  const state = activeEventData.state_province || '';
+                  const country = activeEventData.country || '';
+                  const capacityVal = activeEventData.capacity || activeEventData.venue_capacity || activeEventData.expected_attendance;
+
+                  let locationCity = city;
+                  if (locationCity && state && !locationCity.toLowerCase().includes(state.toLowerCase())) {
+                    locationCity = `${locationCity}, ${state}`;
+                  }
+                  
+                  const navQueryParts = [
+                    (venueName !== 'Live Venue' && venueName !== 'Underground Venue' && venueName !== 'Music Venue') ? venueName : '',
+                    streetAddress,
+                    locationCity,
+                    country
+                  ].filter(Boolean);
+                  const navDestination = navQueryParts.length > 0 ? navQueryParts.join(', ') : (venueName || 'Venue');
+                  const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(navDestination)}`;
+
+                  const handleCopy = () => {
+                    const fullText = [venueName, streetAddress, locationCity, country].filter(Boolean).join(', ');
+                    navigator.clipboard.writeText(fullText);
+                    setCopiedAddress(true);
+                    setTimeout(() => setCopiedAddress(false), 2000);
+                    triggerNotification?.('📋 Address Copied', 'Venue location copied to clipboard');
+                  };
+
+                  return (
+                    <div className="bg-[#0b0d10] border border-zinc-800/90 rounded-2xl p-4 space-y-3.5 shadow-lg relative overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-[#00ffcc]" />
+                          <span className="text-xs font-black text-white uppercase tracking-wider font-mono">
+                            Venue Information
+                          </span>
+                        </div>
+                        {capacityVal ? (
+                          <div className="px-2.5 py-0.5 rounded-md bg-[#00ffcc]/10 border border-[#00ffcc]/30 text-[#00ffcc] text-[10px] font-mono font-bold flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            <span>{capacityVal} Cap</span>
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div className="p-3.5 bg-black/60 rounded-xl border border-zinc-800 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="space-y-0.5">
+                            <div className="text-sm font-black text-white tracking-wide">
+                              {venueName}
+                            </div>
+                            {streetAddress ? (
+                              <div className="text-xs text-zinc-300 font-mono">
+                                {streetAddress}
+                              </div>
+                            ) : null}
+                            {locationCity ? (
+                              <div className="text-[11px] text-zinc-400 font-mono">
+                                {locationCity}{country ? ` • ${country}` : ''}
+                              </div>
+                            ) : null}
+                          </div>
+                          
+                          {(streetAddress || locationCity) ? (
+                            <button
+                              onClick={handleCopy}
+                              title="Copy venue address"
+                              className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors flex-shrink-0 cursor-pointer"
+                            >
+                              {copiedAddress ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              ) : (
+                                <Copy className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          ) : null}
+                        </div>
+
+                        {capacityVal ? (
+                          <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[11px] font-mono text-zinc-400">
+                            <span className="text-zinc-500">Official Capacity</span>
+                            <span className="text-zinc-200 font-bold">{capacityVal} Attendees</span>
+                          </div>
+                        ) : null}
+                      </div>
+
+                      {/* Google Maps Live Directions Button */}
+                      <a
+                        href={googleMapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <Navigation className="w-4 h-4" />
+                        <span>Get Live Directions (Google Maps)</span>
+                        <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                      </a>
+                    </div>
+                  );
+                })()}
+
+                {/* 4. EVENT SCHEDULE & SAFETY GRID */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-[#0b0d10] p-3 rounded-2xl border border-zinc-900 text-left font-mono">
+                    <Clock className="w-4 h-4 text-rose-500 mb-1" />
+                    <div className="text-[8px] text-zinc-500 uppercase tracking-widest font-black">Gate Schedule</div>
+                    <div className="text-xs text-white font-black mt-1.5">
+                      {formatTimeTo12h(activeEventData.time || 'Doors 8:00 PM')}
+                    </div>
+                  </div>
+                  <div className="bg-[#0b0d10] p-3 rounded-2xl border border-zinc-900 text-left font-mono">
+                    <Shield className="w-4 h-4 text-rose-500 mb-1" />
+                    <div className="text-[8px] text-zinc-500 uppercase tracking-widest font-black">Safety Code</div>
+                    <div className="text-[11px] text-zinc-400 font-bold mt-1.5 leading-tight">
+                      {activeEventData.safety_code || activeEventData.safetyCode || 'Bag search / 18+ ID / Earplugs Rec'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. PASS & GATE ADMISSION SIMULATOR (ENTRY SCANNER) UNDER SCHEDULE & SAFETY */}
                 <div className="bg-[#0b0d10] border border-zinc-800 rounded-2xl p-4 text-center space-y-3.5 relative overflow-hidden">
                   <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-500 via-purple-500 to-rose-500" />
 
@@ -403,24 +559,6 @@ export const EventCompanionModal: React.FC<EventCompanionModalProps> = ({
                       <QrCode className="w-4 h-4" /> Simulate Door Scan
                     </button>
                   )}
-                </div>
-
-                {/* 3. EVENT SCHEDULE & SAFETY GRID */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-[#0b0d10] p-3 rounded-2xl border border-zinc-900 text-left font-mono">
-                    <Clock className="w-4 h-4 text-rose-500 mb-1" />
-                    <div className="text-[8px] text-zinc-500 uppercase tracking-widest font-black">Gate Schedule</div>
-                    <div className="text-xs text-white font-black mt-1.5">
-                      {activeEventData.time || 'Doors 8:00 PM'}
-                    </div>
-                  </div>
-                  <div className="bg-[#0b0d10] p-3 rounded-2xl border border-zinc-900 text-left font-mono">
-                    <Shield className="w-4 h-4 text-rose-500 mb-1" />
-                    <div className="text-[8px] text-zinc-500 uppercase tracking-widest font-black">Safety Code</div>
-                    <div className="text-[11px] text-zinc-400 font-bold mt-1.5 leading-tight">
-                      Bag search / 18+ ID / Earplugs Rec
-                    </div>
-                  </div>
                 </div>
 
                 {/* 4. INTERACTIVE RSVP LIST & ATTENDANCE TRACKER */}
@@ -582,9 +720,17 @@ export const EventCompanionModal: React.FC<EventCompanionModalProps> = ({
                                 {band}
                               </span>
                             </div>
-                            <span className="text-[9px] font-mono text-zinc-400">
-                              {isHeadliner ? (activeEventData.time || '10:00 PM') : `Set ${8 + idx}:15 PM`}
-                            </span>
+                            {(() => {
+                              const setTimeVal = isHeadliner 
+                                ? (activeEventData.set_time || activeEventData.time) 
+                                : (activeEventData.support_lineup?.[idx - 1]?.set_time);
+                              if (!setTimeVal) return null;
+                              return (
+                                <span className="text-[9px] font-mono text-zinc-400">
+                                  {setTimeVal}
+                                </span>
+                              );
+                            })()}
                           </div>
                         );
                       })}
@@ -605,10 +751,11 @@ export const EventCompanionModal: React.FC<EventCompanionModalProps> = ({
 
                   {fullLineup.map((band, idx) => {
                     const upperBand = band.toUpperCase();
-                    const tracks: string[] = (
+                    const tracks: string[] | null = (
                       liveSetlists[upperBand] ||
                       bandSetlists[upperBand] ||
-                      (idx === 0 ? ['Inner Paths (To Outer Space)', 'The Giza Power Plant', 'Starspawn', 'Awakening from the Dream', 'Slave Species of the Gods'] : null)
+                      activeEventData?.setlists?.[upperBand] ||
+                      null
                     );
                     
                     const isExpanded = !!expandedSetlists[band];

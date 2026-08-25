@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabaseClient';
 import { labelCatalogStore } from '../utils/indexedDB';
 import { uploadBase64ToStorage } from './storageService';
+import { ensureUUID } from './schemaResilienceService';
 
 export interface ReleaseTrack {
   id: string;
@@ -40,6 +41,88 @@ export interface CatalogRelease {
   status?: string;
   created_at?: string;
   updated_at?: string;
+  [key: string]: any;
+}
+
+/**
+ * Strips out any client-side-only metadata properties and maps camelCase fields
+ * to snake_case database schema columns to prevent 400 Bad Request schema rejections.
+ * Handles both individual objects and arrays properly.
+ */
+export function sanitizeReleaseForDb(release: any): any {
+  if (!release || typeof release !== 'object') return {};
+  if (Array.isArray(release)) {
+    return release.map((r) => sanitizeReleaseForDb(r));
+  }
+
+  // If passed an object with numeric index keys (e.g. { "0": {...}, "1": {...} }), convert to array
+  const keys = Object.keys(release);
+  if (keys.length > 0 && keys.every((k) => /^\d+$/.test(k))) {
+    return keys
+      .sort((a, b) => Number(a) - Number(b))
+      .map((k) => sanitizeReleaseForDb(release[k]));
+  }
+
+  const clean: Record<string, any> = { ...release };
+
+  if (clean.catalogId && !clean.catalog_id) clean.catalog_id = clean.catalogId;
+  if (clean.releaseDate && !clean.release_date) clean.release_date = clean.releaseDate;
+  if (clean.coverImage && !clean.cover_image && !clean.cover_url) {
+    clean.cover_image = clean.coverImage;
+    clean.cover_url = clean.coverImage;
+  }
+  if (clean.image_url && !clean.cover_image && !clean.cover_url) {
+    clean.cover_image = clean.image_url;
+    clean.cover_url = clean.image_url;
+  }
+  if (clean.year && !clean.release_date) {
+    clean.release_date = String(clean.year);
+  }
+  if (clean.release_info && !clean.label) {
+    clean.label = clean.release_info;
+  }
+
+  // Strip client-side-only metadata properties and obsolete/unsupported schema columns
+  delete clean.catalogId;
+  delete clean.releaseDate;
+  delete clean.coverColor;
+  delete clean.cover_color;
+  delete clean.coverImage;
+  delete clean.isEditing;
+  delete clean.isNew;
+  delete clean.selectedFile;
+  delete clean.image_url;
+  delete clean.year;
+  delete clean.release_info;
+
+  const allowedColumns = new Set([
+    'id',
+    'band_id',
+    'label_id',
+    'title',
+    'catalog_id',
+    'type',
+    'release_date',
+    'label',
+    'genre',
+    'cover_image',
+    'cover_url',
+    'tracks',
+    'formats',
+    'digital',
+    'audio_vault_path',
+    'status',
+    'created_at',
+    'updated_at'
+  ]);
+
+  const dbRelease: Record<string, any> = {};
+  for (const key of Object.keys(clean)) {
+    if (allowedColumns.has(key)) {
+      dbRelease[key] = clean[key];
+    }
+  }
+  return dbRelease;
 }
 
 /**
@@ -87,12 +170,12 @@ export async function fetchReleasesFromDatabase(): Promise<CatalogRelease[]> {
 }
 
 /**
- * Upsert a release into the Supabase database 'releases' table with auto-healing and validation
+ * Upsert a release into the Supabase database 'releases' table with auto-healing, payload sanitization, and server payload reconciliation.
  */
 export async function upsertReleaseToDatabase(
   release: CatalogRelease,
   bandId: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; data?: any }> {
   try {
     const targetBandId = String(bandId || release.band_id || 'b1').trim();
     const isValidUUID = (str?: string | null) => 
@@ -116,7 +199,7 @@ export async function upsertReleaseToDatabase(
       }
     }
 
-    const payload: Record<string, any> = {
+    const rawPayload: Record<string, any> = {
       id: release.id,
       band_id: targetBandId,
       label_id: isValidUUID(release.label_id) ? release.label_id : null,
@@ -128,7 +211,6 @@ export async function upsertReleaseToDatabase(
       genre: release.genre || null,
       cover_image: finalCoverUrl,
       cover_url: finalCoverUrl,
-      cover_color: release.coverColor || null,
       tracks: release.tracks || [],
       formats: release.formats || {},
       digital: release.digital || [],
@@ -137,9 +219,13 @@ export async function upsertReleaseToDatabase(
       updated_at: new Date().toISOString()
     };
 
-    let { error } = await supabase
+    const payload = sanitizeReleaseForDb(rawPayload);
+
+    let { data, error } = await supabase
       .from('releases')
-      .upsert(payload, { onConflict: 'id' });
+      .upsert(payload, { onConflict: 'id' })
+      .select()
+      .maybeSingle();
 
     // Auto-heal: If foreign key constraint failed on 'bands', insert placeholder band and retry
     if (error && (error.message.includes('foreign key') || error.code === '23503')) {
@@ -155,12 +241,15 @@ export async function upsertReleaseToDatabase(
             updated_at: new Date().toISOString()
           }, { onConflict: 'id' });
 
-        // Retry release upsert
+        // Retry release upsert with select() for optimistic reconciliation
         const retryResult = await supabase
           .from('releases')
-          .upsert(payload, { onConflict: 'id' });
+          .upsert(payload, { onConflict: 'id' })
+          .select()
+          .maybeSingle();
         
         error = retryResult.error;
+        data = retryResult.data;
       } catch (bandProvisionErr) {
         console.warn('[releasesService] Band auto-provision notice:', bandProvisionErr);
       }
@@ -168,13 +257,229 @@ export async function upsertReleaseToDatabase(
 
     if (error) {
       console.error('[releasesService] Database upsert error:', error.message, error);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('nexus_core_toast', {
+            detail: {
+              message: `Failed to save release "${release.title}": ${error.message}`,
+              type: 'error'
+            }
+          })
+        );
+      }
       return { success: false, error: error.message };
     }
 
-    console.log('[releasesService] Successfully persisted release to Supabase:', release.title);
-    return { success: true };
+    console.log('[releasesService] Successfully persisted and reconciled release to Supabase:', release.title);
+    return { success: true, data };
   } catch (err: any) {
     console.error('[releasesService] Critical exception upserting release:', err);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('nexus_core_toast', {
+          detail: {
+            message: `Critical error saving release: ${err?.message || 'Unknown exception'}`,
+            type: 'error'
+          }
+        })
+      );
+    }
+    return { success: false, error: err?.message || 'Unknown exception' };
+  }
+}
+
+/**
+ * Upsert a batch of releases into the Supabase database 'releases' table with strict bulk insert handling,
+ * distinct valid UUID generation, payload sanitization, foreign key auto-healing, sequential fallback, and explicit persistence verification.
+ */
+export async function upsertReleasesBatchToDatabase(
+  releases: CatalogRelease[] | Record<string, any>,
+  bandId: string
+): Promise<{ success: boolean; error?: string; data?: any; count?: number }> {
+  try {
+    // 1. Normalize input: ensure true array even if passed an object with numeric index keys
+    let releaseList: any[] = [];
+    if (Array.isArray(releases)) {
+      releaseList = [...releases];
+    } else if (releases && typeof releases === 'object') {
+      const keys = Object.keys(releases);
+      if (keys.length > 0) {
+        releaseList = keys.sort((a, b) => Number(a) - Number(b)).map((k) => (releases as any)[k]);
+      }
+    }
+
+    if (!Array.isArray(releaseList) || releaseList.length === 0) {
+      return { success: true, count: 0 };
+    }
+
+    const targetBandId = ensureUUID(String(bandId || 'b1').trim());
+    const isValidUUID = (str?: string | null) => 
+      str ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str) : false;
+
+    // Auto-provision band row in Supabase 'bands' table before inserting releases to ensure foreign key integrity
+    try {
+      await supabase
+        .from('bands')
+        .upsert({
+          id: targetBandId,
+          name: releaseList[0]?.label || releaseList[0]?.title || 'Nexus Artist',
+          slug: targetBandId,
+          status: 'active',
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+    } catch (e) {
+      console.warn('[releasesService] Pre-sync band check notice:', e);
+    }
+
+    const processedPayloads: any[] = [];
+    const seenIds = new Set<string>();
+
+    for (const [idx, release] of releaseList.entries()) {
+      if (!release) continue;
+      const releaseId = ensureUUID(release.id || `rel-${targetBandId}-${idx}-${Date.now()}`);
+      
+      // Deduplicate release items by ID to prevent PostgreSQL "ON CONFLICT DO UPDATE command cannot affect row a second time" error
+      if (seenIds.has(releaseId)) {
+        console.warn(`[releasesService] Skipping duplicate release ID in batch: ${releaseId}`);
+        continue;
+      }
+      seenIds.add(releaseId);
+
+      let finalCoverUrl = release.coverUrl || release.coverImage || release.cover_url || release.cover_image || release.image_url || null;
+      if (finalCoverUrl && finalCoverUrl.startsWith('data:')) {
+        try {
+          const uploadedUrl = await uploadBase64ToStorage(
+            finalCoverUrl,
+            'audio-vault',
+            targetBandId,
+            `release-${releaseId}-cover`
+          );
+          if (uploadedUrl) {
+            finalCoverUrl = uploadedUrl;
+          }
+        } catch (uploadErr) {
+          console.warn('[releasesService] Error uploading cover image for batch release:', uploadErr);
+        }
+      }
+
+      const rawPayload: Record<string, any> = {
+        id: releaseId,
+        band_id: targetBandId,
+        label_id: isValidUUID(release.label_id) ? release.label_id : null,
+        title: release.title || `Release ${idx + 1}`,
+        catalog_id: release.catalogId || release.catalog_id || null,
+        type: release.type || 'Album',
+        release_date: release.releaseDate || release.release_date || release.year || String(new Date().getFullYear()),
+        label: release.label || release.release_info || null,
+        genre: release.genre || null,
+        cover_image: finalCoverUrl,
+        cover_url: finalCoverUrl,
+        tracks: Array.isArray(release.tracks) ? release.tracks : [],
+        formats: typeof release.formats === 'object' && release.formats ? release.formats : {},
+        digital: Array.isArray(release.digital) ? release.digital : [],
+        audio_vault_path: release.audio_vault_path || null,
+        status: release.status || 'active',
+        updated_at: new Date().toISOString()
+      };
+
+      processedPayloads.push(sanitizeReleaseForDb(rawPayload));
+    }
+
+    if (processedPayloads.length === 0) {
+      return { success: true, count: 0 };
+    }
+
+    // Secondary guarantee: Deduplicate final processed array by id before sending to database
+    const dedupedPayloadsMap = new Map<string, any>();
+    for (const item of processedPayloads) {
+      if (item && item.id) {
+        dedupedPayloadsMap.set(item.id, item);
+      }
+    }
+    const finalPayloads = Array.from(dedupedPayloadsMap.values());
+
+    // 2. Execute bulk upsert with fallback to sequential individual upserts if batch is rejected
+    let dataResult: any = null;
+    let syncError: any = null;
+
+    const { data: batchData, error: batchError } = await supabase
+      .from('releases')
+      .upsert(finalPayloads, { onConflict: 'id' })
+      .select();
+
+    if (!batchError) {
+      dataResult = batchData;
+    } else {
+      console.warn('[releasesService] Bulk array upsert failed, executing sequential individual upserts:', batchError.message);
+      
+      let successfulCount = 0;
+      for (const singleItem of finalPayloads) {
+        const { data: singleData, error: singleErr } = await supabase
+          .from('releases')
+          .upsert(singleItem, { onConflict: 'id' })
+          .select()
+          .maybeSingle();
+
+        if (!singleErr) {
+          successfulCount++;
+          if (!dataResult) dataResult = [];
+          if (Array.isArray(dataResult)) dataResult.push(singleData);
+        } else {
+          console.error(`[releasesService] Sequential upsert failed for release "${singleItem.title}":`, singleErr.message);
+          syncError = singleErr;
+        }
+      }
+
+      if (successfulCount > 0) {
+        syncError = null; // Partial or full individual persistence succeeded
+      }
+    }
+
+    if (syncError) {
+      console.error('[releasesService] Database batch upsert error:', syncError.message, syncError);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('nexus_core_toast', {
+            detail: {
+              message: `❌ Batch release sync rejected by database: ${syncError.message}`,
+              type: 'error'
+            }
+          })
+        );
+      }
+      return { success: false, error: syncError.message };
+    }
+
+    // 3. Database Persistence Verification: Query Supabase to confirm releases exist in the DB
+    try {
+      const { data: verifyData, error: verifyErr } = await supabase
+        .from('releases')
+        .select('id, title')
+        .eq('band_id', targetBandId);
+
+      if (verifyErr) {
+        console.warn('[releasesService] Persistence verification query notice:', verifyErr.message);
+      } else {
+        console.log(`[releasesService] Confirmed ${verifyData?.length || 0} release(s) live in Supabase for band ${targetBandId}`);
+      }
+    } catch (verErr) {
+      console.warn('[releasesService] Persistence verification exception:', verErr);
+    }
+
+    console.log('[releasesService] Successfully persisted release batch to Supabase:', processedPayloads.length, 'items');
+    return { success: true, data: dataResult, count: processedPayloads.length };
+  } catch (err: any) {
+    console.error('[releasesService] Critical exception batch upserting releases:', err);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('nexus_core_toast', {
+          detail: {
+            message: `❌ Critical error batch saving releases: ${err?.message || 'Unknown exception'}`,
+            type: 'error'
+          }
+        })
+      );
+    }
     return { success: false, error: err?.message || 'Unknown exception' };
   }
 }

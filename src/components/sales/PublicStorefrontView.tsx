@@ -344,9 +344,9 @@ export default function PublicStorefrontView({
 
           {/* Product Grid strictly matching UniversalSocialFeed's compact 3-column matrix */}
           <div className="grid grid-cols-3 gap-3 md:gap-4 mb-6 items-stretch">
-            {filteredItems.map(item => (
+            {filteredItems.map((item, idx) => (
               <div 
-                key={item.id} 
+                key={item.id ? `pub-grid-item-${item.id}-${idx}` : `pub-grid-item-${idx}`} 
                 onClick={() => {
                   setSelectedShopItem(item);
                   setSelectedSize('M');

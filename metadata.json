@@ -2,7 +2,7 @@
   "name": "Heavy Metal Scene Platform",
   "description": "Comprehensive portal, social feed, merch store, event manager, and music hub for heavy metal bands, promoters, creatives, and labels.",
   "requestFramePermissions": [
-    "microphone"
+    "geolocation"
   ],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

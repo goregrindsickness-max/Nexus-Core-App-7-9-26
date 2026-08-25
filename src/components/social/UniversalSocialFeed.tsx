@@ -55,7 +55,7 @@ import { BAND_PORTAL_BILLING } from '../../config/billingMatrix';
 import { PLATFORM_TRANSACTION_FEES } from '../../constants/fees';
 import { profileStore, socialFeedStore } from '../../utils/indexedDB';
 import { supabase } from '../../lib/supabaseClient';
-import { getSupabase, subscribeToTable, executeWithSchemaResilience, uploadBase64ToStorage, normalizeLoadedProfile, createShopMerchItem, fetchShopMerchItems, sanitizeMicroGenres, formatBandLocation } from '../../supabase';
+import { getSupabase, subscribeToTable, executeWithSchemaResilience, uploadBase64ToStorage, normalizeLoadedProfile, createShopMerchItem, fetchShopMerchItems, sanitizeMicroGenres, formatBandLocation, sanitizeShowForDb, ensureUUID } from '../../supabase';
 import { uploadFeedMedia } from '../../lib/storage';
 import Barcode from 'react-barcode';
 import { MASTER_GENRES } from '../../constants/genres';
@@ -67,6 +67,7 @@ import { TimelineTab } from '../profile/TimelineTab';
 import { SocialSubNav } from './SocialSubNav';
 import { SocialMapOverlay } from './SocialMapOverlay';
 import { SubViewControlPanels } from './SubViewControlPanels';
+import CreateCommunityShowModal from './modals/CreateCommunityShowModal';
 import { InlineShareModal } from './modals/InlineShareModal';
 import { InlineReactionsModal } from './modals/InlineReactionsModal';
 import { PollCreationModal } from './modals/PollCreationModal';
@@ -199,6 +200,214 @@ export function UniversalSocialFeed({
   const [rosterExpanded, setRosterExpanded] = useState(false);
   const [selectedLabelBand, setSelectedLabelBand] = useState('Devourment');
   const [showLabelEpkModal, setShowLabelEpkModal] = useState(false);
+  const [isCommunityShowModalOpen, setIsCommunityShowModalOpen] = useState(false);
+  const [editingCommunityShow, setEditingCommunityShow] = useState<any | null>(null);
+
+  const handleCommunityShowSubmit = async (payload: any) => {
+    let currentUserId = userProfile?.id;
+    if (!currentUserId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentUserId)) {
+      try {
+        const sb = getSupabase();
+        if (sb) {
+          const authUser = (await sb.auth.getUser()).data.user;
+          if (authUser?.id) {
+            currentUserId = authUser.id;
+          }
+        }
+      } catch (_) {}
+    }
+    if (!currentUserId) {
+      currentUserId = userProfile?.role === 'fan' ? '00000000-0000-4000-a000-000000000001' : '00000000-0000-4000-a000-000000000000';
+    }
+
+    const showId = ensureUUID(payload.id || ('sh_comm_' + Math.random().toString(36).substring(2, 9)));
+    const timestamp = payload.created_at || new Date().toISOString();
+
+    const headlinerVal = payload.headliner || payload.name || 'Live Show';
+    const inputTitle = payload.show_name || payload.festival_name || payload.title || payload.name || payload.headliner;
+    const finalShowName = inputTitle || `${headlinerVal} Live`;
+    const venueVal = payload.venue || payload.venue_name || payload.venue_address || payload.name || 'Underground Venue';
+
+    const newShow: any = {
+      id: showId,
+      created_at: timestamp,
+      creator_id: ensureUUID(currentUserId),
+      name: finalShowName,
+      show_name: finalShowName,
+      headliner: headlinerVal,
+      festival_name: payload.festival_name,
+      date: payload.date,
+      show_date: payload.show_date || payload.date,
+      status: payload.status || 'Active',
+      guarantee_amount: payload.guarantee_amount || payload.revenue || 0,
+      show_type: payload.show_type || 'headliner',
+      venue_name: payload.venue_name || payload.venue || 'Live Venue',
+      venue_address: payload.venue_address || undefined,
+      venue: payload.venue || payload.venue_name || 'Live Venue',
+      capacity: payload.capacity,
+      venue_capacity: payload.capacity,
+      expected_attendance: payload.capacity || payload.expected_attendance,
+      city: payload.city,
+      state_province: payload.state_province,
+      country: payload.country,
+      doors_time: payload.doors_time,
+      set_time: payload.set_time,
+      day_of_show_price: payload.day_of_show_price,
+      presale_price: payload.presale_price,
+      age_restriction: payload.age_restriction,
+      age: payload.age || payload.age_restriction,
+      safety_code: payload.safety_code,
+      price: payload.price,
+      ticket_price: payload.ticket_price,
+      is_community_submitted: true,
+      external_ticket_url: payload.external_ticket_url,
+      ticket_url: payload.ticket_url || payload.external_ticket_url,
+      flyer_url: payload.flyer_url,
+      support_lineup: payload.support_lineup,
+      support_bands: payload.support_bands,
+      is_time_24h: payload.is_time_24h
+    };
+
+    let localStorageShowsMap: any = {};
+    try {
+      const existing = localStorage.getItem('nexus_core_shows_extended');
+      if (existing) localStorageShowsMap = JSON.parse(existing);
+
+      const headlinerNorm = String(headlinerVal).toLowerCase().trim();
+      const dateNorm = String(newShow.date || newShow.show_date || '').trim();
+
+      // Clean up previous temporary or stale keys for this same show
+      Object.keys(localStorageShowsMap).forEach(key => {
+        const item = localStorageShowsMap[key];
+        if (key === payload.id || key === showId) {
+          delete localStorageShowsMap[key];
+        } else if (item) {
+          const itemHeadliner = String(item.headliner || item.name || '').toLowerCase().trim();
+          const itemDate = String(item.date || item.show_date || '').trim();
+          if (itemHeadliner && dateNorm && itemHeadliner === headlinerNorm && itemDate === dateNorm) {
+            delete localStorageShowsMap[key];
+          }
+        }
+      });
+
+      localStorageShowsMap[showId] = { ...newShow };
+      localStorage.setItem('nexus_core_shows_extended', JSON.stringify(localStorageShowsMap));
+    } catch (_) {}
+
+    try {
+      const sb = getSupabase();
+      if (sb) {
+        const pruned = sanitizeShowForDb(newShow);
+        const { error } = await executeWithSchemaResilience(async (payload) => {
+          return await sb.from('shows').upsert([payload]);
+        }, pruned);
+
+        if (error) {
+          console.error('Supabase community show upsert error:', error);
+          triggerNotification?.(`⚠️ Supabase error saving show: ${error.message || 'Check connection'}`);
+        } else {
+          console.log('Supabase community show synced successfully:', showId);
+          triggerNotification?.(editingCommunityShow ? `✏️ Community show "${newShow.name}" updated & synced to Supabase!` : `🌍 Community show "${newShow.name}" posted & synced to Supabase!`);
+          setIsCommunityShowModalOpen(false);
+          setEditingCommunityShow(null);
+          
+          try {
+            const doorsDisplay = newShow.doors_time 
+              ? (String(newShow.doors_time).toLowerCase().includes('door') ? newShow.doors_time : `Doors ${newShow.doors_time}`)
+              : (newShow.set_time ? `Set ${newShow.set_time}` : 'Doors 7:30 PM');
+
+            const newGig = {
+              ...newShow,
+              id: showId,
+              venue: newShow.venue || newShow.venue_name || 'Underground Venue',
+              venue_name: newShow.venue_name || newShow.venue || 'Underground Venue',
+              venue_address: newShow.venue_address || undefined,
+              capacity: newShow.capacity,
+              venue_capacity: newShow.capacity,
+              headliner: newShow.headliner || newShow.name || 'Live Show',
+              time: doorsDisplay,
+              date: newShow.date || 'Upcoming',
+              city: newShow.city,
+              state_province: newShow.state_province,
+              country: newShow.country,
+              distance: undefined,
+              price: newShow.price || (newShow.external_ticket_url ? 'External Tickets' : 'Free / Crowdsourced'),
+              isFollowed: false,
+              is_community_submitted: true,
+              external_ticket_url: newShow.external_ticket_url,
+              ticket_url: newShow.ticket_url,
+              ticketsAvailable: true,
+              ticketStatus: 'active'
+            };
+            setLiveEvents(prev => {
+              const normNewHeadliner = String(newGig.headliner || '').toLowerCase().trim();
+              const normNewDate = String(newGig.date || '').toLowerCase().trim();
+              const filtered = prev.filter(g => {
+                if (g.id === showId || g.id === payload.id) return false;
+                const gHeadliner = String(g.headliner || (g as any).name || '').toLowerCase().trim();
+                const gDate = String(g.date || '').toLowerCase().trim();
+                if (gHeadliner && normNewDate && gHeadliner === normNewHeadliner && gDate === normNewDate) return false;
+                return true;
+              });
+              return [newGig, ...filtered];
+            });
+          } catch (_) {}
+          return;
+        }
+      } else {
+        triggerNotification?.('⚠️ Supabase client not configured. Saved locally.');
+      }
+    } catch (e) {
+      console.warn('Community show db upsert exception:', e);
+      triggerNotification?.('⚠️ Supabase connection exception: ' + (e instanceof Error ? e.message : 'Unknown error'));
+    }
+
+    triggerNotification?.(editingCommunityShow ? `✏️ Community show "${newShow.name}" updated locally.` : `🌍 Community show "${newShow.name}" posted locally (Supabase offline/unconfigured).`);
+    setIsCommunityShowModalOpen(false);
+    setEditingCommunityShow(null);
+
+    try {
+      const doorsDisplay = newShow.doors_time 
+        ? (String(newShow.doors_time).toLowerCase().includes('door') ? newShow.doors_time : `Doors ${newShow.doors_time}`)
+        : (newShow.set_time ? `Set ${newShow.set_time}` : 'Doors 7:30 PM');
+
+      const newGig = {
+        ...newShow,
+        id: showId,
+        venue: newShow.venue || newShow.venue_name || 'Underground Venue',
+        venue_name: newShow.venue_name || newShow.venue || 'Underground Venue',
+        venue_address: newShow.venue_address || undefined,
+        capacity: newShow.capacity,
+        venue_capacity: newShow.capacity,
+        headliner: newShow.headliner || newShow.name || 'Live Show',
+        time: doorsDisplay,
+        date: newShow.date || 'Upcoming',
+        city: newShow.city,
+        state_province: newShow.state_province,
+        country: newShow.country,
+        distance: undefined,
+        price: newShow.price || (newShow.external_ticket_url ? 'External Tickets' : 'Free / Crowdsourced'),
+        isFollowed: false,
+        is_community_submitted: true,
+        external_ticket_url: newShow.external_ticket_url,
+        ticket_url: newShow.ticket_url,
+        ticketsAvailable: true,
+        ticketStatus: 'active'
+      };
+      setLiveEvents(prev => {
+        const normNewHeadliner = String(newGig.headliner || '').toLowerCase().trim();
+        const normNewDate = String(newGig.date || '').toLowerCase().trim();
+        const filtered = prev.filter(g => {
+          if (g.id === showId || g.id === payload.id) return false;
+          const gHeadliner = String(g.headliner || (g as any).name || '').toLowerCase().trim();
+          const gDate = String(g.date || '').toLowerCase().trim();
+          if (gHeadliner && normNewDate && gHeadliner === normNewHeadliner && gDate === normNewDate) return false;
+          return true;
+        });
+        return [newGig, ...filtered];
+      });
+    } catch (_) {}
+  };
 
   // Custom Marketplace & Cart State Hook
   const {
@@ -571,71 +780,145 @@ export function UniversalSocialFeed({
           localFollows = JSON.parse(localStorage.getItem('nexus_local_follows_v1') || '{}');
         } catch (e) {}
 
+        let extendedMap: Record<string, any> = {};
+        try {
+          const rawExt = localStorage.getItem('nexus_core_shows_extended');
+          if (rawExt) extendedMap = JSON.parse(rawExt);
+        } catch (e) {}
+
         const { data: eventsData, error: eventsError } = await supabaseClient.from('nexus_events').select('*').order('created_at', { ascending: false });
         
         let compiledGigs: any[] = [];
 
         if (!eventsError && eventsData && eventsData.length > 0) {
           compiledGigs = eventsData.map(e => {
-            const headlinerClean = (e.headliner || e.band_name || 'Live Band').trim();
+            const extra = extendedMap[e.id] || (e.show_name ? Object.values(extendedMap).find((v: any) => v.name === e.show_name || v.show_name === e.show_name || (v.date === e.date && v.city === e.city)) : null);
+            const headlinerClean = (extra?.headliner || e.headliner || e.band_name || extra?.name || e.name || 'Live Band').trim();
             const isFollowed = !!(localFollows[headlinerClean.toLowerCase()] || (e.band_id && localFollows[e.band_id]));
+            const venueClean = extra?.venue || extra?.venue_name || e.venue || e.venue_name || e.venue_address || 'Metal Venue';
+            const priceClean = extra?.price || e.price || (extra?.day_of_show_price ? `$${extra.day_of_show_price}` : undefined) || (extra?.presale_price ? `$${extra.presale_price}` : undefined) || (e.ticket_price ? `$${e.ticket_price}` : undefined);
             return {
               id: e.id,
-              venue: e.venue || 'Metal Club',
+              venue: venueClean,
               headliner: headlinerClean,
-              time: e.time || (e.doors_time ? `Doors ${e.doors_time}` : 'Doors 8:00 PM'),
+              time: extra?.doors_time ? `Doors ${extra.doors_time}` : (e.time || (e.doors_time ? `Doors ${e.doors_time}` : 'Doors 8:00 PM')),
               date: e.date || 'Tonight',
-              city: e.city ? `${e.city}${e.state_province ? `, ${e.state_province}` : ''}` : undefined,
+              city: (e.city || extra?.city) ? `${e.city || extra?.city}${(e.state_province || extra?.state_province) ? `, ${e.state_province || extra?.state_province}` : ''}` : undefined,
               distance: e.distance,
-              price: e.price || (e.ticket_price ? `$${e.ticket_price}` : undefined),
-              isFollowed
+              price: priceClean,
+              isFollowed,
+              external_ticket_url: extra?.external_ticket_url || e.external_ticket_url,
+              ticket_url: extra?.ticket_url || e.ticket_url || extra?.external_ticket_url || e.external_ticket_url,
+              ticketsAvailable: !!(extra?.external_ticket_url || e.external_ticket_url || extra?.ticket_url || e.ticket_url || priceClean),
+              ticketStatus: 'active'
             };
           });
         }
 
         // Also check if shows table has active dates if nexus_events is sparse
-        if (compiledGigs.length < 4) {
+        if (compiledGigs.length < 6) {
           try {
             const { data: showsData } = await supabaseClient
               .from('shows')
               .select('*')
               .order('date', { ascending: true })
-              .limit(10);
+              .limit(15);
 
             if (showsData && showsData.length > 0) {
               const showsGigs = showsData.map(s => {
-                const headlinerClean = (s.band_name || s.headliner || s.name || 'Headliner').trim();
+                const extra = extendedMap[s.id] || (s.show_name ? Object.values(extendedMap).find((v: any) => v.name === s.show_name || v.show_name === s.show_name || (v.date === s.date && v.city === s.city)) : null);
+                const headlinerClean = (extra?.headliner || s.headliner || s.band_name || s.name || s.show_name || extra?.name || 'Headliner').trim();
                 const isFollowed = !!(localFollows[headlinerClean.toLowerCase()] || (s.band_id && localFollows[s.band_id]));
                 
                 let dateDisplay = 'Upcoming';
-                if (s.date) {
+                const rawDate = s.date || s.show_date || extra?.date;
+                if (rawDate) {
                   try {
-                    const parsedDate = new Date(s.date);
-                    if (!isNaN(parsedDate.getTime())) {
+                    const dateStr = String(rawDate).split('T')[0];
+                    const parts = dateStr.split('-');
+                    if (parts.length === 3) {
+                      const year = parseInt(parts[0], 10);
+                      const month = parseInt(parts[1], 10) - 1;
+                      const day = parseInt(parts[2], 10);
+                      const parsedDate = new Date(year, month, day);
                       const today = new Date();
-                      const isToday = parsedDate.toDateString() === today.toDateString();
-                      const tomorrow = new Date(today);
-                      tomorrow.setDate(today.getDate() + 1);
-                      const isTmrw = parsedDate.toDateString() === tomorrow.toDateString();
+                      const todayNorm = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                      const tomorrowNorm = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
 
-                      if (isToday) dateDisplay = 'Tonight';
-                      else if (isTmrw) dateDisplay = 'Tomorrow';
-                      else {
+                      if (parsedDate.getTime() === todayNorm.getTime()) {
+                        dateDisplay = 'Tonight';
+                      } else if (parsedDate.getTime() === tomorrowNorm.getTime()) {
+                        dateDisplay = 'Tomorrow';
+                      } else {
                         dateDisplay = parsedDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
                       }
                     }
                   } catch (e) {}
                 }
 
+                const doorsVal = extra?.doors_time || s.doors_time;
+                const timeDisplay = doorsVal 
+                  ? (String(doorsVal).toLowerCase().includes('door') ? doorsVal : `Doors ${doorsVal}`) 
+                  : (s.set_time ? `Set ${s.set_time}` : (extra?.set_time ? `Set ${extra.set_time}` : (s.time || 'Doors 7:30 PM')));
+
+                const venueDisplay = extra?.venue || extra?.venue_name || s.venue || s.venue_name || s.venue_address || (s.name && !s.name.includes('Live') ? s.name : undefined) || 'Underground Venue';
+                
+                // Prioritize exact user prices and prevent falling back to hardcoded $25.00
+                let priceDisplay = extra?.price || s.price;
+                if (!priceDisplay) {
+                  if (extra?.day_of_show_price || s.day_of_show_price) {
+                    const dos = extra?.day_of_show_price || s.day_of_show_price;
+                    const presale = extra?.presale_price || s.presale_price;
+                    priceDisplay = presale ? `$${presale} / $${dos}` : (dos.startsWith('$') ? dos : `$${dos}`);
+                  } else if (extra?.presale_price || s.presale_price) {
+                    const presale = extra?.presale_price || s.presale_price;
+                    priceDisplay = presale.startsWith('$') ? presale : `$${presale}`;
+                  } else if (s.ticket_price) {
+                    priceDisplay = `$${s.ticket_price}`;
+                  } else if (extra?.external_ticket_url || s.external_ticket_url) {
+                    priceDisplay = 'External Tickets';
+                  } else if (s.is_community_submitted || extra?.is_community_submitted) {
+                    priceDisplay = 'Free / DIY';
+                  } else if (s.guarantee_amount && s.guarantee_amount > 0) {
+                    priceDisplay = `$${Math.min(45, Math.max(15, Math.round(s.guarantee_amount / 100)))}`;
+                  } else {
+                    priceDisplay = '$20.00';
+                  }
+                }
+
+                const rawCity = s.city || extra?.city;
+                const rawState = s.state_province || extra?.state_province;
+                const rawCountry = s.country || extra?.country;
+                const venueNameVal = extra?.venue_name || s.venue_name || extra?.venue || s.venue || 'Underground Venue';
+                const venueAddrVal = extra?.venue_address || s.venue_address;
+                const capVal = extra?.capacity || s.capacity || extra?.venue_capacity || s.venue_capacity || extra?.expected_attendance || s.expected_attendance;
+
                 return {
+                  ...s,
+                  ...(extra || {}),
                   id: s.id,
-                  venue: s.venue_name || s.name || 'Underground Venue',
+                  venue: venueDisplay,
+                  venue_name: venueNameVal,
+                  venue_address: venueAddrVal,
+                  capacity: capVal,
+                  venue_capacity: capVal,
                   headliner: headlinerClean,
-                  time: s.doors_time ? `Doors ${s.doors_time}` : (s.set_time ? `Set ${s.set_time}` : 'Doors 7:30 PM'),
+                  time: timeDisplay,
                   date: dateDisplay,
-                  city: s.city ? `${s.city}${s.state_province ? `, ${s.state_province}` : ''}` : undefined,
-                  price: s.guarantee_amount ? `$${Math.min(45, Math.max(20, Math.round(s.guarantee_amount / 100)))}` : '$25.00',
-                  isFollowed
+                  rawDate: rawDate,
+                  city: rawCity,
+                  state_province: rawState,
+                  country: rawCountry,
+                  price: priceDisplay,
+                  day_of_show_price: extra?.day_of_show_price || s.day_of_show_price,
+                  presale_price: extra?.presale_price || s.presale_price,
+                  safety_code: extra?.safety_code || s.safety_code,
+                  isFollowed,
+                  external_ticket_url: extra?.external_ticket_url || s.external_ticket_url,
+                  ticket_url: extra?.ticket_url || s.ticket_url || extra?.external_ticket_url || s.external_ticket_url,
+                  ticketsAvailable: !!(extra?.external_ticket_url || s.external_ticket_url || extra?.ticket_url || s.ticket_url || priceDisplay),
+                  ticketStatus: 'active',
+                  is_community_submitted: !!(s.is_community_submitted || extra?.is_community_submitted)
                 };
               });
 
@@ -644,14 +927,108 @@ export function UniversalSocialFeed({
           } catch (e) {}
         }
 
-        if (compiledGigs.length > 0) {
+        // Clean up any stale duplicate keys from extendedMap that now exist in compiledGigs
+        if (Object.keys(extendedMap).length > 0) {
+          const syncedSignatures = new Set(compiledGigs.map(g => `${String(g.headliner || '').toLowerCase().trim()}__${String(g.rawDate || g.date || '').toLowerCase().trim()}`));
+          let hasCleanedExtended = false;
+          
+          Object.keys(extendedMap).forEach(k => {
+            const ext = extendedMap[k];
+            if (ext) {
+              const extSig = `${String(ext.headliner || ext.name || '').toLowerCase().trim()}__${String(ext.date || ext.show_date || '').toLowerCase().trim()}`;
+              if (syncedSignatures.has(extSig) && k.startsWith('sh_comm_')) {
+                delete extendedMap[k];
+                hasCleanedExtended = true;
+              }
+            }
+          });
+
+          if (hasCleanedExtended) {
+            try {
+              localStorage.setItem('nexus_core_shows_extended', JSON.stringify(extendedMap));
+            } catch (_) {}
+          }
+
+          // Only add local entries that don't match any compiled gig by ID or headliner + date
+          const localGigs = Object.values(extendedMap)
+            .filter((localShow: any) => {
+              if (!localShow) return false;
+              const localId = localShow.id;
+              const localH = String(localShow.headliner || localShow.name || '').toLowerCase().trim();
+              const localD = String(localShow.date || localShow.show_date || '').toLowerCase().trim();
+              const localSig = `${localH}__${localD}`;
+              
+              if (compiledGigs.some(g => g.id === localId)) return false;
+              if (localH && localD && syncedSignatures.has(localSig)) return false;
+              return true;
+            })
+            .map((localShow: any) => {
+              const headlinerClean = (localShow.headliner || localShow.band_name || localShow.name || 'Live Show').trim();
+              const isFollowed = !!(localFollows[headlinerClean.toLowerCase()] || (localShow.band_id && localFollows[localShow.band_id]));
+              const doorsVal = localShow.doors_time;
+              const timeDisplay = doorsVal 
+                ? (String(doorsVal).toLowerCase().includes('door') ? doorsVal : `Doors ${doorsVal}`) 
+                : (localShow.set_time ? `Set ${localShow.set_time}` : 'Doors 7:30 PM');
+
+              return {
+                ...localShow,
+                id: localShow.id,
+                venue: localShow.venue || localShow.venue_name || localShow.name || 'Underground Venue',
+                venue_name: localShow.venue_name || localShow.venue || 'Underground Venue',
+                venue_address: localShow.venue_address || undefined,
+                capacity: localShow.capacity || localShow.venue_capacity,
+                venue_capacity: localShow.capacity || localShow.venue_capacity,
+                headliner: headlinerClean,
+                time: timeDisplay,
+                date: localShow.date || 'Upcoming',
+                city: localShow.city,
+                state_province: localShow.state_province,
+                country: localShow.country,
+                price: localShow.price || (localShow.external_ticket_url ? 'External Tickets' : 'Free / DIY'),
+                isFollowed,
+                is_community_submitted: true,
+                external_ticket_url: localShow.external_ticket_url,
+                ticket_url: localShow.ticket_url || localShow.external_ticket_url,
+                ticketsAvailable: true,
+                ticketStatus: 'active'
+              };
+            });
+
+          compiledGigs = [...compiledGigs, ...localGigs];
+        }
+
+        // Strict Deduplication Pass: Ensure each gig is strictly unique by ID and headliner + date signature
+        const seenIds = new Set<string>();
+        const seenSignatures = new Set<string>();
+        const deduplicatedGigs: any[] = [];
+
+        for (const gig of compiledGigs) {
+          if (!gig) continue;
+          const gigId = String(gig.id || '').trim();
+          const hClean = String(gig.headliner || gig.name || '').toLowerCase().trim();
+          const dClean = String(gig.rawDate || gig.date || gig.show_date || '').toLowerCase().trim();
+          const sig = `${hClean}__${dClean}`;
+
+          if (gigId && seenIds.has(gigId)) {
+            continue;
+          }
+          if (hClean && dClean && seenSignatures.has(sig)) {
+            continue;
+          }
+
+          if (gigId) seenIds.add(gigId);
+          if (hClean && dClean) seenSignatures.add(sig);
+          deduplicatedGigs.push(gig);
+        }
+
+        if (deduplicatedGigs.length > 0) {
           // Sort so followed artists are front-and-center
-          compiledGigs.sort((a, b) => {
+          deduplicatedGigs.sort((a, b) => {
             if (a.isFollowed && !b.isFollowed) return -1;
             if (!a.isFollowed && b.isFollowed) return 1;
             return 0;
           });
-          setLiveEvents(compiledGigs);
+          setLiveEvents(deduplicatedGigs);
         } else {
           // Apply followed flags to mock seeds
           const updatedMock = mockLiveTonight.map(gig => ({
@@ -4179,6 +4556,8 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
             filterShowMerchDropsOnlyFromFollowed={filterShowMerchDropsOnlyFromFollowed}
             setFilterShowMerchDropsOnlyFromFollowed={setFilterShowMerchDropsOnlyFromFollowed}
             onOpenMapModal={() => setShowMapModal(true)}
+            onOpenShowCreator={() => { setEditingCommunityShow(null); setIsCommunityShowModalOpen(true); }}
+            onEditShow={(gig) => { setEditingCommunityShow(gig); setIsCommunityShowModalOpen(true); }}
           />
         )}
       </div>
@@ -4578,6 +4957,7 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
         venueMessageInput={venueMessageInput}
         setVenueMessageInput={setVenueMessageInput}
         getSupabase={getSupabase}
+        onEditShow={(gig: any) => { setEditingCommunityShow(gig); setIsCommunityShowModalOpen(true); }}
         viewingReceipt={viewingReceipt}
         setViewingReceipt={setViewingReceipt}
         handleTicketAction={handleTicketAction}
@@ -4857,6 +5237,14 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
       />
       {/* Floating Particle Reaction Overlay */}
       <FloatingReactionOverlay particles={particles} />
+
+      <CreateCommunityShowModal
+        isOpen={isCommunityShowModalOpen}
+        onClose={() => { setIsCommunityShowModalOpen(false); setEditingCommunityShow(null); }}
+        onSubmit={handleCommunityShowSubmit}
+        editingShow={editingCommunityShow}
+        triggerNotification={triggerNotification}
+      />
       </SocialThemeShell>
     </SocialRoleProvider>
   );

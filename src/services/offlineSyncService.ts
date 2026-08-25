@@ -1,6 +1,8 @@
 import localforage from 'localforage';
 import { getRawSupabase } from './clientService';
-import { generateUUID, sanitizeShowForDb, sanitizeInventoryItemForDb } from './schemaResilienceService';
+import { generateUUID, ensureUUID, sanitizeShowForDb, sanitizeInventoryItemForDb } from './schemaResilienceService';
+import { sanitizeBandPayload } from './bandService';
+import { sanitizeReleaseForDb } from './releasesService';
 
 export interface OfflineAction {
   id: string;
@@ -10,6 +12,46 @@ export interface OfflineAction {
   eqFilters: { column: string; value: any }[];
   timestamp: string;
 }
+
+// Helper to resolve and ensure band_name is present
+export const resolveBandName = (item: any, bandIdFallback?: string): any => {
+  if (!item || typeof item !== 'object') return item;
+  let bName = (item.band_name || item.name || '').trim();
+  const lookupId = item.id || bandIdFallback;
+  if (!bName && lookupId) {
+    try {
+      const archives = JSON.parse(localStorage.getItem('nexus_community_band_archives') || '[]');
+      const found = archives.find((b: any) => b.id === lookupId || b.id === ensureUUID(lookupId));
+      if (found?.name || found?.band_name) bName = (found.name || found.band_name).trim();
+    } catch {}
+    if (!bName) {
+      try {
+        const allCommunity = JSON.parse(localStorage.getItem('nexus_community_bands_v2') || '[]');
+        const found = allCommunity.find((b: any) => b.id === lookupId || b.id === ensureUUID(lookupId));
+        if (found?.name || found?.band_name) bName = (found.name || found.band_name).trim();
+      } catch {}
+    }
+    if (!bName) {
+      try {
+        const registered = JSON.parse(localStorage.getItem('nexus_registered_bands') || '[]');
+        const found = registered.find((b: any) => b.id === lookupId || b.id === ensureUUID(lookupId));
+        if (found?.name || found?.band_name) bName = (found.name || found.band_name).trim();
+      } catch {}
+    }
+    if (!bName) {
+      try {
+        const activeBandRaw = localStorage.getItem('nexus_active_band');
+        if (activeBandRaw) {
+          const parsed = JSON.parse(activeBandRaw);
+          if (parsed?.name || parsed?.band_name) bName = (parsed.name || parsed.band_name).trim();
+        }
+      } catch {}
+    }
+  }
+  item.band_name = bName || 'Nexus Artist';
+  delete item.name;
+  return sanitizeBandPayload(item);
+};
 
 export function isNetworkOrConnectivityError(err: any): boolean {
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
@@ -94,20 +136,38 @@ export function saveOfflineQueue(queue: OfflineAction[]) {
     .catch((e) => console.error('Error saving offline write queue to IDB:', e));
 }
 
+export function normalizeArrayPayload(raw: any): any {
+  if (!raw) return raw;
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'object') {
+    const keys = Object.keys(raw);
+    if (keys.length > 0 && keys.every((k) => /^\d+$/.test(k))) {
+      return keys.sort((a, b) => Number(a) - Number(b)).map((k) => raw[k]);
+    }
+  }
+  return raw;
+}
+
 export function enqueueOfflineAction(action: OfflineAction) {
   const queue = getOfflineQueue();
+  const normalizedPayload = normalizeArrayPayload(action.payload);
+  const cleanAction: OfflineAction = {
+    ...action,
+    payload: normalizedPayload
+  };
+
   const isDuplicate = (queue || []).some(
     (q) =>
-      q.table === action.table &&
-      q.action === action.action &&
-      JSON.stringify(q.eqFilters) === JSON.stringify(action.eqFilters) &&
-      JSON.stringify(q.payload) === JSON.stringify(action.payload)
+      q.table === cleanAction.table &&
+      q.action === cleanAction.action &&
+      JSON.stringify(q.eqFilters) === JSON.stringify(cleanAction.eqFilters) &&
+      JSON.stringify(q.payload) === JSON.stringify(cleanAction.payload)
   );
   if (!isDuplicate) {
-    queue.push(action);
+    queue.push(cleanAction);
     saveOfflineQueue(queue);
     console.log(
-      `[Offline Sync Queue] Enqueued action: ${action.action} on ${action.table}. Total actions pending: ${queue.length}`
+      `[Offline Sync Queue] Enqueued action: ${cleanAction.action} on ${cleanAction.table}. Total actions pending: ${queue.length}`
     );
 
     if (typeof window !== 'undefined') {
@@ -146,15 +206,93 @@ export async function processOfflineQueue(): Promise<void> {
   for (const action of pendingActions) {
     try {
       let builder = rawSupabase.from(action.table);
-      let resPromise: any;
-      let payload = action.payload;
+      let payload = normalizeArrayPayload(action.payload);
 
       if (action.table === 'shows' && payload) {
-        payload = sanitizeShowForDb(payload);
+        payload = Array.isArray(payload) ? payload.map(sanitizeShowForDb) : sanitizeShowForDb(payload);
       } else if (action.table === 'inventory' && payload) {
-        payload = sanitizeInventoryItemForDb(payload);
+        payload = Array.isArray(payload) ? payload.map(sanitizeInventoryItemForDb) : sanitizeInventoryItemForDb(payload);
+      } else if (action.table === 'bands' && payload) {
+        const filterId = action.eqFilters?.find((f) => f.column === 'id')?.value;
+        payload = Array.isArray(payload)
+          ? payload.map((item) => resolveBandName(item, filterId))
+          : resolveBandName(payload, filterId);
+      } else if (action.table === 'releases' && payload) {
+        payload = Array.isArray(payload) ? payload.map(sanitizeReleaseForDb) : sanitizeReleaseForDb(payload);
       }
 
+      // Handle Array payloads with bulk execution + sequential individual fallback
+      if (Array.isArray(payload)) {
+        let cleanArray = payload.filter(Boolean);
+        if (cleanArray.length === 0) continue;
+
+        // Deduplicate array items by ID to prevent PostgreSQL "ON CONFLICT DO UPDATE command cannot affect row a second time" error
+        const seenIds = new Set<string>();
+        const dedupedArray: any[] = [];
+        for (const item of cleanArray) {
+          if (item && typeof item === 'object' && item.id) {
+            if (seenIds.has(item.id)) {
+              console.warn(`[Offline Sync Queue] Filtered duplicate item id '${item.id}' from batch on '${action.table}'`);
+              continue;
+            }
+            seenIds.add(item.id);
+          }
+          dedupedArray.push(item);
+        }
+        cleanArray = dedupedArray;
+
+        let batchError: any = null;
+
+        if (action.action === 'insert') {
+          const { error } = await rawSupabase.from(action.table).insert(cleanArray);
+          batchError = error;
+        } else if (action.action === 'upsert') {
+          const { error } = await rawSupabase.from(action.table).upsert(cleanArray, { onConflict: 'id' });
+          batchError = error;
+        }
+
+        if (batchError) {
+          if (isNetworkOrConnectivityError(batchError)) {
+            console.warn(`[Offline Sync Queue] Network issue during batch sync on '${action.table}'. Pausing queue.`);
+            activeQueue.push(...pendingActions.slice(pendingActions.indexOf(action)));
+            break;
+          }
+
+          console.warn(`[Offline Sync Queue] Bulk operation rejected on '${action.table}', falling back to sequential item requests:`, batchError.message);
+
+          // Sequential fallback for array elements
+          let anySucceeded = false;
+          for (const item of cleanArray) {
+            let singleRes: any;
+            if (action.action === 'insert') {
+              singleRes = await rawSupabase.from(action.table).insert(item);
+            } else if (action.action === 'upsert') {
+              singleRes = await rawSupabase.from(action.table).upsert(item, { onConflict: 'id' });
+            }
+
+            if (singleRes?.error) {
+              if (isNetworkOrConnectivityError(singleRes.error)) {
+                activeQueue.push(...pendingActions.slice(pendingActions.indexOf(action)));
+                break;
+              }
+              console.error(`[Offline Sync Queue] Sequential item error on '${action.table}':`, singleRes.error);
+            } else {
+              anySucceeded = true;
+            }
+          }
+
+          if (anySucceeded) {
+            console.log(`[Offline Sync Queue] Successfully synchronized item(s) sequentially on ${action.table}`);
+          }
+        } else {
+          console.log(`[Offline Sync Queue] Synchronized batch action successfully: ${action.action} on table ${action.table} (${cleanArray.length} items)`);
+        }
+
+        continue;
+      }
+
+      // Single object processing
+      let resPromise: any;
       if (action.action === 'insert') {
         resPromise = builder.insert(payload);
       } else if (action.action === 'update') {
@@ -184,7 +322,17 @@ export async function processOfflineQueue(): Promise<void> {
           activeQueue.push(...pendingActions.slice(pendingActions.indexOf(action)));
           break;
         }
-        console.error(`[Offline Sync Queue] Non-retryable error on sync item. Skipping item.`, error, action);
+        console.error(`[Offline Sync Queue] Non-retryable database/schema error on sync item [${action.table} / ${action.action}]:`, error, action);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('nexus_core_toast', {
+              detail: {
+                message: `Sync notice on ${action.table} (${action.action}): ${error.message || 'Schema or constraint mismatch'}`,
+                type: 'error'
+              }
+            })
+          );
+        }
       } else {
         console.log(`[Offline Sync Queue] Synchronized action successfully: ${action.action} on table ${action.table}`);
       }
@@ -272,17 +420,24 @@ export function wrapQueryBuilder(realBuilder: any, table: string): any {
         return (...args: any[]) => {
           if (prop === 'insert') {
             action = 'insert';
-            payload = args[0];
+            payload = Array.isArray(args[0]) ? [...args[0]] : normalizeArrayPayload(args[0]);
           } else if (prop === 'update') {
             action = 'update';
-            payload = args[0];
+            payload = Array.isArray(args[0]) ? [...args[0]] : normalizeArrayPayload(args[0]);
           } else if (prop === 'upsert') {
             action = 'upsert';
-            payload = args[0];
+            payload = Array.isArray(args[0]) ? [...args[0]] : normalizeArrayPayload(args[0]);
           } else if (prop === 'delete') {
             action = 'delete';
           } else if (prop === 'eq') {
             eqFilters.push({ column: args[0], value: args[1] });
+          }
+
+          if (table === 'bands' && payload && (prop === 'insert' || prop === 'update' || prop === 'upsert')) {
+            const filterId = eqFilters.find((f) => f.column === 'id')?.value;
+            payload = Array.isArray(payload)
+              ? payload.map((item) => resolveBandName(item, filterId))
+              : resolveBandName(payload, filterId);
           }
 
           const nextResult = val.apply(target, args);

@@ -2562,6 +2562,34 @@ export default function ShowsView({
                         ) : (
                           <span className="text-[9px] font-mono font-bold text-emerald-500/80 tracking-tight block transition-all">[ ✓ SYNCED ]</span>
                         )}
+                        {stop.is_community_submitted && (
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 flex items-center gap-1">
+                            🌍 Community Show
+                          </span>
+                        )}
+                        {stop.external_ticket_url && (
+                          <a 
+                            href={stop.external_ticket_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[9px] font-mono font-bold text-[#00ffcc] hover:text-black hover:bg-[#00ffcc] bg-black/60 border border-[#00ffcc]/50 px-2 py-0.5 rounded transition-all inline-flex items-center gap-1"
+                          >
+                            🎟️ External Tickets ↗
+                          </a>
+                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            triggerNotification?.(`Collaboration handshake initialized for event "${stop.name}". Representatives on Nexus Core can co-manage details and prevent duplicates.`);
+                            addLog(`Collaborate/Claim request initiated for show: ${stop.name} (${stop.date})`);
+                          }}
+                          className="text-[9px] font-mono font-bold text-purple-300 hover:text-white bg-purple-950/40 hover:bg-purple-900 border border-purple-500/40 px-2 py-0.5 rounded transition-all inline-flex items-center gap-1"
+                          title="Collaborate or claim representation on this event page"
+                        >
+                          🤝 Collaborate / Claim
+                        </button>
                       </div>
                       
                       <h3 className="text-base font-bold text-white leading-snug font-display tracking-tight hover:text-[#00ffcc] transition-colors">

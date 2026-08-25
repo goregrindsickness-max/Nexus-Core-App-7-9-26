@@ -425,12 +425,12 @@ export default function PublicStorefront({
                         </td>
                       </tr>
                     ) : (
-                      items.map((item) => {
+                      items.map((item, idx) => {
                         const isLowStock = (item.capacity - (item.sold || 0)) <= (item.lowStockThreshold || 5);
                         const percentSold = Math.round(((item.sold || 0) / item.capacity) * 100);
 
                         return (
-                          <tr key={item.id} className="border-b border-zinc-900/60 hover:bg-zinc-950/45 transition-colors">
+                          <tr key={item.id ? `pub-store-item-${item.id}-${idx}` : `pub-store-item-${idx}`} className="border-b border-zinc-900/60 hover:bg-zinc-950/45 transition-colors">
                             <td className="py-1.5 px-1.5">
                               <div className="flex flex-col">
                                 <span className="font-bold text-zinc-300">{item?.name}</span>
@@ -701,9 +701,9 @@ export default function PublicStorefront({
                     No active packages configured yet. Use the intake form above to add items.
                   </div>
                 ) : (
-                  items.map((item) => (
+                  items.map((item, idx) => (
                     <div 
-                      key={item.id} 
+                      key={item.id ? `pub-store-card-${item.id}-${idx}` : `pub-store-card-${idx}`} 
                       className="bg-black/60 border border-zinc-900 p-3 rounded-xl flex flex-col justify-between hover:border-yellow-500/35 transition-colors group relative"
                     >
                       <div className="space-y-2">

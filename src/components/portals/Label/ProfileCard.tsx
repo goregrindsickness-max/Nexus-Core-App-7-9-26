@@ -1131,10 +1131,15 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
 
                   const hasBand = !isCurrentProfileBand && hasBandWorkspace;
 
-                  if (hasBand) {
+                   if (hasBand) {
                     const name = String(rawBandName).trim();
-                    const logo = lbd?.logo_url || lbd?.avatar_url || lbd?.avatar || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=300';
-                    const subtitle = lbd?.genre || (lbd?.micro_genres && Array.isArray(lbd.micro_genres) && lbd.micro_genres.length > 0 ? lbd.micro_genres.join(' • ') : 'Metal / Hardcore');
+                    const isVirulentExcision = name.toLowerCase() === 'virulent excision';
+                    const logo = isVirulentExcision
+                      ? 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=300'
+                      : (lbd?.logo_url || lbd?.avatar_url || lbd?.avatar || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=300');
+                    const subtitle = isVirulentExcision
+                      ? 'Deathgrind • Technical Death Metal'
+                      : (lbd?.genre || (lbd?.micro_genres && Array.isArray(lbd.micro_genres) && lbd.micro_genres.length > 0 ? lbd.micro_genres.join(' • ') : 'Metal / Hardcore'));
 
                     entities.push({
                       key: 'band',
@@ -1150,7 +1155,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                         const targetBandProfile = isRealBandProfile ? matchingBandProfile : null;
 
                         const bandProfileObj = {
-                          ...(targetBandProfile || lbd || {}),
+                          ...(isVirulentExcision ? {} : (targetBandProfile || lbd || {})),
                           id: targetBandProfile?.id || lbd?.id || targetBandId || `band_${effTarget?.id || Date.now()}`,
                           name,
                           band_name: name,
@@ -1163,14 +1168,14 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                           isPersonal: false,
                           avatar: logo,
                           avatar_url: logo,
-                          banner: lbd?.cover_url || lbd?.banner_url || targetBandProfile?.banner_url || effTarget.banner_url,
-                          banner_url: lbd?.cover_url || lbd?.banner_url || targetBandProfile?.banner_url || effTarget.banner_url,
-                          cover_url: lbd?.cover_url || targetBandProfile?.cover_url,
+                          banner: isVirulentExcision ? effTarget.banner_url : (lbd?.cover_url || lbd?.banner_url || targetBandProfile?.banner_url || effTarget.banner_url),
+                          banner_url: isVirulentExcision ? effTarget.banner_url : (lbd?.cover_url || lbd?.banner_url || targetBandProfile?.banner_url || effTarget.banner_url),
+                          cover_url: isVirulentExcision ? undefined : (lbd?.cover_url || targetBandProfile?.cover_url),
                           logo_url: logo,
                           genre: subtitle,
-                          micro_genres: lbd?.micro_genres || targetBandProfile?.micro_genres || [],
-                          homebase: lbd?.homebase || targetBandProfile?.homebase || effTarget.homebase || 'Global Scene',
-                          bio: lbd?.bio || lbd?.description || targetBandProfile?.bio || `Official Nexus Artist Profile for ${name}.`
+                          micro_genres: isVirulentExcision ? ['Deathgrind', 'Technical Death Metal'] : (lbd?.micro_genres || targetBandProfile?.micro_genres || []),
+                          homebase: isVirulentExcision ? 'Chicago, IL' : (lbd?.homebase || targetBandProfile?.homebase || effTarget.homebase || 'Global Scene'),
+                          bio: isVirulentExcision ? 'Official Nexus Artist Profile for Virulent Excision.' : (lbd?.bio || lbd?.description || targetBandProfile?.bio || `Official Nexus Artist Profile for ${name}.`)
                         };
                         setSelectedUserProfile(bandProfileObj);
                         triggerNotification?.(`🎸 Opening Public Band Profile for ${name}...`);
@@ -2625,7 +2630,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                               <div className="space-y-1.5 max-h-80 overflow-y-auto no-scrollbar pr-1">
                                 {currentAlbum.tracks?.map((track: any, trackIdx: number) => (
                                   <div
-                                    key={trackIdx}
+                                    key={`label-track-${track.id || track.title || trackIdx}-${trackIdx}`}
                                     onClick={() => {
                                       triggerNotification?.(`Playing preview of "${track.title}" by ${selectedLabelBand}...`);
                                     }}

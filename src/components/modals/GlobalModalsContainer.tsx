@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import BrutalistModal from '../BrutalistModal';
 import DigitalReceiptModal from './DigitalReceiptModal';
@@ -11,6 +11,7 @@ import VanToTableTransferModal from '../portals/Band/VanToTableTransferModal';
 import LiveTeamActivityWorkspace from '../portals/Band/LiveTeamActivityWorkspace';
 import WorkspaceRegistrationWizard from '../WorkspaceRegistrationWizard';
 import WillCallIsolationModal from '../portals/Promoter/WillCallIsolationModal';
+import { MetalArchivesImportModal } from '../social/modals/MetalArchivesImportModal';
 import { Show, Sale, Band, UserProfile, InventoryItem } from '../../types';
 
 export interface GlobalModalsContainerProps {
@@ -362,6 +363,37 @@ export const GlobalModalsContainer: React.FC<GlobalModalsContainerProps> = ({
           }}
         />
       )}
+
+      {/* Metal-Archives Import Modal Event Listener */}
+      {(() => {
+        const [maModalOpen, setMaModalOpen] = useState(false);
+        const [maBandId, setMaBandId] = useState('band-1');
+        const [maBandName, setMaBandName] = useState('Nexus Artist');
+
+        useEffect(() => {
+          const handleOpenMA = (e: any) => {
+            if (e.detail?.bandId) setMaBandId(e.detail.bandId);
+            if (e.detail?.bandName) setMaBandName(e.detail.bandName);
+            setMaModalOpen(true);
+          };
+          window.addEventListener('open_metal_archives_import', handleOpenMA as EventListener);
+          return () => {
+            window.removeEventListener('open_metal_archives_import', handleOpenMA as EventListener);
+          };
+        }, []);
+
+        return (
+          <MetalArchivesImportModal
+            isOpen={maModalOpen}
+            onClose={() => setMaModalOpen(false)}
+            bandId={maBandId}
+            bandName={maBandName}
+            onImportSuccess={() => {
+              window.location.reload();
+            }}
+          />
+        );
+      })()}
     </>
   );
 };

@@ -215,9 +215,39 @@ export function sanitizeBandPayload(rawPayload: any): Record<string, any> {
   delete clean.owner_id;
   delete clean.profile_id;
 
-  // 6. Single Band Name (band_name)
-  const bName = clean.band_name || clean.name || '';
-  clean.band_name = bName || null;
+  // 6. Single Band Name (band_name) - guarantee non-null constraint
+  let bName = (clean.band_name || clean.name || '').trim();
+  if (!bName && clean.id) {
+    try {
+      const archives = JSON.parse(localStorage.getItem('nexus_community_band_archives') || '[]');
+      const found = archives.find((b: any) => b.id === clean.id || b.id === ensureUUID(clean.id));
+      if (found?.name || found?.band_name) bName = (found.name || found.band_name).trim();
+    } catch {}
+    if (!bName) {
+      try {
+        const allCommunity = JSON.parse(localStorage.getItem('nexus_community_bands_v2') || '[]');
+        const found = allCommunity.find((b: any) => b.id === clean.id || b.id === ensureUUID(clean.id));
+        if (found?.name || found?.band_name) bName = (found.name || found.band_name).trim();
+      } catch {}
+    }
+    if (!bName) {
+      try {
+        const registered = JSON.parse(localStorage.getItem('nexus_registered_bands') || '[]');
+        const found = registered.find((b: any) => b.id === clean.id || b.id === ensureUUID(clean.id));
+        if (found?.name || found?.band_name) bName = (found.name || found.band_name).trim();
+      } catch {}
+    }
+  }
+  if (!bName) {
+    try {
+      const activeBandRaw = localStorage.getItem('nexus_active_band');
+      if (activeBandRaw) {
+        const parsed = JSON.parse(activeBandRaw);
+        if (parsed?.name || parsed?.band_name) bName = (parsed.name || parsed.band_name).trim();
+      }
+    } catch {}
+  }
+  clean.band_name = bName || 'Nexus Artist';
   delete clean.name;
 
   // 7. Strictly sanitize logo_url and cover_url to save proper public URL strings and resilient image data

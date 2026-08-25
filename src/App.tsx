@@ -2382,16 +2382,36 @@ export default function App() {
               let mergedShows = realShows as Show[];
               try {
                 const existing = localStorage.getItem('nexus_core_shows_extended');
-                if (existing) {
-                  const extendedMap = JSON.parse(existing);
-                  mergedShows = realShows.map((s: any) => {
-                    const extra = extendedMap[s.id];
-                    if (extra) {
-                      return { ...s, ...extra };
-                    }
-                    return s;
-                  });
+                const extendedMap = existing ? JSON.parse(existing) : {};
+                const seenShowIds = new Set<string>();
+                const seenShowSigs = new Set<string>();
+                const uniqueShows: Show[] = [];
+
+                for (const s of realShows) {
+                  const extra = extendedMap[s.id] || (s.show_name ? Object.values(extendedMap).find((v: any) => v.name === s.show_name || v.show_name === s.show_name || (v.date === s.date && v.city === s.city)) : null);
+                  const formatted: Show = {
+                    ...s,
+                    name: s.name || s.show_name || s.venue || s.headliner || 'Scheduled Show',
+                    show_name: s.show_name || s.name || 'Scheduled Show',
+                    venue: s.venue || s.venue_name || s.venue_address || s.name || s.show_name,
+                    venue_name: s.venue_name || s.venue || s.name,
+                    date: s.date || s.show_date,
+                    ...(extra || {})
+                  };
+
+                  const sId = String(formatted.id || '').trim();
+                  const sName = String((formatted as any).headliner || formatted.name || (formatted as any).show_name || '').toLowerCase().trim();
+                  const sDate = String(formatted.date || '').toLowerCase().trim();
+                  const sSig = `${sName}__${sDate}`;
+
+                  if (sId && seenShowIds.has(sId)) continue;
+                  if (sName && sDate && seenShowSigs.has(sSig)) continue;
+
+                  if (sId) seenShowIds.add(sId);
+                  if (sName && sDate) seenShowSigs.add(sSig);
+                  uniqueShows.push(formatted);
                 }
+                mergedShows = uniqueShows;
               } catch (_) {}
               setShows(mergedShows);
               showsStore.setItem('nexus_master_shows', JSON.stringify(mergedShows)).catch(console.warn);

@@ -3,6 +3,7 @@ import { ensureImagesUploadedToStorage } from './storageService';
 import { sanitizeProfilePayload } from './profileService';
 import { sanitizeBandPayload } from './bandService';
 import { sanitizeCreativePayload } from './creativeService';
+import { sanitizeReleaseForDb } from './releasesService';
 
 /**
  * Strips properties from an InventoryItem that are not present in the
@@ -48,14 +49,17 @@ export function sanitizeShowForDb(show: any): any {
     'id',
     'created_at',
     'name',
+    'title',
     'festival_name',
     'date',
     'status',
-    'revenue',
     'show_type',
     'band_id',
+    'band_name',
     'event_scope',
     'tour_id',
+    'venue',
+    'venue_name',
     'venue_address',
     'city',
     'state_province',
@@ -69,6 +73,8 @@ export function sanitizeShowForDb(show: any): any {
     'guarantee_amount',
     'currency',
     'tax_rate',
+    'capacity',
+    'venue_capacity',
     'expected_attendance',
     'additional_notes',
     'merch_space_fee',
@@ -86,7 +92,25 @@ export function sanitizeShowForDb(show: any): any {
     'local_food_notes',
     'emergency_medical_info',
     'local_pharmacy_info',
-    'stage_name'
+    'stage_name',
+    'creator_id',
+    'headliner',
+    'flyer_url',
+    'external_ticket_url',
+    'ticket_url',
+    'support_lineup',
+    'support_bands',
+    'is_time_24h',
+    'is_community_submitted',
+    'safety_code',
+    'presale_price',
+    'day_of_show_price',
+    'price',
+    'ticket_price',
+    'revenue',
+    'age',
+    'show_name',
+    'show_date'
   ];
 
   const dbShow: any = {};
@@ -95,6 +119,62 @@ export function sanitizeShowForDb(show: any): any {
       dbShow[key] = show[key];
     }
   }
+
+  // Map legacy / input fields to live schema columns (including show_name, venue, and show_date)
+  const headlinerName = show.headliner || show.name || show.band_name || 'Live Show';
+  const inputTitle = show.show_name || show.festival_name || show.title || show.name || show.headliner;
+  const fallbackShowName = `${headlinerName} Live`;
+
+  if (!dbShow.show_name) {
+    dbShow.show_name = inputTitle || fallbackShowName;
+  }
+  if (!dbShow.name) {
+    dbShow.name = show.name || inputTitle || fallbackShowName;
+  }
+  if (!dbShow.headliner) {
+    dbShow.headliner = headlinerName;
+  }
+  if (!dbShow.venue_name) {
+    dbShow.venue_name = show.venue_name || show.venue || 'Live Venue';
+  }
+  if (!dbShow.venue) {
+    dbShow.venue = show.venue || show.venue_name || 'Live Venue';
+  }
+  if (!dbShow.venue_address && show.venue_address) {
+    dbShow.venue_address = show.venue_address;
+  }
+  if (show.capacity !== undefined && dbShow.capacity === undefined) {
+    dbShow.capacity = show.capacity;
+  }
+  if (show.capacity !== undefined && dbShow.expected_attendance === undefined) {
+    dbShow.expected_attendance = show.capacity;
+  }
+  if (!dbShow.show_date) {
+    dbShow.show_date = show.show_date || show.date || new Date().toISOString().split('T')[0];
+  }
+  if (!dbShow.date) {
+    dbShow.date = show.date || show.show_date || new Date().toISOString().split('T')[0];
+  }
+  if (show.revenue !== undefined && dbShow.guarantee_amount === undefined) {
+    dbShow.guarantee_amount = show.revenue;
+  }
+  if (!dbShow.price) {
+    dbShow.price = show.price || (show.presale_price ? (show.day_of_show_price ? `$${show.presale_price} / $${show.day_of_show_price}` : `$${show.presale_price}`) : (show.day_of_show_price ? `$${show.day_of_show_price}` : (show.ticket_price ? `$${show.ticket_price}` : undefined)));
+  }
+
+  // ID Handling: Preserve deterministic UUID so client and database remain synchronized
+  if (dbShow.id) {
+    dbShow.id = ensureUUID(dbShow.id);
+  }
+
+  // creator_id handling: Ensure creator_id is included and is a valid UUID
+  if (!dbShow.creator_id) {
+    dbShow.creator_id = show.creator_id || show.user_id || '00000000-0000-4000-a000-000000000000';
+  }
+  if (dbShow.creator_id) {
+    dbShow.creator_id = ensureUUID(dbShow.creator_id);
+  }
+
   return dbShow;
 }
 
@@ -228,95 +308,126 @@ export function resolveZipCode(zip: string): string {
  * Automatically retry dynamic table insertions/updates by stripping columns
  * that produce PGRST204 errors (column not found in schema cache) or healing UUIDs.
  */
-export async function executeWithSchemaResilience<T extends Record<string, any>>(
-  operation: (payload: T) => Promise<{ error: any; data?: any }>,
+export async function executeWithSchemaResilience<T extends Record<string, any> | Record<string, any>[]>(
+  operation: (payload: any) => Promise<{ error: any; data?: any }>,
   initialPayload: T
 ): Promise<{ error: any; data?: any }> {
-  let payload = { ...initialPayload } as any;
+  const isArray = Array.isArray(initialPayload);
+  let payload: any = isArray ? [...initialPayload] : { ...initialPayload };
 
   // Auto-upload any base64 image data URIs in payload to Supabase storage buckets first
   payload = await ensureImagesUploadedToStorage(payload);
 
-  const isProfilePayload =
-    payload &&
-    typeof payload === 'object' &&
-    !Array.isArray(payload) &&
-    ('email' in payload ||
-      'role' in payload ||
-      'account_type' in payload ||
-      'console_handle' in payload ||
-      'registered_workspaces' in payload ||
-      'allowed_workspaces' in payload ||
-      'bio' in payload ||
-      'profileBlurb' in payload ||
-      'update_ticker' in payload ||
-      'rosterTicker' in payload ||
-      'full_name' in payload ||
-      'creative_metadata' in payload ||
-      'promoter_metadata' in payload ||
-      'label_metadata' in payload ||
-      'band_metadata' in payload ||
-      'user_metadata' in payload) &&
-    !(
-      'creator_id' in payload ||
-      'business_name' in payload ||
-      'creative_name' in payload ||
-      'band_id' in payload ||
-      'band_name' in payload ||
-      'venue_id' in payload
-    );
+  if (isArray) {
+    const seenIds = new Set<string>();
+    const deduped: any[] = [];
+    for (const rawItem of payload) {
+      if (!rawItem || typeof rawItem !== 'object') {
+        deduped.push(rawItem);
+        continue;
+      }
+      if (rawItem.id) {
+        if (seenIds.has(rawItem.id)) continue;
+        seenIds.add(rawItem.id);
+      }
+      deduped.push(rawItem);
+    }
+    payload = deduped.map((item: any) => {
+      if (!item || typeof item !== 'object') return item;
+      if ('tracks' in item || 'catalog_id' in item || 'audio_vault_path' in item || 'cover_url' in item) {
+        return sanitizeReleaseForDb(item);
+      }
+      if ('band_name' in item || 'micro_genres' in item || 'tour_vehicle' in item) {
+        return sanitizeBandPayload(item);
+      }
+      return item;
+    });
+  } else {
+    const isProfilePayload =
+      payload &&
+      typeof payload === 'object' &&
+      !Array.isArray(payload) &&
+      ('email' in payload ||
+        'role' in payload ||
+        'account_type' in payload ||
+        'console_handle' in payload ||
+        'registered_workspaces' in payload ||
+        'allowed_workspaces' in payload ||
+        'bio' in payload ||
+        'profileBlurb' in payload ||
+        'update_ticker' in payload ||
+        'rosterTicker' in payload ||
+        'full_name' in payload ||
+        'creative_metadata' in payload ||
+        'promoter_metadata' in payload ||
+        'label_metadata' in payload ||
+        'band_metadata' in payload ||
+        'user_metadata' in payload) &&
+      !(
+        'creator_id' in payload ||
+        'business_name' in payload ||
+        'creative_name' in payload ||
+        'band_id' in payload ||
+        'band_name' in payload ||
+        'venue_id' in payload
+      );
 
-  // If this payload is a profile, normalize it for the 'profiles' database table columns:
-  if (isProfilePayload) {
-    payload = sanitizeProfilePayload(payload);
-  }
+    // If this payload is a profile, normalize it for the 'profiles' database table columns:
+    if (isProfilePayload) {
+      payload = sanitizeProfilePayload(payload);
+    }
 
-  const isCreativePayload =
-    payload &&
-    typeof payload === 'object' &&
-    !Array.isArray(payload) &&
-    ('business_name' in payload ||
-      'creative_name' in payload ||
-      'creative_handle' in payload ||
-      'day_rate' in payload ||
-      'base_rate_value' in payload ||
-      'rate_range' in payload ||
-      'pricing_notes' in payload ||
-      'gear_tags' in payload ||
-      'quick_broadcast' in payload ||
-      'broadcast_bulletin' in payload ||
-      ('creator_id' in payload &&
-        ('skills' in payload ||
-          'gear' in payload ||
-          'primary_gear' in payload ||
-          'primary_category' in payload ||
-          'secondary_category' in payload ||
-          'availability_status' in payload ||
-          'portfolio_link' in payload))) &&
-    !('email' in payload || 'account_type' in payload || 'role' in payload || 'console_handle' in payload || 'band_name' in payload);
+    const isCreativePayload =
+      payload &&
+      typeof payload === 'object' &&
+      !Array.isArray(payload) &&
+      ('business_name' in payload ||
+        'creative_name' in payload ||
+        'creative_handle' in payload ||
+        'day_rate' in payload ||
+        'base_rate_value' in payload ||
+        'rate_range' in payload ||
+        'pricing_notes' in payload ||
+        'gear_tags' in payload ||
+        'quick_broadcast' in payload ||
+        'broadcast_bulletin' in payload ||
+        ('creator_id' in payload &&
+          ('skills' in payload ||
+            'gear' in payload ||
+            'primary_gear' in payload ||
+            'primary_category' in payload ||
+            'secondary_category' in payload ||
+            'availability_status' in payload ||
+            'portfolio_link' in payload))) &&
+      !('email' in payload || 'account_type' in payload || 'role' in payload || 'console_handle' in payload || 'band_name' in payload);
 
-  // If this payload targets the 'creatives' table, normalize it strictly for the 'creatives' database table columns:
-  if (isCreativePayload) {
-    payload = sanitizeCreativePayload(payload);
-  }
+    // If this payload targets the 'creatives' table, normalize it strictly for the 'creatives' database table columns:
+    if (isCreativePayload) {
+      payload = sanitizeCreativePayload(payload);
+    }
 
-  const isBandPayload =
-    payload &&
-    typeof payload === 'object' &&
-    !Array.isArray(payload) &&
-    !isCreativePayload &&
-    ('band_name' in payload ||
-      ('creator_id' in payload &&
-        ('logo_url' in payload ||
-          'tech_rider_url' in payload ||
-          'tour_vehicle' in payload ||
-          'lineup' in payload ||
-          'micro_genres' in payload))) &&
-    !('email' in payload || 'account_type' in payload || 'role' in payload || 'console_handle' in payload);
+    const isBandPayload =
+      payload &&
+      typeof payload === 'object' &&
+      !Array.isArray(payload) &&
+      !isCreativePayload &&
+      ('band_name' in payload ||
+        ('creator_id' in payload &&
+          ('logo_url' in payload ||
+            'tech_rider_url' in payload ||
+            'tour_vehicle' in payload ||
+            'lineup' in payload ||
+            'micro_genres' in payload))) &&
+      !('email' in payload || 'account_type' in payload || 'role' in payload || 'console_handle' in payload);
 
-  // If this payload targets the 'bands' table, normalize it strictly for the 'bands' database table columns:
-  if (isBandPayload) {
-    payload = sanitizeBandPayload(payload);
+    // If this payload targets the 'bands' table, normalize it strictly for the 'bands' database table columns:
+    if (isBandPayload) {
+      payload = sanitizeBandPayload(payload);
+    }
+
+    if (payload && typeof payload === 'object' && ('tracks' in payload || 'catalog_id' in payload || 'cover_url' in payload)) {
+      payload = sanitizeReleaseForDb(payload);
+    }
   }
 
   let attempts = 0;
@@ -403,24 +514,33 @@ export async function executeWithSchemaResilience<T extends Record<string, any>>
             localStorage.setItem(`NEXUS_CORE_MISSING_COLUMN_${offendingColumn.toUpperCase()}`, 'true');
           }
         } catch (_) {}
-        delete payload[offendingColumn];
 
-        // If all custom data keys have been stripped, gracefully bypass this operation
-        const remainingDataKeys = Object.keys(payload).filter(
-          (k) =>
-            k !== 'id' &&
-            k !== 'creator_id' &&
-            k !== 'user_id' &&
-            k !== 'created_at' &&
-            k !== 'owner_id' &&
-            k !== 'profile_id'
-        );
-        if (remainingDataKeys.length === 0) {
-          console.warn(
-            `[Supabase Resilience] Gracefully bypassed operation after stripping unsupported column '${offendingColumn}':`,
-            error.message
+        if (Array.isArray(payload)) {
+          payload.forEach((item) => {
+            if (item && typeof item === 'object') {
+              delete item[offendingColumn];
+            }
+          });
+        } else if (payload && typeof payload === 'object') {
+          delete payload[offendingColumn];
+
+          // If all custom data keys have been stripped, gracefully bypass this operation
+          const remainingDataKeys = Object.keys(payload).filter(
+            (k) =>
+              k !== 'id' &&
+              k !== 'creator_id' &&
+              k !== 'user_id' &&
+              k !== 'created_at' &&
+              k !== 'owner_id' &&
+              k !== 'profile_id'
           );
-          return { error: null, data: null };
+          if (remainingDataKeys.length === 0) {
+            console.warn(
+              `[Supabase Resilience] Gracefully bypassed operation after stripping unsupported column '${offendingColumn}':`,
+              error.message
+            );
+            return { error: null, data: null };
+          }
         }
 
         attempts++;

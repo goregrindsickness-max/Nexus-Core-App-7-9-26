@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   X, Calendar, DollarSign, Clock, MapPin, Building, Users, 
-  Trash2, Copy, Check, Info, FileText, ChevronDown, Sparkles, Coffee, ShieldAlert
+  Trash2, Copy, Check, Info, FileText, ChevronDown, Sparkles, Coffee, ShieldAlert, AlertTriangle
 } from 'lucide-react';
 import { Show, GuestListItem, SupportBand } from '../../../types';
 
@@ -99,7 +99,7 @@ interface ShowFormModalProps {
   onClose: () => void;
   onSubmit: (showData: any) => void;
   onDuplicate?: (show: Show) => void;
-  editingShow: Show | null;
+  editingShow?: Show | null;
   shows: Show[];
   initialShowType?: 'headliner' | 'support' | 'festival' | 'tour date' | 'one-off';
 }
@@ -153,7 +153,17 @@ export default function ShowFormModal({
   const [wifiNetwork, setWifiNetwork] = useState<string>('');
   const [wifiPassword, setWifiPassword] = useState<string>('');
 
+  const [isCommunitySubmitted, setIsCommunitySubmitted] = useState<boolean>(false);
+  const [externalTicketUrl, setExternalTicketUrl] = useState<string>('');
   const [isTime24Hour, setIsTime24Hour] = useState<boolean>(() => { try { return localStorage.getItem('tour_time_is_24h') !== 'false'; } catch(e) { return true; } });
+
+  const existingDuplicateMatch = useMemo(() => {
+    if (!date || (!city && !name)) return null;
+    return shows.find(s => s.date === date && (
+      (city && s.city?.toLowerCase() === city.toLowerCase()) || 
+      (name && s.name?.toLowerCase() === name.toLowerCase())
+    ) && s.id !== editingShow?.id);
+  }, [date, city, name, shows, editingShow]);
 
   // Time Inputs Refs
   const loadInRef = React.useRef<HTMLInputElement | null>(null);
@@ -351,7 +361,7 @@ export default function ShowFormModal({
       setTaxRate(editingShow.tax_rate || 0);
       
       setShowType(editingShow.show_type || 'headliner');
-      setExpectedAttendance(editingShow.expected_attendance || '100-300');
+      setExpectedAttendance((editingShow.expected_attendance as any) || '100-300');
       setGuestList(editingShow.guest_list || []);
       
       setMerchSpaceFee(editingShow.merch_space_fee || 0);
@@ -376,6 +386,8 @@ export default function ShowFormModal({
       setSupportLineup(editingShow.support_lineup || []);
       
       setAdditionalNotes(editingShow.additional_notes || '');
+      setIsCommunitySubmitted(!!editingShow.is_community_submitted);
+      setExternalTicketUrl(editingShow.external_ticket_url || '');
     } else {
       // Set default dates & values for a new show
       setEventScope('tour');
@@ -707,6 +719,8 @@ export default function ShowFormModal({
       time_slot: timeSlot || 'all-day',
       support_lineup: supportLineup,
       additional_notes: sanitizeInput(additionalNotes),
+      is_community_submitted: isCommunitySubmitted,
+      external_ticket_url: sanitizeInput(externalTicketUrl),
       status: editingShow?.status || 'Active'
     };
 
@@ -795,6 +809,52 @@ export default function ShowFormModal({
                 Single Show/Fest
               </button>
             </div>
+
+            {/* Community Crowdsourced Show Submission & External Ticketing */}
+            <div className="bg-[#13161d] border border-zinc-800 rounded-lg p-3 space-y-2.5">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input 
+                  type="checkbox"
+                  checked={isCommunitySubmitted}
+                  onChange={(e) => setIsCommunitySubmitted(e.target.checked)}
+                  className="w-4 h-4 rounded border-zinc-700 bg-black text-[#00ffcc] focus:ring-0 cursor-pointer"
+                />
+                <span className="text-[10px] font-mono font-bold text-white uppercase tracking-wide">
+                  🌍 Submit as Community Crowdsourced Show
+                </span>
+              </label>
+              <p className="text-[9px] text-zinc-400 font-mono pl-6 leading-relaxed">
+                Crowdsourced events populate the upcoming shows feed. Direct in-app ticketing is disabled unless an official 3rd-party ticket link is attached. Registered band, promoter, or label reps on Nexus Core can collaborate or claim this event to avoid duplicates.
+              </p>
+
+              {isCommunitySubmitted && (
+                <div className="pt-1 pl-6">
+                  <label className="block text-[9px] font-mono text-zinc-400 mb-1 uppercase tracking-wider">
+                    External 3rd-Party Ticket Link (Optional)
+                  </label>
+                  <input 
+                    type="url"
+                    value={externalTicketUrl}
+                    onChange={(e) => setExternalTicketUrl(e.target.value)}
+                    placeholder="https://dice.fm/event/... or https://ticketmaster.com/..."
+                    className="w-full bg-black border border-zinc-800 rounded p-2 text-xs text-[#00ffcc] font-mono focus:outline-none focus:border-[#00ffcc]"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Duplicate Event Match Warning */}
+            {existingDuplicateMatch && (
+              <div className="bg-amber-950/30 border border-amber-500/40 rounded p-2.5 text-[10px] text-amber-300 font-mono space-y-1">
+                <div className="font-bold flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span>Potential Existing Event Match Detected</span>
+                </div>
+                <p className="text-[9.5px] text-zinc-400">
+                  An event at <strong className="text-white">{existingDuplicateMatch.name}</strong> on <strong className="text-white">{existingDuplicateMatch.date}</strong> is already logged in Nexus Core. Posting this will link or collaborate with registered representatives to avoid duplicate listings.
+                </p>
+              </div>
+            )}
 
             {/* Select Tour Name (conditional on scope) */}
             {eventScope === 'tour' && (
