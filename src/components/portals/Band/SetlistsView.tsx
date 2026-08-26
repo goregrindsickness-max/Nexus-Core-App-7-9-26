@@ -899,7 +899,7 @@ export default function SetlistsView({
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        key={song.id} 
+                        key={`setlist-song-${song.id || 'song'}-${idx}`} 
                         draggable
                         onDragStart={(e: any) => handleDragStart(e, idx)}
                         onDragOver={(e: any) => handleDragOver(e)}
@@ -1260,7 +1260,7 @@ export default function SetlistsView({
                     {activeSetlist.songs.map((song, i) => {
                       const isBreak = song.vibe === 'break' || song.name.toLowerCase().includes('break');
                       return (
-                        <div key={song.id} className={`flex justify-between items-baseline border-b pb-2 ${isBreak ? 'border-amber-300 border-dashed text-amber-700' : 'border-zinc-200 text-zinc-900'}`}>
+                        <div key={`setlist-active-${song.id || 'song'}-${i}`} className={`flex justify-between items-baseline border-b pb-2 ${isBreak ? 'border-amber-300 border-dashed text-amber-700' : 'border-zinc-200 text-zinc-900'}`}>
                           <div className="flex items-center gap-2">
                             <span className="font-mono font-bold text-sm text-zinc-500">{String(i + 1).padStart(2, '0')}.</span>
                             <span className={`font-black tracking-wide ${isBreak ? 'text-sm italic text-amber-600 uppercase' : 'text-lg text-zinc-900'}`}>{song.name}</span>
@@ -1515,7 +1515,7 @@ export default function SetlistsView({
                     if (editingMasterId === m.id) {
                       return (
                         <motion.div 
-                          key={m.id}
+                          key={`master-track-${m.id || 'master'}-${mIdx}`}
                           layout
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}

@@ -2324,7 +2324,7 @@ export default function LabelDashboardViewV2({
 
                             if (portal.key === 'fan_only' && isIndustryPro) {
                               return (
-                                <div key={portal.key} className="w-full flex items-center justify-between p-2 rounded-xl bg-zinc-950/20 border border-zinc-900/30 text-zinc-650 opacity-40 select-none cursor-not-allowed">
+                                <div key={`portal-locked-${portal.key}-${idx}`} className="w-full flex items-center justify-between p-2 rounded-xl bg-zinc-950/20 border border-zinc-900/30 text-zinc-650 opacity-40 select-none cursor-not-allowed">
                                   <div className="flex items-center gap-2">
                                     <span className="text-xs grayscale opacity-50">{portal.icon}</span>
                                     <div className="text-left">
@@ -2343,7 +2343,7 @@ export default function LabelDashboardViewV2({
 
                             if (isActive) {
                               return (
-                                <div key={portal.key} className={`w-full flex items-center justify-between p-2 rounded-xl ${portal.bgClass} border ${portal.hoverBorderClass.replace('hover:', '')} ${portal.textClass}`}>
+                                <div key={`portal-active-${portal.key}-${idx}`} className={`w-full flex items-center justify-between p-2 rounded-xl ${portal.bgClass} border ${portal.hoverBorderClass.replace('hover:', '')} ${portal.textClass}`}>
                                   <div className="flex items-center gap-2">
                                     <span className="text-xs">{portal.icon}</span>
                                     <div className="text-left">
@@ -2359,7 +2359,7 @@ export default function LabelDashboardViewV2({
                             if (isAllowed) {
                               return (
                                 <button
-                                  key={portal.key}
+                                  key={`portal-btn-${portal.key}-${idx}`}
                                   type="button"
                                   onClick={() => {
                                     setV2RoleMenuOpen(false);

@@ -298,9 +298,13 @@ export function useSocialFollowsAndProfiles({
                 type: 'band',
                 category: 'bands',
                 desc: b.genre || 'Underground heavy metal artist',
-                avatar: b.logo_url || b.cover_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=200',
-                image: b.logo_url || b.cover_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=200',
-                banner: b.cover_url || '',
+                avatar: b.logo_url || b.avatar_url || (b as any).avatar || (b as any).image || b.cover_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=200',
+                image: b.logo_url || b.avatar_url || (b as any).avatar || (b as any).image || b.cover_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=200',
+                logo_url: b.logo_url || b.avatar_url || (b as any).avatar || (b as any).image || '',
+                avatar_url: b.avatar_url || b.logo_url || (b as any).avatar || (b as any).image || '',
+                cover_url: b.cover_url || b.banner_url || '',
+                banner_url: b.banner_url || b.cover_url || '',
+                banner: b.cover_url || b.banner_url || '',
                 followed: followedArtistIds.includes(String(b.id || '').toLowerCase().trim()) || followedArtistIds.includes(bName.toLowerCase()) || !!localFollows[b.id] || !!localFollows[bName.toLowerCase()],
                 isYou: false
               });
@@ -311,6 +315,8 @@ export function useSocialFollowsAndProfiles({
           const commBands = communityBandManager.getAll();
           commBands.forEach((cb) => {
             if ((list || []).some(x => x.name.toLowerCase() === cb.name.toLowerCase())) return;
+            const cbAvatar = cb.avatar_url || cb.logo_url || (cb as any).avatar || (cb as any).image;
+            const cbCover = cb.cover_url || cb.banner_url || (cb as any).cover || (cb as any).banner;
             list.push({
               ...cb,
               id: cb.id,
@@ -325,9 +331,13 @@ export function useSocialFollowsAndProfiles({
               type: 'band',
               category: 'bands',
               desc: cb.bio || cb.genre,
-              avatar: cb.avatar_url,
-              image: cb.avatar_url,
-              banner: cb.cover_url || '',
+              avatar: cbAvatar,
+              image: cbAvatar,
+              avatar_url: cbAvatar,
+              logo_url: cbAvatar,
+              cover_url: cbCover,
+              banner_url: cbCover,
+              banner: cbCover || '',
               followers_count: cb.followers_count || 120,
               discography: cb.discography || [],
               curated_by: cb.curated_by,
@@ -510,6 +520,16 @@ export function useSocialFollowsAndProfiles({
     };
 
     fetchRealData();
+
+    const handleUpdate = () => {
+      fetchRealData();
+    };
+    window.addEventListener('nexus_community_bands_updated', handleUpdate);
+    window.addEventListener('nexus_avatar_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('nexus_community_bands_updated', handleUpdate);
+      window.removeEventListener('nexus_avatar_updated', handleUpdate);
+    };
   }, [userProfile?.id, userProfile?.email]);
 
   const isValidUUID = (str: string | null | undefined): boolean => {

@@ -1515,8 +1515,8 @@ export const ForumView: React.FC<ForumViewProps> = ({
                   }}
                   className="w-full sm:flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-rose-900/50 font-bold cursor-pointer"
                 >
-                  {MASTER_GENRES.map((cluster) => (
-                    <option key={cluster.name} value={cluster.name}>{cluster.name}</option>
+                  {MASTER_GENRES.map((cluster, idx) => (
+                    <option key={`cluster-${cluster.name}-${idx}`} value={cluster.name}>{cluster.name}</option>
                   ))}
                 </select>
                 <select
@@ -1524,8 +1524,8 @@ export const ForumView: React.FC<ForumViewProps> = ({
                   onChange={(e) => setNewThreadMicroGenre(e.target.value)}
                   className="w-full sm:flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-rose-900/50 font-bold cursor-pointer"
                 >
-                  {MASTER_GENRES.find((c) => c.name === newThreadPrimaryGenre)?.tags.map((tag) => (
-                    <option key={tag.id} value={tag.label}>{tag.label}</option>
+                  {MASTER_GENRES.find((c) => c.name === newThreadPrimaryGenre)?.tags.map((tag, tagIdx) => (
+                    <option key={`tag-${tag.id}-${tagIdx}`} value={tag.label}>{tag.label}</option>
                   ))}
                 </select>
               </div>
@@ -1620,8 +1620,8 @@ export const ForumView: React.FC<ForumViewProps> = ({
                     className="w-full sm:w-auto bg-zinc-900 border border-zinc-800 text-[10px] font-bold text-white rounded-xl px-3 py-2 focus:outline-none hover:border-zinc-700 transition-colors cursor-pointer uppercase tracking-wider min-w-[130px]"
                   >
                     <option value="All">All Categories</option>
-                    {MASTER_GENRES.map((cluster) => (
-                      <option key={cluster.name} value={cluster.name}>{cluster.name}</option>
+                    {MASTER_GENRES.map((cluster, idx) => (
+                      <option key={`fcluster-${cluster.name}-${idx}`} value={cluster.name}>{cluster.name}</option>
                     ))}
                   </select>
 
@@ -1635,8 +1635,8 @@ export const ForumView: React.FC<ForumViewProps> = ({
                       className="w-full sm:w-auto bg-zinc-900 border border-zinc-800 text-[10px] font-bold text-white rounded-xl px-3 py-2 focus:outline-none hover:border-zinc-700 transition-colors cursor-pointer uppercase tracking-wider min-w-[130px]"
                     >
                       <option value="All">All {forumPrimaryGenre}</option>
-                      {MASTER_GENRES.find((c) => c.name === forumPrimaryGenre)?.tags.map((tag) => (
-                        <option key={tag.id} value={tag.label}>{tag.label}</option>
+                      {MASTER_GENRES.find((c) => c.name === forumPrimaryGenre)?.tags.map((tag, tagIdx) => (
+                        <option key={`ftag-${tag.id}-${tagIdx}`} value={tag.label}>{tag.label}</option>
                       ))}
                     </select>
                   )}
@@ -1652,9 +1652,9 @@ export const ForumView: React.FC<ForumViewProps> = ({
               {subscribedSpaces.length === 0 ? (
                 <span className="text-zinc-600 font-mono italic">No subscriptions yet</span>
               ) : (
-                subscribedSpaces.map((space) => (
+                subscribedSpaces.map((space, sIdx) => (
                   <span
-                    key={space}
+                    key={`subscribed-space-${space}-${sIdx}`}
                     className="bg-rose-950/40 border border-rose-900/50 text-rose-300 px-2.5 py-0.5 rounded-full flex items-center gap-1 font-bold"
                   >
                     {space}
@@ -1684,9 +1684,9 @@ export const ForumView: React.FC<ForumViewProps> = ({
               />
             </div>
             <div className="flex gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 no-scrollbar">
-              {['All', 'My Subscriptions', 'Album Art', 'Album Reviews', 'Show & Fest', 'Gear & Rig'].map((cat) => (
+              {['All', 'My Subscriptions', 'Album Art', 'Album Reviews', 'Show & Fest', 'Gear & Rig'].map((cat, catIdx) => (
                 <button
-                  key={cat}
+                  key={`forum-cat-${cat}-${catIdx}`}
                   onClick={() => setForumCategory(cat)}
                   className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shrink-0 cursor-pointer ${
                     forumCategory === cat

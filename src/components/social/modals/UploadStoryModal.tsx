@@ -481,9 +481,9 @@ export const UploadStoryModal: React.FC<UploadStoryModalProps> = ({
                           COLOR
                         </label>
                         <div className="flex items-center gap-1">
-                          {['#ffffff', '#f43f5e', '#38bdf8', '#a855f7', '#39ff14', '#eab308'].map((clr) => (
+                          {['#ffffff', '#f43f5e', '#38bdf8', '#a855f7', '#39ff14', '#eab308'].map((clr, cIdx) => (
                             <button
-                              key={clr}
+                              key={`clr-${clr}-${cIdx}`}
                               onClick={() => setNewStoryTextColorHex(clr)}
                               style={{ backgroundColor: clr }}
                               className={`w-5 h-5 rounded-full border-2 transition-transform cursor-pointer ${
@@ -546,9 +546,9 @@ export const UploadStoryModal: React.FC<UploadStoryModalProps> = ({
                         'DEVOURMENT - Babykiller',
                         'INTERNAL BLEEDING - Uncontrollable Demise',
                         'DISGORGE - She Lay Gutted'
-                      ].map((trk) => (
+                      ].map((trk, trkIdx) => (
                         <button
-                          key={trk}
+                          key={`story-trk-${trk}-${trkIdx}`}
                           onClick={() => {
                             setNewStoryMusic(trk);
                             setIsPlayingAudioPreview(true);
@@ -574,11 +574,11 @@ export const UploadStoryModal: React.FC<UploadStoryModalProps> = ({
                   <div className="space-y-3 animate-in fade-in duration-200">
                     <label className="text-[10px] font-mono text-zinc-400 uppercase font-bold block">ATTACH SCENE STICKERS</label>
                     <div className="flex flex-wrap gap-2">
-                      {['🔥 PIT LORD', '⚡ LIVE AT THE PIT', '🤘 SLAM SQUAD', '💀 GORE GRIND', '🎸 HEAVY RIFFS', '🎧 100% LOUD', '🏆 SCENE APPROVED', '🎟️ FRONT ROW', '📹 VHS BOOTLEG'].map((stk) => {
+                      {['🔥 PIT LORD', '⚡ LIVE AT THE PIT', '🤘 SLAM SQUAD', '💀 GORE GRIND', '🎸 HEAVY RIFFS', '🎧 100% LOUD', '🏆 SCENE APPROVED', '🎟️ FRONT ROW', '📹 VHS BOOTLEG'].map((stk, stkIdx) => {
                         const isAttached = newStoryStickers.includes(stk);
                         return (
                           <button
-                            key={stk}
+                            key={`story-stk-${stk}-${stkIdx}`}
                             onClick={() => {
                               if (!isAttached) {
                                 setNewStoryStickers((prev) => [...prev, stk]);

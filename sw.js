@@ -1,9 +1,15 @@
 self.addEventListener('install', (event) => {
-  // Forces the waiting service worker to become the active service worker immediately
   self.skipWaiting();
 });
 
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(keys.map((key) => caches.delete(key)));
+    }).then(() => clients.claim())
+  );
+});
+
 self.addEventListener('fetch', (event) => {
-  // Allows normal online network requests to pass through untouched
   event.respondWith(fetch(event.request));
 });

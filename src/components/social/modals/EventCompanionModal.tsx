@@ -762,7 +762,7 @@ export const EventCompanionModal: React.FC<EventCompanionModalProps> = ({
 
                     return (
                       <div
-                        key={band}
+                        key={`setlist-accordion-${band}-${idx}`}
                         className="bg-[#0b0d10] border border-zinc-800/90 rounded-2xl overflow-hidden transition-all duration-200 shadow-md"
                       >
                         {/* Collapsed Header Bar */}

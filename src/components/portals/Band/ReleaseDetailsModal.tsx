@@ -130,15 +130,22 @@ export const ReleaseDetailsModal: React.FC<ReleaseDetailsModalProps> = ({
     };
   }, []);
 
+  const [coverLoadError, setCoverLoadError] = useState(false);
+
+  useEffect(() => {
+    setCoverLoadError(false);
+  }, [release?.id, release?.title]);
+
   if (!release) return null;
 
-  const rawCover =
+  const rawCover = !coverLoadError ? (
     release.coverUrl ||
     release.coverImage ||
     release.cover_url ||
     release.cover_image ||
     release.image_url ||
-    null;
+    null
+  ) : null;
 
   const displayArtist = release.artist || release.band_name || bandName || 'Artist';
   const displayTitle = release.title || 'Untitled Release';
@@ -279,6 +286,7 @@ export const ReleaseDetailsModal: React.FC<ReleaseDetailsModalProps> = ({
                 alt={displayTitle}
                 className="w-full h-full object-cover blur-md opacity-35 absolute inset-0 scale-110"
                 referrerPolicy="no-referrer"
+                onError={() => setCoverLoadError(true)}
               />
             ) : (
               <div className="absolute inset-0 bg-gradient-to-tr from-zinc-950 via-zinc-900 to-zinc-950" />
@@ -322,6 +330,7 @@ export const ReleaseDetailsModal: React.FC<ReleaseDetailsModalProps> = ({
                     alt={displayTitle}
                     className="w-full h-full object-cover"
                     referrerPolicy="no-referrer"
+                    onError={() => setCoverLoadError(true)}
                   />
                 ) : (
                   <Disc className="w-12 h-12 text-zinc-600" />

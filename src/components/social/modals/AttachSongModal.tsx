@@ -80,9 +80,9 @@ export const AttachSongModal: React.FC<AttachSongModalProps> = ({
                         song.album?.toLowerCase().includes(query)
                       );
                     })
-                    .map((song) => (
+                    .map((song, sIdx) => (
                       <div
-                        key={song.id}
+                        key={song.id ? `song-attach-${song.id}-${sIdx}` : `song-attach-${sIdx}`}
                         onClick={() => {
                           setAttachedSong(song);
                           setShowSongModal(false);

@@ -109,8 +109,8 @@ export const ProfileHubCard: React.FC<ProfileHubCardProps> = ({
 
           {/* Badges / Scene Roles & Location inside solid black pill style box */}
           <div className="bg-black/95 border border-zinc-900 rounded-full px-3 py-1.5 shadow-[0_2px_12px_rgba(0,0,0,0.8)] flex flex-wrap gap-1.5 justify-center max-w-full">
-            {profileSceneRoles.filter(role => portalRole !== 'label' || (role !== 'Musician' && role !== 'Artist')).map(role => (
-              <span key={role} className={`text-[7px] font-mono font-black uppercase tracking-wider ${currentTheme.bgBadge} px-1.5 py-0.5 rounded-full`}>
+            {profileSceneRoles.filter(role => portalRole !== 'label' || (role !== 'Musician' && role !== 'Artist')).map((role, roleIdx) => (
+              <span key={`scene-role-${role}-${roleIdx}`} className={`text-[7px] font-mono font-black uppercase tracking-wider ${currentTheme.bgBadge} px-1.5 py-0.5 rounded-full`}>
                 {role}
               </span>
             ))}

@@ -31,7 +31,7 @@ import { FanPitWallDrawer } from '../drawers/FanPitWallDrawer';
 import { InteractiveCropperModal } from '../../InteractiveCropperModal';
 import { MetalArchivesImportModal } from './MetalArchivesImportModal';
 import { profileStore } from '../../../utils/indexedDB';
-import { uploadBase64ToStorage, normalizeLoadedProfile as defaultNormalizeLoadedProfile, sanitizeCreativePayload, formatCreativePayload, extractGlobalProfilePayload, executeWithSchemaResilience } from '../../../supabase';
+import { uploadBase64ToStorage, normalizeLoadedProfile as defaultNormalizeLoadedProfile, sanitizeCreativePayload, formatCreativePayload, extractGlobalProfilePayload, executeWithSchemaResilience, sanitizeBandPayload } from '../../../supabase';
 import { FeedItem } from '../../../data/socialFeedMockData';
 
 export interface SocialModalsOverlayProps {
@@ -647,7 +647,7 @@ export const SocialModalsOverlay: React.FC<SocialModalsOverlayProps> = (props) =
           try {
             triggerNotification?.("⏳ Saving and optimizing cropped image...");
             const userProfileId = userProfile?.id || 'profile_anonymous';
-            const bucket = cropperType === 'avatar' ? 'avatars' : 'banners';
+            const bucket = cropperType === 'avatar' ? 'avatars' : 'bannersv2';
             const token = cropperType === 'avatar' ? 'profile-avatar' : 'cover-banner';
             
             const publicUrl = await uploadBase64ToStorage(croppedBase64, bucket, userProfileId, token);
@@ -681,6 +681,38 @@ export const SocialModalsOverlay: React.FC<SocialModalsOverlayProps> = (props) =
                 .eq('id', userProfile.id)
                 .select()
                 .single();
+
+              // If portal is band or user is linked to band, sync to bands table too
+              if (portalRole === 'band' || userProfile?.band_id || band?.id) {
+                const targetBandId = band?.id || userProfile?.band_id || userProfile?.id;
+                if (targetBandId) {
+                  const bandImageField = cropperType === 'avatar' ? { logo_url: publicUrl } : { cover_url: publicUrl };
+                  const sanitized = sanitizeBandPayload({
+                    id: targetBandId,
+                    ...bandImageField
+                  });
+                  executeWithSchemaResilience(
+                    async (payload) => await supabase.from('bands').update(payload).eq('id', targetBandId),
+                    sanitized
+                  ).catch(e => console.warn('[SocialModalsOverlay] Band image sync notice:', e));
+                }
+              }
+
+              // If portal is creative, sync to creatives table too
+              if (portalRole === 'creative' || userProfile?.creative_id) {
+                const targetCreativeId = userProfile?.creative_id || userProfile?.id;
+                if (targetCreativeId) {
+                  const creativeImageField = cropperType === 'avatar' ? { avatar_url: publicUrl } : { banner_url: publicUrl };
+                  const sanitized = sanitizeCreativePayload({
+                    id: targetCreativeId,
+                    ...creativeImageField
+                  });
+                  executeWithSchemaResilience(
+                    async (payload) => await supabase.from('creatives').update(payload).eq('id', targetCreativeId),
+                    sanitized
+                  ).catch(e => console.warn('[SocialModalsOverlay] Creative image sync notice:', e));
+                }
+              }
 
               if (cropperType === 'avatar' && typeof window !== 'undefined') {
                 window.dispatchEvent(new CustomEvent('nexus_avatar_updated', {

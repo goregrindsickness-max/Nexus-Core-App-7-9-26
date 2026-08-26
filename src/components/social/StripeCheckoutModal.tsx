@@ -451,7 +451,7 @@ export function StripeCheckoutModal({
                     const IconComponent = tier.icon;
                     return (
                       <button
-                        key={key}
+                        key={`tier-${key}-${keyIdx}`}
                         type="button"
                         onClick={() => setSelectedTier(key)}
                         className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 relative overflow-hidden ${
@@ -559,9 +559,9 @@ export function StripeCheckoutModal({
                             Merch Size:
                           </span>
                           <div className="flex items-center gap-1 flex-wrap">
-                            {availableSizes.map((sz) => (
+                            {availableSizes.map((sz, szIdx) => (
                               <button
-                                key={sz}
+                                key={`size-${sz}-${szIdx}`}
                                 type="button"
                                 onClick={() => handleUpdateAttendeeSize(idx, sz)}
                                 className={`px-2 py-0.5 rounded text-[9px] font-mono font-black transition-all cursor-pointer ${

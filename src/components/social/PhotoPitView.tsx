@@ -1811,7 +1811,7 @@ export const PhotoPitView: React.FC<PhotoPitViewProps> = ({
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {paginatedItems.map((item: any, idx: number) => (
               <div
-                key={item.id ? `pit_img_cell_${item.id}` : `pit_img_idx_${idx}`}
+                key={item.id ? `pit_img_cell_${item.id}_${idx}` : `pit_img_idx_${idx}`}
                 onClick={() => {
                   if (triggerPictureViewer) {
                     triggerPictureViewer({
@@ -1950,8 +1950,8 @@ export const PhotoPitView: React.FC<PhotoPitViewProps> = ({
                       disabled={isSubmittingPhotos}
                       className="flex-1 bg-zinc-900 border border-zinc-850 focus:border-rose-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none cursor-pointer"
                     >
-                      {foldersList.filter((f) => f !== 'All Photos').map((f) => (
-                        <option key={f} value={f}>{f}</option>
+                      {foldersList.filter((f) => f !== 'All Photos').map((f, fIdx) => (
+                        <option key={`folder-opt-${f}-${fIdx}`} value={f}>{f}</option>
                       ))}
                     </select>
                   </div>

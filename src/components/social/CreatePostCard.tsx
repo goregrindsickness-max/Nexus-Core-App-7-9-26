@@ -1600,9 +1600,9 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
                       { label: '24 HOURS', days: '1', hours: '0' },
                       { label: '3 DAYS', days: '3', hours: '0' },
                       { label: '7 DAYS', days: '7', hours: '0' },
-                    ].map((preset) => (
+                    ].map((preset, pIdx) => (
                       <button
-                        key={preset.label}
+                        key={`poll-preset-${preset.label}-${pIdx}`}
                         type="button"
                         onClick={() => {
                           setPollTimerDays && setPollTimerDays(preset.days);
@@ -1825,8 +1825,8 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
               </span>
             )}
 
-            {taggedBands.map((band) => (
-              <span key={band} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded ${theme.attachedTagBg} text-[10px] font-mono ${theme.badgeText}`}>
+            {taggedBands.map((band, bIdx) => (
+              <span key={`tagged-band-${band}-${bIdx}`} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded ${theme.attachedTagBg} text-[10px] font-mono ${theme.badgeText}`}>
                 <Users className={`w-3 h-3 ${theme.attachedTagIcon}`} />
                 <span>@{band}</span>
                 <button type="button" onClick={() => removeTaggedBand(band)} className="hover:text-rose-400 ml-0.5"><X className="w-3 h-3" /></button>

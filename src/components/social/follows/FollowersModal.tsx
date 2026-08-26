@@ -399,7 +399,7 @@ export const FollowersModal: React.FC<FollowersModalProps> = ({
                 const isActive = activeCategory === cat.key;
                 return (
                   <button
-                    key={cat.key}
+                    key={`follower-cat-${cat.key}-${catIdx}`}
                     onClick={() => setActiveCategory(cat.key)}
                     className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-tight whitespace-nowrap transition-all border ${
                       isActive

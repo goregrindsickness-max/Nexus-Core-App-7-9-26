@@ -17,7 +17,10 @@
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
-            .then(reg => console.log('Nexus Pipeline Secure: Service Worker Registered'))
+            .then(reg => {
+              console.log('Nexus Pipeline Secure: Service Worker Registered');
+              reg.update();
+            })
             .catch(err => console.error('PWA Registration Error: ', err));
         });
       }

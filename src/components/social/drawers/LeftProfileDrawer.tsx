@@ -686,7 +686,7 @@ if (!leftDrawerOpen) return null;
                                     const listToDisplay = bandGenreList.length > 0 ? bandGenreList : (labelPrimaryGenres.length > 0 ? labelPrimaryGenres : ['Metal']);
                                     return listToDisplay.map((genre, idx) => (
                                       <span
-                                        key={`genre-${genre}`}
+                                        key={`genre-${genre}-${idx}`}
                                         className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider rounded border bg-orange-950/40 text-orange-400 border-orange-500/40 shadow-[0_0_8px_rgba(249,115,22,0.15)]"
                                       >
                                         {genre}
@@ -1068,8 +1068,8 @@ if (!leftDrawerOpen) return null;
                                 }}
                                 className="w-full mt-1 bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-white focus:border-rose-500 focus:outline-none font-mono"
                               >
-                                {COUNTRIES.map((c) => (
-                                  <option key={c.code} value={c.code}>{c.name}</option>
+                                {COUNTRIES.map((c, cIdx) => (
+                                  <option key={`country-${c.code}-${cIdx}`} value={c.code}>{c.name}</option>
                                 ))}
                               </select>
                             </div>
@@ -1091,8 +1091,8 @@ if (!leftDrawerOpen) return null;
                                   className="w-full mt-1 bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-white focus:border-rose-500 focus:outline-none font-mono"
                                 >
                                   <option value="">Select State</option>
-                                  {US_STATES.map((st) => (
-                                    <option key={st.code} value={st.code}>{st.name} ({st.code})</option>
+                                  {US_STATES.map((st, stIdx) => (
+                                    <option key={`state-${st.code}-${stIdx}`} value={st.code}>{st.name} ({st.code})</option>
                                   ))}
                                 </select>
                               ) : (

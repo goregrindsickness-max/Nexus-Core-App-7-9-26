@@ -424,7 +424,7 @@ export const NexusTopBar: React.FC<NexusTopBarProps> = ({
                           if (isAllowed) {
                             return (
                               <button
-                                key={portal.key}
+                                key={`portal-allowed-${portal.key}-${idx}`}
                                 onClick={() => {
                                   setRoleMenuOpen(false);
                                   const targetAcc = (portal.key === 'fan' || portal.key === 'fan_only') ? 'fan_only' : (portal.key === 'industry_pro') ? 'industry_pro' : portal.key;

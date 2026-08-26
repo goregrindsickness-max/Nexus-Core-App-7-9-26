@@ -23,6 +23,24 @@ export type { ListenerMetric };
 export { calculateListenerMetrics };
 
 import { PublicProfileModalProps } from '../../social/modals/PublicProfileModal';
+
+export const getReleaseCoverUrl = (release: any): string | null => {
+  if (!release) return null;
+  const url =
+    release.cover_url ||
+    release.cover_image ||
+    release.coverUrl ||
+    release.coverImage ||
+    release.image_url ||
+    release.artwork_url ||
+    release.cover ||
+    null;
+  if (typeof url === 'string' && url.trim().length > 0 && !url.includes('undefined') && !url.includes('null')) {
+    return url.trim();
+  }
+  return null;
+};
+
 export const ProfileCard: React.FC<PublicProfileModalProps> = ({
   selectedUserProfile,
   setSelectedUserProfile,
@@ -124,25 +142,46 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
         const finalReleases = matching.length > 0 ? matching : allDbReleases;
 
         if (isMounted && finalReleases.length > 0) {
-          const mapped = finalReleases.map((row: any) => ({
-            id: row.id,
-            catalog_id: row.catalog_id || row.catalogId || '',
-            catalogId: row.catalog_id || row.catalogId || '',
-            title: row.title || '',
-            coverColor: row.cover_color || '',
-            type: row.type || 'Album',
-            year: row.release_date ? new Date(row.release_date).getFullYear().toString() : (row.release_year || '2026'),
-            releaseDate: row.release_date || '',
-            label: row.label || '',
-            genre: row.genre || '',
-            coverImage: row.cover_image || row.cover_url || '',
-            coverUrl: row.cover_url || row.cover_image || '',
-            image_url: row.cover_url || row.cover_image || '',
-            tracks: Array.isArray(row.tracks) ? row.tracks : (typeof row.tracks === 'string' ? JSON.parse(row.tracks) : []),
-            formats: typeof row.formats === 'object' && row.formats ? row.formats : (typeof row.formats === 'string' ? JSON.parse(row.formats) : {}),
-            digital: Array.isArray(row.digital) ? row.digital : (typeof row.digital === 'string' ? JSON.parse(row.digital) : []),
-            status: row.status || 'active'
-          }));
+          const matchedCommunityBand = communityBandManager.findMatch(bandName || selectedUserProfile?.name || '');
+          const communityDisco = matchedCommunityBand?.discography || [];
+
+          const mapped = finalReleases.map((row: any) => {
+            const commRel = communityDisco.find(
+              (cd: any) => cd.id === row.id || (cd.title && row.title && cd.title.toLowerCase().trim() === row.title.toLowerCase().trim())
+            );
+            const resolvedCover =
+              row.cover_url ||
+              row.cover_image ||
+              row.coverUrl ||
+              row.coverImage ||
+              row.image_url ||
+              commRel?.cover_url ||
+              commRel?.cover_image ||
+              commRel?.coverUrl ||
+              commRel?.coverImage ||
+              commRel?.image_url ||
+              '';
+
+            return {
+              id: row.id,
+              catalog_id: row.catalog_id || row.catalogId || commRel?.catalog_id || '',
+              catalogId: row.catalog_id || row.catalogId || commRel?.catalog_id || '',
+              title: row.title || commRel?.title || '',
+              coverColor: row.cover_color || '',
+              type: row.type || commRel?.type || 'Album',
+              year: row.release_date ? new Date(row.release_date).getFullYear().toString() : (row.release_year || commRel?.year || '2026'),
+              releaseDate: row.release_date || commRel?.year || '',
+              label: row.label || commRel?.label || commRel?.release_info || '',
+              genre: row.genre || (commRel as any)?.genre || '',
+              coverImage: resolvedCover,
+              coverUrl: resolvedCover,
+              image_url: resolvedCover,
+              tracks: Array.isArray(row.tracks) && row.tracks.length > 0 ? row.tracks : (commRel?.tracks || (typeof row.tracks === 'string' ? JSON.parse(row.tracks) : [])),
+              formats: typeof row.formats === 'object' && row.formats ? row.formats : (typeof row.formats === 'string' ? JSON.parse(row.formats) : {}),
+              digital: Array.isArray(row.digital) ? row.digital : (typeof row.digital === 'string' ? JSON.parse(row.digital) : []),
+              status: row.status || 'active'
+            };
+          });
           setDbReleases(mapped);
         } else if (isMounted) {
           setDbReleases([]);
@@ -419,6 +458,37 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
     return () => { isMounted = false; };
   }, [selectedUserProfile?.id, selectedUserProfile?.email, selectedUserProfile?.console_handle, selectedUserProfile?.name, targetProfile?.id, targetProfile?.name, supabase]);
 
+  React.useEffect(() => {
+    const handleBandUpdate = (evt: any) => {
+      const updated = evt?.detail;
+      const base = selectedUserProfile || targetProfile;
+      const currentName = base?.name || base?.band_name || '';
+      if (updated && (
+        (base?.id && (base.id === updated.id || extractUUID(base.id) === extractUUID(updated.id))) ||
+        (currentName && updated.name && (
+          currentName.toLowerCase().trim() === updated.name.toLowerCase().trim() ||
+          currentName.toLowerCase().replace(/[^a-z0-9]/g, '') === updated.name.toLowerCase().replace(/[^a-z0-9]/g, '')
+        ))
+      )) {
+        setCommunityArchiveMatch(updated);
+        setFetchedBandData((prev: any) => ({
+          ...(prev || {}),
+          ...updated,
+          logo_url: updated.avatar_url || updated.logo_url || prev?.logo_url,
+          avatar_url: updated.avatar_url || updated.logo_url || prev?.avatar_url,
+          cover_url: updated.cover_url || updated.banner_url || prev?.cover_url,
+          banner_url: updated.cover_url || updated.banner_url || prev?.banner_url,
+        }));
+      }
+    };
+    window.addEventListener('nexus_community_bands_updated', handleBandUpdate);
+    window.addEventListener('nexus_avatar_updated', handleBandUpdate);
+    return () => {
+      window.removeEventListener('nexus_community_bands_updated', handleBandUpdate);
+      window.removeEventListener('nexus_avatar_updated', handleBandUpdate);
+    };
+  }, [selectedUserProfile?.id, selectedUserProfile?.name, targetProfile?.id, targetProfile?.name]);
+
   if (!selectedUserProfile) return null;
 
   const baseTarget = selectedUserProfile || targetProfile;
@@ -438,7 +508,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
     if (localStr) localSavedBand = JSON.parse(localStr);
   } catch (e) {}
 
-  const bData = fetchedBandData || localSavedBand || null;
+  const bData = fetchedBandData || communityArchiveMatch || localSavedBand || null;
 
   const isArtistOrBand = !isExplicitPersonal && Boolean(
     baseTarget?.isBandProfile ||
@@ -473,11 +543,14 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
   );
 
   const rawResolvedBandName = isBandTarget ? (
-    bData?.band_name || bData?.name || baseTarget?.band_name || baseTarget?.bandName || baseTarget?.name || (fetchedProfileData as any)?.band_name || 'Virulent Excision'
+    bData?.band_name || bData?.name || communityArchiveMatch?.name || baseTarget?.band_name || baseTarget?.bandName || baseTarget?.name || (fetchedProfileData as any)?.band_name || 'Virulent Excision'
   ) : null;
 
   const rawResolvedBandLogo = isBandTarget ? (
-    bData?.logo_url || bData?.avatar_url || baseTarget?.logo_url || baseTarget?.avatar_url || baseTarget?.avatar || baseTarget?.band_logo || (fetchedProfileData as any)?.band_logo || (fetchedProfileData as any)?.logo_url
+    bData?.logo_url || bData?.avatar_url || (bData as any)?.avatar || (bData as any)?.image ||
+    communityArchiveMatch?.avatar_url || communityArchiveMatch?.logo_url || (communityArchiveMatch as any)?.avatar || (communityArchiveMatch as any)?.image ||
+    baseTarget?.logo_url || baseTarget?.avatar_url || baseTarget?.avatar || baseTarget?.band_logo ||
+    (fetchedProfileData as any)?.band_logo || (fetchedProfileData as any)?.logo_url
   ) : null;
 
   const resolvedBandBio = (
@@ -1258,7 +1331,19 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
 
                 {/* DISCOGRAPHY & LINEUP SECTIONS (BANDS ONLY) / ASSOCIATED ENTITIES (INDUSTRY PROS & PERSONAL) */}
                 {isBandProfile ? (() => {
-                  const resolvedDiscography = dbReleases.length > 0 ? dbReleases : (communityArchiveMatch?.discography || []);
+                  const communityList = communityArchiveMatch?.discography || [];
+                  const resolvedDiscography = dbReleases.length > 0
+                    ? dbReleases.map((dbRel: any) => {
+                        const commRel = communityList.find(
+                          (c: any) => c.id === dbRel.id || (c.title && dbRel.title && c.title.toLowerCase().trim() === dbRel.title.toLowerCase().trim())
+                        );
+                        if (!getReleaseCoverUrl(dbRel) && commRel) {
+                          const cover = getReleaseCoverUrl(commRel);
+                          return { ...dbRel, coverUrl: cover, cover_url: cover, coverImage: cover, cover_image: cover, image_url: cover };
+                        }
+                        return dbRel;
+                      })
+                    : communityList;
 
                   return (
                     <div className="space-y-6 text-left">
@@ -1282,37 +1367,43 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                           </div>
                         ) : (
                           <div className="flex gap-3 overflow-x-auto pb-3 pt-1 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent snap-x snap-mandatory">
-                            {resolvedDiscography.map((release: any, rIdx: number) => (
-                              <div
-                                key={release.id ? `disco-${release.id}-${rIdx}` : `disco-${rIdx}`}
-                                onClick={() => setSelectedRelease(release)}
-                                className="w-[145px] shrink-0 bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-850 hover:border-amber-500/40 rounded-xl p-2.5 transition-all duration-200 cursor-pointer group snap-start shadow-md hover:shadow-amber-950/15"
-                              >
-                                <div className="aspect-square w-full rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden relative mb-2 flex items-center justify-center">
-                                  {release.coverUrl || release.coverImage || release.image_url ? (
-                                    <img
-                                      src={release.coverUrl || release.coverImage || release.image_url}
-                                      alt={release.title}
-                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                      referrerPolicy="no-referrer"
-                                    />
-                                  ) : (
-                                    <Disc className="w-7 h-7 text-zinc-600 group-hover:text-amber-400 transition-colors" />
-                                  )}
-                                </div>
-                                <div className="min-w-0">
-                                  <h4 className="text-[11px] font-black text-white truncate font-display group-hover:text-amber-300 transition-colors uppercase tracking-tight">
-                                    {release.title}
-                                  </h4>
-                                  <div className="flex items-center justify-between mt-1 text-[9px] font-mono text-zinc-400">
-                                    <span className="uppercase tracking-wider text-[8px] bg-amber-500/10 text-amber-400 px-1.5 py-0.2 rounded border border-amber-500/20">
-                                      {release.type || 'LP'}
-                                    </span>
-                                    <span>{release.year || '2024'}</span>
+                            {resolvedDiscography.map((release: any, rIdx: number) => {
+                              const coverSrc = getReleaseCoverUrl(release);
+                              return (
+                                <div
+                                  key={release.id ? `disco-${release.id}-${rIdx}` : `disco-${rIdx}`}
+                                  onClick={() => setSelectedRelease(release)}
+                                  className="w-[145px] shrink-0 bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-850 hover:border-amber-500/40 rounded-xl p-2.5 transition-all duration-200 cursor-pointer group snap-start shadow-md hover:shadow-amber-950/15"
+                                >
+                                  <div className="aspect-square w-full rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden relative mb-2 flex items-center justify-center">
+                                    {coverSrc ? (
+                                      <img
+                                        src={coverSrc}
+                                        alt={release.title}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                        referrerPolicy="no-referrer"
+                                        onError={(e) => {
+                                          (e.target as HTMLElement).style.display = 'none';
+                                        }}
+                                      />
+                                    ) : (
+                                      <Disc className="w-7 h-7 text-zinc-600 group-hover:text-amber-400 transition-colors" />
+                                    )}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <h4 className="text-[11px] font-black text-white truncate font-display group-hover:text-amber-300 transition-colors uppercase tracking-tight">
+                                      {release.title}
+                                    </h4>
+                                    <div className="flex items-center justify-between mt-1 text-[9px] font-mono text-zinc-400">
+                                      <span className="uppercase tracking-wider text-[8px] bg-amber-500/10 text-amber-400 px-1.5 py-0.2 rounded border border-amber-500/20">
+                                        {release.type || 'LP'}
+                                      </span>
+                                      <span>{release.year || '2024'}</span>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                       </div>
@@ -3290,20 +3381,30 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                  {communityDiscography.map((release: any, rIdx: number) => (
-                                    <div
-                                      key={release.id ? `rel-${release.id}-${rIdx}` : `rel-${rIdx}`}
-                                      onClick={() => setSelectedRelease(release)}
-                                      className="p-3.5 rounded-xl bg-zinc-950/80 border border-zinc-850 hover:border-amber-500/50 hover:scale-[1.01] flex flex-col gap-2.5 shadow-lg group transition-all duration-200 cursor-pointer"
-                                    >
-                                      <div className="flex items-center gap-3">
-                                        <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0 shadow-inner relative">
-                                          {release.coverUrl || release.coverImage || release.image_url ? (
-                                            <img src={release.coverUrl || release.coverImage || release.image_url} alt={release.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                                          ) : (
-                                            <Disc className="w-6 h-6 text-zinc-600 group-hover:text-amber-400 transition-colors" />
-                                          )}
-                                        </div>
+                                  {communityDiscography.map((release: any, rIdx: number) => {
+                                    const coverSrc = getReleaseCoverUrl(release);
+                                    return (
+                                      <div
+                                        key={release.id ? `rel-${release.id}-${rIdx}` : `rel-${rIdx}`}
+                                        onClick={() => setSelectedRelease(release)}
+                                        className="p-3.5 rounded-xl bg-zinc-950/80 border border-zinc-850 hover:border-amber-500/50 hover:scale-[1.01] flex flex-col gap-2.5 shadow-lg group transition-all duration-200 cursor-pointer"
+                                      >
+                                        <div className="flex items-center gap-3">
+                                          <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0 shadow-inner relative">
+                                            {coverSrc ? (
+                                              <img
+                                                src={coverSrc}
+                                                alt={release.title}
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                                referrerPolicy="no-referrer"
+                                                onError={(e) => {
+                                                  (e.target as HTMLElement).style.display = 'none';
+                                                }}
+                                              />
+                                            ) : (
+                                              <Disc className="w-6 h-6 text-zinc-600 group-hover:text-amber-400 transition-colors" />
+                                            )}
+                                          </div>
 
                                         <div className="min-w-0 flex-1">
                                           <div className="flex items-center gap-1.5">
@@ -3343,7 +3444,8 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                                         </div>
                                       )}
                                     </div>
-                                  ))}
+                                  );
+                                })}
                                 </div>
                               </div>
                             )}

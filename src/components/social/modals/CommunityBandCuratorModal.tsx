@@ -177,6 +177,21 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
     }
   }, [isOpen, initialBand]);
 
+  useEffect(() => {
+    const handleUpdate = () => {
+      const freshList = communityBandManager.getAll();
+      if (freshList && freshList.length > 0) {
+        setBandsList(freshList);
+      }
+    };
+    window.addEventListener('nexus_community_bands_updated', handleUpdate);
+    window.addEventListener('nexus_avatar_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('nexus_community_bands_updated', handleUpdate);
+      window.removeEventListener('nexus_avatar_updated', handleUpdate);
+    };
+  }, []);
+
   const populateForm = (band: CommunityBandRecord) => {
     setSelectedBand(band);
     setIsCreatingNew(false);
@@ -189,8 +204,8 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
     setCountry(band.country || 'USA');
     setRecordLabel(band.record_label || band.label || '');
     setBio(band.bio || '');
-    setAvatarUrl(band.avatar_url || '');
-    setCoverUrl(band.cover_url || '');
+    setAvatarUrl(band.avatar_url || band.logo_url || (band as any).avatar || (band as any).image || '');
+    setCoverUrl(band.cover_url || band.banner_url || (band as any).cover || (band as any).banner || '');
     setSpotifyUrl(band.spotify_url || '');
     setBandcampUrl(band.bandcamp_url || '');
     setMetalArchivesUrl(band.metal_archives_url || '');
@@ -303,7 +318,7 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
     setEditingAlbumIdx(idx);
     setReleaseTitle(alb.title);
     setReleaseYear(alb.year);
-    setReleaseType(alb.type || 'album');
+    setReleaseType((['album', 'ep', 'single', 'demo'].includes((alb.type || '').toLowerCase()) ? (alb.type.toLowerCase() as any) : 'album'));
     setReleaseLabel(alb.label || alb.release_info || '');
     setReleaseCatalogId(alb.catalog_id || '');
     setReleaseImageUrl(alb.image_url || '');
@@ -398,7 +413,11 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
         label: recordLabel.trim() || undefined,
         bio,
         avatar_url: avatarUrl,
+        logo_url: avatarUrl,
+        avatar: avatarUrl,
+        image: avatarUrl,
         cover_url: coverUrl,
+        banner_url: coverUrl,
         spotify_url: spotifyUrl,
         bandcamp_url: bandcampUrl,
         metal_archives_url: metalArchivesUrl,
@@ -531,9 +550,12 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
                   className="w-full text-left p-3.5 sm:p-4 rounded-xl border bg-zinc-900/60 border-zinc-800/80 hover:border-amber-500/50 hover:bg-zinc-900 transition-all flex items-center gap-3.5 cursor-pointer shadow-sm group"
                 >
                   <img
-                    src={band.avatar_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=120'}
-                    alt=""
+                    src={band.avatar_url || band.logo_url || (band as any).avatar || (band as any).image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=120'}
+                    alt={band.name}
                     className="w-14 h-14 rounded-xl object-cover border border-zinc-750 shrink-0 group-hover:scale-105 transition-transform"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=120';
+                    }}
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">

@@ -214,7 +214,7 @@ export async function uploadBase64ToStorage(
     const cleanRequested = bucketName ? bucketName.toLowerCase().trim() : '';
 
     let primaryBucket = 'photo-pit';
-    if (cleanRequested.includes('banner') || cleanRequested.includes('cover') && !cleanRequested.includes('release') && !cleanRequested.includes('album')) {
+    if ((cleanRequested.includes('banner') || cleanRequested.includes('cover')) && !cleanRequested.includes('release') && !cleanRequested.includes('album')) {
       primaryBucket = 'bannersv2';
     } else if (cleanRequested.includes('avatar') || cleanRequested.includes('logo')) {
       primaryBucket = 'avatars';
@@ -233,18 +233,20 @@ export async function uploadBase64ToStorage(
         [
           cleanRequested,
           primaryBucket,
+          'avatars',
+          'bannersv2',
+          'banners',
           'releases',
           'photo-pit',
+          'public-assets',
+          'media',
           'photopit',
           'photo_pit',
           'photos',
           'gallery',
           'assets',
-          'media',
-          'avatars',
-          'bannersv2',
-          'audio-vault',
           'images',
+          'audio-vault',
         ].filter((b): b is string => typeof b === 'string' && b.trim().length > 0)
       )
     );
@@ -256,10 +258,10 @@ export async function uploadBase64ToStorage(
     const fileExt = (mimeType.split('/')[1] || 'webp').toLowerCase().replace('jpeg', 'jpg');
     const timestamp = Date.now();
 
-    // Proactively attempt to create bucket if targeting photo-pit / primary bucket and it doesn't exist
-    if (primaryBucket === 'photo-pit') {
+    // Proactively attempt to create bucket if targeting primary bucket and it doesn't exist
+    if (primaryBucket) {
       try {
-        await client.storage.createBucket('photo-pit', { public: true });
+        await client.storage.createBucket(primaryBucket, { public: true });
       } catch (_) {}
     }
 

@@ -33,8 +33,12 @@ export interface DiscographyRelease {
   id?: string;
   title: string;
   year: string;
-  type: 'album' | 'ep' | 'single' | 'demo';
+  type: 'album' | 'ep' | 'single' | 'demo' | string;
   image_url?: string;
+  cover_url?: string;
+  cover_image?: string;
+  coverUrl?: string;
+  coverImage?: string;
   release_info?: string;
   catalog_id?: string;
   label?: string;
@@ -56,7 +60,11 @@ export interface CommunityBandRecord {
   label?: string;
   bio?: string;
   avatar_url?: string;
+  logo_url?: string;
   cover_url?: string;
+  banner_url?: string;
+  avatar?: string;
+  image?: string;
   spotify_url?: string;
   bandcamp_url?: string;
   metal_archives_url?: string;
@@ -117,6 +125,10 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
         release_info: 'Recorded and programmed entirely by Muhammed Suiçmez. Willowtip Records / Relapse.',
         catalog_id: 'WT-014',
         label: 'Willowtip Records',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/4318493ee89a0417eb522b2c6b545464/1000x1000-000000-80-0-0.jpg',
+        cover_image: 'https://cdn-images.dzcdn.net/images/cover/4318493ee89a0417eb522b2c6b545464/1000x1000-000000-80-0-0.jpg',
+        coverUrl: 'https://cdn-images.dzcdn.net/images/cover/4318493ee89a0417eb522b2c6b545464/1000x1000-000000-80-0-0.jpg',
+        image_url: 'https://cdn-images.dzcdn.net/images/cover/4318493ee89a0417eb522b2c6b545464/1000x1000-000000-80-0-0.jpg',
         tracks: [
           { number: 1, title: 'Foul Body Autopsy', duration: '1:53' },
           { number: 2, title: 'To Breathe in a Casket', duration: '5:41' },
@@ -133,6 +145,10 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
         release_info: 'Relapse Records / Cat #RR6623. Seminal technical death metal masterwork.',
         catalog_id: 'RR-6623',
         label: 'Relapse Records',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/ed97fd7c37024f0eba98bd8149e191a9/1000x1000-000000-80-0-0.jpg',
+        cover_image: 'https://cdn-images.dzcdn.net/images/cover/ed97fd7c37024f0eba98bd8149e191a9/1000x1000-000000-80-0-0.jpg',
+        coverUrl: 'https://cdn-images.dzcdn.net/images/cover/ed97fd7c37024f0eba98bd8149e191a9/1000x1000-000000-80-0-0.jpg',
+        image_url: 'https://cdn-images.dzcdn.net/images/cover/ed97fd7c37024f0eba98bd8149e191a9/1000x1000-000000-80-0-0.jpg',
         tracks: [
           { number: 1, title: 'Stabwound', duration: '2:48' },
           { number: 2, title: 'The Stillborn One', duration: '4:24' },
@@ -185,6 +201,10 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
         release_info: 'Maggot Stomp Records debut EP.',
         catalog_id: 'MS-023',
         label: 'Maggot Stomp',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/39236ca48c7ee6fa5a90a28998593ee9/1000x1000-000000-80-0-0.jpg',
+        cover_image: 'https://cdn-images.dzcdn.net/images/cover/39236ca48c7ee6fa5a90a28998593ee9/1000x1000-000000-80-0-0.jpg',
+        coverUrl: 'https://cdn-images.dzcdn.net/images/cover/39236ca48c7ee6fa5a90a28998593ee9/1000x1000-000000-80-0-0.jpg',
+        image_url: 'https://cdn-images.dzcdn.net/images/cover/39236ca48c7ee6fa5a90a28998593ee9/1000x1000-000000-80-0-0.jpg',
         tracks: [
           { number: 1, title: 'Uningesting Cavity Weight', duration: '2:15' },
           { number: 2, title: 'Turkish Tub', duration: '2:40' },
@@ -199,6 +219,10 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
         release_info: 'Century Media Records full-length debut.',
         catalog_id: 'CM-19439',
         label: 'Century Media',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/5ff1e2efc0e93153860bea3cc82d652c/1000x1000-000000-80-0-0.jpg',
+        cover_image: 'https://cdn-images.dzcdn.net/images/cover/5ff1e2efc0e93153860bea3cc82d652c/1000x1000-000000-80-0-0.jpg',
+        coverUrl: 'https://cdn-images.dzcdn.net/images/cover/5ff1e2efc0e93153860bea3cc82d652c/1000x1000-000000-80-0-0.jpg',
+        image_url: 'https://cdn-images.dzcdn.net/images/cover/5ff1e2efc0e93153860bea3cc82d652c/1000x1000-000000-80-0-0.jpg',
         tracks: [
           { number: 1, title: 'Menstrual Envy', duration: '3:45' },
           { number: 2, title: 'Gurgling Toothache', duration: '3:19' },
@@ -214,11 +238,31 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
         release_info: 'Mixed by Kurt Ballou at GodCity Studio.',
         catalog_id: 'CM-19642',
         label: 'Century Media',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/489b6c23454d35864e1ad68180b1cd41/1000x1000-000000-80-0-0.jpg',
+        cover_image: 'https://cdn-images.dzcdn.net/images/cover/489b6c23454d35864e1ad68180b1cd41/1000x1000-000000-80-0-0.jpg',
+        coverUrl: 'https://cdn-images.dzcdn.net/images/cover/489b6c23454d35864e1ad68180b1cd41/1000x1000-000000-80-0-0.jpg',
+        image_url: 'https://cdn-images.dzcdn.net/images/cover/489b6c23454d35864e1ad68180b1cd41/1000x1000-000000-80-0-0.jpg',
         tracks: [
           { number: 1, title: 'Black Market Vasectomy', duration: '2:56' },
           { number: 2, title: 'Face Ripped Off', duration: '3:43' },
           { number: 3, title: 'Necrosexual Deviant', duration: '2:15' },
           { number: 4, title: 'Mortal Admonition', duration: '4:15' }
+        ]
+      },
+      {
+        id: 'rel-bogg-4',
+        title: 'Hideous Aftermath',
+        year: '2024',
+        type: 'single',
+        release_info: 'Century Media Records official single release.',
+        catalog_id: 'CM-19810',
+        label: 'Century Media',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/ef0a0d5f18c123ad0550e24ac2b8ef95/1000x1000-000000-80-0-0.jpg',
+        cover_image: 'https://cdn-images.dzcdn.net/images/cover/ef0a0d5f18c123ad0550e24ac2b8ef95/1000x1000-000000-80-0-0.jpg',
+        coverUrl: 'https://cdn-images.dzcdn.net/images/cover/ef0a0d5f18c123ad0550e24ac2b8ef95/1000x1000-000000-80-0-0.jpg',
+        image_url: 'https://cdn-images.dzcdn.net/images/cover/ef0a0d5f18c123ad0550e24ac2b8ef95/1000x1000-000000-80-0-0.jpg',
+        tracks: [
+          { number: 1, title: 'Hideous Aftermath', duration: '3:50' }
         ]
       }
     ]
@@ -257,6 +301,12 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
         year: '1995',
         type: 'ep',
         release_info: 'Relapse Records EP.',
+        catalog_id: 'RR-6921',
+        label: 'Relapse Records',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/43a76a6508f78006c06d6c17b3c65b96/1000x1000-000000-80-0-0.jpg',
+        cover_image: 'https://cdn-images.dzcdn.net/images/cover/43a76a6508f78006c06d6c17b3c65b96/1000x1000-000000-80-0-0.jpg',
+        coverUrl: 'https://cdn-images.dzcdn.net/images/cover/43a76a6508f78006c06d6c17b3c65b96/1000x1000-000000-80-0-0.jpg',
+        image_url: 'https://cdn-images.dzcdn.net/images/cover/43a76a6508f78006c06d6c17b3c65b96/1000x1000-000000-80-0-0.jpg',
         tracks: [
           { number: 1, title: 'Intro / House by the Cemetery', duration: '2:53' },
           { number: 2, title: 'Procreation of the Wicked', duration: '2:31' }
@@ -268,6 +318,12 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
         year: '1996',
         type: 'album',
         release_info: 'Relapse Records classic debut.',
+        catalog_id: 'RR-6944',
+        label: 'Relapse Records',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/105a037bc9634f61844f16335166e605/1000x1000-000000-80-0-0.jpg',
+        cover_image: 'https://cdn-images.dzcdn.net/images/cover/105a037bc9634f61844f16335166e605/1000x1000-000000-80-0-0.jpg',
+        coverUrl: 'https://cdn-images.dzcdn.net/images/cover/105a037bc9634f61844f16335166e605/1000x1000-000000-80-0-0.jpg',
+        image_url: 'https://cdn-images.dzcdn.net/images/cover/105a037bc9634f61844f16335166e605/1000x1000-000000-80-0-0.jpg',
         tracks: [
           { number: 1, title: 'Bloodcraving', duration: '5:13' },
           { number: 2, title: 'Embalmed Alive', duration: '0:50' },
@@ -282,6 +338,12 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
         year: '1999',
         type: 'album',
         release_info: 'Relapse Records / Cat #RR6428.',
+        catalog_id: 'RR-6428',
+        label: 'Relapse Records',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/41ce0641e108b1bfd1d958ebcb6d129f/1000x1000-000000-80-0-0.jpg',
+        cover_image: 'https://cdn-images.dzcdn.net/images/cover/41ce0641e108b1bfd1d958ebcb6d129f/1000x1000-000000-80-0-0.jpg',
+        coverUrl: 'https://cdn-images.dzcdn.net/images/cover/41ce0641e108b1bfd1d958ebcb6d129f/1000x1000-000000-80-0-0.jpg',
+        image_url: 'https://cdn-images.dzcdn.net/images/cover/41ce0641e108b1bfd1d958ebcb6d129f/1000x1000-000000-80-0-0.jpg',
         tracks: [
           { number: 1, title: 'Stab', duration: '3:53' },
           { number: 2, title: 'Fleshripper', duration: '0:54' },
@@ -321,6 +383,12 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
         year: '2000',
         type: 'album',
         release_info: 'Relapse Records breakthrough album.',
+        catalog_id: 'RR-6473',
+        label: 'Relapse Records',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/175933355d5b0e826815a4ae10d80486/1000x1000-000000-80-0-0.jpg',
+        cover_image: 'https://cdn-images.dzcdn.net/images/cover/175933355d5b0e826815a4ae10d80486/1000x1000-000000-80-0-0.jpg',
+        coverUrl: 'https://cdn-images.dzcdn.net/images/cover/175933355d5b0e826815a4ae10d80486/1000x1000-000000-80-0-0.jpg',
+        image_url: 'https://cdn-images.dzcdn.net/images/cover/175933355d5b0e826815a4ae10d80486/1000x1000-000000-80-0-0.jpg',
         tracks: [
           { number: 1, title: 'Praise the Lord (Opium of the Masses)', duration: '5:31' },
           { number: 2, title: 'Epidemic of Hate', duration: '4:42' },
@@ -333,6 +401,12 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
         year: '2012',
         type: 'album',
         release_info: 'Relapse Records.',
+        catalog_id: 'RR-7193',
+        label: 'Relapse Records',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/e03eb6b69e377695520ab4fa8142522d/1000x1000-000000-80-0-0.jpg',
+        cover_image: 'https://cdn-images.dzcdn.net/images/cover/e03eb6b69e377695520ab4fa8142522d/1000x1000-000000-80-0-0.jpg',
+        coverUrl: 'https://cdn-images.dzcdn.net/images/cover/e03eb6b69e377695520ab4fa8142522d/1000x1000-000000-80-0-0.jpg',
+        image_url: 'https://cdn-images.dzcdn.net/images/cover/e03eb6b69e377695520ab4fa8142522d/1000x1000-000000-80-0-0.jpg',
         tracks: [
           { number: 1, title: 'In the Trenches', duration: '3:09' },
           { number: 2, title: 'From Womb to Waste', duration: '4:43' },
@@ -345,6 +419,12 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
         year: '2023',
         type: 'album',
         release_info: 'Relapse Records.',
+        catalog_id: 'RR-7521',
+        label: 'Relapse Records',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/4189a7fa9aeed62e27332f77a04b39cd/1000x1000-000000-80-0-0.jpg',
+        cover_image: 'https://cdn-images.dzcdn.net/images/cover/4189a7fa9aeed62e27332f77a04b39cd/1000x1000-000000-80-0-0.jpg',
+        coverUrl: 'https://cdn-images.dzcdn.net/images/cover/4189a7fa9aeed62e27332f77a04b39cd/1000x1000-000000-80-0-0.jpg',
+        image_url: 'https://cdn-images.dzcdn.net/images/cover/4189a7fa9aeed62e27332f77a04b39cd/1000x1000-000000-80-0-0.jpg',
         tracks: [
           { number: 1, title: 'Enlighten Through Agony', duration: '3:49' },
           { number: 2, title: 'Compulsion for Cruelty', duration: '4:36' },
@@ -410,26 +490,48 @@ export class CommunityBandManager {
   public findByName(name: string): CommunityBandRecord | null {
     if (!name || !name.trim()) return null;
     const clean = name.trim().toLowerCase();
+    const cleanNorm = clean.replace(/[^a-z0-9]/g, '');
     const all = this.getAll();
-    return all.find((b) => b.name.toLowerCase() === clean || b.name.toLowerCase().replace(/[^a-z0-9]/g, '') === clean.replace(/[^a-z0-9]/g, '')) || null;
+    return all.find((b) => {
+      const bName = (b.name || (b as any).band_name || '').toLowerCase();
+      return bName === clean || bName.replace(/[^a-z0-9]/g, '') === cleanNorm;
+    }) || null;
+  }
+
+  public findMatch(name: string): CommunityBandRecord | null {
+    return this.findByName(name);
   }
 
   public getById(id: string): CommunityBandRecord | null {
     if (!id) return null;
+    const cleanId = String(id).trim();
+    const cleanUUID = ensureUUID(cleanId);
     const all = this.getAll();
-    return all.find((b) => b.id === id) || null;
+    return all.find((b) => b.id === cleanId || ensureUUID(b.id) === cleanUUID) || null;
   }
 
   // Create or quick-edit a fan/community band page without official registration forms
   public upsertCommunityBand(band: Partial<CommunityBandRecord> & { name?: string; id?: string }): CommunityBandRecord {
     const all = this.getAll();
-    const existingIndex = all.findIndex(
-      (b) => (band.name && b.name.toLowerCase().trim() === band.name.toLowerCase().trim()) || (band.id && b.id === band.id)
-    );
+    const targetName = (band.name || (band as any).band_name || '').toLowerCase().trim();
+    const targetCleanName = targetName.replace(/[^a-z0-9]/g, '');
+    const targetUUID = band.id ? ensureUUID(band.id) : null;
+
+    const existingIndex = all.findIndex((b) => {
+      if (band.id && (b.id === band.id || ensureUUID(b.id) === targetUUID)) return true;
+      if (targetName) {
+        const bName = (b.name || (b as any).band_name || '').toLowerCase().trim();
+        if (bName === targetName || bName.replace(/[^a-z0-9]/g, '') === targetCleanName) return true;
+      }
+      return false;
+    });
 
     const now = new Date().toISOString();
 
     let result: CommunityBandRecord;
+
+    const resolvedAvatar = band.avatar_url || band.logo_url || (band as any).avatar || (band as any).image;
+    const resolvedCover = band.cover_url || band.banner_url || (band as any).banner || (band as any).cover;
 
     if (existingIndex >= 0) {
       const existing = all[existingIndex];
@@ -437,8 +539,15 @@ export class CommunityBandManager {
       const updated: CommunityBandRecord = {
         ...existing,
         ...band,
+        id: band.id || existing.id,
         name: validName,
         band_name: validName,
+        avatar_url: resolvedAvatar !== undefined ? resolvedAvatar : (existing.avatar_url || existing.logo_url),
+        logo_url: resolvedAvatar !== undefined ? resolvedAvatar : (existing.logo_url || existing.avatar_url),
+        avatar: resolvedAvatar !== undefined ? resolvedAvatar : (existing.avatar || existing.avatar_url),
+        image: resolvedAvatar !== undefined ? resolvedAvatar : (existing.image || existing.avatar_url),
+        cover_url: resolvedCover !== undefined ? resolvedCover : (existing.cover_url || existing.banner_url),
+        banner_url: resolvedCover !== undefined ? resolvedCover : (existing.banner_url || existing.cover_url),
         founded_year: band.founded_year || existing.founded_year,
         city: band.city !== undefined ? band.city : existing.city,
         state: band.state !== undefined ? band.state : existing.state,
@@ -452,6 +561,7 @@ export class CommunityBandManager {
       all[existingIndex] = updated;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
       window.dispatchEvent(new CustomEvent('nexus_community_bands_updated', { detail: updated }));
+      window.dispatchEvent(new CustomEvent('nexus_avatar_updated', { detail: { avatar_url: updated.avatar_url, logo_url: updated.logo_url } }));
       result = updated;
     } else {
       const validName = (band.name || (band as any).band_name || 'Nexus Artist').trim();
@@ -469,8 +579,12 @@ export class CommunityBandManager {
         record_label: band.record_label || band.label || '',
         label: band.label || band.record_label || '',
         bio: band.bio || `Community-curated archive and discography for ${validName}.`,
-        avatar_url: band.avatar_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=400',
-        cover_url: band.cover_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=1200',
+        avatar_url: resolvedAvatar || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=400',
+        logo_url: resolvedAvatar || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=400',
+        avatar: resolvedAvatar || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=400',
+        image: resolvedAvatar || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=400',
+        cover_url: resolvedCover || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=1200',
+        banner_url: resolvedCover || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=1200',
         spotify_url: band.spotify_url || '',
         bandcamp_url: band.bandcamp_url || '',
         metal_archives_url: band.metal_archives_url || '',
@@ -488,6 +602,7 @@ export class CommunityBandManager {
       all.unshift(newBand);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
       window.dispatchEvent(new CustomEvent('nexus_community_bands_updated', { detail: newBand }));
+      window.dispatchEvent(new CustomEvent('nexus_avatar_updated', { detail: { avatar_url: newBand.avatar_url, logo_url: newBand.logo_url } }));
       result = newBand;
     }
 
@@ -535,7 +650,7 @@ export class CommunityBandManager {
       }
 
       // Auto-upload base64 images to appropriate buckets if not already public URLs
-      let finalAvatarUrl = band.avatar_url || existing?.avatar_url;
+      let finalAvatarUrl = band.avatar_url || (band as any).logo_url || (band as any).avatar || (band as any).image || existing?.avatar_url || existing?.logo_url;
       if (finalAvatarUrl && finalAvatarUrl.startsWith('data:image')) {
         try {
           const uploaded = await uploadBase64ToStorage(finalAvatarUrl, 'avatars', bandUUID, 'avatar');
@@ -545,7 +660,7 @@ export class CommunityBandManager {
         }
       }
 
-      let finalCoverUrl = band.cover_url || existing?.cover_url;
+      let finalCoverUrl = band.cover_url || (band as any).banner_url || (band as any).banner || (band as any).cover || existing?.cover_url || existing?.banner_url;
       if (finalCoverUrl && finalCoverUrl.startsWith('data:image')) {
         try {
           const uploaded = await uploadBase64ToStorage(finalCoverUrl, 'bannersv2', bandUUID, 'banner');
@@ -553,6 +668,22 @@ export class CommunityBandManager {
         } catch (err) {
           console.warn('[communityBands] Cover banner storage upload fallback:', err);
         }
+      }
+
+      // Update local storage record with the uploaded storage URLs
+      const all = this.getAll();
+      const idx = all.findIndex(b => b.id === band.id || ensureUUID(b.id) === bandUUID || (resolvedBandName && b.name.toLowerCase().trim() === resolvedBandName.toLowerCase().trim()));
+      if (idx >= 0) {
+        all[idx] = {
+          ...all[idx],
+          avatar_url: finalAvatarUrl || all[idx].avatar_url,
+          logo_url: finalAvatarUrl || all[idx].logo_url,
+          avatar: finalAvatarUrl || all[idx].avatar,
+          image: finalAvatarUrl || all[idx].image,
+          cover_url: finalCoverUrl || all[idx].cover_url,
+          banner_url: finalCoverUrl || all[idx].banner_url
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
       }
 
       // 1. Sync to 'bands' table using schema resilience & sanitization with guaranteed non-null band_name
@@ -601,6 +732,24 @@ export class CommunityBandManager {
         console.warn('[communityBands] Band upsert notice:', bandResult.error);
       }
 
+      // Broadcast update events across all UI listeners
+      window.dispatchEvent(new CustomEvent('nexus_community_bands_updated', {
+        detail: {
+          ...band,
+          id: band.id,
+          avatar_url: finalAvatarUrl,
+          logo_url: finalAvatarUrl,
+          cover_url: finalCoverUrl,
+          banner_url: finalCoverUrl
+        }
+      }));
+      window.dispatchEvent(new CustomEvent('nexus_avatar_updated', {
+        detail: {
+          avatar_url: finalAvatarUrl,
+          logo_url: finalAvatarUrl
+        }
+      }));
+
       // 2. Sync discography albums to 'releases' table with strict batch upsert & duplicate filtering
       if (Array.isArray(band.discography) && band.discography.length > 0) {
         const releasePayloads: any[] = [];
@@ -613,7 +762,7 @@ export class CommunityBandManager {
           }
           seenReleaseIds.add(releaseId);
 
-          let albumCoverUrl = album.image_url;
+          let albumCoverUrl = album.cover_url || album.cover_image || album.coverUrl || album.coverImage || album.image_url || null;
           if (albumCoverUrl && albumCoverUrl.startsWith('data:image')) {
             try {
               const uploaded = await uploadBase64ToStorage(albumCoverUrl, 'releases', `${bandUUID}-${idx}`, 'cover');
@@ -692,16 +841,27 @@ export class CommunityBandManager {
           title: r.title || 'Untitled Release',
           year: r.release_date || '',
           type: (r.type?.toLowerCase() || 'album') as any,
-          image_url: r.cover_image || r.cover_url || '',
+          cover_url: r.cover_url || r.cover_image || r.coverUrl || r.coverImage || r.image_url || '',
+          cover_image: r.cover_image || r.cover_url || r.coverImage || r.coverUrl || r.image_url || '',
+          coverUrl: r.cover_url || r.cover_image || r.coverUrl || r.coverImage || r.image_url || '',
+          coverImage: r.cover_image || r.cover_url || r.coverImage || r.coverUrl || r.image_url || '',
+          image_url: r.cover_image || r.cover_url || r.coverImage || r.coverUrl || r.image_url || '',
           release_info: r.label || '',
           catalog_id: r.catalog_id || '',
           label: r.label || '',
           tracks: Array.isArray(r.tracks) ? r.tracks : []
         }));
 
-        const existingIdx = updatedList.findIndex(
-          (x) => x.id === b.id || x.name.toLowerCase().trim() === bandName.toLowerCase().trim()
-        );
+        const cleanBandName = bandName.toLowerCase().trim();
+        const cleanNormName = cleanBandName.replace(/[^a-z0-9]/g, '');
+
+        const existingIdx = updatedList.findIndex((x) => {
+          if (x.id === b.id || (b.id && ensureUUID(x.id) === b.id) || (b.id && ensureUUID(x.id) === ensureUUID(b.id))) return true;
+          const xName = (x.name || (x as any).band_name || '').toLowerCase().trim();
+          return xName === cleanBandName || xName.replace(/[^a-z0-9]/g, '') === cleanNormName;
+        });
+
+        const existingItem = existingIdx >= 0 ? updatedList[existingIdx] : null;
 
         let parsedLineup: LineupMember[] = [];
         if (Array.isArray(b.lineup)) {
@@ -719,38 +879,46 @@ export class CommunityBandManager {
           ? b.micro_genres.split(',').map((s: string) => s.trim())
           : [];
 
+        const resolvedAvatar = b.logo_url || b.avatar_url || b.logo || b.avatar || b.image_url || existingItem?.avatar_url || existingItem?.logo_url || '';
+        const resolvedCover = b.cover_url || b.banner_url || b.cover || b.banner || existingItem?.cover_url || existingItem?.banner_url || '';
+
         const record: CommunityBandRecord = {
           id: b.id,
           name: bandName,
-          genre: microGenres[0] || 'Extreme Metal',
-          subgenres: microGenres,
-          founded_year: b.founded_year || (existingIdx >= 0 ? updatedList[existingIdx].founded_year : ''),
-          city: b.city || '',
-          state: b.state_province || b.state || '',
-          state_province: b.state_province || b.state || '',
-          country: b.country || 'USA',
-          record_label: b.record_label || b.label_name || b.label || (existingIdx >= 0 ? updatedList[existingIdx].record_label : ''),
-          label: b.label || b.record_label || b.label_name || (existingIdx >= 0 ? updatedList[existingIdx].label : ''),
-          creator_id: b.creator_id || (existingIdx >= 0 ? updatedList[existingIdx].creator_id : undefined),
-          bio: b.bio || `Community-curated archive for ${bandName}.`,
-          avatar_url: b.logo_url || b.avatar_url || '',
-          cover_url: b.cover_url || b.banner_url || '',
-          spotify_url: b.spotify || b.spotify_url || '',
-          bandcamp_url: b.bandcamp || b.bandcamp_url || '',
-          metal_archives_url: b.metal_archives_url || '',
-          youtube_url: b.featured_youtube_url || b.youtube_url || '',
-          featured_youtube_url: b.featured_youtube_url || b.youtube_url || '',
-          lineup: parsedLineup.length > 0 ? parsedLineup : (existingIdx >= 0 ? updatedList[existingIdx].lineup : []),
-          discography: discography.length > 0 ? discography : (existingIdx >= 0 ? updatedList[existingIdx].discography : []),
-          curated_by: existingIdx >= 0 ? updatedList[existingIdx].curated_by : '@fan_archivist',
-          curator_name: existingIdx >= 0 ? updatedList[existingIdx].curator_name : 'Community Archivist',
-          created_at: b.created_at || new Date().toISOString(),
-          verification_status: b.is_verified ? 'verified_official' : 'community_archive',
-          followers_count: existingIdx >= 0 ? updatedList[existingIdx].followers_count : 120
+          band_name: bandName,
+          genre: microGenres[0] || b.genre || existingItem?.genre || 'Extreme Metal',
+          subgenres: microGenres.length > 0 ? microGenres : (existingItem?.subgenres || []),
+          founded_year: b.founded_year || existingItem?.founded_year || '',
+          city: b.city || existingItem?.city || '',
+          state: b.state_province || b.state || existingItem?.state_province || existingItem?.state || '',
+          state_province: b.state_province || b.state || existingItem?.state_province || existingItem?.state || '',
+          country: b.country || existingItem?.country || 'USA',
+          record_label: b.record_label || b.label_name || b.label || existingItem?.record_label || existingItem?.label || '',
+          label: b.label || b.record_label || b.label_name || existingItem?.label || existingItem?.record_label || '',
+          creator_id: b.creator_id || existingItem?.creator_id,
+          bio: b.bio || existingItem?.bio || `Community-curated archive for ${bandName}.`,
+          avatar_url: resolvedAvatar,
+          logo_url: resolvedAvatar,
+          avatar: resolvedAvatar,
+          image: resolvedAvatar,
+          cover_url: resolvedCover,
+          banner_url: resolvedCover,
+          spotify_url: b.spotify || b.spotify_url || existingItem?.spotify_url || '',
+          bandcamp_url: b.bandcamp || b.bandcamp_url || existingItem?.bandcamp_url || '',
+          metal_archives_url: b.metal_archives_url || existingItem?.metal_archives_url || '',
+          youtube_url: b.featured_youtube_url || b.youtube_url || existingItem?.youtube_url || '',
+          featured_youtube_url: b.featured_youtube_url || b.youtube_url || existingItem?.featured_youtube_url || '',
+          lineup: parsedLineup.length > 0 ? parsedLineup : (existingItem?.lineup || []),
+          discography: discography.length > 0 ? discography : (existingItem?.discography || []),
+          curated_by: existingItem?.curated_by || '@fan_archivist',
+          curator_name: existingItem?.curator_name || 'Community Archivist',
+          created_at: b.created_at || existingItem?.created_at || new Date().toISOString(),
+          verification_status: b.is_verified ? 'verified_official' : (b.verification_status || existingItem?.verification_status || 'community_archive'),
+          followers_count: existingItem?.followers_count || 120
         };
 
         if (existingIdx >= 0) {
-          updatedList[existingIdx] = { ...updatedList[existingIdx], ...record };
+          updatedList[existingIdx] = { ...existingItem, ...record };
         } else {
           updatedList.push(record);
         }
@@ -763,10 +931,23 @@ export class CommunityBandManager {
       for (const item of updatedList) {
         if (!item || !item.id) continue;
         const normName = (item.name || '').toLowerCase().trim();
-        if (!seenIds.has(item.id) && (!normName || !seenNames.has(normName))) {
+        const normCleanName = normName.replace(/[^a-z0-9]/g, '');
+
+        if (!seenIds.has(item.id) && (!normCleanName || !seenNames.has(normCleanName))) {
           seenIds.add(item.id);
-          if (normName) seenNames.add(normName);
+          if (normCleanName) seenNames.add(normCleanName);
           dedupedList.push(item);
+        } else {
+          const existingDIdx = dedupedList.findIndex(
+            (d) => d.id === item.id || (normCleanName && (d.name || '').toLowerCase().replace(/[^a-z0-9]/g, '') === normCleanName)
+          );
+          if (existingDIdx >= 0) {
+            const currentD = dedupedList[existingDIdx];
+            // Prioritize the entry that has a custom avatar/logo URL
+            if ((!currentD.avatar_url && item.avatar_url) || (item.avatar_url && !item.avatar_url.includes('unsplash') && currentD.avatar_url?.includes('unsplash'))) {
+              dedupedList[existingDIdx] = { ...currentD, ...item };
+            }
+          }
         }
       }
 

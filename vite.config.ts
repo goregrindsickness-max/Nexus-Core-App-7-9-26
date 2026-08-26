@@ -16,7 +16,7 @@ export default defineConfig(() => {
       dedupe: ['react', 'react-dom'],
     },
     build: {
-      minify: false,
+      minify: 'esbuild',
       sourcemap: false,
       reportCompressedSize: false,
       chunkSizeWarningLimit: 3000,

@@ -52,14 +52,14 @@ export const SocialSubNav: React.FC<SocialSubNavProps> = ({
 
   return (
     <div className="w-full bg-zinc-950/90 border-b border-zinc-800 px-1 py-1 flex items-center justify-around gap-0.5 sm:gap-1 sticky top-0 z-30 overflow-x-auto no-scrollbar">
-      {navItems.map((item) => {
+      {navItems.map((item, idx) => {
         const Icon = item.icon;
         const isActive = activeTab === item.id;
         const hasBadge = item.badge !== undefined && item.badge > 0;
 
         return (
           <button
-            key={item.id}
+            key={`social-subnav-${item.id}-${idx}`}
             onClick={() => {
               if (item.onClick) {
                 item.onClick();
