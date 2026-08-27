@@ -1769,9 +1769,9 @@ export default function SalesDashboardView({
                       { id: 'team-1', name: 'Sarah', label: 'Rep' },
                       { id: 'team-2', name: 'Alex', label: 'TM' },
                       { id: 'team-3', name: 'General', label: 'Split' },
-                    ].map((rep) => (
+                    ].map((rep, rIdx) => (
                       <button
-                        key={rep.id}
+                        key={`rep-${rep.id}-${rIdx}`}
                         type="button"
                         onClick={() => setSelectedTeamMemberId(rep.id)}
                         className={`py-1.5 px-2 rounded-xl border text-center transition-all cursor-pointer ${
@@ -1908,9 +1908,9 @@ export default function SalesDashboardView({
                         { label: '15%', value: '15%' },
                         { label: '20%', value: '20%' },
                         { label: 'Custom', value: 'custom' }
-                      ].map((opt) => (
+                      ].map((opt, optIdx) => (
                         <button
-                          key={opt.value}
+                          key={`tip-opt-${opt.value}-${optIdx}`}
                           type="button"
                           onClick={() => {
                             setTipType(opt.value as any);
@@ -2218,9 +2218,9 @@ export default function SalesDashboardView({
                         <div className="bg-[#111319]/80 border border-zinc-800 rounded-xl p-3 mt-2 flex flex-col gap-2">
                           <span className="text-[10px] font-bold text-white uppercase tracking-wider block">Cash Received</span>
                           <div className="grid grid-cols-4 gap-2">
-                            {['exact', '20', '50', '100'].map((opt) => (
+                            {['exact', '20', '50', '100'].map((opt, optIdx) => (
                               <button
-                                key={opt}
+                                key={`cash-opt-${opt}-${optIdx}`}
                                 onClick={() => setCashGivenOption(opt as any)}
                                 className={`py-2 px-1 text-[11px] font-mono rounded-lg transition-colors border ${
                                   cashGivenOption === opt

@@ -292,7 +292,7 @@ export default function PromoterSettingsTab({
         if (event.target?.result && typeof event.target.result === 'string') {
           try {
             const compressed = await compressImage(event.target.result, 256, 256, 0.75);
-            const publicUrl = await uploadBase64ToStorage(compressed, 'avatars', userProfile.id, 'promoter-avatar');
+            const publicUrl = await uploadBase64ToStorage(compressed, 'community-bands', userProfile.id, 'promoter-avatar');
             setUserProfile((prev: any) => ({ ...prev, promoter_logo: publicUrl }));
             // Persist to Supabase
             const supabase = getSupabase();
@@ -316,7 +316,7 @@ export default function PromoterSettingsTab({
         if (event.target?.result && typeof event.target.result === 'string') {
           try {
             const compressed = await compressImage(event.target.result, 800, 450, 0.75);
-            const publicUrl = await uploadBase64ToStorage(compressed, 'bannersv2', userProfile.id, 'promoter-banner');
+            const publicUrl = await uploadBase64ToStorage(compressed, 'community-bands', userProfile.id, 'promoter-banner');
             setUserProfile((prev: any) => ({ ...prev, promoter_cover_image: publicUrl }));
             // Persist to Supabase
             const supabase = getSupabase();

@@ -529,7 +529,7 @@ export function WalletOAuthModal({
                 const isSelected = card.id === selectedCardId;
                 return (
                   <div
-                    key={card.id}
+                    key={card.id ? `wcard-${card.id}-${cIdx}` : `wcard-${cIdx}`}
                     onClick={() => setSelectedCardId(card.id)}
                     className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between group ${
                       isSelected

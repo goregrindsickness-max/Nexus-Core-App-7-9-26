@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { uploadBase64ToStorage, getSupabase, executeWithSchemaResilience, sanitizeBandPayload } from '../supabase';
+import { uploadBase64ToStorage, getSupabase, executeWithSchemaResilience, sanitizeBandPayload, upsertBandToDatabase } from '../supabase';
 
 interface UseBandManagementParams {
   activeBand: any;
@@ -164,24 +164,17 @@ export function useBandManagement({
           try {
             const userProfileId = userProfile?.id || activeBand?.creator_id || 'profile_anonymous';
             const bandIdToUse = activeBand?.id || 'band';
-            triggerNotification?.('⏳ Storing logo in avatars bucket...');
-            const publicUrl = await uploadBase64ToStorage(compressedUrl, 'avatars', userProfileId, 'band-logo');
+            triggerNotification?.('⏳ Storing logo in community-bands bucket...');
+            const publicUrl = await uploadBase64ToStorage(compressedUrl, 'community-bands', userProfileId, 'band-logo');
             if (publicUrl) {
               setBandLogoUrl(publicUrl);
-              setBands(prev => prev.map(b => b.id === activeBand?.id ? { ...b, logo_url: publicUrl } : b));
+              const updated = { ...activeBand, logo_url: publicUrl };
+              setBands(prev => prev.map(b => b.id === activeBand?.id ? updated : b));
               
-              const supabase = getSupabase();
-              if (supabase && activeBand?.id) {
-                const cleanPayload = sanitizeBandPayload({
-                  ...activeBand,
-                  logo_url: publicUrl
-                });
-                await executeWithSchemaResilience(
-                  async (payload) => await supabase.from('bands').upsert([payload]),
-                  cleanPayload
-                );
+              if (activeBand?.id) {
+                await upsertBandToDatabase(updated);
               }
-              triggerNotification?.('✨ Band logo stored in avatars bucket & synced!');
+              triggerNotification?.('✨ Band logo stored in community-bands bucket & synced!');
             } else {
               triggerNotification?.('⚠️ Failed to store logo.');
             }
@@ -207,26 +200,19 @@ export function useBandManagement({
         compressLogoImage(dataUrl, 1000, async (compressedUrl) => {
           try {
             const userProfileId = userProfile?.id || activeBand?.creator_id || 'profile_anonymous';
-            triggerNotification?.('⏳ Storing cover banner in bannersv2 bucket...');
-            const publicUrl = await uploadBase64ToStorage(compressedUrl, 'bannersv2', userProfileId, 'band-cover');
+            triggerNotification?.('⏳ Storing cover banner in community-bands bucket...');
+            const publicUrl = await uploadBase64ToStorage(compressedUrl, 'community-bands', userProfileId, 'band-cover');
             if (publicUrl && !publicUrl.startsWith('data:')) {
               setBandCoverUrl(publicUrl);
-              setBands(prev => prev.map(b => b.id === activeBand?.id ? { ...b, cover_url: publicUrl } : b));
+              const updated = { ...activeBand, cover_url: publicUrl };
+              setBands(prev => prev.map(b => b.id === activeBand?.id ? updated : b));
               
-              const supabase = getSupabase();
-              if (supabase && activeBand?.id) {
-                const cleanPayload = sanitizeBandPayload({
-                  ...activeBand,
-                  cover_url: publicUrl
-                });
-                await executeWithSchemaResilience(
-                  async (payload) => await supabase.from('bands').upsert([payload]),
-                  cleanPayload
-                );
+              if (activeBand?.id) {
+                await upsertBandToDatabase(updated);
               }
-              triggerNotification?.('✨ Band cover banner stored in bannersv2 bucket & synced!');
+              triggerNotification?.('✨ Band cover banner stored in community-bands bucket & synced!');
             } else {
-              triggerNotification?.('⚠️ Failed to store cover banner in bannersv2 bucket.');
+              triggerNotification?.('⚠️ Failed to store cover banner in community-bands bucket.');
             }
           } catch (err) {
             console.error('Failed to upload cover:', err);
@@ -250,9 +236,9 @@ export function useBandManagement({
         triggerNotification?.('Compressing logo image...');
         compressLogoImage(dataUrl, 400, async (compressedUrl) => {
           try {
-            triggerNotification?.('⏳ Storing logo in avatars bucket...');
+            triggerNotification?.('⏳ Storing logo in community-bands bucket...');
             const userProfileId = userProfile?.id || editingBand?.creator_id || 'profile_anonymous';
-            const publicUrl = await uploadBase64ToStorage(compressedUrl, 'avatars', userProfileId, 'band-logo');
+            const publicUrl = await uploadBase64ToStorage(compressedUrl, 'community-bands', userProfileId, 'band-logo');
             const finalLogo = (publicUrl && !publicUrl.startsWith('data:')) ? publicUrl : publicUrl;
             if (isEdit) {
               setEditLogoUrl(finalLogo);
@@ -261,7 +247,7 @@ export function useBandManagement({
               setNewBandForm(prev => ({ ...prev, logo_url: finalLogo }));
               setCustomLogoPreset(-1); // Deselect preset
             }
-            triggerNotification?.('✨ Band logo uploaded and stored in avatars bucket!');
+            triggerNotification?.('✨ Band logo uploaded and stored in community-bands bucket!');
           } catch (err) {
             console.error('Failed to upload logo:', err);
             triggerNotification?.('⚠️ Failed to upload logo.');
@@ -284,7 +270,7 @@ export function useBandManagement({
     if (updatedLogo && updatedLogo.startsWith('data:')) {
       try {
         const userProfileId = userProfile?.id || editingBand?.creator_id || 'profile_anonymous';
-        const publicUrl = await uploadBase64ToStorage(updatedLogo, 'avatars', userProfileId, 'band-logo');
+        const publicUrl = await uploadBase64ToStorage(updatedLogo, 'community-bands', userProfileId, 'band-logo');
         if (publicUrl && !publicUrl.startsWith('data:')) {
           updatedLogo = publicUrl;
         }
@@ -304,13 +290,8 @@ export function useBandManagement({
     setBands(prev => prev.map(b => b.id === editingBand.id ? updatedBandObj : b));
 
     try {
-      const supabase = getSupabase();
-      if (supabase && editingBand.id) {
-        const cleanPayload = sanitizeBandPayload(updatedBandObj);
-        await executeWithSchemaResilience(
-          async (payload) => await supabase.from('bands').upsert([payload]),
-          cleanPayload
-        );
+      if (editingBand.id) {
+        await upsertBandToDatabase(updatedBandObj);
       }
     } catch (err) {
       console.warn('Failed to sync updated band to Supabase:', err);

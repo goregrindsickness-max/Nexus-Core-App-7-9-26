@@ -777,8 +777,8 @@ export default function PublicStorefront({
                     </tr>
                   </thead>
                   <tbody>
-                    {affiliateRows.map((row) => (
-                      <tr key={row.id} className="border-b border-zinc-900/60 hover:bg-zinc-950/20 transition-colors">
+                    {affiliateRows.map((row, rowIdx) => (
+                      <tr key={row.id ? `aff-${row.id}-${rowIdx}` : `aff-${rowIdx}`} className="border-b border-zinc-900/60 hover:bg-zinc-950/20 transition-colors">
                         <td className="py-1.5 px-1.5 font-bold text-zinc-300">{row.name}</td>
                         <td className="py-1.5 px-1.5 text-center">
                           <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${
@@ -853,8 +853,8 @@ export default function PublicStorefront({
                     className="w-full bg-black border border-zinc-900 text-yellow-500/90 rounded px-2.5 py-2 text-xs font-mono outline-none focus:border-yellow-500"
                   >
                     <option value="">🏠 Direct / General</option>
-                    {affiliateBands.map((b) => (
-                      <option key={b.band_id} value={b.band_id}>🎸 {b.band_name} (Affiliate)</option>
+                    {affiliateBands.map((b, bIdx) => (
+                      <option key={b.band_id ? `band-${b.band_id}-${bIdx}` : `band-${bIdx}`} value={b.band_id}>🎸 {b.band_name} (Affiliate)</option>
                     ))}
                   </select>
                 </div>
@@ -868,8 +868,8 @@ export default function PublicStorefront({
                     className="w-full bg-black border border-zinc-900 text-yellow-500/90 rounded px-2.5 py-2 text-xs font-mono outline-none focus:border-yellow-500"
                   >
                     <option value="all">🎟️ All Packages (Storefront catalog)</option>
-                    {items.map((it) => (
-                      <option key={it.id} value={it.sku}>{it.name} ({it.sku})</option>
+                    {items.map((it, itIdx) => (
+                      <option key={it.id ? `it-${it.id}-${itIdx}` : `it-${itIdx}`} value={it.sku}>{it.name} ({it.sku})</option>
                     ))}
                   </select>
                 </div>

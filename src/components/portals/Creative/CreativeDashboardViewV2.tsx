@@ -942,7 +942,7 @@ export default function CreativeDashboardViewV2({
         if (event.target?.result) {
           try {
             const compressed = await compressImage(event.target.result as string, 800, 800, 0.92);
-            const publicUrl = await uploadBase64ToStorage(compressed, 'avatars', userProfile.id, 'creative-avatar');
+            const publicUrl = await uploadBase64ToStorage(compressed, 'community-bands', userProfile.id, 'creative-avatar');
             if (publicUrl) {
               setAvatarUrl(publicUrl);
               setUserProfile((prev: any) => ({
@@ -991,7 +991,7 @@ export default function CreativeDashboardViewV2({
         if (event.target?.result) {
           try {
             const compressed = await compressImage(event.target.result as string, 1920, 1080, 0.92);
-            const publicUrl = await uploadBase64ToStorage(compressed, 'bannersv2', userProfile.id, 'creative-banner');
+            const publicUrl = await uploadBase64ToStorage(compressed, 'community-bands', userProfile.id, 'creative-banner');
             setUserProfile((prev: any) => ({
               ...prev,
               creative_banner: publicUrl

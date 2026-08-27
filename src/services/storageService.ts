@@ -108,7 +108,7 @@ export function compressAndTranscodeImageToWebP(file: any): Promise<any> {
  */
 export function isValidStorageOrImageUrl(
   url?: string | null,
-  bucketType?: 'avatars' | 'bannersv2' | 'any'
+  bucketType?: 'community-bands' | 'avatars' | 'bannersv2' | 'any'
 ): boolean {
   if (!url || typeof url !== 'string') return false;
   const trimmed = url.trim();
@@ -116,9 +116,11 @@ export function isValidStorageOrImageUrl(
 
   // Rule 1: Allow Valid Supabase Storage URLs
   if (
+    trimmed.includes('/storage/v1/object/public/community-bands/') ||
     trimmed.includes('/storage/v1/object/public/avatars/') ||
     trimmed.includes('/storage/v1/object/public/bannersv2/') ||
     trimmed.includes('/storage/v1/object/public/') ||
+    trimmed.includes('/community-bands/') ||
     trimmed.includes('/avatars/') ||
     trimmed.includes('/bannersv2/')
   ) {
@@ -213,39 +215,33 @@ export async function uploadBase64ToStorage(
     // Target bucket normalization with flexible candidate fallbacks
     const cleanRequested = bucketName ? bucketName.toLowerCase().trim() : '';
 
-    let primaryBucket = 'photo-pit';
-    if ((cleanRequested.includes('banner') || cleanRequested.includes('cover')) && !cleanRequested.includes('release') && !cleanRequested.includes('album')) {
-      primaryBucket = 'bannersv2';
-    } else if (cleanRequested.includes('avatar') || cleanRequested.includes('logo')) {
-      primaryBucket = 'avatars';
-    } else if (cleanRequested.includes('release') || cleanRequested.includes('album') || cleanRequested.includes('disc')) {
-      primaryBucket = 'releases';
-    } else if (cleanRequested.includes('audio') || cleanRequested.includes('track') || cleanRequested.includes('music')) {
+    let primaryBucket = 'community-bands';
+    if (cleanRequested.includes('audio') || cleanRequested.includes('track') || cleanRequested.includes('music')) {
       primaryBucket = 'audio-vault';
-    } else if (cleanRequested.includes('photo') || cleanRequested.includes('gallery') || cleanRequested.includes('pit') || cleanRequested.includes('asset')) {
+    } else if (cleanRequested.includes('photo') || cleanRequested.includes('gallery') || cleanRequested.includes('pit')) {
       primaryBucket = 'photo-pit';
-    } else if (cleanRequested) {
+    } else if (
+      cleanRequested === 'avatars' ||
+      cleanRequested === 'banners' ||
+      cleanRequested === 'bannersv2' ||
+      cleanRequested === 'releases' ||
+      cleanRequested === 'community-bands' ||
+      !cleanRequested
+    ) {
+      primaryBucket = 'community-bands';
+    } else {
       primaryBucket = cleanRequested;
     }
 
     const bucketCandidates = Array.from(
       new Set(
         [
-          cleanRequested,
           primaryBucket,
-          'avatars',
-          'bannersv2',
-          'banners',
-          'releases',
+          'community-bands',
+          cleanRequested,
           'photo-pit',
           'public-assets',
           'media',
-          'photopit',
-          'photo_pit',
-          'photos',
-          'gallery',
-          'assets',
-          'images',
           'audio-vault',
         ].filter((b): b is string => typeof b === 'string' && b.trim().length > 0)
       )
@@ -258,11 +254,9 @@ export async function uploadBase64ToStorage(
     const fileExt = (mimeType.split('/')[1] || 'webp').toLowerCase().replace('jpeg', 'jpg');
     const timestamp = Date.now();
 
-    // Proactively attempt to create bucket if targeting primary bucket and it doesn't exist
+    // Bucket creation handled manually in Supabase Dashboard UI
     if (primaryBucket) {
-      try {
-        await client.storage.createBucket(primaryBucket, { public: true });
-      } catch (_) {}
+      // Skipped client-side createBucket
     }
 
     let lastErrorMessage = '';
@@ -367,17 +361,9 @@ export async function testPhotoPitStorageConnection(): Promise<{
       }
     }
 
-    // 2. Try creating bucket if not found
+    // 2. Bucket creation handled manually in Supabase Dashboard UI
     if (!bucketExists) {
-      try {
-        const { error: createError } = await client.storage.createBucket(targetBucket, { public: true });
-        if (!createError) {
-          bucketExists = true;
-          diagnostics.push(`✅ Created public bucket "${targetBucket}" via API.`);
-        } else {
-          diagnostics.push(`ℹ️ createBucket note: ${createError.message}`);
-        }
-      } catch (_) {}
+      diagnostics.push(`ℹ️ Skipped createBucket API call. Ensure bucket "${targetBucket}" exists in Supabase Dashboard.`);
     }
 
     // 3. Test writing a 1x1 test pixel
@@ -454,7 +440,9 @@ export async function ensureImagesUploadedToStorage(payload: any): Promise<any> 
   for (const item of items) {
     if (!item || typeof item !== 'object') continue;
 
-    console.log('[Debug Payload Incoming]:', item);
+    if (import.meta.env.DEV && false) {
+      console.log('[Debug Payload Incoming]:', item);
+    }
 
     const isCreative = Boolean(
       'business_name' in item ||
@@ -508,7 +496,7 @@ export async function ensureImagesUploadedToStorage(payload: any): Promise<any> 
         if (typeof val === 'string' && val.trim().length > 0) {
           if (val.startsWith('data:image/') || val.startsWith('data:')) {
             try {
-              const publicUrl = await uploadBase64ToStorage(val, 'avatars', userId, 'creative-avatar');
+              const publicUrl = await uploadBase64ToStorage(val, 'community-bands', userId, 'creative-avatar');
               if (publicUrl && typeof publicUrl === 'string') {
                 item[key] = publicUrl;
                 if (!uploadedAvatarUrl && !publicUrl.startsWith('data:')) {
@@ -536,7 +524,7 @@ export async function ensureImagesUploadedToStorage(payload: any): Promise<any> 
         if (typeof val === 'string' && val.trim().length > 0) {
           if (val.startsWith('data:image/') || val.startsWith('data:')) {
             try {
-              const publicUrl = await uploadBase64ToStorage(val, 'bannersv2', userId, 'creative-banner');
+              const publicUrl = await uploadBase64ToStorage(val, 'community-bands', userId, 'creative-banner');
               if (publicUrl && typeof publicUrl === 'string') {
                 item[key] = publicUrl;
                 if (!uploadedBannerUrl && !publicUrl.startsWith('data:')) {
@@ -567,7 +555,7 @@ export async function ensureImagesUploadedToStorage(payload: any): Promise<any> 
         if (typeof val === 'string' && val.trim().length > 0) {
           if (val.startsWith('data:image/') || val.startsWith('data:')) {
             try {
-              const publicUrl = await uploadBase64ToStorage(val, 'avatars', userId, 'band-logo');
+              const publicUrl = await uploadBase64ToStorage(val, 'community-bands', userId, 'band-logo');
               if (publicUrl && typeof publicUrl === 'string') {
                 item[key] = publicUrl;
                 if (!uploadedLogoUrl && !publicUrl.startsWith('data:')) {
@@ -595,7 +583,7 @@ export async function ensureImagesUploadedToStorage(payload: any): Promise<any> 
         if (typeof val === 'string' && val.trim().length > 0) {
           if (val.startsWith('data:image/') || val.startsWith('data:')) {
             try {
-              const publicUrl = await uploadBase64ToStorage(val, 'bannersv2', userId, 'band-cover');
+              const publicUrl = await uploadBase64ToStorage(val, 'community-bands', userId, 'band-cover');
               if (publicUrl && typeof publicUrl === 'string') {
                 item[key] = publicUrl;
                 if (!uploadedCoverUrl && !publicUrl.startsWith('data:')) {
@@ -650,7 +638,7 @@ export async function ensureImagesUploadedToStorage(payload: any): Promise<any> 
         if (typeof val === 'string' && val.trim().length > 0) {
           if (val.startsWith('data:image/') || val.startsWith('data:')) {
             try {
-              const publicUrl = await uploadBase64ToStorage(val, 'avatars', userId, 'profile-avatar');
+              const publicUrl = await uploadBase64ToStorage(val, 'community-bands', userId, 'profile-avatar');
               if (publicUrl && typeof publicUrl === 'string') {
                 item[key] = publicUrl;
                 if (!uploadedAvatarUrl && !publicUrl.startsWith('data:')) {
@@ -686,7 +674,7 @@ export async function ensureImagesUploadedToStorage(payload: any): Promise<any> 
         if (typeof val === 'string' && val.trim().length > 0) {
           if (val.startsWith('data:image/') || val.startsWith('data:')) {
             try {
-              const publicUrl = await uploadBase64ToStorage(val, 'bannersv2', userId, 'profile-banner');
+              const publicUrl = await uploadBase64ToStorage(val, 'community-bands', userId, 'profile-banner');
               if (publicUrl && typeof publicUrl === 'string') {
                 item[key] = publicUrl;
                 if (!uploadedBannerUrl && !publicUrl.startsWith('data:')) {
@@ -712,13 +700,13 @@ export async function ensureImagesUploadedToStorage(payload: any): Promise<any> 
       // If creative_avatar or creative_banner happen to be in the profile object as raw base64, process them with creative tokens without overwriting personal fields
       if (item.creative_avatar && typeof item.creative_avatar === 'string' && item.creative_avatar.startsWith('data:')) {
         try {
-          const publicUrl = await uploadBase64ToStorage(item.creative_avatar, 'avatars', userId, 'creative-avatar');
+          const publicUrl = await uploadBase64ToStorage(item.creative_avatar, 'community-bands', userId, 'creative-avatar');
           if (publicUrl) item.creative_avatar = publicUrl;
         } catch (_) {}
       }
       if (item.creative_banner && typeof item.creative_banner === 'string' && item.creative_banner.startsWith('data:')) {
         try {
-          const publicUrl = await uploadBase64ToStorage(item.creative_banner, 'bannersv2', userId, 'creative-banner');
+          const publicUrl = await uploadBase64ToStorage(item.creative_banner, 'community-bands', userId, 'creative-banner');
           if (publicUrl) item.creative_banner = publicUrl;
         } catch (_) {}
       }

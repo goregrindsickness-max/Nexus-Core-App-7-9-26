@@ -140,11 +140,11 @@ export default function PublicStorefrontView({
                   </td>
                 </tr>
               ) : (
-                allItems.map(item => {
+                allItems.map((item, itemIdx) => {
                   const isVisible = storefrontSyncRecord[item.id] !== false;
                   
                   return (
-                    <tr key={item.id} className="hover:bg-zinc-950/30 transition-colors">
+                    <tr key={item.id ? `store-item-${item.id}-${itemIdx}` : `store-item-${itemIdx}`} className="hover:bg-zinc-950/30 transition-colors">
                       <td className="p-3">
                         <div className="flex items-center gap-3">
                           {item.image_url ? (
@@ -327,9 +327,9 @@ export default function PublicStorefrontView({
               { id: 'vinyl', label: 'Vinyl' },
               { id: 'cds', label: 'CDs' },
               { id: 'cassettes', label: 'Cassettes' }
-            ].map(cat => (
+            ].map((cat, catIdx) => (
               <button
-                key={cat.id}
+                key={`cat-${cat.id}-${catIdx}`}
                 onClick={() => setShopCategory(cat.id)}
                 className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase border tracking-wider transition-all duration-200 shrink-0 cursor-pointer ${
                   shopCategory === cat.id
@@ -577,9 +577,9 @@ export default function PublicStorefrontView({
                       <div className="space-y-2 mb-6 text-left">
                         <label className="text-[10px] font-black text-zinc-500 font-mono tracking-wider uppercase block">SELECT SIZE</label>
                         <div className="flex gap-1.5">
-                          {['S', 'M', 'L', 'XL', '2XL'].map(size => (
+                          {['S', 'M', 'L', 'XL', '2XL'].map((size, sIdx) => (
                             <button 
-                              key={size}
+                              key={`size-${size}-${sIdx}`}
                               onClick={() => setSelectedSize(size)}
                               className={`w-9 h-9 font-mono text-xs font-black rounded-lg border transition-all cursor-pointer ${
                                 selectedSize === size 

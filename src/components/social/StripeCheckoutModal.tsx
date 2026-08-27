@@ -876,7 +876,7 @@ export function StripeCheckoutModal({
                             const isSelected = (walletsState.google.selectedCardId || walletsState.google.cards[0]?.id) === card.id;
                             return (
                               <div
-                                key={card.id}
+                                key={card.id ? `gcard-${card.id}-${cardIdx}` : `gcard-${cardIdx}`}
                                 onClick={() => {
                                   selectWalletCard('google', card.id, userProfile);
                                   setWalletsState(getStoredWallets(userProfile));
@@ -974,7 +974,7 @@ export function StripeCheckoutModal({
                             const isSelected = (walletsState.apple.selectedCardId || walletsState.apple.cards[0]?.id) === card.id;
                             return (
                               <div
-                                key={card.id}
+                                key={card.id ? `acard-${card.id}-${cardIdx}` : `acard-${cardIdx}`}
                                 onClick={() => {
                                   selectWalletCard('apple', card.id, userProfile);
                                   setWalletsState(getStoredWallets(userProfile));
@@ -1076,7 +1076,7 @@ export function StripeCheckoutModal({
                             const isSelected = (walletsState.paypal.selectedCardId || walletsState.paypal.cards[0]?.id) === card.id;
                             return (
                               <div
-                                key={card.id}
+                                key={card.id ? `pcard-${card.id}-${cardIdx}` : `pcard-${cardIdx}`}
                                 onClick={() => {
                                   selectWalletCard('paypal', card.id, userProfile);
                                   setWalletsState(getStoredWallets(userProfile));

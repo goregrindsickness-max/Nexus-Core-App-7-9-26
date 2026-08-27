@@ -160,8 +160,8 @@ export const AdminConsoleModal: React.FC<AdminConsoleModalProps> = ({
                       No restricted entities found.
                     </div>
                   ) : (
-                    blacklistRecords.map((record) => (
-                      <div key={record.id} className="p-4 flex items-center justify-between hover:bg-zinc-800/20 transition-colors">
+                    blacklistRecords.map((record, rIdx) => (
+                      <div key={record.id ? `bl-${record.id}-${rIdx}` : `bl-${rIdx}`} className="p-4 flex items-center justify-between hover:bg-zinc-800/20 transition-colors">
                         <div>
                           <div className="text-white font-bold text-sm mb-1">{record.value}</div>
                           <div className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest">
@@ -201,8 +201,8 @@ export const AdminConsoleModal: React.FC<AdminConsoleModalProps> = ({
                       No pending reports.
                     </div>
                   ) : (
-                    reports.map(report => (
-                      <div key={report.id} className="p-4 flex flex-col gap-3">
+                    reports.map((report, repIdx) => (
+                      <div key={report.id ? `rep-${report.id}-${repIdx}` : `rep-${repIdx}`} className="p-4 flex flex-col gap-3">
                         <div className="flex items-start justify-between">
                           <div>
                             <div className="text-white font-bold text-sm mb-1">{report.reportedProfileName}</div>

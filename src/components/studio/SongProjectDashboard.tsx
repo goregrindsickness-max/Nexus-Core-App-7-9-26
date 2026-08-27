@@ -111,13 +111,13 @@ export const SongProjectDashboard: React.FC<SongProjectDashboardProps> = ({
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {projects.map((proj) => {
+            {projects.map((proj, pIdx) => {
               const stemCount = proj.stems?.length || 0;
               const collabCount = proj.collaborators?.length || 0;
 
               return (
                 <div
-                  key={proj.id}
+                  key={proj.id ? `proj-${proj.id}-${pIdx}` : `proj-${pIdx}`}
                   onClick={() => onSelectProject(proj.id)}
                   className="bg-[#0e0a16] hover:bg-[#120d1f] border border-violet-900/40 hover:border-violet-500/60 rounded-2xl p-5 shadow-xl transition-all duration-200 cursor-pointer group flex flex-col justify-between space-y-4 relative overflow-hidden"
                 >
@@ -160,9 +160,9 @@ export const SongProjectDashboard: React.FC<SongProjectDashboardProps> = ({
                         {collabCount === 0 ? (
                           <span className="text-[10px] text-zinc-600 italic">No collabs yet</span>
                         ) : (
-                          (proj?.collaborators || []).slice(0, 3).map((collab) => (
+                          (proj?.collaborators || []).slice(0, 3).map((collab, cIdx) => (
                             <div
-                              key={collab.id}
+                              key={collab.id ? `collab-${collab.id}-${cIdx}` : `collab-${cIdx}`}
                               className="w-7 h-7 rounded-full border-2 border-[#0e0a16] bg-violet-950 flex items-center justify-center text-[9px] font-bold text-violet-300 overflow-hidden"
                             >
                               {collab.avatar_url ? (

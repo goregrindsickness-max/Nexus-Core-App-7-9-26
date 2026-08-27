@@ -11,13 +11,15 @@ export function useSocialProfileState({
   portalRole,
   userProfile,
   activeBand,
+  setUserProfile,
   quantity = 1
 }: UseSocialProfileStateParams) {
   // Underlying user profile customization state (pin, handle, genres, avatar, cover, blurb, etc.)
   const profileState = useUserProfileState({
     portalRole,
     userProfile,
-    activeBand
+    activeBand,
+    setUserProfile
   });
 
   // Collections State

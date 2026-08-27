@@ -56,7 +56,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Show, InventoryItem, Sale, UserProfile, Band } from '../types';
-import { getSupabase, executeWithSchemaResilience, executeSanitizedProfileUpsert, getSupabaseUrlForPortal, getSupabaseAnonKeyForPortal, clearSupabaseClientsCache, generateUUID, uploadBase64ToStorage, isValidStorageOrImageUrl, sanitizeBandPayload } from '../supabase';
+import { getSupabase, executeWithSchemaResilience, executeSanitizedProfileUpsert, getSupabaseUrlForPortal, getSupabaseAnonKeyForPortal, clearSupabaseClientsCache, generateUUID, uploadBase64ToStorage, isValidStorageOrImageUrl, sanitizeBandPayload, upsertBandToDatabase } from '../supabase';
 import { InteractiveCropperModal } from './InteractiveCropperModal';
 import RoutingBeaconForm from './portals/Promoter/RoutingBeaconForm';
 import { ReceiptByteBuilder, serializeSaleToReceiptBytes } from '../ReceiptByteBuilder';
@@ -522,28 +522,22 @@ export default function SettingsView({
 
       // 1. Only upsert the artist band record if this is a band workspace
       if (isBandWorkspace && safeBandId) {
-        const { error: bandError } = await executeWithSchemaResilience(
-          async (payload) => {
-            const { error, data } = await supabase.from('bands').upsert([payload]);
-            return { error, data };
-          },
-          sanitizeBandPayload({
-            id: safeBandId,
-            band_name: bandName,
-            name: bandName,
-            genre: bandGenre,
-            micro_genres: activeBand?.micro_genres || [],
-            homebase: bandHomebase,
-            founded_year: activeBand?.founded_year || '',
-            bio: activeBand?.bio || '',
-            logo_url: bandLogo,
-            creator_id: userProfile?.id || null,
-            user_id: userProfile?.id || null
-          })
-        );
+        const bandRes = await upsertBandToDatabase({
+          id: safeBandId,
+          band_name: bandName,
+          name: bandName,
+          genre: bandGenre,
+          micro_genres: activeBand?.micro_genres || [],
+          homebase: bandHomebase,
+          founded_year: activeBand?.founded_year || null,
+          bio: activeBand?.bio || '',
+          logo_url: bandLogo,
+          creator_id: userProfile?.id || null,
+          user_id: userProfile?.id || null
+        });
 
-        if (bandError) {
-          console.error('[Supabase Sync Error - Band Upsert]:', bandError);
+        if (bandRes?.error) {
+          console.warn('[Supabase Sync Notice - Band Upsert]:', bandRes.error);
         }
       }
 
@@ -1992,7 +1986,7 @@ Powered by NEXUS CORE
               try {
                 const userProfileId = userProfile?.id || 'profile_admin';
                 if (croppingTarget === 'profile') {
-                  const uploadRes = await uploadBase64ToStorage(croppedBase64, 'avatars', userProfileId, 'profile-avatar');
+                  const uploadRes = await uploadBase64ToStorage(croppedBase64, 'community-bands', userProfileId, 'profile-avatar');
                   const publicUrl = uploadRes || croppedBase64;
                   setEditUserForm(prev => ({ ...prev, avatar_url: publicUrl }));
                   setUserProfile(prev => ({ ...prev, avatar_url: publicUrl }));
@@ -2020,7 +2014,7 @@ Powered by NEXUS CORE
                     activeBand?.logo_url || ''
                   );
                 } else if (croppingTarget === 'band') {
-                  const uploadRes = await uploadBase64ToStorage(croppedBase64, 'avatars', userProfileId, 'band-logo');
+                  const uploadRes = await uploadBase64ToStorage(croppedBase64, 'community-bands', userProfileId, 'band-logo');
                   const publicUrl = uploadRes || croppedBase64;
                   setEditBandForm(prev => ({ ...prev, logo_url: publicUrl }));
                   if (setBands && activeBand) {

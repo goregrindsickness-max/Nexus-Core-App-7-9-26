@@ -209,7 +209,7 @@ export default function TeamBillingTab({
         if (event.target?.result && typeof event.target.result === 'string') {
           try {
             const compressed = await compressImage(event.target.result, 256, 256, 0.75);
-            const publicUrl = await uploadBase64ToStorage(compressed, 'avatars', userProfile.id, 'label-avatar');
+            const publicUrl = await uploadBase64ToStorage(compressed, 'community-bands', userProfile.id, 'label-avatar');
             setUserProfile({...userProfile, label_avatar: publicUrl});
             showLocalToast("Corporate avatar emblem updated successfully.");
           } catch (err) {
@@ -228,7 +228,7 @@ export default function TeamBillingTab({
         if (event.target?.result && typeof event.target.result === 'string') {
           try {
             const compressed = await compressImage(event.target.result, 800, 450, 0.75);
-            const publicUrl = await uploadBase64ToStorage(compressed, 'bannersv2', userProfile.id, 'label-banner');
+            const publicUrl = await uploadBase64ToStorage(compressed, 'community-bands', userProfile.id, 'label-banner');
             setUserProfile({...userProfile, label_banner: publicUrl});
             showLocalToast("Billboard cover banner updated successfully.");
           } catch (err) {

@@ -37,6 +37,7 @@ import {
   DiscographyTrack
 } from '../../../lib/communityBands';
 import { uploadBase64ToStorage } from '../../../supabase';
+import { MASTER_GENRES } from '../../../constants/genres';
 
 interface CommunityBandCuratorModalProps {
   isOpen: boolean;
@@ -62,10 +63,33 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
   const [savedFeedback, setSavedFeedback] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'lineup' | 'discography'>('overview');
 
+  // Supabase Debug Log & Connection Status State
+  const [syncLogs, setSyncLogs] = useState<{ message: string; timestamp: number }[]>([]);
+  const [showDebugPanel, setShowDebugPanel] = useState<boolean>(true);
+  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
+
+  useEffect(() => {
+    const handleLog = (e: any) => {
+      if (e.detail) {
+        setSyncLogs(prev => [...prev.slice(-40), e.detail]);
+        const msg = (e.detail.message || '').toLowerCase();
+        if (msg.includes('success') || msg.includes('fully synced')) {
+          setConnectionStatus('success');
+        } else if (msg.includes('error') || msg.includes('fail') || msg.includes('rejected')) {
+          setConnectionStatus('error');
+        } else {
+          setConnectionStatus('syncing');
+        }
+      }
+    };
+    window.addEventListener('nexus_band_sync_log', handleLog);
+    return () => window.removeEventListener('nexus_band_sync_log', handleLog);
+  }, []);
+
   // Basic Info Form State
   const [name, setName] = useState('');
-  const [genre, setGenre] = useState('Technical Death Metal');
-  const [subgenres, setSubgenres] = useState('');
+  const [genre, setGenre] = useState('Extreme Metal');
+  const [microGenres, setMicroGenres] = useState<string[]>([]);
   const [foundedYear, setFoundedYear] = useState('');
   const [city, setCity] = useState('');
   const [stateProvince, setStateProvince] = useState('');
@@ -196,14 +220,16 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
     setSelectedBand(band);
     setIsCreatingNew(false);
     setName(band.name);
-    setGenre(band.genre || 'Metal');
-    setSubgenres(band.subgenres?.join(', ') || '');
+    const bandMicro = band.micro_genres || band.subgenres || [];
+    setMicroGenres(bandMicro);
+    const matchedCluster = MASTER_GENRES.find(c => c.name.toLowerCase() === (band.genre || '').toLowerCase() || c.tags.some(t => bandMicro.includes(t.label)))?.name || MASTER_GENRES[0]?.name || 'Extreme Metal';
+    setGenre(matchedCluster);
     setFoundedYear(band.founded_year || '');
     setCity(band.city || '');
     setStateProvince(band.state_province || band.state || '');
     setCountry(band.country || 'USA');
     setRecordLabel(band.record_label || band.label || '');
-    setBio(band.bio || '');
+    setBio(band.bio || (band as any).description || '');
     setAvatarUrl(band.avatar_url || band.logo_url || (band as any).avatar || (band as any).image || '');
     setCoverUrl(band.cover_url || band.banner_url || (band as any).cover || (band as any).banner || '');
     setSpotifyUrl(band.spotify_url || '');
@@ -223,8 +249,8 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
     setSelectedBand(null);
     setIsCreatingNew(true);
     setName('');
-    setGenre('Death Metal');
-    setSubgenres('');
+    setGenre('Extreme Metal');
+    setMicroGenres(['Death Metal']);
     setFoundedYear('');
     setCity('');
     setStateProvince('');
@@ -387,42 +413,33 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
 
   // Full Save to Supabase and Local Storage
   const handleSave = async () => {
-    if (!name.trim()) return;
+    if (isSaving || !name.trim()) return;
 
     setIsSaving(true);
 
     try {
-      const subgenreArray = subgenres
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-
       const resolvedCreatorId = selectedBand?.creator_id || userProfile?.id || (userProfile?.console_handle ? userProfile.console_handle : undefined);
 
-      const bandPayload: Partial<CommunityBandRecord> & { name: string } = {
+      const parsedFoundedYear = foundedYear.trim() ? parseInt(foundedYear.trim(), 10) : undefined;
+      const validFoundedYear = (parsedFoundedYear && !isNaN(parsedFoundedYear) && parsedFoundedYear > 0) ? parsedFoundedYear : undefined;
+
+      const bandPayload: Partial<CommunityBandRecord> & { band_name: string } = {
         id: selectedBand?.id,
+        band_name: name.trim(),
         name: name.trim(),
-        genre,
-        subgenres: subgenreArray,
-        founded_year: foundedYear.trim() || undefined,
+        micro_genres: microGenres.length > 0 ? microGenres : (genre ? [genre] : ['Extreme Metal']),
+        founded_year: validFoundedYear !== undefined ? String(validFoundedYear) : undefined,
         city: city.trim(),
-        state: stateProvince.trim(),
         state_province: stateProvince.trim(),
         country: country.trim(),
         record_label: recordLabel.trim() || undefined,
-        label: recordLabel.trim() || undefined,
-        bio,
-        avatar_url: avatarUrl,
-        logo_url: avatarUrl,
-        avatar: avatarUrl,
-        image: avatarUrl,
-        cover_url: coverUrl,
-        banner_url: coverUrl,
-        spotify_url: spotifyUrl,
-        bandcamp_url: bandcampUrl,
-        metal_archives_url: metalArchivesUrl,
-        youtube_url: youtubeUrl,
-        featured_youtube_url: youtubeUrl,
+        bio: bio.trim(),
+        logo_url: avatarUrl.trim(),
+        cover_url: coverUrl.trim(),
+        spotify: spotifyUrl.trim() || undefined,
+        bandcamp: bandcampUrl.trim() || undefined,
+        metal_archives_url: metalArchivesUrl.trim() || undefined,
+        featured_youtube_url: youtubeUrl.trim() || undefined,
         lineup,
         discography: albums,
         creator_id: resolvedCreatorId,
@@ -648,7 +665,7 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
               {/* TAB 1: OVERVIEW & MEDIA */}
               {activeTab === 'overview' && (
                 <div className="space-y-3 animate-in fade-in duration-150">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div className="space-y-1 sm:col-span-1">
                       <label className="text-[10px] font-mono font-bold text-zinc-300 uppercase">Band / Artist Name *</label>
                       <input
@@ -656,17 +673,6 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
                         placeholder="e.g. Gorguts, Dying Fetus..."
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs font-mono text-white focus:border-amber-500 outline-none shadow-inner"
-                      />
-                    </div>
-
-                    <div className="space-y-1 sm:col-span-1">
-                      <label className="text-[10px] font-mono font-bold text-zinc-300 uppercase">Primary Genre</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Technical Death Metal..."
-                        value={genre}
-                        onChange={(e) => setGenre(e.target.value)}
                         className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs font-mono text-white focus:border-amber-500 outline-none shadow-inner"
                       />
                     </div>
@@ -685,14 +691,25 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-mono font-bold text-zinc-300 uppercase">Subgenres (Comma Separated)</label>
-                      <input
-                        type="text"
-                        placeholder="Slam, Goregrind, Groove..."
-                        value={subgenres}
-                        onChange={(e) => setSubgenres(e.target.value)}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs font-mono text-white focus:border-amber-500 outline-none shadow-inner"
-                      />
+                      <label className="text-[10px] font-mono font-bold text-zinc-300 uppercase">Primary Sonic Classification</label>
+                      <select 
+                        value={genre}
+                        onChange={(e) => {
+                          setGenre(e.target.value);
+                          const cluster = MASTER_GENRES.find(c => c.name === e.target.value);
+                          if (cluster && cluster.tags.length > 0) {
+                            setMicroGenres([cluster.tags[0].label]);
+                          } else {
+                            setMicroGenres([]);
+                          }
+                        }}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs font-mono text-amber-400 focus:border-amber-500 outline-none shadow-inner"
+                      >
+                        <option value="">SELECT CLASSIFICATION...</option>
+                        {MASTER_GENRES.map((g, gIdx) => (
+                          <option key={`${g.name}-${gIdx}`} value={g.name}>{g.name}</option>
+                        ))}
+                      </select>
                     </div>
 
                     <div className="space-y-1">
@@ -706,6 +723,43 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
                       />
                     </div>
                   </div>
+
+                  {genre && (
+                    <div className="space-y-1.5 p-3 bg-zinc-950 border border-zinc-850 rounded-xl">
+                      <label className="text-[10px] font-mono font-bold text-zinc-300 uppercase flex items-center justify-between">
+                        <span>Genre Tags & Subgenres (Maps to `micro_genres`)</span>
+                        <span className="text-[9px] text-amber-400 font-mono">{microGenres.length} selected</span>
+                      </label>
+                      <div className="flex flex-wrap gap-1.5 p-2 bg-black/60 border border-zinc-800 rounded-lg max-h-28 overflow-y-auto">
+                        {MASTER_GENRES.find(c => c.name === genre)?.tags.map((tagObj, idx) => {
+                          const tag = tagObj.label;
+                          const isSelected = microGenres.includes(tag);
+                          return (
+                            <button
+                              key={`${tagObj.id}-${idx}`}
+                              type="button"
+                              onClick={() => {
+                                if (isSelected) {
+                                  setMicroGenres(microGenres.filter(t => t !== tag));
+                                } else {
+                                  if (microGenres.length < 5) {
+                                    setMicroGenres([...microGenres, tag]);
+                                  }
+                                }
+                              }}
+                              className={`text-[9px] font-mono px-2 py-1 rounded-md border transition-colors ${
+                                isSelected 
+                                  ? 'bg-amber-950/80 border-amber-500 text-amber-300 font-bold shadow-sm' 
+                                  : 'bg-zinc-900/50 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                              }`}
+                            >
+                              {tag}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                     <div className="space-y-1">
@@ -743,13 +797,17 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-mono font-bold text-zinc-300 uppercase">Band History & Biography</label>
+                    <label htmlFor="curator-band-bio" className="text-[10px] font-mono font-bold text-zinc-300 uppercase flex items-center justify-between">
+                      <span>Bio / Band Description</span>
+                      <span className="text-[9px] text-zinc-500 font-mono">History & Background</span>
+                    </label>
                     <textarea
-                      rows={2}
-                      placeholder="Origins, classic lineup, signature sound..."
+                      id="curator-band-bio"
+                      rows={3}
+                      placeholder="Origins, classic lineup, signature sound, lyrical themes..."
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-500 outline-none font-sans shadow-inner"
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs font-mono text-white placeholder-zinc-600 focus:border-amber-500 outline-none shadow-inner resize-y transition-colors"
                     />
                   </div>
 
@@ -804,7 +862,7 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                  handleDeviceFileUpload(file, 'avatars', 'community-avatar', (url) => setAvatarUrl(url), setIsUploadingAvatar);
+                                  handleDeviceFileUpload(file, 'community-bands', 'community-avatar', (url) => setAvatarUrl(url), setIsUploadingAvatar);
                                 }
                               }}
                             />
@@ -855,7 +913,7 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                  handleDeviceFileUpload(file, 'bannersv2', 'community-banner', (url) => setCoverUrl(url), setIsUploadingCover);
+                                  handleDeviceFileUpload(file, 'community-bands', 'community-banner', (url) => setCoverUrl(url), setIsUploadingCover);
                                 }
                               }}
                             />
@@ -1183,7 +1241,7 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                  handleDeviceFileUpload(file, 'releases', 'release-art', (url) => setReleaseImageUrl(url), setIsUploadingAlbumImg);
+                                  handleDeviceFileUpload(file, 'community-bands', 'release-art', (url) => setReleaseImageUrl(url), setIsUploadingAlbumImg);
                                 }
                               }}
                             />
@@ -1359,6 +1417,66 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
                       </div>
                     )}
                   </div>
+                </div>
+              )}
+            </div>
+
+            {/* Visual Supabase Connection Status & Real-Time Debug Log Terminal */}
+            <div className="border-t border-zinc-800 bg-zinc-950 px-4 py-3 shrink-0">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 font-mono text-xs">
+                  <span className={`w-2.5 h-2.5 rounded-full ${
+                    connectionStatus === 'success' ? 'bg-emerald-400 animate-pulse' :
+                    connectionStatus === 'error' ? 'bg-red-400 animate-ping' :
+                    connectionStatus === 'syncing' ? 'bg-amber-400 animate-bounce' : 'bg-zinc-600'
+                  }`} />
+                  <span className="text-zinc-300 uppercase tracking-wider font-bold">Supabase Upsert Connection:</span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-black ${
+                    connectionStatus === 'success' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' :
+                    connectionStatus === 'error' ? 'bg-red-950 text-red-300 border border-red-800' :
+                    connectionStatus === 'syncing' ? 'bg-amber-950 text-amber-300 border border-amber-800' : 'bg-zinc-900 text-zinc-400 border border-zinc-800'
+                  }`}>
+                    {connectionStatus === 'success' ? 'Synced & Active' :
+                     connectionStatus === 'error' ? 'Sync Error / RLS Notice' :
+                     connectionStatus === 'syncing' ? 'Transferring Data...' : 'Standby / Ready'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSyncLogs([])}
+                    className="text-[10px] font-mono text-zinc-500 hover:text-zinc-300 uppercase tracking-wider px-2 py-1 rounded bg-zinc-900 border border-zinc-800"
+                  >
+                    Clear Log
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowDebugPanel(!showDebugPanel)}
+                    className="text-[10px] font-mono text-amber-400 hover:text-amber-300 uppercase tracking-wider px-2.5 py-1 rounded bg-amber-950/40 border border-amber-800/60 font-bold"
+                  >
+                    {showDebugPanel ? 'Hide Live Logs' : `Show Live Logs (${syncLogs.length})`}
+                  </button>
+                </div>
+              </div>
+
+              {showDebugPanel && (
+                <div className="bg-black/90 rounded-xl border border-zinc-800 p-2.5 max-h-36 overflow-y-auto font-mono text-[10px] space-y-1 shadow-inner select-text">
+                  {syncLogs.length === 0 ? (
+                    <div className="text-zinc-600 italic py-1 text-center">
+                      No active database transfer logs yet. Click "Save & Sync Archive" to initiate live Supabase upsert.
+                    </div>
+                  ) : (
+                    syncLogs.map((log, lIdx) => (
+                      <div key={lIdx} className="flex items-start gap-2 text-zinc-300 border-b border-zinc-900/60 pb-1 last:border-0">
+                        <span className="text-zinc-500 shrink-0">
+                          {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })}
+                        </span>
+                        <span className={log.message.includes('Success') || log.message.includes('fully synced') ? 'text-emerald-400 font-bold' : log.message.includes('error') || log.message.includes('fail') || log.message.includes('notice') ? 'text-amber-400' : 'text-zinc-300'}>
+                          {log.message}
+                        </span>
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </div>

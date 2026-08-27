@@ -408,7 +408,7 @@ export const UploadStoryModal: React.FC<UploadStoryModalProps> = ({
                     const Icon = tab.icon;
                     return (
                       <button
-                        key={tab.id}
+                        key={`story-tab-${tab.id}-${tabIdx}`}
                         onClick={() => setStorySubTab(tab.id as any)}
                         className={`py-2 px-2.5 text-[9px] font-mono font-bold uppercase tracking-wider rounded-lg flex items-center justify-center gap-1 transition-all cursor-pointer whitespace-nowrap ${
                           storySubTab === tab.id
@@ -632,9 +632,9 @@ export const UploadStoryModal: React.FC<UploadStoryModalProps> = ({
                         { id: 'border-purple-500/80 shadow-[0_0_20px_rgba(168,85,247,0.4)]', label: 'PURPLE VOID' },
                         { id: 'border-cyan-400/80 shadow-[0_0_20px_rgba(56,189,248,0.4)]', label: 'CYAN NEON' },
                         { id: 'border-emerald-500/80 shadow-[0_0_20px_rgba(16,185,129,0.4)]', label: 'TOXIC SLIME' }
-                      ].map((b) => (
+                      ].map((b, bIdx) => (
                         <button
-                          key={b.id}
+                          key={`story-border-${bIdx}`}
                           onClick={() => setNewStoryBorder(b.id)}
                           className={`p-2.5 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer ${
                             newStoryBorder === b.id
@@ -659,9 +659,9 @@ export const UploadStoryModal: React.FC<UploadStoryModalProps> = ({
                         { id: 'from-cyan-950/80 via-zinc-950 to-fuchsia-950/80', label: 'CYAN NEON' },
                         { id: 'from-emerald-950/80 via-zinc-950 to-lime-950/80', label: 'TOXIC GREEN' },
                         { id: 'from-red-950/90 via-black to-red-900/80', label: 'BLOOD MOON' }
-                      ].map((p) => (
+                      ].map((p, pIdx) => (
                         <button
-                          key={p.id}
+                          key={`story-preset-${pIdx}`}
                           onClick={() => {
                             setPresetBg(p.id);
                             setNewStoryImage('');

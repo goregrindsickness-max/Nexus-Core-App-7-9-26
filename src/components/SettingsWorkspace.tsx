@@ -7,7 +7,7 @@ import TermsOfServiceView from './TermsOfServiceView';
 import { fetchReleasesFromDatabase, upsertReleaseToDatabase, deleteReleaseFromDatabase } from '../services/releasesService';
 const concertBg = "https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/public-assets/High%20energy%20concert%202.png";
 import { profileStore } from '../utils/indexedDB';
-import { getSupabase, executeWithSchemaResilience, uploadBase64ToStorage, sanitizeBandPayload, sanitizeMicroGenres, parseLocationFields } from '../supabase';
+import { getSupabase, executeWithSchemaResilience, uploadBase64ToStorage, sanitizeBandPayload, sanitizeMicroGenres, parseLocationFields, upsertBandToDatabase } from '../supabase';
 
 const GENRE_CLUSTERS = [
   {
@@ -160,7 +160,7 @@ export default function SettingsWorkspace(props: any) {
     if (logoUrl.startsWith('data:')) {
       try {
         const userOrBandId = props.activeBand.creator_id || props.activeBand.id || 'band';
-        const publicUrl = await uploadBase64ToStorage(logoUrl, 'avatars', userOrBandId, 'band-logo');
+        const publicUrl = await uploadBase64ToStorage(logoUrl, 'community-bands', userOrBandId, 'band-logo');
         if (publicUrl) {
           logoUrl = publicUrl;
         }
@@ -172,7 +172,7 @@ export default function SettingsWorkspace(props: any) {
     if (coverUrl.startsWith('data:')) {
       try {
         const userOrBandId = props.activeBand.creator_id || props.activeBand.id || 'band';
-        const publicUrl = await uploadBase64ToStorage(coverUrl, 'bannersv2', userOrBandId, 'band-cover');
+        const publicUrl = await uploadBase64ToStorage(coverUrl, 'community-bands', userOrBandId, 'band-cover');
         if (publicUrl) {
           coverUrl = publicUrl;
         }
@@ -203,7 +203,6 @@ export default function SettingsWorkspace(props: any) {
       tech_rider_url: props.bandInfoTechRider ?? props.activeBand.tech_rider_url ?? '',
       tour_vehicle: props.bandInfoTourVehicle ?? props.activeBand.tour_vehicle ?? '',
       metal_archives_url: props.bandInfoMetalArchivesUrl ?? props.activeBand.metal_archives_url ?? '',
-      genre: cleanMicros.join(' • '),
       micro_genres: cleanMicros,
       cover_url: coverUrl,
       logo_url: logoUrl,
@@ -219,14 +218,7 @@ export default function SettingsWorkspace(props: any) {
     }
 
     try {
-      const supabase = getSupabase();
-      if (supabase && navigator.onLine) {
-        const cleanPayload = sanitizeBandPayload(updated);
-        await executeWithSchemaResilience(
-          async (payload) => await supabase.from('bands').upsert([payload]),
-          cleanPayload
-        );
-      }
+      await upsertBandToDatabase(updated, { triggerNotification: props.triggerNotification });
     } catch (err) {
       console.warn("Error syncing band info to Supabase:", err);
     }

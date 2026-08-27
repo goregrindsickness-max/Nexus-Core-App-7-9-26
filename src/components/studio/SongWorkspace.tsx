@@ -135,9 +135,9 @@ export const SongWorkspace: React.FC<SongWorkspaceProps> = ({
           <div className="flex items-center gap-3">
             {/* Collaborator Avatars */}
             <div className="hidden sm:flex items-center -space-x-2 mr-2">
-              {(project?.collaborators || []).map((collab) => (
+              {(project?.collaborators || []).map((collab, cIdx) => (
                 <div
-                  key={collab.id}
+                  key={collab.id ? `topcollab-${collab.id}-${cIdx}` : `topcollab-${cIdx}`}
                   className="w-8 h-8 rounded-full border-2 border-[#0b0713] bg-violet-950 flex items-center justify-center text-[10px] font-mono font-bold text-violet-300 overflow-hidden shadow-md"
                   title={`${collab.name || collab.handle} (${collab.track_role || collab.access_level})`}
                 >
@@ -288,9 +288,9 @@ export const SongWorkspace: React.FC<SongWorkspaceProps> = ({
             </div>
           ) : (
             <div className="space-y-3">
-              {project.stems.map((stem) => (
+              {project.stems.map((stem, sIdx) => (
                 <StemTrackRow
-                  key={stem.id}
+                  key={stem.id ? `stem-${stem.id}-${sIdx}` : `stem-${sIdx}`}
                   stem={stem}
                   projectId={project.id}
                   isPlaying={isPlaying}
@@ -330,9 +330,9 @@ export const SongWorkspace: React.FC<SongWorkspaceProps> = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {(project?.collaborators || []).map((collab) => (
+            {(project?.collaborators || []).map((collab, cIdx) => (
               <div
-                key={collab.id}
+                key={collab.id ? `botcollab-${collab.id}-${cIdx}` : `botcollab-${cIdx}`}
                 className="bg-zinc-950/80 border border-violet-900/30 rounded-lg p-3 flex items-center gap-3"
               >
                 <div className="w-10 h-10 rounded-full bg-violet-950 border border-violet-500/40 flex items-center justify-center text-xs font-mono font-bold text-violet-300 overflow-hidden shrink-0">

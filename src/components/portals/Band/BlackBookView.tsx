@@ -4,7 +4,7 @@ import { Search, MapPin, Users, Mail, Star, MessageSquare, Send, ChevronLeft, Ch
 import { Offer, UserReview, Venue } from '../../../types';
 import { RoutingBeacon } from '../Promoter/PromoterPortalView';
 import { getSupabase } from '../../../supabase';
-import { handleSendMessage as sendDbMessage } from '../../../useChatStore';
+import { handleSendMessage as sendDbMessage } from '../../../store/useChatStore';
 import VenueReputationCard from './VenueReputationCard';
 
 

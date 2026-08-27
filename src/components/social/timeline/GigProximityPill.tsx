@@ -313,9 +313,9 @@ export const GigProximityPill: React.FC<GigProximityPillProps> = ({
           </div>
 
           <div className="flex flex-wrap gap-1.5">
-            {DEFAULT_POPULAR_CITIES.map(c => (
+            {DEFAULT_POPULAR_CITIES.map((c, cIdx) => (
               <button
-                key={c}
+                key={`city-${c}-${cIdx}`}
                 onClick={() => handleSelectCity(c)}
                 className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold uppercase transition-all flex items-center gap-1 cursor-pointer ${
                   userCity === c

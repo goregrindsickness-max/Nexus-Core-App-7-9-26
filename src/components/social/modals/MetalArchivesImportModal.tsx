@@ -456,7 +456,7 @@ export const MetalArchivesImportModal: React.FC<MetalArchivesImportModalProps> =
                 </div>
 
                 <div className="divide-y divide-zinc-800/60 max-h-96 overflow-y-auto">
-                  {scrapeResult.releases.map((rel) => {
+                  {scrapeResult.releases.map((rel, relIdx) => {
                     const isSelected = selectedReleaseIds.has(rel.id);
                     const isExpanded = expandedReleaseIds.has(rel.id);
                     const trackCount = rel.tracks?.length || 0;
@@ -464,7 +464,7 @@ export const MetalArchivesImportModal: React.FC<MetalArchivesImportModalProps> =
 
                     return (
                       <div
-                        key={rel.id}
+                        key={rel.id ? `rel-${rel.id}-${relIdx}` : `rel-${relIdx}`}
                         className={`transition-colors ${isSelected ? 'bg-red-950/10' : ''}`}
                       >
                         {/* Main Release Header Row */}

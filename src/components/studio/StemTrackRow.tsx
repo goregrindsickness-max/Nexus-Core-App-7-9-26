@@ -128,9 +128,9 @@ export const StemTrackRow: React.FC<StemTrackRowProps> = ({
                   <div className="text-[9px] font-mono font-bold uppercase text-zinc-500 px-2 py-1">
                     Stem Versions ({stem?.versions?.length || 1})
                   </div>
-                  {(stem?.versions || []).map((ver) => (
+                  {(stem?.versions || []).map((ver, vIdx) => (
                     <button
-                      key={ver.id}
+                      key={ver.id ? `ver-${ver.id}-${vIdx}` : `ver-${vIdx}`}
                       onClick={() => {
                         onUpdateStem(stem.id, { selected_version_id: ver.id });
                         setShowVersionDropdown(false);
@@ -270,11 +270,11 @@ export const StemTrackRow: React.FC<StemTrackRowProps> = ({
             })}
 
             {/* Timestamped Comment Markers on Waveform */}
-            {(stem?.comments || []).map((c) => {
+            {(stem?.comments || []).map((c, cIdx) => {
               const markerRatio = Math.max(0, Math.min(1, c.timestamp_sec / (duration || 180)));
               return (
                 <div
-                  key={c.id}
+                  key={c.id ? `marker-${c.id}-${cIdx}` : `marker-${cIdx}`}
                   style={{ left: `${markerRatio * 100}%` }}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -326,9 +326,9 @@ export const StemTrackRow: React.FC<StemTrackRowProps> = ({
                 No timestamped comments yet. Add feedback at current playhead time ({formatTimestamp(globalTime)}).
               </p>
             ) : (
-              stem.comments.map((c) => (
+              stem.comments.map((c, cIdx) => (
                 <div
-                  key={c.id}
+                  key={c.id ? `comm-${c.id}-${cIdx}` : `comm-${cIdx}`}
                   className="bg-zinc-900/80 border border-violet-900/30 rounded-lg p-2 text-xs flex items-start justify-between gap-2"
                 >
                   <div className="space-y-0.5">

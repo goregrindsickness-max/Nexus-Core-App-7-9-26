@@ -835,9 +835,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
     const bandMetadata = hasBand ? {
       name: bandName.trim(),
-      genre: finalGenre,
-      genres: allBandGenreTags,
-      genre_tags: allBandGenreTags,
+      micro_genres: allBandGenreTags,
       city: bandCity.trim(),
       state: bandStateProvince.trim(),
       state_province: bandStateProvince.trim(),
@@ -849,8 +847,6 @@ export const LoginView: React.FC<LoginViewProps> = ({
       custom_slug: profileSlug.trim() || bandName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       booking_email: bandBookingEmail.trim(),
       booking_phone: bandBookingPhone.trim(),
-      micro_genres: bandSubGenres,
-      sub_genres: bandSubGenres,
       featured_youtube_url: bandYoutubeVideo.trim(),
       youtube_url: bandYoutubeVideo.trim(),
       streaming_url: bandAudioHub.trim(),
@@ -965,9 +961,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
       band_name: bandName.trim() || 'Default Band',
       logo_url: finalLogo,
       cover_url: finalBanner,
-      genre: finalGenre,
-      genres: allGenreTags,
-      genre_tags: allGenreTags,
+      micro_genres: allGenreTags,
       city: bandCity.trim() || undefined,
       state: bandStateProvince.trim() || undefined,
       state_province: bandStateProvince.trim() || undefined,
@@ -979,8 +973,6 @@ export const LoginView: React.FC<LoginViewProps> = ({
       custom_slug: profileSlug.trim() || bandName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       booking_email: bandBookingEmail.trim() || undefined,
       booking_phone: bandBookingPhone.trim() || undefined,
-      micro_genres: bandSubGenres,
-      sub_genres: bandSubGenres,
       featured_youtube_url: bandYoutubeVideo.trim() || undefined,
       youtube_url: bandYoutubeVideo.trim() || undefined,
       streaming_url: bandAudioHub.trim() || undefined,
@@ -1399,7 +1391,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
     const scaledPosY = avatarPosY * (800 / 220);
     const croppedAvatar = await cropImage(profileAvatar, avatarScale, scaledPosX, scaledPosY, 800, 800);
     const compressedAvatar = await compressImageAtModuleLevel(croppedAvatar, 800, 800, 0.92);
-    finalAvatarUrl = await uploadBase64ToStorage(compressedAvatar, 'avatars', newUserId, originalFileNames['avatar'] || 'profile-avatar');
+    finalAvatarUrl = await uploadBase64ToStorage(compressedAvatar, 'community-bands', newUserId, originalFileNames['avatar'] || 'profile-avatar');
   } else if (profileAvatar && !profileAvatar.includes('Nexus%20Icon%20Circuits.png')) {
     finalAvatarUrl = profileAvatar;
   } else if (userProfile?.avatar_url && !userProfile.avatar_url.includes('Nexus%20Icon%20Circuits.png')) {
@@ -1413,7 +1405,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
     const scaledBannerPosY = bannerPosY * (864 / 180);
     const croppedBanner = await cropImage(profileBanner, bannerScale, scaledBannerPosX, scaledBannerPosY, 1920, 864);
     const compressedBanner = await compressImageAtModuleLevel(croppedBanner, 1920, 1080, 0.92);
-    finalBannerUrl = await uploadBase64ToStorage(compressedBanner, 'bannersv2', newUserId, originalFileNames['banner'] || 'profile-banner');
+    finalBannerUrl = await uploadBase64ToStorage(compressedBanner, 'community-bands', newUserId, originalFileNames['banner'] || 'profile-banner');
   } else if (profileBanner && !profileBanner.includes('Nexus%20Icon%20Circuits.png')) {
     finalBannerUrl = profileBanner;
   } else if (userProfile?.banner_url && !userProfile.banner_url.includes('Nexus%20Icon%20Circuits.png')) {
@@ -1445,7 +1437,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           const scaledPosY = bandLogoPosY * (800 / 220);
           const croppedLogo = await cropImage(bandLogo, bandLogoScale, scaledPosX, scaledPosY, 800, 800);
           const compressedLogo = await compressImageAtModuleLevel(croppedLogo, 800, 800, 0.92);
-          const uploadRes = await uploadBase64ToStorage(compressedLogo, 'avatars', activeBandId || newUserId, originalFileNames['band_logo'] || 'band-logo');
+          const uploadRes = await uploadBase64ToStorage(compressedLogo, 'community-bands', activeBandId || newUserId, originalFileNames['band_logo'] || 'band-logo');
           if (uploadRes && typeof uploadRes === 'string' && !uploadRes.startsWith('data:')) {
             processedBandLogo = uploadRes;
           } else {
@@ -1458,7 +1450,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           const scaledBannerPosY = bandBannerPosY * (864 / 180);
           const croppedBanner = await cropImage(bandBanner, bandBannerScale, scaledBannerPosX, scaledBannerPosY, 1920, 864);
           const compressedBanner = await compressImageAtModuleLevel(croppedBanner, 1920, 1080, 0.92);
-          const uploadRes = await uploadBase64ToStorage(compressedBanner, 'bannersv2', activeBandId || newUserId, originalFileNames['band_banner'] || 'band-banner');
+          const uploadRes = await uploadBase64ToStorage(compressedBanner, 'community-bands', activeBandId || newUserId, originalFileNames['band_banner'] || 'band-banner');
           if (uploadRes && typeof uploadRes === 'string' && !uploadRes.startsWith('data:')) {
             processedBandBanner = uploadRes;
           } else {
@@ -1484,7 +1476,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           const scaledPosY = creativeAvatarPosY * (800 / 220);
           const croppedAvatar = await cropImage(creativeAvatar, creativeAvatarScale, scaledPosX, scaledPosY, 800, 800);
           const compressedAvatar = await compressImageAtModuleLevel(croppedAvatar, 800, 800, 0.92);
-          const uploadRes = await uploadBase64ToStorage(compressedAvatar, 'avatars', activeCreativeId || newUserId || 'creative', originalFileNames['creative_avatar'] || 'creative-avatar');
+          const uploadRes = await uploadBase64ToStorage(compressedAvatar, 'community-bands', activeCreativeId || newUserId || 'creative', originalFileNames['creative_avatar'] || 'creative-avatar');
           if (uploadRes && typeof uploadRes === 'string' && !uploadRes.startsWith('data:')) {
             processedCreativeAvatar = uploadRes;
           } else {
@@ -1497,7 +1489,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           const scaledBannerPosY = creativeBannerPosY * (864 / 180);
           const croppedBanner = await cropImage(creativeBanner, creativeBannerScale, scaledBannerPosX, scaledBannerPosY, 1920, 864);
           const compressedBanner = await compressImageAtModuleLevel(croppedBanner, 1920, 1080, 0.92);
-          const uploadRes = await uploadBase64ToStorage(compressedBanner, 'bannersv2', activeCreativeId || newUserId || 'creative', originalFileNames['creative_banner'] || 'creative-banner');
+          const uploadRes = await uploadBase64ToStorage(compressedBanner, 'community-bands', activeCreativeId || newUserId || 'creative', originalFileNames['creative_banner'] || 'creative-banner');
           if (uploadRes && typeof uploadRes === 'string' && !uploadRes.startsWith('data:')) {
             processedCreativeBanner = uploadRes;
           } else {
@@ -1525,7 +1517,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           const scaledPosY = labelAvatarPosY * (800 / 220);
           const croppedAvatar = await cropImage(labelAvatar, labelAvatarScale, scaledPosX, scaledPosY, 800, 800);
           const compressedAvatar = await compressImageAtModuleLevel(croppedAvatar, 800, 800, 0.92);
-          processedLabelAvatar = await uploadBase64ToStorage(compressedAvatar, 'avatars', newUserId, originalFileNames['label_avatar'] || 'label-avatar');
+          processedLabelAvatar = await uploadBase64ToStorage(compressedAvatar, 'community-bands', newUserId, originalFileNames['label_avatar'] || 'label-avatar');
         }
 
         if (labelBanner?.startsWith('data:')) {
@@ -1533,7 +1525,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           const scaledBannerPosY = labelBannerPosY * (864 / 180);
           const croppedBanner = await cropImage(labelBanner, labelBannerScale, scaledBannerPosX, scaledBannerPosY, 1920, 864);
           const compressedBanner = await compressImageAtModuleLevel(croppedBanner, 1920, 1080, 0.92);
-          processedLabelBanner = await uploadBase64ToStorage(compressedBanner, 'bannersv2', newUserId, originalFileNames['label_banner'] || 'label-banner');
+          processedLabelBanner = await uploadBase64ToStorage(compressedBanner, 'community-bands', newUserId, originalFileNames['label_banner'] || 'label-banner');
         }
       }
 
@@ -1548,7 +1540,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           const scaledPosY = promoterLogoPosY * (800 / 220);
           const croppedLogo = await cropImage(promoterLogo, promoterLogoScale, scaledPosX, scaledPosY, 800, 800);
           const compressedLogo = await compressImageAtModuleLevel(croppedLogo, 800, 800, 0.92);
-          processedPromoterLogo = await uploadBase64ToStorage(compressedLogo, 'avatars', newUserId, originalFileNames['promoter_logo'] || 'promoter-logo');
+          processedPromoterLogo = await uploadBase64ToStorage(compressedLogo, 'community-bands', newUserId, originalFileNames['promoter_logo'] || 'promoter-logo');
         }
 
         if (promoterCoverImage?.startsWith('data:')) {
@@ -1556,7 +1548,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           const scaledBannerPosY = promoterCoverPosY * (864 / 180);
           const croppedBanner = await cropImage(promoterCoverImage, promoterCoverScale, scaledBannerPosX, scaledBannerPosY, 1920, 864);
           const compressedBanner = await compressImageAtModuleLevel(croppedBanner, 1920, 1080, 0.92);
-          processedPromoterCover = await uploadBase64ToStorage(compressedBanner, 'bannersv2', newUserId, originalFileNames['promoter_cover'] || 'promoter-cover');
+          processedPromoterCover = await uploadBase64ToStorage(compressedBanner, 'community-bands', newUserId, originalFileNames['promoter_cover'] || 'promoter-cover');
         }
       }
 

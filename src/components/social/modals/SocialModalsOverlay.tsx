@@ -647,7 +647,7 @@ export const SocialModalsOverlay: React.FC<SocialModalsOverlayProps> = (props) =
           try {
             triggerNotification?.("⏳ Saving and optimizing cropped image...");
             const userProfileId = userProfile?.id || 'profile_anonymous';
-            const bucket = cropperType === 'avatar' ? 'avatars' : 'bannersv2';
+            const bucket = 'community-bands';
             const token = cropperType === 'avatar' ? 'profile-avatar' : 'cover-banner';
             
             const publicUrl = await uploadBase64ToStorage(croppedBase64, bucket, userProfileId, token);

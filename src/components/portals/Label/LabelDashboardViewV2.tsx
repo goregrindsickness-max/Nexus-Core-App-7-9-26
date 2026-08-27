@@ -1529,7 +1529,7 @@ export default function LabelDashboardViewV2({
         if (event.target?.result && typeof event.target.result === 'string') {
           try {
             const compressed = await compressImage(event.target.result, 800, 800, 0.92);
-            const publicUrl = await uploadBase64ToStorage(compressed, 'avatars', userProfile.id, 'label-avatar');
+            const publicUrl = await uploadBase64ToStorage(compressed, 'community-bands', userProfile.id, 'label-avatar');
             setUserProfile({...userProfile, label_avatar: publicUrl});
           } catch (err) {
             console.error("Avatar upload failed:", err);
@@ -1547,7 +1547,7 @@ export default function LabelDashboardViewV2({
         if (event.target?.result && typeof event.target.result === 'string') {
           try {
             const compressed = await compressImage(event.target.result, 1920, 1080, 0.92);
-            const publicUrl = await uploadBase64ToStorage(compressed, 'bannersv2', userProfile.id, 'label-banner');
+            const publicUrl = await uploadBase64ToStorage(compressed, 'community-bands', userProfile.id, 'label-banner');
             setUserProfile({...userProfile, label_banner: publicUrl});
           } catch (err) {
             console.error("Banner upload failed:", err);

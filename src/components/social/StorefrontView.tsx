@@ -729,9 +729,9 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
                       <div className="mt-4">
                         <span className="block text-[10px] font-black uppercase text-zinc-500 tracking-wide mb-1.5">Select Size</span>
                         <div className="flex flex-wrap gap-1.5">
-                          {selectedShopItem.sizes.map((size: string) => (
+                          {selectedShopItem.sizes.map((size: string, szIdx: number) => (
                             <button
-                              key={size}
+                              key={`size-${size}-${szIdx}`}
                               onClick={() => setSelectedSize(size)}
                               className={`px-3 py-1 text-xs font-bold rounded-lg border transition-all ${
                                 selectedSize === size

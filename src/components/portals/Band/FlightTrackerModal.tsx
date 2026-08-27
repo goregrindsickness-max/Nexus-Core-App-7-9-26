@@ -9,7 +9,7 @@ import {
 import { Flight } from '../../../types';
 import { getSupabase } from '../../../supabase';
 import { fetchLiveFlightData } from '../../../flightService';
-import { enqueuePendingMutation } from '../../../useOfflineSync';
+import { enqueuePendingMutation } from '../../../hooks/useOfflineSync';
 import InfoTip from '../../InfoTip';
 const airportBg = "https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/public-assets/High%20energy%20concert%202.png";
 import FlightTicketCard from './FlightTicketCard';

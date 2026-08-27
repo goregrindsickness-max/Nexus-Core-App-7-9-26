@@ -87,6 +87,7 @@ export {
   sanitizeBandPayload,
   mapBandData,
   fetchUserBands,
+  upsertBandToDatabase,
 } from './services/bandService';
 
 // 6b. Creative Domain Service

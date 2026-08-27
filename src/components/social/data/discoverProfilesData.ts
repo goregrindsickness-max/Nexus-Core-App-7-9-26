@@ -1,60 +1,5 @@
 export const initialDiscoverProfiles = [
   {
-    id: 'dp-cryptopsy',
-    name: 'CRYPTOPSY',
-    role: '💀 Band',
-    category: 'bands',
-    desc: 'Technical death metal legends from Montreal',
-    avatar: 'C',
-    image: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&q=80&w=200',
-    followed: false,
-    notificationsEnabled: true
-  },
-  {
-    id: 'dp-suffocation',
-    name: 'SUFFOCATION',
-    role: '💀 Band',
-    category: 'bands',
-    desc: 'Pioneers of brutal death metal from New York',
-    avatar: 'S',
-    image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=200',
-    followed: false,
-    notificationsEnabled: true
-  },
-  {
-    id: 'dp-morbid-angel',
-    name: 'MORBID ANGEL',
-    role: '💀 Band',
-    category: 'bands',
-    desc: 'Florida death metal trailblazers',
-    avatar: 'MA',
-    image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=200',
-    followed: false,
-    notificationsEnabled: true
-  },
-  {
-    id: 'dp-testament',
-    name: 'TESTAMENT',
-    role: '💀 Band',
-    category: 'bands',
-    desc: 'Bay Area thrash titans',
-    avatar: 'T',
-    image: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=200',
-    followed: false,
-    notificationsEnabled: false
-  },
-  {
-    id: 'dp1',
-    name: 'JUNGLE ROT',
-    role: '💀 Band',
-    category: 'bands',
-    desc: 'Midwest death metal legends',
-    avatar: 'JR',
-    image: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&q=80&w=200',
-    followed: false,
-    notificationsEnabled: true
-  },
-  {
     id: 'dp2',
     name: 'Masonic Temple',
     role: '🏟️ Venue',
@@ -116,17 +61,6 @@ export const initialDiscoverProfiles = [
     category: 'creatives',
     desc: 'Brutal death and gore merchandise designer',
     avatar: 'VV',
-    image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=200',
-    followed: false,
-    notificationsEnabled: true
-  },
-  {
-    id: 'dp4',
-    name: 'DARK FUNERAL',
-    role: '💀 Band',
-    category: 'bands',
-    desc: 'Swedish Black Metal lords',
-    avatar: 'DF',
     image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=200',
     followed: false,
     notificationsEnabled: true
@@ -216,83 +150,6 @@ export const initialDiscoverProfiles = [
     desc: 'Old-school slam enthusiast & tape collector',
     avatar: 'GS',
     image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200',
-    followed: false,
-    notificationsEnabled: true
-  },
-  {
-    id: 'dp-devourment',
-    name: 'Devourment',
-    role: '💀 Band',
-    category: 'bands',
-    desc: 'Slam death metal pioneers from Dallas, Texas',
-    avatar: 'D',
-    image: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&q=80&w=200',
-    followed: false,
-    notificationsEnabled: true
-  },
-  {
-    id: 'dp-epicardiectomy',
-    name: 'Epicardiectomy',
-    role: '💀 Band',
-    category: 'bands',
-    desc: 'Guttural slam death metal from Prague',
-    avatar: 'E',
-    image: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&q=80&w=200',
-    followed: false,
-    notificationsEnabled: true
-  },
-  {
-    id: 'dp-pathology',
-    name: 'Pathology',
-    role: '💀 Band',
-    category: 'bands',
-    desc: 'San Diego brutal death metal surgeons',
-    avatar: 'P',
-    image: 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?auto=format&fit=crop&q=80&w=200',
-    followed: false,
-    notificationsEnabled: true
-  },
-  {
-    id: 'dp-origin',
-    name: 'Origin',
-    role: '💀 Band',
-    category: 'bands',
-    desc: 'Technical death metal wizards of speed',
-    avatar: 'O',
-    image: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=200',
-    followed: false,
-    notificationsEnabled: true
-  },
-  {
-    id: 'dp-exhumed',
-    name: 'Exhumed',
-    role: '💀 Band',
-    category: 'bands',
-    desc: 'Goregrind and death-thrash pioneers from California',
-    avatar: 'EX',
-    image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200',
-    followed: false,
-    notificationsEnabled: true
-  },
-  {
-    id: 'dp-incinerate',
-    name: 'Incinerate',
-    role: '💀 Band',
-    category: 'bands',
-    desc: 'Blasting brutal death metal firestorm',
-    avatar: 'I',
-    image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=200',
-    followed: false,
-    notificationsEnabled: true
-  },
-  {
-    id: 'dp-stabbing',
-    name: 'Stabbing',
-    role: '💀 Band',
-    category: 'bands',
-    desc: 'Texas brutal slam death metal savagery',
-    avatar: 'ST',
-    image: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&q=80&w=200',
     followed: false,
     notificationsEnabled: true
   }

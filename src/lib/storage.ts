@@ -160,7 +160,7 @@ export const uploadArtworkToVault = async (
     const contentType = getImageContentType(originalName, compressed.type);
     const fileName = `artwork/${userId}/${Date.now()}_${cleanBaseName}`;
 
-    const targetBuckets = ['audio-vault', 'public-assets', 'feed_media', 'bannersv2'];
+    const targetBuckets = ['community-bands', 'audio-vault', 'public-assets', 'feed_media'];
 
     for (const bucketName of targetBuckets) {
       try {

@@ -231,15 +231,22 @@ export async function upsertReleaseToDatabase(
     if (error && (error.message.includes('foreign key') || error.code === '23503')) {
       console.warn('[releasesService] Foreign key constraint on bands detected. Auto-provisioning band row:', targetBandId);
       try {
-        await supabase
+        const { data: existingBand } = await supabase
           .from('bands')
-          .upsert({
-            id: targetBandId,
-            name: release.label || 'Nexus Artist',
-            slug: targetBandId,
-            status: 'active',
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'id' });
+          .select('id, band_name')
+          .eq('id', targetBandId)
+          .maybeSingle();
+
+        if (!existingBand) {
+          await supabase
+            .from('bands')
+            .upsert({
+              id: targetBandId,
+              band_name: 'Nexus Artist',
+              custom_slug: targetBandId,
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'id' });
+        }
 
         // Retry release upsert with select() for optimistic reconciliation
         const retryResult = await supabase
@@ -318,15 +325,22 @@ export async function upsertReleasesBatchToDatabase(
 
     // Auto-provision band row in Supabase 'bands' table before inserting releases to ensure foreign key integrity
     try {
-      await supabase
+      const { data: existingBand } = await supabase
         .from('bands')
-        .upsert({
-          id: targetBandId,
-          name: releaseList[0]?.label || releaseList[0]?.title || 'Nexus Artist',
-          slug: targetBandId,
-          status: 'active',
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'id' });
+        .select('id, band_name')
+        .eq('id', targetBandId)
+        .maybeSingle();
+
+      if (!existingBand) {
+        await supabase
+          .from('bands')
+          .upsert({
+            id: targetBandId,
+            band_name: 'Nexus Artist',
+            custom_slug: targetBandId,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'id' });
+      }
     } catch (e) {
       console.warn('[releasesService] Pre-sync band check notice:', e);
     }

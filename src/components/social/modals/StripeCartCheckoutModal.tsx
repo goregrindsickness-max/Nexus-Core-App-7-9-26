@@ -209,7 +209,7 @@ export function StripeCartCheckoutModal({
             {/* Cart Items List */}
             <div className="flex flex-col gap-2 bg-zinc-950/80 p-3 rounded-2xl border border-zinc-800/90 max-h-44 overflow-y-auto">
               {cartItems.map((item: any, idx: number) => (
-                <div key={idx} className="flex gap-3 items-center p-1.5 bg-zinc-900/40 rounded-xl border border-zinc-800/50">
+                <div key={item.id ? `cart-item-${item.id}-${idx}` : `cart-item-${idx}`} className="flex gap-3 items-center p-1.5 bg-zinc-900/40 rounded-xl border border-zinc-800/50">
                   <img
                     src={item.image || item.thumbnail || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=300'}
                     alt={item.name}
@@ -453,7 +453,7 @@ export function StripeCartCheckoutModal({
                             const isSelected = (walletsState.google.selectedCardId || walletsState.google.cards[0]?.id) === card.id;
                             return (
                               <div
-                                key={card.id}
+                                key={card.id ? `cart-gcard-${card.id}-${cardIdx}` : `cart-gcard-${cardIdx}`}
                                 onClick={() => {
                                   selectWalletCard('google', card.id, userProfile);
                                   setWalletsState(getStoredWallets(userProfile));
@@ -551,7 +551,7 @@ export function StripeCartCheckoutModal({
                             const isSelected = (walletsState.apple.selectedCardId || walletsState.apple.cards[0]?.id) === card.id;
                             return (
                               <div
-                                key={card.id}
+                                key={card.id ? `cart-acard-${card.id}-${cardIdx}` : `cart-acard-${cardIdx}`}
                                 onClick={() => {
                                   selectWalletCard('apple', card.id, userProfile);
                                   setWalletsState(getStoredWallets(userProfile));
@@ -653,7 +653,7 @@ export function StripeCartCheckoutModal({
                             const isSelected = (walletsState.paypal.selectedCardId || walletsState.paypal.cards[0]?.id) === card.id;
                             return (
                               <div
-                                key={card.id}
+                                key={card.id ? `cart-pcard-${card.id}-${cardIdx}` : `cart-pcard-${cardIdx}`}
                                 onClick={() => {
                                   selectWalletCard('paypal', card.id, userProfile);
                                   setWalletsState(getStoredWallets(userProfile));

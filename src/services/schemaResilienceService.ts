@@ -343,41 +343,30 @@ export async function executeWithSchemaResilience<T extends Record<string, any> 
       return item;
     });
   } else {
-    const isProfilePayload =
+    const isBandPayload =
       payload &&
       typeof payload === 'object' &&
       !Array.isArray(payload) &&
-      ('email' in payload ||
-        'role' in payload ||
-        'account_type' in payload ||
-        'console_handle' in payload ||
-        'registered_workspaces' in payload ||
-        'allowed_workspaces' in payload ||
-        'bio' in payload ||
-        'profileBlurb' in payload ||
-        'update_ticker' in payload ||
-        'rosterTicker' in payload ||
-        'full_name' in payload ||
-        'creative_metadata' in payload ||
-        'promoter_metadata' in payload ||
-        'label_metadata' in payload ||
-        'band_metadata' in payload ||
-        'user_metadata' in payload) &&
-      !(
-        'creator_id' in payload ||
-        'business_name' in payload ||
-        'creative_name' in payload ||
-        'band_id' in payload ||
-        'band_name' in payload ||
-        'venue_id' in payload
-      );
+      ('band_name' in payload ||
+        'micro_genres' in payload ||
+        'tour_vehicle' in payload ||
+        'metal_archives_url' in payload ||
+        ('logo_url' in payload && ('genre' in payload || 'city' in payload || 'founded_year' in payload || 'cover_url' in payload || 'bio' in payload || 'creator_id' in payload)) ||
+        ('creator_id' in payload &&
+          ('logo_url' in payload ||
+            'tech_rider_url' in payload ||
+            'tour_vehicle' in payload ||
+            'lineup' in payload ||
+            'micro_genres' in payload ||
+            'genre' in payload)));
 
-    // If this payload is a profile, normalize it for the 'profiles' database table columns:
-    if (isProfilePayload) {
-      payload = sanitizeProfilePayload(payload);
+    // If this payload targets the 'bands' table, normalize it strictly for the 'bands' database table columns:
+    if (isBandPayload) {
+      payload = sanitizeBandPayload(payload);
     }
 
     const isCreativePayload =
+      !isBandPayload &&
       payload &&
       typeof payload === 'object' &&
       !Array.isArray(payload) &&
@@ -406,23 +395,31 @@ export async function executeWithSchemaResilience<T extends Record<string, any> 
       payload = sanitizeCreativePayload(payload);
     }
 
-    const isBandPayload =
+    const isProfilePayload =
+      !isBandPayload &&
+      !isCreativePayload &&
       payload &&
       typeof payload === 'object' &&
       !Array.isArray(payload) &&
-      !isCreativePayload &&
-      ('band_name' in payload ||
-        ('creator_id' in payload &&
-          ('logo_url' in payload ||
-            'tech_rider_url' in payload ||
-            'tour_vehicle' in payload ||
-            'lineup' in payload ||
-            'micro_genres' in payload))) &&
-      !('email' in payload || 'account_type' in payload || 'role' in payload || 'console_handle' in payload);
+      ('email' in payload ||
+        'role' in payload ||
+        'account_type' in payload ||
+        'console_handle' in payload ||
+        'registered_workspaces' in payload ||
+        'allowed_workspaces' in payload ||
+        'profileBlurb' in payload ||
+        'update_ticker' in payload ||
+        'rosterTicker' in payload ||
+        'full_name' in payload ||
+        'creative_metadata' in payload ||
+        'promoter_metadata' in payload ||
+        'label_metadata' in payload ||
+        'band_metadata' in payload ||
+        'user_metadata' in payload);
 
-    // If this payload targets the 'bands' table, normalize it strictly for the 'bands' database table columns:
-    if (isBandPayload) {
-      payload = sanitizeBandPayload(payload);
+    // If this payload is a profile, normalize it for the 'profiles' database table columns:
+    if (isProfilePayload) {
+      payload = sanitizeProfilePayload(payload);
     }
 
     if (payload && typeof payload === 'object' && ('tracks' in payload || 'catalog_id' in payload || 'cover_url' in payload)) {
@@ -439,21 +436,23 @@ export async function executeWithSchemaResilience<T extends Record<string, any> 
       return { error: null, data };
     }
 
+    const fullErrorMsg = [error.message, error.details, error.hint].filter(Boolean).join(' ');
+    const lowerErrorMsg = fullErrorMsg.toLowerCase();
+
     // Check if it's a PGRST205 "Table not found" error or PostgreSQL 42P01 "relation does not exist" error.
     // NOTE: Must NOT match column missing errors (PGRST204) which contain the word "column".
     const isTableMissingError =
       error.code === 'PGRST205' ||
       error.code === '42P01' ||
-      (error.message &&
-        !error.message.toLowerCase().includes('column') &&
-        (error.message.toLowerCase().includes('could not find the table') ||
-          (error.message.toLowerCase().includes('table') && error.message.toLowerCase().includes('schema cache')) ||
-          (error.message.toLowerCase().includes('relation') && error.message.toLowerCase().includes('does not exist'))));
+      (!lowerErrorMsg.includes('column') &&
+        (lowerErrorMsg.includes('could not find the table') ||
+          (lowerErrorMsg.includes('table') && lowerErrorMsg.includes('schema cache')) ||
+          (lowerErrorMsg.includes('relation') && lowerErrorMsg.includes('does not exist'))));
 
     if (isTableMissingError) {
       console.warn(
         `[Supabase Resilience] Gracefully bypassed missing table error (table likely not in sandbox database):`,
-        error.message
+        fullErrorMsg
       );
       return { error: null, data: null };
     }
@@ -461,16 +460,15 @@ export async function executeWithSchemaResilience<T extends Record<string, any> 
     // CRITICAL: ALLOW RLS / PRIVILEGE ERRORS TO BUBBLE UP TO TRIGGER OFFLINE RETRY PIPELINES
     const isRLSOrPermissionError =
       error.code === '42501' ||
-      (error.message &&
-        (error.message.toLowerCase().includes('row-level security') ||
-          error.message.toLowerCase().includes('permission denied') ||
-          error.message.toLowerCase().includes('not authorized') ||
-          error.message.toLowerCase().includes('violates row-level security')));
+      lowerErrorMsg.includes('row-level security') ||
+      lowerErrorMsg.includes('permission denied') ||
+      lowerErrorMsg.includes('not authorized') ||
+      lowerErrorMsg.includes('violates row-level security');
 
     if (isRLSOrPermissionError) {
       console.warn(
         `[Supabase Resilience] RLS Violation (Code 42501). Aborting bypass to allow background queue orchestration.`,
-        error.message
+        fullErrorMsg
       );
       return { error, data: null };
     }
@@ -482,33 +480,96 @@ export async function executeWithSchemaResilience<T extends Record<string, any> 
       error.code === '42804' ||
       error.code === '22023' ||
       error.code === 'PGRST102' ||
-      (error.message &&
-        ((error.message.toLowerCase().includes('column') &&
-          (error.message.toLowerCase().includes('does not exist') ||
-            error.message.toLowerCase().includes('not found') ||
-            error.message.toLowerCase().includes('unknown') ||
-            error.message.toLowerCase().includes('schema cache'))) ||
-          error.message.toLowerCase().includes('invalid input syntax') ||
-          error.message.toLowerCase().includes('expression is of type') ||
-          error.message.toLowerCase().includes('malformed') ||
-          error.message.toLowerCase().includes('cannot parse') ||
-          error.message.toLowerCase().includes('type mismatch')));
+      error.code === 'PGRST200' ||
+      error.code === '400' ||
+      error.status === 400 ||
+      (lowerErrorMsg.includes('column') &&
+        (lowerErrorMsg.includes('does not exist') ||
+          lowerErrorMsg.includes('not found') ||
+          lowerErrorMsg.includes('unknown') ||
+          lowerErrorMsg.includes('schema cache'))) ||
+      lowerErrorMsg.includes('invalid input syntax') ||
+      lowerErrorMsg.includes('expression is of type') ||
+      lowerErrorMsg.includes('malformed') ||
+      lowerErrorMsg.includes('cannot parse') ||
+      lowerErrorMsg.includes('type mismatch') ||
+      lowerErrorMsg.includes('bad request');
 
-    if (isColumnMissingOrTypeError && error.message) {
-      const match1 = error.message.match(/Could not find the '([^']+)' column/);
-      const match2 = error.message.match(/column "([^"]+)"/i);
-      const match3 = error.message.match(/column '([^']+)'/i);
-      const match4 = error.message.match(/Could not find the ([^ ]+) column/i);
-      const match5 = error.message.match(/field "([^"]+)"/i);
+    if (isColumnMissingOrTypeError && fullErrorMsg) {
+      const match1 = fullErrorMsg.match(/Could not find the '([^']+)' column/i);
+      const match2 = fullErrorMsg.match(/column "([^"]+)"/i);
+      const match3 = fullErrorMsg.match(/column '([^']+)'/i);
+      const match4 = fullErrorMsg.match(/Could not find the column '([^']+)'/i);
+      const match5 = fullErrorMsg.match(/Could not find column '([^']+)'/i);
+      const match6 = fullErrorMsg.match(/Could not find the ([a-zA-Z0-9_]+) column/i);
+      const match7 = fullErrorMsg.match(/field "([^"]+)"/i);
+      const match8 = fullErrorMsg.match(/field '([^']+)'/i);
+      const match9 = fullErrorMsg.match(/column ([a-zA-Z0-9_]+) does not exist/i);
 
-      const offendingColumn =
+      let offendingColumn =
         (match1 && match1[1]) ||
+        (match4 && match4[1]) ||
+        (match5 && match5[1]) ||
         (match2 && match2[1]) ||
         (match3 && match3[1]) ||
-        (match4 && match4[1]) ||
-        (match5 && match5[1]);
+        (match6 && match6[1]) ||
+        (match7 && match7[1]) ||
+        (match8 && match8[1]) ||
+        (match9 && match9[1]);
+
+      // If regex couldn't find a column name, scan payload keys against error text
+      if (!offendingColumn && payload && typeof payload === 'object') {
+        const keysToCheck = Array.isArray(payload) ? (payload[0] ? Object.keys(payload[0]) : []) : Object.keys(payload);
+        for (const k of keysToCheck) {
+          if (lowerErrorMsg.includes(k.toLowerCase())) {
+            offendingColumn = k;
+            break;
+          }
+        }
+      }
+
+      // If still no column matched, progressively try stripping optional non-core columns
+      if (!offendingColumn && payload && typeof payload === 'object' && !Array.isArray(payload)) {
+        const optionalCandidateKeys = [
+          'tour_vehicle',
+          'tech_rider_url',
+          'custom_slug',
+          'booking_email',
+          'booking_phone',
+          'featured_youtube_url',
+          'streaming_url',
+          'payment_routing',
+          'metal_archives_url',
+          'headcount',
+          'apparel_sizes',
+          'user_role_in_band',
+          'record_label',
+          'legal_name',
+          'tax_id',
+          'legal_entity_type',
+          'instagram',
+          'spotify',
+          'apple_music',
+          'bandcamp',
+          'website',
+          'live_update',
+          'featured_video_band_name',
+          'featured_video_track_name',
+          'is_verified',
+          'verification_platform',
+          'micro_genres',
+          'state_province'
+        ];
+        for (const cand of optionalCandidateKeys) {
+          if (cand in payload) {
+            offendingColumn = cand;
+            break;
+          }
+        }
+      }
+
       if (offendingColumn) {
-        console.warn(`[Supabase Resilience] Stripping column '${offendingColumn}' due to database error:`, error.message);
+        console.warn(`[Supabase Resilience] Stripping column '${offendingColumn}' due to database error:`, fullErrorMsg);
         try {
           if (typeof localStorage !== 'undefined') {
             localStorage.setItem(`NEXUS_CORE_MISSING_COLUMN_${offendingColumn.toUpperCase()}`, 'true');
@@ -537,7 +598,7 @@ export async function executeWithSchemaResilience<T extends Record<string, any> 
           if (remainingDataKeys.length === 0) {
             console.warn(
               `[Supabase Resilience] Gracefully bypassed operation after stripping unsupported column '${offendingColumn}':`,
-              error.message
+              fullErrorMsg
             );
             return { error: null, data: null };
           }
@@ -545,14 +606,6 @@ export async function executeWithSchemaResilience<T extends Record<string, any> 
 
         attempts++;
         continue;
-      }
-
-      if (attempts >= 5) {
-        console.warn(
-          `[Supabase Resilience] Gracefully bypassed operation after multiple attempts due to schema cache issues:`,
-          error.message
-        );
-        return { error: null, data: null };
       }
     }
 

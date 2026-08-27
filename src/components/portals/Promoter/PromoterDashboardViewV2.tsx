@@ -922,7 +922,7 @@ export default function PromoterDashboardViewV2({
         if (event.target?.result) {
           try {
             const compressed = await compressImage(event.target.result as string, 800, 800, 0.92);
-            const publicUrl = await uploadBase64ToStorage(compressed, 'avatars', userProfile.id, 'promoter-avatar');
+            const publicUrl = await uploadBase64ToStorage(compressed, 'community-bands', userProfile.id, 'promoter-avatar');
             setAvatarUrl(publicUrl);
             setUserProfile((prev: any) => ({
               ...prev,
@@ -954,7 +954,7 @@ export default function PromoterDashboardViewV2({
         if (event.target?.result) {
           try {
             const compressed = await compressImage(event.target.result as string, 1920, 1080, 0.92);
-            const publicUrl = await uploadBase64ToStorage(compressed, 'bannersv2', userProfile.id, 'promoter-banner');
+            const publicUrl = await uploadBase64ToStorage(compressed, 'community-bands', userProfile.id, 'promoter-banner');
             setUserProfile((prev: any) => ({
               ...prev,
               promoter_cover_image: publicUrl

@@ -6,12 +6,14 @@ export interface UseUserProfileStateProps {
   portalRole: string;
   userProfile?: any;
   activeBand?: any;
+  setUserProfile?: (u: any) => void;
 }
 
 export function useUserProfileState({
   portalRole,
   userProfile,
   activeBand,
+  setUserProfile,
 }: UseUserProfileStateProps) {
   const isLoadedRef = useRef(false);
 
@@ -339,8 +341,9 @@ export function useUserProfileState({
     const profileCacheKey = `nexus_${portalRole}_profile_v1_${userProfile?.id || 'guest'}`;
 
     try {
-      const { profileAvatarUrl, profileCoverUrl, ...localData } = dataToSave;
-      localStorage.setItem(profileCacheKey, JSON.stringify(localData));
+      localStorage.setItem(profileCacheKey, JSON.stringify(dataToSave));
+      if (profileAvatarUrl) localStorage.setItem('nexus_user_avatar', profileAvatarUrl);
+      if (profileCoverUrl) localStorage.setItem('nexus_user_banner', profileCoverUrl);
       localStorage.setItem('nexus_user_bio', profileBlurb);
     } catch (err) {
       console.error("Failed to write to localStorage:", err);
@@ -350,6 +353,32 @@ export function useUserProfileState({
       profileStore.setItem(`active_${portalRole}_${userProfile?.id || 'guest'}`, dataToSave).catch(e => console.warn("profileStore write warning:", e));
     } catch (err) {
       console.warn("Failed to write to IndexedDB profileStore:", err);
+    }
+
+    if (setUserProfile) {
+      setUserProfile((prev: any) => prev ? {
+        ...prev,
+        avatar: profileAvatarUrl || prev?.avatar,
+        avatar_url: profileAvatarUrl || prev?.avatar_url,
+        logo_url: profileAvatarUrl || prev?.logo_url,
+        banner: profileCoverUrl || prev?.banner,
+        banner_url: profileCoverUrl || prev?.banner_url,
+        cover_url: profileCoverUrl || prev?.cover_url,
+      } : prev);
+    }
+
+    if (profileAvatarUrl && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('nexus_avatar_updated', {
+        detail: {
+          id: userProfile?.id,
+          avatarUrl: profileAvatarUrl,
+          avatar_url: profileAvatarUrl,
+          logo_url: profileAvatarUrl,
+          logoUrl: profileAvatarUrl,
+          authorName: profileFullLegalName || userProfile?.name || 'User',
+          authorRole: portalRole || 'User'
+        }
+      }));
     }
 
     if (userProfile?.id && userProfile?.id !== 'guest') {
@@ -363,16 +392,20 @@ export function useUserProfileState({
 
         // 1. Separate Workspace Save: Save to specific workspace tables if in a professional portal
         if (portalRole === 'band') {
-          const bandId = activeBand?.id || userProfile?.band_id;
+          const bandId = activeBand?.id || userProfile?.band_id || userProfile?.id;
           if (bandId) {
             const bandPayload = {
               id: bandId,
-              band_name: profileFullLegalName,
-              logo_url: profileAvatarUrl,
-              cover_url: profileCoverUrl,
-              bio: profileBlurb,
+              band_name: profileFullLegalName || activeBand?.name || userProfile?.name,
+              name: profileFullLegalName || activeBand?.name || userProfile?.name,
+              logo_url: profileAvatarUrl || activeBand?.logo_url,
+              avatar_url: profileAvatarUrl || activeBand?.logo_url,
+              cover_url: profileCoverUrl || activeBand?.cover_url,
+              banner_url: profileCoverUrl || activeBand?.cover_url,
+              bio: profileBlurb || activeBand?.bio,
               micro_genres: combinedGenres,
               city: profileLocation,
+              creator_id: userProfile.id,
             };
             const sanitizedBand = sanitizeBandPayload(bandPayload);
             executeWithSchemaResilience(
@@ -380,7 +413,10 @@ export function useUserProfileState({
               sanitizedBand
             ).then(({ error }) => {
               if (error) console.error('[Supabase Band Profile Sync Error]:', error);
-              else console.log('[Supabase Band Profile Sync Success] Band profile saved.');
+              else {
+                console.log('[Supabase Band Profile Sync Success] Band profile saved.');
+                window.dispatchEvent(new CustomEvent('nexus_band_updated', { detail: sanitizedBand }));
+              }
             });
           }
         } else if (portalRole === 'creative') {
@@ -458,12 +494,13 @@ export function useUserProfileState({
         let personalTopSongUrl = finalTopSongUrl;
 
         if (isProfessionalPortal) {
-          // Use original userProfile values to keep personal rows untouched by professional details
+          // Use original userProfile values to keep personal rows untouched by professional details,
+          // while respecting explicitly set avatar/banner
           personalName = userProfile?.full_name || userProfile?.name || '';
           personalHandle = userProfile?.console_handle || userProfile?.handle || '';
-          personalAvatar = userProfile?.avatar_url || null;
-          personalBanner = userProfile?.banner_url || null;
-          personalBio = userProfile?.bio || '';
+          personalAvatar = profileAvatarUrl || userProfile?.avatar_url || null;
+          personalBanner = profileCoverUrl || userProfile?.banner_url || null;
+          personalBio = userProfile?.bio || profileBlurb || '';
           personalGenres = userProfile?.genre_tags || userProfile?.genres || [];
           personalTopSong = userProfile?.top_song_title || '';
           personalTopSongUrl = userProfile?.top_song_url || '';

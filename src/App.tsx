@@ -1264,58 +1264,15 @@ export default function App() {
 
   const [isBandModalOpen, setIsBandModalOpen] = useState(false);
 
-  // Sync bands list with localStorage namespaced by profile ID and Supabase
+  // Sync bands list with localStorage namespaced by profile ID
   useEffect(() => {
     if (!userProfile) return;
     try {
       profileStore.setItem(`nexus_core_${userProfile?.id}_bands`, bands);
-      
-      const supabase = getSupabase();
-      const validBands = bands.filter(band => band && band.id && !band.id.startsWith('band_synthetic_'));
-      if (supabase && navigator.onLine && validBands.length > 0) {
-        Promise.all(validBands.map(band => {
-          const cleanBandPayload = sanitizeBandPayload({
-            id: band.id,
-            band_name: band.name || band.band_name || 'Unnamed Band',
-            name: band.name || band.band_name || 'Unnamed Band',
-            micro_genres: band.micro_genres || [],
-            city: band.city,
-            state_province: band.state_province,
-            country: band.country,
-            bio: band.bio || '',
-            homebase: band.homebase,
-            location: band.location,
-            logo_url: band.logo_url || '',
-            cover_url: band.cover_url || '',
-            custom_slug: band.custom_slug || '',
-            booking_email: band.booking_email || '',
-            booking_phone: band.booking_phone || '',
-            featured_youtube_url: band.featured_youtube_url || '',
-            streaming_url: band.streaming_url || '',
-            tech_rider_url: band.tech_rider_url || '',
-            tour_vehicle: band.tour_vehicle || '',
-            payment_routing: band.payment_routing || '',
-            metal_archives_url: band.metal_archives_url || '',
-            lineup: typeof band.lineup === 'string' ? band.lineup : (Array.isArray(band.lineup) ? JSON.stringify(band.lineup) : undefined),
-            is_verified: band.is_verified ?? false,
-            verification_platform: band.verification_platform || null,
-            record_label: band.record_label || (typeof band.label_id === 'string' ? band.label_id : undefined),
-            creator_id: band.creator_id || userProfile?.id || null,
-            user_id: band.user_id || userProfile?.id || null,
-          });
-          return executeWithSchemaResilience(
-            async (payload) => await supabase.from('bands').upsert([payload]),
-            cleanBandPayload
-          );
-        })).then(results => {
-           const errors = results.filter(r => r.error).map(r => r.error);
-           if (errors.length > 0) console.warn('Failed to sync some bands to Supabase:', errors);
-        });
-      }
     } catch (e) {
       console.error('Failed to save namespaced bands to localStorage:', e);
     }
-  }, [bands, userProfile?.id, isOnline]);
+  }, [bands, userProfile?.id]);
 
   // Sync active band ID with localStorage namespaced by profile ID
   useEffect(() => {
@@ -1770,7 +1727,7 @@ export default function App() {
 
     if (bandLogo && bandLogo.startsWith('data:')) {
       try {
-        const publicUrl = await uploadBase64ToStorage(bandLogo, 'avatars', userProfile?.id || newId, 'band-logo');
+        const publicUrl = await uploadBase64ToStorage(bandLogo, 'community-bands', userProfile?.id || newId, 'band-logo');
         if (publicUrl && !publicUrl.startsWith('data:')) {
           bandLogo = publicUrl;
         }
@@ -1781,7 +1738,7 @@ export default function App() {
 
     if (bandCover && bandCover.startsWith('data:')) {
       try {
-        const publicUrl = await uploadBase64ToStorage(bandCover, 'bannersv2', userProfile?.id || newId, 'band-cover');
+        const publicUrl = await uploadBase64ToStorage(bandCover, 'community-bands', userProfile?.id || newId, 'band-cover');
         if (publicUrl && !publicUrl.startsWith('data:')) {
           bandCover = publicUrl;
         }

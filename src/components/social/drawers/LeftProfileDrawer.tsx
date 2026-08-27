@@ -4,7 +4,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Barcode from 'react-barcode';
 import { InteractiveCropperModal } from "../../InteractiveCropperModal";
-import { uploadBase64ToStorage, resolveZipCode, autoArchiveProfileAssets, getSupabase } from "../../../supabase";
+import { uploadBase64ToStorage, resolveZipCode, autoArchiveProfileAssets, getSupabase, extractGlobalProfilePayload, executeSanitizedProfileUpsert, sanitizeBandPayload, executeWithSchemaResilience } from "../../../supabase";
 import { getRoleBorderAndGlowClass } from "../utils/socialUtils";
 import {
   getStoredWallets,
@@ -3231,7 +3231,7 @@ if (!leftDrawerOpen) return null;
                   try {
                     triggerNotification?.("⏳ Processing and optimizing image...");
                     const userProfileId = userProfile?.id || 'profile_anonymous';
-                    const bucket = cropperType === 'avatar' ? 'avatars' : 'banners';
+                    const bucket = 'community-bands';
                     const token = cropperType === 'avatar' ? 'profile-avatar' : 'cover-banner';
                     
                     // Attempt the storage upload strictly
@@ -3247,6 +3247,15 @@ if (!leftDrawerOpen) return null;
                       if (setProfileCoverUrl) setProfileCoverUrl(publicUrl);
                     }
 
+                    if (setUserProfile) {
+                      setUserProfile((prev: any) => prev ? {
+                        ...prev,
+                        ...(cropperType === 'avatar'
+                          ? { avatar: publicUrl, avatar_url: publicUrl, logo_url: publicUrl }
+                          : { banner: publicUrl, banner_url: publicUrl, cover_url: publicUrl })
+                      } : prev);
+                    }
+
                     if (userProfile?.id) {
                       const sbClient = getSupabase();
                       if (sbClient) {
@@ -3255,10 +3264,52 @@ if (!leftDrawerOpen) return null;
                         } else {
                           await autoArchiveProfileAssets(sbClient, userProfile.id, null, publicUrl, userProfile.name);
                         }
+
+                        const columnToUpdate = cropperType === 'avatar' ? { avatar_url: publicUrl } : { banner_url: publicUrl };
+                        const globalPayload = extractGlobalProfilePayload({
+                          id: userProfile.id,
+                          ...columnToUpdate
+                        }, userProfile.id);
+                        await executeSanitizedProfileUpsert(sbClient, globalPayload);
+
+                        // If portal is band or user is linked to band, sync to bands table too
+                        if (portalRole === 'band' || (userProfile as any)?.band_id || (props as any)?.activeBand?.id) {
+                          const targetBandId = (props as any)?.activeBand?.id || (userProfile as any)?.band_id || userProfile.id;
+                          if (targetBandId) {
+                            const bandImageField = cropperType === 'avatar'
+                              ? { logo_url: publicUrl, avatar_url: publicUrl }
+                              : { cover_url: publicUrl, banner_url: publicUrl };
+                            const sanitized = sanitizeBandPayload({
+                              id: targetBandId,
+                              band_name: profileFullLegalName || userProfile.name || 'Band',
+                              name: profileFullLegalName || userProfile.name || 'Band',
+                              ...bandImageField
+                            });
+                            await executeWithSchemaResilience(
+                              async (payload) => await sbClient.from('bands').upsert([payload]),
+                              sanitized
+                            );
+                            window.dispatchEvent(new CustomEvent('nexus_band_updated', { detail: sanitized }));
+                          }
+                        }
                       }
                     }
 
-                    triggerNotification?.(`✨ ${cropperType === 'avatar' ? 'Profile Avatar' : 'Cover Banner'} updated & archived! Click 'Save Changes' to commit.`);
+                    // Dispatch avatar update event globally
+                    window.dispatchEvent(new CustomEvent('nexus_avatar_updated', {
+                      detail: {
+                        id: userProfile?.id,
+                        avatarUrl: publicUrl,
+                        avatar_url: publicUrl,
+                        logo_url: publicUrl,
+                        logoUrl: publicUrl,
+                        authorName: profileFullLegalName || userProfile?.name || 'User',
+                        name: profileFullLegalName || userProfile?.name || 'User',
+                        authorRole: portalRole || 'User'
+                      }
+                    }));
+
+                    triggerNotification?.(`✨ ${cropperType === 'avatar' ? 'Profile Avatar' : 'Cover Banner'} updated & synchronized!`);
                   } catch (err: any) {
                     console.error("Failed to upload cropped image to storage:", err);
                     triggerNotification?.("⚠️ Failed to upload image to storage bucket.");

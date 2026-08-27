@@ -108,7 +108,7 @@ export const ViewEpksModal: React.FC<ViewEpksModalProps> = ({
 
                   return (
                     <div 
-                      key={epk.id} 
+                      key={epk.id ? `epk-${epk.id}-${epkIdx}` : `epk-${epkIdx}`} 
                       className={`border rounded-xl transition-all duration-200 overflow-hidden ${isExpanded ? 'border-emerald-500/40 bg-zinc-950/80 shadow-lg' : 'border-zinc-900 bg-zinc-950/40 hover:bg-zinc-950/70 hover:border-zinc-850'}`}
                     >
                       {/* Summary Header Row */}

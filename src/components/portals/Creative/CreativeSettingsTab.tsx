@@ -390,7 +390,7 @@ export default function CreativeSettingsTab({
         if (event.target?.result && typeof event.target.result === 'string') {
           try {
             const compressed = await compressImage(event.target.result, 800, 800, 0.88);
-            const publicUrl = await uploadBase64ToStorage(compressed, 'avatars', userProfile.id, 'creative-avatar');
+            const publicUrl = await uploadBase64ToStorage(compressed, 'community-bands', userProfile.id, 'creative-avatar');
             if (publicUrl) {
               setUserProfile((prev: any) => ({ ...prev, creative_avatar: publicUrl }));
               // Update only avatar_url on creatives row
@@ -417,7 +417,7 @@ export default function CreativeSettingsTab({
         if (event.target?.result && typeof event.target.result === 'string') {
           try {
             const compressed = await compressImage(event.target.result, 1920, 1080, 0.88);
-            const publicUrl = await uploadBase64ToStorage(compressed, 'bannersv2', userProfile.id, 'creative-banner');
+            const publicUrl = await uploadBase64ToStorage(compressed, 'community-bands', userProfile.id, 'creative-banner');
             if (publicUrl) {
               setUserProfile((prev: any) => ({ ...prev, creative_banner: publicUrl }));
               // Update only banner_url on creatives row

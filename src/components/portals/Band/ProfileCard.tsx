@@ -5,7 +5,7 @@ import { hasRegisteredWorkspace } from '../../../types';
 import { getProfileGlowInfo } from '../../../utils/profileGlow';
 import { formatLocationDisplay } from '../../../constants/location';
 import { ROSTER_CATALOGS } from '../../../data/socialFeedMockData';
-import { normalizeLoadedProfile, getSupabase, executeWithSchemaResilience, executeSanitizedProfileUpsert } from '../../../supabase';
+import { normalizeLoadedProfile, getSupabase, executeWithSchemaResilience, executeSanitizedProfileUpsert, upsertBandToDatabase } from '../../../supabase';
 import { getEmbedUrl, getCollectionsTrackDuration, extractUUID } from '../../../utils/socialFeedUtils';
 import { communityBandManager, CommunityBandRecord } from '../../../lib/communityBands';
 import CommunityBandCuratorModal from '../../social/modals/CommunityBandCuratorModal';
@@ -337,7 +337,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
 
           if (!record && validUUID) {
             try {
-              const { data } = await supabase.from('bands').select('*').eq('creator_id', validUUID).neq('verification_status', 'community_archive').order('created_at', { ascending: false }).limit(1).maybeSingle();
+              const { data } = await supabase.from('bands').select('*').eq('creator_id', validUUID).order('created_at', { ascending: false }).limit(1).maybeSingle();
               if (data) record = data;
             } catch (_) {}
           }
@@ -461,33 +461,77 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
   React.useEffect(() => {
     const handleBandUpdate = (evt: any) => {
       const updated = evt?.detail;
+      if (!updated) return;
       const base = selectedUserProfile || targetProfile;
-      const currentName = base?.name || base?.band_name || '';
-      if (updated && (
-        (base?.id && (base.id === updated.id || extractUUID(base.id) === extractUUID(updated.id))) ||
-        (currentName && updated.name && (
-          currentName.toLowerCase().trim() === updated.name.toLowerCase().trim() ||
-          currentName.toLowerCase().replace(/[^a-z0-9]/g, '') === updated.name.toLowerCase().replace(/[^a-z0-9]/g, '')
-        ))
-      )) {
-        setCommunityArchiveMatch(updated);
+      const currentName = base?.name || base?.band_name || (base as any)?.full_name || '';
+      const newAvatar = updated.avatar_url || updated.logo_url || updated.avatarUrl || updated.logoUrl;
+      const newBanner = updated.cover_url || updated.banner_url || updated.coverUrl || updated.bannerUrl;
+
+      const isIdMatch = Boolean(
+        base?.id && updated.id &&
+        (base.id === updated.id || extractUUID(base.id) === extractUUID(updated.id))
+      );
+
+      const isNameMatch = Boolean(
+        currentName && (updated.name || updated.band_name || updated.authorName) && (
+          currentName.toLowerCase().trim() === (updated.name || updated.band_name || updated.authorName || '').toLowerCase().trim() ||
+          currentName.toLowerCase().replace(/[^a-z0-9]/g, '') === (updated.name || updated.band_name || updated.authorName || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+        )
+      );
+
+      const isYouMatch = Boolean(
+        (base?.isYou || selectedUserProfile?.isYou) && (newAvatar || newBanner)
+      );
+
+      if (isIdMatch || isNameMatch || isYouMatch) {
+        if (typeof updated === 'object' && (updated.name || updated.band_name)) {
+          setCommunityArchiveMatch((prev) => ({
+            ...(prev || {}),
+            ...updated,
+            avatar_url: newAvatar || prev?.avatar_url,
+            logo_url: newAvatar || prev?.logo_url,
+            cover_url: newBanner || prev?.cover_url,
+            banner_url: newBanner || prev?.banner_url
+          }));
+        }
         setFetchedBandData((prev: any) => ({
           ...(prev || {}),
-          ...updated,
-          logo_url: updated.avatar_url || updated.logo_url || prev?.logo_url,
-          avatar_url: updated.avatar_url || updated.logo_url || prev?.avatar_url,
-          cover_url: updated.cover_url || updated.banner_url || prev?.cover_url,
-          banner_url: updated.cover_url || updated.banner_url || prev?.banner_url,
+          ...(typeof updated === 'object' ? updated : {}),
+          logo_url: newAvatar || prev?.logo_url,
+          avatar_url: newAvatar || prev?.avatar_url,
+          cover_url: newBanner || prev?.cover_url,
+          banner_url: newBanner || prev?.banner_url,
         }));
+        if (newAvatar) {
+          setFetchedProfileData((prev: any) => ({
+            ...(prev || {}),
+            avatar_url: newAvatar,
+            avatar: newAvatar,
+            logo_url: newAvatar
+          }));
+        }
+        if (newBanner) {
+          setFetchedProfileData((prev: any) => ({
+            ...(prev || {}),
+            banner_url: newBanner,
+            cover_url: newBanner,
+            banner: newBanner
+          }));
+        }
       }
     };
+
     window.addEventListener('nexus_community_bands_updated', handleBandUpdate);
     window.addEventListener('nexus_avatar_updated', handleBandUpdate);
+    window.addEventListener('nexus_band_updated', handleBandUpdate);
+    window.addEventListener('community_band_saved', handleBandUpdate);
     return () => {
       window.removeEventListener('nexus_community_bands_updated', handleBandUpdate);
       window.removeEventListener('nexus_avatar_updated', handleBandUpdate);
+      window.removeEventListener('nexus_band_updated', handleBandUpdate);
+      window.removeEventListener('community_band_saved', handleBandUpdate);
     };
-  }, [selectedUserProfile?.id, selectedUserProfile?.name, targetProfile?.id, targetProfile?.name]);
+  }, [selectedUserProfile, targetProfile]);
 
   if (!selectedUserProfile) return null;
 
@@ -508,7 +552,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
     if (localStr) localSavedBand = JSON.parse(localStr);
   } catch (e) {}
 
-  const bData = fetchedBandData || communityArchiveMatch || localSavedBand || null;
+  const bData = communityArchiveMatch || fetchedBandData || localSavedBand || null;
 
   const isArtistOrBand = !isExplicitPersonal && Boolean(
     baseTarget?.isBandProfile ||
@@ -553,19 +597,26 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
     (fetchedProfileData as any)?.band_logo || (fetchedProfileData as any)?.logo_url
   ) : null;
 
-  const resolvedBandBio = (
-    bData?.bio ||
-    bData?.description ||
-    bData?.history ||
-    (communityArchiveMatch as any)?.bio ||
-    (communityArchiveMatch as any)?.description ||
-    localSavedBand?.bio ||
-    localSavedBand?.description ||
-    baseTarget?.band_bio ||
-    (baseTarget?.isBandProfile ? baseTarget?.bio : '') ||
-    (isBandTarget && profileBlurb && profileBlurb !== fetchedProfileData?.bio ? profileBlurb : '') ||
-    ''
-  );
+  const resolvedBandBio = (() => {
+    // 1. Check if bData has a real custom bio (not default fallback)
+    if (bData?.bio && !bData.bio.startsWith('Community-curated archive')) return bData.bio;
+    // 2. Check if local profileBlurb state has a real custom bio
+    if (profileBlurb && profileBlurb !== fetchedProfileData?.bio && !profileBlurb.startsWith('Community-curated archive')) return profileBlurb;
+    // 3. Check if localSavedBand has a real bio
+    if (localSavedBand?.bio && !localSavedBand.bio.startsWith('Community-curated archive')) return localSavedBand.bio;
+    // 4. Check if communityArchiveMatch has a real custom bio
+    if ((communityArchiveMatch as any)?.bio && !(communityArchiveMatch as any).bio.startsWith('Community-curated archive')) return (communityArchiveMatch as any).bio;
+    // 5. Fall back to any available non-empty bio
+    return (
+      bData?.bio ||
+      (communityArchiveMatch as any)?.bio ||
+      localSavedBand?.bio ||
+      baseTarget?.band_bio ||
+      (baseTarget?.isBandProfile ? baseTarget?.bio : '') ||
+      (isBandTarget && profileBlurb ? profileBlurb : '') ||
+      ''
+    );
+  })();
 
   const effTarget = {
     ...baseTarget,
@@ -2001,14 +2052,35 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                        <div className="flex items-center gap-2">
                          <span className="text-[9px] font-mono text-zinc-500 font-bold">{(profileBlurb || resolvedBandBio || '').length}/500</span>
                          <button
-                           onClick={() => {
+                           onClick={async () => {
                              if (isBandTarget) {
-                               const val = profileBlurb || resolvedBandBio || '';
-                               if (supabase) {
-                                 const bandUUID = bData?.id || selectedUserProfile?.band_id || (isCurrentUserBand ? userProfile?.band_id : null);
-                                 if (bandUUID && extractUUID(bandUUID)) {
-                                   supabase.from('bands').update({ bio: val, description: val }).eq('id', extractUUID(bandUUID)).then(() => {});
-                                 }
+                               const val = (profileBlurb || resolvedBandBio || "").trim();
+                               setFetchedBandData((prev: any) => prev ? { ...prev, bio: val } : { bio: val });
+                               setSelectedUserProfile((prev: any) => prev ? { ...prev, bio: val, band_bio: val } : null);
+
+                               const candidateName = effTarget?.band_name || effTarget?.name || rawResolvedBandName;
+                               if (candidateName) {
+                                 communityBandManager.upsertCommunityBand({
+                                   name: candidateName,
+                                   bio: val
+                                 });
+                               }
+
+                               try {
+                                 const bId = bData?.id || selectedUserProfile?.band_id || baseTarget?.band_id || baseTarget?.id;
+                                 if (bId) localStorage.setItem(`nexus_band_bio_${bId}`, val);
+                                 const localStr = localStorage.getItem("nexus_my_band_profile");
+                                 const parsed = localStr ? JSON.parse(localStr) : {};
+                                 localStorage.setItem("nexus_my_band_profile", JSON.stringify({ ...parsed, bio: val }));
+                               } catch(err){}
+
+                               const bandUUID = bData?.id || selectedUserProfile?.band_id || (isCurrentUserBand ? userProfile?.band_id : null) || baseTarget?.id;
+                               if (bandUUID) {
+                                 await upsertBandToDatabase({
+                                   id: bandUUID,
+                                   band_name: effTarget?.band_name || effTarget?.name || "Nexus Band",
+                                   bio: val
+                                 });
                                }
                              } else {
                                saveProfileData(true);
@@ -2024,47 +2096,52 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                      </div>
                      <textarea
                        maxLength={500}
-                       value={isBandTarget ? (profileBlurb && profileBlurb !== fetchedProfileData?.bio ? profileBlurb : (resolvedBandBio || '')) : profileBlurb}
+                       value={isBandTarget ? (profileBlurb && profileBlurb !== fetchedProfileData?.bio ? profileBlurb : (resolvedBandBio || "")) : profileBlurb}
                        onChange={(e) => {
                          const val = e.target.value.slice(0, 500);
                          setProfileBlurb(val);
                          if (isBandTarget) {
-                           setFetchedBandData((prev: any) => prev ? { ...prev, bio: val, description: val } : { bio: val, description: val });
+                           setFetchedBandData((prev: any) => prev ? { ...prev, bio: val } : { bio: val });
                            setSelectedUserProfile((prev: any) => prev ? { ...prev, bio: val, band_bio: val } : null);
                            try {
                              const bId = bData?.id || selectedUserProfile?.band_id || baseTarget?.band_id || baseTarget?.id;
                              if (bId) localStorage.setItem(`nexus_band_bio_${bId}`, val);
-                             const localStr = localStorage.getItem('nexus_my_band_profile');
+                             const localStr = localStorage.getItem("nexus_my_band_profile");
                              const parsed = localStr ? JSON.parse(localStr) : {};
-                             localStorage.setItem('nexus_my_band_profile', JSON.stringify({ ...parsed, bio: val, description: val }));
+                             localStorage.setItem("nexus_my_band_profile", JSON.stringify({ ...parsed, bio: val }));
                            } catch(err){}
-                           if (supabase) {
-                             const bandUUID = bData?.id || selectedUserProfile?.band_id || (isCurrentUserBand ? userProfile?.band_id : null);
-                             if (bandUUID && extractUUID(bandUUID)) {
-                               supabase.from('bands').update({ bio: val, description: val }).eq('id', extractUUID(bandUUID)).then(() => {});
-                             }
-                           }
                          } else {
                            setSelectedUserProfile((prev: any) => prev ? { ...prev, bio: val, profileBlurb: val } : null);
                            if (setUserProfile) { queueMicrotask(() => { setUserProfile((pPrev: any) => pPrev ? { ...pPrev, bio: val } : null); }); }
                            try {
-                             localStorage.setItem('nexus_user_bio', val);
+                             localStorage.setItem("nexus_user_bio", val);
                            } catch(err){}
                          }
                        }}
-                       onBlur={() => {
+                       onBlur={async () => {
                          if (isBandTarget) {
-                           if (supabase) {
-                             const bandUUID = bData?.id || selectedUserProfile?.band_id || (isCurrentUserBand ? userProfile?.band_id : null);
-                             if (bandUUID && extractUUID(bandUUID)) {
-                               supabase.from('bands').update({ bio: profileBlurb, description: profileBlurb }).eq('id', extractUUID(bandUUID)).then(() => {});
+                           const val = (profileBlurb || "").trim();
+                           if (val) {
+                             const candidateName = effTarget?.band_name || effTarget?.name || rawResolvedBandName;
+                             if (candidateName) {
+                               communityBandManager.upsertCommunityBand({
+                                 name: candidateName,
+                                 bio: val
+                               });
+                             }
+                             const bandUUID = bData?.id || selectedUserProfile?.band_id || (isCurrentUserBand ? userProfile?.band_id : null) || baseTarget?.id;
+                             if (bandUUID) {
+                               await upsertBandToDatabase({
+                                 id: bandUUID,
+                                 band_name: effTarget?.band_name || effTarget?.name || "Nexus Band",
+                                 bio: val
+                               });
                              }
                            }
                          } else {
                            saveProfileData(true);
                          }
                        }}
-                       placeholder={isBandTarget ? "We are a heavy band navigating the underground scene." : ((selectedUserProfile?.role || '').toLowerCase().includes('label') ? "We are a record label navigating the Nexus." : "Currently navigating the Nexus.")}
                        className="w-full bg-black/60 border border-zinc-850 hover:border-[#39ff14]/30 focus:border-[#39ff14]/60 rounded-lg p-2.5 text-xs text-zinc-200 leading-relaxed focus:outline-none focus:ring-1 focus:ring-[#39ff14]/20 font-mono italic"
                        rows={3}
                        autoFocus

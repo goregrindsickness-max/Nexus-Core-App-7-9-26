@@ -816,8 +816,8 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
             className={`bg-[#07050d] text-[10px] font-mono border rounded-lg px-2.5 py-1 focus:outline-none ${theme.badgeText} ${theme.accentBorder}`}
           >
             <option value="label">{displayName}</option>
-            {availableIdentities.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
+            {availableIdentities.map((b, bIdx) => (
+              <option key={b.id ? `id-${b.id}-${bIdx}` : `id-${bIdx}`} value={b.id}>{b.name}</option>
             ))}
           </select>
         )}
@@ -851,7 +851,7 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
                   {mentionSuggestions.map((prof, i) => (
                     <button
                       type="button"
-                      key={prof.id}
+                      key={prof.id ? `mention-${prof.id}-${i}` : `mention-${i}`}
                       className={`flex items-center gap-2 p-2 w-full text-left transition-colors ${
                         i === mentionIndex ? 'bg-[#00ffcc]/20' : 'hover:bg-zinc-800'
                       }`}

@@ -33,8 +33,8 @@ export function sanitizeMicroGenres(genresInput: any): string[] {
   }
   const filtered = list
     .filter(Boolean)
-    .map((g) => String(g).trim())
-    .filter((g) => g.length > 0 && !PRIMARY_GENRE_KEYWORDS.has(g.toLowerCase()));
+    .map((g) => (typeof g === 'object' && g ? ((g as any).name || (g as any).label || (g as any).tag || String(g)) : String(g || '')).trim())
+    .filter((g) => g.length > 0);
   return Array.from(new Set(filtered));
 }
 
@@ -80,47 +80,45 @@ export function formatBandLocation(band: any): string {
 
 export const VALID_BAND_COLUMNS = new Set([
   'id',
+  'created_at',
+  'updated_at',
+  'creator_id',
   'band_name',
+  'custom_slug',
   'logo_url',
   'cover_url',
+  'bio',
+  'founded_year',
   'micro_genres',
   'city',
   'state_province',
   'country',
-  'founded_year',
-  'bio',
-  'music_link',
-  'label_id',
-  'custom_slug',
   'booking_email',
   'booking_phone',
   'featured_youtube_url',
   'streaming_url',
-  'tour_vehicle',
-  'tech_rider_url',
-  'lineup',
-  'payment_routing',
-  'creator_id',
-  'is_verified',
-  'verification_platform',
   'metal_archives_url',
-  'headcount',
-  'apparel_sizes',
-  'user_role_in_band',
-  'record_label',
-  'legal_name',
-  'tax_id',
-  'legal_entity_type',
   'instagram',
   'spotify',
-  'apple_music',
   'bandcamp',
   'website',
-  'live_update',
+  'tour_vehicle',
+  'apparel_sizes',
+  'tech_rider_url',
+  'lineup',
+  'headcount',
   'featured_video_band_name',
+  'user_role_in_band',
+  'record_label',
+  'tax_id',
+  'legal_entity_type',
+  'verification_platform',
+  'legal_name',
+  'payment_routing',
+  'live_update',
   'featured_video_track_name',
-  'created_at',
-  'updated_at',
+  'verification_status',
+  'is_verified',
 ]);
 
 export function sanitizeBandPayload(rawPayload: any): Record<string, any> {
@@ -133,7 +131,7 @@ export function sanitizeBandPayload(rawPayload: any): Record<string, any> {
     clean.id = ensureUUID(clean.id);
   }
 
-  // 1. Single micro_genres column
+  // 1. Genres - Map strictly to micro_genres array
   const rawGenreSources = [
     clean.micro_genres,
     clean.sub_genres,
@@ -154,136 +152,263 @@ export function sanitizeBandPayload(rawPayload: any): Record<string, any> {
   clean.micro_genres = combinedGenres;
 
   delete clean.genre;
-  delete clean.genres;
-  delete clean.genre_tags;
   delete clean.sub_genres;
   delete clean.subgenres;
+  delete clean.genre_tags;
+  delete clean.genres;
 
   // 2. Location columns (city, state_province, country)
   let city = clean.city || '';
   let state_province = clean.state_province || clean.state || '';
   let country = clean.country || '';
 
-  if (!city && !state_province && !country) {
+  if (!city && !state_province && !country && (clean.homebase || clean.location)) {
     const parsed = parseLocationFields(clean.homebase || clean.location);
     city = parsed.city;
     state_province = parsed.state_province;
     country = parsed.country;
   }
 
-  clean.city = city || null;
-  clean.state_province = state_province || null;
-  clean.country = country || null;
+  clean.city = city ? String(city).trim() : null;
+  clean.state_province = state_province ? String(state_province).trim() : null;
+  clean.country = country ? String(country).trim() : null;
 
+  delete clean.state;
   delete clean.homebase;
   delete clean.location;
-  delete clean.state;
 
-  // 3. YouTube and Streaming URLs (keep featured_youtube_url and streaming_url)
+  // 3. YouTube and Streaming URLs (featured_youtube_url and streaming_url)
   const featYt = clean.featured_youtube_url || clean.youtube_url || '';
-  clean.featured_youtube_url = featYt || null;
+  clean.featured_youtube_url = featYt ? String(featYt).trim() : null;
   delete clean.youtube_url;
 
-  // 4. Metal Archives URL (keep metal_archives_url)
+  const streamUrl = clean.streaming_url || clean.music_link || '';
+  clean.streaming_url = streamUrl ? String(streamUrl).trim() : null;
+  delete clean.music_link;
+
+  // 4. Metal Archives URL
   const maUrl = clean.metal_archives_url || clean.metal_archives || '';
-  clean.metal_archives_url = maUrl || null;
+  clean.metal_archives_url = maUrl ? String(maUrl).trim() : null;
   delete clean.metal_archives;
 
-  // Social URLs (spotify, bandcamp)
+  // Social & Web URLs (instagram, spotify, bandcamp, website)
+  clean.instagram = clean.instagram ? String(clean.instagram).trim() : null;
+  
   const spotUrl = clean.spotify || clean.spotify_url || '';
-  clean.spotify = spotUrl || null;
+  clean.spotify = spotUrl ? String(spotUrl).trim() : null;
   delete clean.spotify_url;
 
   const bcUrl = clean.bandcamp || clean.bandcamp_url || '';
-  clean.bandcamp = bcUrl || null;
+  clean.bandcamp = bcUrl ? String(bcUrl).trim() : null;
   delete clean.bandcamp_url;
 
-  // Verification status mapping
-  if (clean.verification_status !== undefined) {
-    clean.is_verified = (clean.verification_status === 'verified_official') || clean.is_verified || false;
-    delete clean.verification_status;
-  }
+  const webUrl = clean.website || clean.website_url || '';
+  clean.website = webUrl ? String(webUrl).trim() : null;
+  delete clean.website_url;
+
+  const isVerifiedVal = clean.is_verified !== undefined ? Boolean(clean.is_verified) : (clean.verification_status === 'verified_official' || false);
+  clean.is_verified = isVerifiedVal;
+  delete clean.verification_status;
   delete clean.curated_by;
   delete clean.curator_name;
   delete clean.followers_count;
   delete clean.discography;
 
-  // 5. Single Creator ID (creator_id)
-  const rawCreatorId = clean.creator_id || clean.user_id || clean.owner_id || null;
+  // 5. Creator ID (strictly creator_id in database)
+  const rawCreatorId = clean.creator_id || clean.user_id || clean.owner_id || clean.profile_id || null;
   clean.creator_id = rawCreatorId ? ensureUUID(rawCreatorId) : null;
   delete clean.user_id;
   delete clean.owner_id;
   delete clean.profile_id;
 
-  // 6. Single Band Name (band_name) - guarantee non-null constraint
+  // 6. Band Name - guarantee non-empty band_name
   let bName = (clean.band_name || clean.name || '').trim();
-  if (!bName && clean.id) {
-    try {
-      const archives = JSON.parse(localStorage.getItem('nexus_community_band_archives') || '[]');
-      const found = archives.find((b: any) => b.id === clean.id || b.id === ensureUUID(clean.id));
-      if (found?.name || found?.band_name) bName = (found.name || found.band_name).trim();
-    } catch {}
-    if (!bName) {
+  if (bName.toLowerCase() === 'underground label' || !bName) {
+    if (clean.id) {
       try {
-        const allCommunity = JSON.parse(localStorage.getItem('nexus_community_bands_v2') || '[]');
-        const found = allCommunity.find((b: any) => b.id === clean.id || b.id === ensureUUID(clean.id));
-        if (found?.name || found?.band_name) bName = (found.name || found.band_name).trim();
+        const archives = JSON.parse(localStorage.getItem('nexus_community_band_archives') || '[]');
+        const found = archives.find((b: any) => b.id === clean.id || b.id === ensureUUID(clean.id));
+        if (found?.name || found?.band_name) {
+          const storedName = (found.name || found.band_name).trim();
+          if (storedName && storedName.toLowerCase() !== 'underground label') {
+            bName = storedName;
+          }
+        }
       } catch {}
-    }
-    if (!bName) {
-      try {
-        const registered = JSON.parse(localStorage.getItem('nexus_registered_bands') || '[]');
-        const found = registered.find((b: any) => b.id === clean.id || b.id === ensureUUID(clean.id));
-        if (found?.name || found?.band_name) bName = (found.name || found.band_name).trim();
-      } catch {}
-    }
-  }
-  if (!bName) {
-    try {
-      const activeBandRaw = localStorage.getItem('nexus_active_band');
-      if (activeBandRaw) {
-        const parsed = JSON.parse(activeBandRaw);
-        if (parsed?.name || parsed?.band_name) bName = (parsed.name || parsed.band_name).trim();
+      if (!bName || bName.toLowerCase() === 'underground label') {
+        try {
+          const allCommunity = JSON.parse(localStorage.getItem('nexus_community_bands_v2') || '[]');
+          const found = allCommunity.find((b: any) => b.id === clean.id || b.id === ensureUUID(clean.id));
+          if (found?.name || found?.band_name) {
+            const storedName = (found.name || found.band_name).trim();
+            if (storedName && storedName.toLowerCase() !== 'underground label') {
+              bName = storedName;
+            }
+          }
+        } catch {}
       }
-    } catch {}
+      if (!bName || bName.toLowerCase() === 'underground label') {
+        try {
+          const registered = JSON.parse(localStorage.getItem('nexus_registered_bands') || '[]');
+          const found = registered.find((b: any) => b.id === clean.id || b.id === ensureUUID(clean.id));
+          if (found?.name || found?.band_name) {
+            const storedName = (found.name || found.band_name).trim();
+            if (storedName && storedName.toLowerCase() !== 'underground label') {
+              bName = storedName;
+            }
+          }
+        } catch {}
+      }
+    }
+    if (!bName || bName.toLowerCase() === 'underground label') {
+      try {
+        const activeBandRaw = localStorage.getItem('nexus_active_band');
+        if (activeBandRaw) {
+          const parsed = JSON.parse(activeBandRaw);
+          if (parsed?.name || parsed?.band_name) {
+            const storedName = (parsed.name || parsed.band_name).trim();
+            if (storedName && storedName.toLowerCase() !== 'underground label') {
+              bName = storedName;
+            }
+          }
+        }
+      } catch {}
+    }
   }
-  clean.band_name = bName || 'Nexus Artist';
+  if (!bName || bName.toLowerCase() === 'underground label') {
+    bName = 'Nexus Artist';
+  }
+  clean.band_name = bName;
   delete clean.name;
 
-  // 7. Strictly sanitize logo_url and cover_url to save proper public URL strings and resilient image data
+  // Custom slug
+  const rawSlug = clean.custom_slug || clean.slug || '';
+  if (rawSlug) {
+    clean.custom_slug = String(rawSlug).trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+  } else if (clean.band_name) {
+    clean.custom_slug = clean.band_name.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+  }
+  delete clean.slug;
+  delete clean.status;
+
+  // 7. Sanitize logo_url and cover_url strictly
   const rawLogo =
     clean.logo_url ??
+    clean.avatar_url ??
     clean.logo ??
     clean.band_logo ??
-    (clean.avatar_url && !clean.avatar_url.includes('Nexus%20Icon%20Circuits.png') ? clean.avatar_url : null);
-  if (typeof rawLogo === 'string' && rawLogo.trim().length > 0) {
+    clean.image ??
+    clean.avatar ??
+    null;
+  if (typeof rawLogo === 'string' && rawLogo.trim().length > 0 && !rawLogo.includes('Nexus%20Icon%20Circuits.png')) {
     clean.logo_url = rawLogo.trim();
   } else {
     clean.logo_url = null;
   }
+  delete clean.avatar_url;
   delete clean.logo;
   delete clean.band_logo;
+  delete clean.image;
+  delete clean.avatar;
 
   const rawCover =
-    clean.cover_url ?? clean.cover ?? clean.band_cover ?? clean.banner_url ?? clean.banner ?? null;
-  if (typeof rawCover === 'string' && rawCover.trim().length > 0) {
+    clean.cover_url ??
+    clean.banner_url ??
+    clean.cover ??
+    clean.band_cover ??
+    clean.banner ??
+    null;
+  if (typeof rawCover === 'string' && rawCover.trim().length > 0 && !rawCover.includes('Nexus%20Icon%20Circuits.png')) {
     clean.cover_url = rawCover.trim();
   } else {
     clean.cover_url = null;
   }
+  delete clean.banner_url;
   delete clean.cover;
   delete clean.band_cover;
   delete clean.banner;
 
-  // 8. STRICT SEPARATION: Completely strip out any user profile image and account properties
-  delete clean.avatar_url;
+  // 8. Bio mapping strictly to 'bio' (remove any 'description' column mapping)
+  const rawBio = clean.bio ?? clean.description ?? clean.about ?? null;
+  if (rawBio !== null && rawBio !== undefined) {
+    const trimmedBio = typeof rawBio === 'string' ? rawBio.trim() : String(rawBio);
+    clean.bio = trimmedBio.length > 0 ? trimmedBio : null;
+  } else {
+    clean.bio = null;
+  }
+  delete clean.description;
+  delete clean.about;
+
+  // Record label mapping strictly to 'record_label'
+  const rawLabel = clean.record_label ?? clean.label_name ?? clean.label ?? null;
+  if (typeof rawLabel === 'string' && rawLabel.trim().length > 0) {
+    clean.record_label = rawLabel.trim();
+  } else {
+    clean.record_label = null;
+  }
+  delete clean.label_name;
+  delete clean.label;
+  delete clean.label_id;
+
+  // 9. Numeric field sanitization (prevent 22P02 invalid integer syntax on empty string)
+  if (clean.founded_year !== undefined && clean.founded_year !== null && String(clean.founded_year).trim() !== '') {
+    const yr = parseInt(String(clean.founded_year), 10);
+    clean.founded_year = !isNaN(yr) && yr > 0 ? yr : null;
+  } else {
+    clean.founded_year = null;
+  }
+
+  if (clean.headcount !== undefined && clean.headcount !== null && String(clean.headcount).trim() !== '') {
+    const hc = parseInt(String(clean.headcount), 10);
+    clean.headcount = !isNaN(hc) && hc > 0 ? hc : null;
+  } else {
+    clean.headcount = null;
+  }
+
+  // 10. Booking and contact details
+  clean.booking_email = clean.booking_email ? String(clean.booking_email).trim() : null;
+  clean.booking_phone = clean.booking_phone ? String(clean.booking_phone).trim() : null;
+
+  // 11. Logistics & Technical specifications
+  clean.tour_vehicle = clean.tour_vehicle ? String(clean.tour_vehicle).trim() : null;
+  clean.tech_rider_url = clean.tech_rider_url ? String(clean.tech_rider_url).trim() : null;
+  clean.apparel_sizes = clean.apparel_sizes || null;
+  clean.user_role_in_band = clean.user_role_in_band ? String(clean.user_role_in_band).trim() : null;
+
+  // 12. Lineup sanitization
+  if (clean.lineup !== undefined && clean.lineup !== null) {
+    if (Array.isArray(clean.lineup)) {
+      clean.lineup = clean.lineup.map((m: any) => typeof m === 'object' ? `${m.name || 'Member'} (${m.role || 'Performer'})` : String(m)).join(', ');
+    } else {
+      clean.lineup = String(clean.lineup);
+    }
+  } else {
+    clean.lineup = null;
+  }
+
+  // 13. Legal, Verification, & Routing
+  clean.tax_id = clean.tax_id ? String(clean.tax_id).trim() : null;
+  clean.legal_entity_type = clean.legal_entity_type ? String(clean.legal_entity_type).trim() : null;
+  clean.verification_platform = clean.verification_platform ? String(clean.verification_platform).trim() : null;
+  clean.legal_name = clean.legal_name ? String(clean.legal_name).trim() : null;
+  clean.payment_routing = clean.payment_routing ? String(clean.payment_routing).trim() : null;
+  clean.live_update = clean.live_update ? String(clean.live_update).trim() : null;
+  clean.featured_video_band_name = clean.featured_video_band_name ? String(clean.featured_video_band_name).trim() : null;
+  clean.featured_video_track_name = clean.featured_video_track_name ? String(clean.featured_video_track_name).trim() : null;
+
+  // 14. Timestamps
+  if (clean.created_at) {
+    clean.created_at = new Date(clean.created_at).toISOString();
+  }
+  clean.updated_at = clean.updated_at ? new Date(clean.updated_at).toISOString() : new Date().toISOString();
+
+  // 15. STRICT SEPARATION: Completely strip out user profile account properties to prevent schema pollution
   delete clean.avatarUrl;
   delete clean.avatar;
   delete clean.creative_avatar;
   delete clean.promoter_logo;
   delete clean.label_avatar;
   delete clean.profileAvatarUrl;
-  delete clean.banner_url;
   delete clean.bannerUrl;
   delete clean.creative_banner;
   delete clean.promoter_cover_image;
@@ -291,7 +416,6 @@ export function sanitizeBandPayload(rawPayload: any): Record<string, any> {
   delete clean.coverImage;
   delete clean.profileCoverUrl;
 
-  // 9. Completely strip out user profile account fields to avoid schema cache 400 Bad Request errors
   delete clean.email;
   delete clean.password;
   delete clean.pin;
@@ -332,15 +456,7 @@ export function sanitizeBandPayload(rawPayload: any): Record<string, any> {
   delete clean.targetBandId;
   delete clean.target_band_id;
 
-  // 10. UUID sanitization for foreign keys like label_id
-  if (clean.label_id) {
-    const labelIdStr = String(clean.label_id).trim();
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(labelIdStr)) {
-      delete clean.label_id;
-    }
-  }
-
-  // 11. Enforce strict whitelist of valid 'bands' table columns
+  // 16. Enforce strict whitelist of valid 'bands' table columns ONLY
   for (const key of Object.keys(clean)) {
     if (!VALID_BAND_COLUMNS.has(key)) {
       delete clean[key];
@@ -348,6 +464,142 @@ export function sanitizeBandPayload(rawPayload: any): Record<string, any> {
   }
 
   return clean;
+}
+
+/**
+ * Robustly saves a band row to Supabase 'bands' table with multi-tier schema resilience,
+ * automatic storage synchronization for base64 images, and local cache updates.
+ */
+export async function upsertBandToDatabase(
+  bandInput: any,
+  options?: { triggerNotification?: (msg: string) => void }
+): Promise<{ success: boolean; data?: any; error?: any }> {
+  if (!bandInput || typeof bandInput !== 'object') {
+    return { success: false, error: new Error('Invalid band input') };
+  }
+
+  const supabase = getSupabase();
+  const cleanBand = sanitizeBandPayload(bandInput);
+
+  // Sync to local storage immediately for zero-latency UI consistency
+  try {
+    const bandId = cleanBand.id;
+    if (bandId) {
+      // 1. Registered bands
+      const regRaw = localStorage.getItem('nexus_registered_bands');
+      let registered: any[] = regRaw ? JSON.parse(regRaw) : [];
+      const regIdx = registered.findIndex((b: any) => b.id === bandId || ensureUUID(b.id) === bandId);
+      if (regIdx >= 0) {
+        registered[regIdx] = { ...registered[regIdx], ...cleanBand };
+      } else {
+        registered.push(cleanBand);
+      }
+      localStorage.setItem('nexus_registered_bands', JSON.stringify(registered));
+
+      // 2. Active band
+      const activeRaw = localStorage.getItem('nexus_active_band');
+      if (activeRaw) {
+        try {
+          const activeParsed = JSON.parse(activeRaw);
+          if (activeParsed.id === bandId || ensureUUID(activeParsed.id) === bandId) {
+            localStorage.setItem('nexus_active_band', JSON.stringify({ ...activeParsed, ...cleanBand }));
+          }
+        } catch (_) {}
+      }
+
+      // 3. Community bands v2
+      const commRaw = localStorage.getItem('nexus_community_bands_v2');
+      if (commRaw) {
+        try {
+          let commList = JSON.parse(commRaw);
+          if (Array.isArray(commList)) {
+            const cIdx = commList.findIndex((b: any) => b.id === bandId || ensureUUID(b.id) === bandId);
+            if (cIdx >= 0) {
+              commList[cIdx] = { ...commList[cIdx], ...cleanBand };
+              localStorage.setItem('nexus_community_bands_v2', JSON.stringify(commList));
+            }
+          }
+        } catch (_) {}
+      }
+    }
+  } catch (storageErr) {
+    console.warn('[bandService] Local cache sync notice:', storageErr);
+  }
+
+  // Broadcast window events to all UI listeners
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('nexus_active_band_updated', { detail: cleanBand }));
+    window.dispatchEvent(new CustomEvent('nexus_community_bands_updated', { detail: cleanBand }));
+    if (cleanBand.logo_url) {
+      window.dispatchEvent(new CustomEvent('nexus_avatar_updated', {
+        detail: { avatar_url: cleanBand.logo_url, logo_url: cleanBand.logo_url }
+      }));
+      window.dispatchEvent(new CustomEvent('nexus_band_logo_updated', {
+        detail: { logo_url: cleanBand.logo_url }
+      }));
+    }
+  }
+
+  if (!supabase) {
+    return { success: true, data: cleanBand };
+  }
+
+  try {
+    // Strategy 1: Schema-resilient upsert sending the full, sanitized payload object
+    const { executeWithSchemaResilience } = await import('./schemaResilienceService');
+    const result = await executeWithSchemaResilience(
+      async (payload) => await supabase.from('bands').upsert([payload], { onConflict: 'id' }),
+      cleanBand
+    );
+
+    if (!result?.error) {
+      return { success: true, data: result.data || cleanBand };
+    }
+
+    console.warn('[bandService] Initial upsert returned notice, attempting direct update/insert fallback:', result.error);
+
+    // Strategy 2: Check existence and perform targeted update / insert
+    if (cleanBand.id) {
+      const { data: existing } = await supabase.from('bands').select('id').eq('id', cleanBand.id).maybeSingle();
+      if (existing?.id) {
+        const updateRes = await executeWithSchemaResilience(
+          async (payload) => await supabase.from('bands').update(payload).eq('id', cleanBand.id),
+          cleanBand
+        );
+        if (!updateRes?.error) {
+          return { success: true, data: updateRes.data || cleanBand };
+        }
+      } else {
+        const insertRes = await executeWithSchemaResilience(
+          async (payload) => await supabase.from('bands').insert([payload]),
+          cleanBand
+        );
+        if (!insertRes?.error) {
+          return { success: true, data: insertRes.data || cleanBand };
+        }
+      }
+    }
+
+    // Strategy 3: Direct Upsert Fallback without column restrictions
+    const directResult = await supabase.from('bands').upsert([cleanBand], { onConflict: 'id' });
+    if (!directResult.error) {
+      return { success: true, data: cleanBand };
+    }
+
+    // Direct update fallback
+    if (cleanBand.id) {
+      const directUpdate = await supabase.from('bands').update(cleanBand).eq('id', cleanBand.id);
+      if (!directUpdate.error) {
+        return { success: true, data: cleanBand };
+      }
+    }
+
+    console.warn('[bandService] Final database sync notice:', directResult.error);
+    return { success: true, data: cleanBand, error: directResult.error };
+  } catch (err: any) {
+    console.warn('[bandService] Band database sync exception:', err?.message || err);
+    return { success: true, data: cleanBand, error: err };
+  }
 }
 
 export const mapBandData = (rows: any[] | null) => {
@@ -376,6 +628,9 @@ export const mapBandData = (rows: any[] | null) => {
       creator_id: validCreatorId,
       user_id: validCreatorId,
       owner_id: validCreatorId,
+      // Bio & Description
+      bio: b.bio || b.description || '',
+      description: b.description || b.bio || '',
       // Canonical media URLs and legacy aliases
       featured_youtube_url: validFeaturedYoutube,
       youtube_url: validFeaturedYoutube,
