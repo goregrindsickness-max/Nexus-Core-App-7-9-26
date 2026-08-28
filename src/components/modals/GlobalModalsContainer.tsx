@@ -388,8 +388,10 @@ export const GlobalModalsContainer: React.FC<GlobalModalsContainerProps> = ({
             onClose={() => setMaModalOpen(false)}
             bandId={maBandId}
             bandName={maBandName}
-            onImportSuccess={() => {
-              window.location.reload();
+            onImportSuccess={(count) => {
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('nexus_community_bands_updated'));
+              }
             }}
           />
         );

@@ -310,6 +310,7 @@ export const SocialModalsOverlay: React.FC<SocialModalsOverlayProps> = (props) =
         setMapFilterGenre={setMapFilterGenre}
         userProfile={userProfile}
         triggerNotification={triggerNotification}
+        liveEvents={props.liveEvents}
       />
 
       {/* Poll Creation Modal */}
@@ -797,37 +798,6 @@ export const SocialModalsOverlay: React.FC<SocialModalsOverlayProps> = (props) =
         title={cropperType === 'avatar' ? "Adjust Profile Avatar" : "Adjust Cover Banner"}
       />
 
-      {/* Metal-Archives Import Modal Event listener */}
-      {(() => {
-        const [maModalOpen, setMaModalOpen] = useState(false);
-        const [maBandId, setMaBandId] = useState('band-1');
-        const [maBandName, setMaBandName] = useState('Nexus Artist');
-
-        useEffect(() => {
-          const handleOpenMA = (e: any) => {
-            if (e.detail?.bandId) setMaBandId(e.detail.bandId);
-            if (e.detail?.bandName) setMaBandName(e.detail.bandName);
-            setMaModalOpen(true);
-          };
-          window.addEventListener('open_metal_archives_import', handleOpenMA as EventListener);
-          return () => {
-            window.removeEventListener('open_metal_archives_import', handleOpenMA as EventListener);
-          };
-        }, []);
-
-        return (
-          <MetalArchivesImportModal
-            isOpen={maModalOpen}
-            onClose={() => setMaModalOpen(false)}
-            bandId={maBandId}
-            bandName={maBandName}
-            onImportSuccess={() => {
-              window.location.reload();
-            }}
-          />
-        );
-      })()}
-      
     </>
   );
 };

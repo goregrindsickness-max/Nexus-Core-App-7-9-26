@@ -13,6 +13,7 @@ interface GigMapModalProps {
   setMapFilterGenre: (genre: string) => void;
   userProfile: any;
   triggerNotification?: (msg: string) => void;
+  liveEvents?: any[];
 }
 
 export const GigMapModal: React.FC<GigMapModalProps> = ({
@@ -26,6 +27,7 @@ export const GigMapModal: React.FC<GigMapModalProps> = ({
   setMapFilterGenre,
   userProfile,
   triggerNotification,
+  liveEvents,
 }) => {
   const MOCK_MAP_EVENTS = [
     {
@@ -90,7 +92,26 @@ export const GigMapModal: React.FC<GigMapModalProps> = ({
     },
   ];
 
-  const filteredEvents = MOCK_MAP_EVENTS.filter(evt => {
+  const baseEvents = (liveEvents && liveEvents.length > 0) ? liveEvents : MOCK_MAP_EVENTS;
+
+  const normalizedEvents = baseEvents.map((evt: any, idx: number) => ({
+    ...evt,
+    id: evt.id || `gig-${idx}`,
+    title: evt.title || (evt.headliner ? `${evt.headliner} at ${evt.venue || 'Venue'}` : (evt.name || 'Live Show')),
+    venue: evt.venue || evt.venue_name || 'Underground Venue',
+    city: evt.city || 'Chicago, IL',
+    date: evt.date || 'Tonight',
+    price: evt.price || '$20',
+    genre: evt.genre || (evt.micro_genres ? evt.micro_genres.join(' / ') : 'Extreme Metal'),
+    headliner: evt.headliner || evt.name || 'Live Band',
+    support: evt.support || evt.lineup || [],
+    verified: !!evt.verified || !!evt.is_community_submitted,
+    ticketUrl: evt.ticket_url || evt.external_ticket_url || evt.ticketUrl || ''
+  }));
+
+  const uniqueCities = Array.from(new Set(normalizedEvents.map((e: any) => e.city).filter(Boolean)));
+
+  const filteredEvents = normalizedEvents.filter((evt: any) => {
     if (selectedCityFilter !== 'all' && !evt.city.toLowerCase().includes(selectedCityFilter.toLowerCase())) return false;
     if (mapFilterGenre !== 'all' && !evt.genre.toLowerCase().includes(mapFilterGenre.toLowerCase())) return false;
     return true;
@@ -127,9 +148,10 @@ export const GigMapModal: React.FC<GigMapModalProps> = ({
                   onChange={(e) => setSelectedCityFilter(e.target.value)}
                   className="bg-zinc-900 border border-zinc-800 text-xs text-zinc-300 font-mono rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-cyan-500"
                 >
-                  <option value="all">All Cities</option>
-                  <option value="chicago">Chicago, IL</option>
-                  <option value="new york">New York, NY</option>
+                  <option value="all">All Cities ({normalizedEvents.length})</option>
+                  {uniqueCities.map((city: any, cIdx: number) => (
+                    <option key={`city-opt-${cIdx}`} value={city}>{city}</option>
+                  ))}
                 </select>
 
                 <button 
@@ -168,8 +190,8 @@ export const GigMapModal: React.FC<GigMapModalProps> = ({
                     <span>SHOWING {filteredEvents.length} NEARBY EVENTS</span>
                   </div>
 
-                  {/* Pins layout */}
-                  <div className="relative flex-1 my-4 flex items-center justify-around">
+                   {/* Pins layout */}
+                  <div className="relative flex-1 my-4 flex items-center justify-center flex-wrap gap-4 overflow-y-auto p-2 max-h-[320px]">
                     {filteredEvents.map((evt, idx) => {
                       const isSelected = selectedMapEvent?.id === evt.id;
                       return (
@@ -178,7 +200,7 @@ export const GigMapModal: React.FC<GigMapModalProps> = ({
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => setSelectedMapEvent(evt)}
-                          className={`relative group cursor-pointer flex flex-col items-center`}
+                          className={`relative group cursor-pointer flex flex-col items-center max-w-[130px]`}
                         >
                           <div className={`p-2.5 rounded-full border shadow-xl transition-all ${
                             isSelected 
@@ -188,11 +210,11 @@ export const GigMapModal: React.FC<GigMapModalProps> = ({
                             <Music className="w-4 h-4" />
                           </div>
                           
-                          <span className={`mt-1.5 px-2 py-0.5 rounded text-[9px] font-mono font-bold whitespace-nowrap shadow-md ${
+                          <span className={`mt-1.5 px-2 py-0.5 rounded text-[9px] font-mono font-bold truncate max-w-full shadow-md ${
                             isSelected 
                               ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/50' 
                               : 'bg-black/80 text-zinc-400 border border-zinc-800 group-hover:text-white'
-                          }`}>
+                          }`} title={evt.venue}>
                             {evt.venue}
                           </span>
                         </motion.button>

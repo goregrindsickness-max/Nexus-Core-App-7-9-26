@@ -1,3 +1,4 @@
+import { createClient } from '@supabase/supabase-js';
 import { getSupabase } from './clientService';
 import { ensureImagesUploadedToStorage } from './storageService';
 import { sanitizeProfilePayload } from './profileService';
@@ -196,7 +197,8 @@ export function generateUUID(): string {
 
 /**
  * Ensures that a string is a valid UUID. If it is already a UUID, returns it.
- * If not, deterministically hashes the string into a valid UUID format.
+ * If not, deterministically hashes the string into a valid UUID format using
+ * high-entropy 128-bit state mixing across four 32-bit words with bit diffusion.
  * Compatible with PostgreSQL UUID column constraints.
  */
 export function ensureUUID(id: string): string {
@@ -210,33 +212,40 @@ export function ensureUUID(id: string): string {
     return cleanId.toLowerCase();
   }
 
-  // Simple deterministic hash function to produce a 32-character hex string
-  let hash = 0;
+  // High-entropy 128-bit hash (FNV-1a / Murmur3 / bit-mixing across four independent 32-bit words)
+  let h1 = 0x811c9dc5 ^ 0xdeadbeef;
+  let h2 = 0xcbf29ce4 ^ 0x41c64e6d;
+  let h3 = 0x6a09e667 ^ 0xbb67ae85;
+  let h4 = 0x3c6ef372 ^ 0xa54ff53a;
+
   for (let i = 0; i < cleanId.length; i++) {
-    const char = cleanId.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash |= 0; // Convert to 32bit integer
+    const code = cleanId.charCodeAt(i);
+    h1 = Math.imul(h1 ^ code, 16777619);
+    h2 = Math.imul(h2 ^ (code << 5), 1099511627);
+    h3 = Math.imul(h3 ^ (code >> 3), 0x5bd1e995);
+    h4 = Math.imul(h4 ^ (code * 31), 0x27d4eb2d);
   }
 
-  // Seed a random-like but deterministic sequence
-  let seed = Math.abs(hash);
-  const hexChars = '0123456789abcdef';
-  let hexStr = '';
-  for (let i = 0; i < 32; i++) {
-    // Simple LCG (Linear Congruential Generator) to get deterministic "random" numbers
-    seed = (seed * 1664525 + 1013904223) % 4294967296;
-    const index = seed % 16;
-    hexStr += hexChars[index];
-  }
+  // Avalanche bit diffusion to prevent bit clustering
+  h1 ^= h1 >>> 16; h1 = Math.imul(h1, 0x85ebca6b); h1 ^= h1 >>> 13; h1 = Math.imul(h1, 0xc2b2ae35); h1 ^= h1 >>> 16;
+  h2 ^= h2 >>> 16; h2 = Math.imul(h2, 0x7feb352d); h2 ^= h2 >>> 13; h2 = Math.imul(h2, 0x846ca68b); h2 ^= h2 >>> 16;
+  h3 ^= h3 >>> 16; h3 = Math.imul(h3, 0x85ebca6b); h3 ^= h3 >>> 13; h3 = Math.imul(h3, 0xc2b2ae35); h3 ^= h3 >>> 16;
+  h4 ^= h4 >>> 16; h4 = Math.imul(h4, 0x7feb352d); h4 ^= h4 >>> 13; h4 = Math.imul(h4, 0x846ca68b); h4 ^= h4 >>> 16;
 
-  // Format as UUID v4: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
-  const part1 = hexStr.substring(0, 8);
-  const part2 = hexStr.substring(8, 12);
-  const part3 = '4' + hexStr.substring(13, 16);
-  // yChar must be one of 8, 9, a, b
-  const yChar = hexChars[8 + (Math.abs(hash) % 4)];
-  const part4 = yChar + hexStr.substring(17, 20);
-  const part5 = hexStr.substring(20, 32);
+  const hex1 = (h1 >>> 0).toString(16).padStart(8, '0');
+  const hex2 = (h2 >>> 0).toString(16).padStart(8, '0');
+  const hex3 = (h3 >>> 0).toString(16).padStart(8, '0');
+  const hex4 = (h4 >>> 0).toString(16).padStart(8, '0');
+
+  const full32 = hex1 + hex2 + hex3 + hex4;
+
+  const part1 = full32.substring(0, 8);
+  const part2 = full32.substring(8, 12);
+  // Version 4 UUID marker
+  const part3 = '4' + full32.substring(13, 16);
+  // RFC4122 variant bits (8, 9, a, or b)
+  const part4 = ((parseInt(full32.substring(16, 17), 16) & 0x3) | 0x8).toString(16) + full32.substring(17, 20);
+  const part5 = full32.substring(20, 32);
 
   return `${part1}-${part2}-${part3}-${part4}-${part5}`.toLowerCase();
 }
@@ -725,7 +734,6 @@ export async function testSupabaseConnection(
   let supabase: any = null;
   if (customUrl && customKey) {
     try {
-      const { createClient } = await import('@supabase/supabase-js');
       supabase = createClient(customUrl, customKey);
     } catch (e: any) {
       return { success: false, message: `Invalid Supabase client config: ${e.message}` };

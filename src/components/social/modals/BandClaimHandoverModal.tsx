@@ -19,7 +19,7 @@ interface BandClaimHandoverModalProps {
   onClose: () => void;
   bandRecord: CommunityBandRecord;
   currentUserId: string;
-  onClaimSuccess: (claimedBand: CommunityBandRecord, mode: 'adopt_existing' | 'clean_slate') => void;
+  onClaimSuccess: (claimedBand: CommunityBandRecord) => void;
 }
 
 export const BandClaimHandoverModal: React.FC<BandClaimHandoverModalProps> = ({
@@ -29,7 +29,6 @@ export const BandClaimHandoverModal: React.FC<BandClaimHandoverModalProps> = ({
   currentUserId,
   onClaimSuccess
 }) => {
-  const [selectedMode, setSelectedMode] = useState<'adopt_existing' | 'clean_slate'>('adopt_existing');
   const [confirming, setConfirming] = useState(false);
   const [isDone, setIsDone] = useState(false);
 
@@ -40,14 +39,13 @@ export const BandClaimHandoverModal: React.FC<BandClaimHandoverModalProps> = ({
     try {
       const result = communityBandManager.claimBandHandover(
         bandRecord.id,
-        currentUserId,
-        selectedMode
+        currentUserId
       );
       setIsDone(true);
       setTimeout(() => {
-        onClaimSuccess(result.bandRecord, selectedMode);
+        onClaimSuccess(result.bandRecord);
         onClose();
-      }, 1400);
+      }, 1200);
     } catch (err) {
       console.error(err);
       setConfirming(false);
@@ -122,71 +120,37 @@ export const BandClaimHandoverModal: React.FC<BandClaimHandoverModalProps> = ({
             </div>
           </div>
 
-          {/* Onboarding Fork Choice */}
-          <div className="space-y-2">
-            <span className="text-xs font-mono font-bold text-zinc-300 uppercase tracking-wider block">
-              Choose How You Want to Onboard Your Official Workspace:
-            </span>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Option 1: Adopt & Polish */}
-              <button
-                type="button"
-                onClick={() => setSelectedMode('adopt_existing')}
-                className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-3 ${
-                  selectedMode === 'adopt_existing'
-                    ? 'bg-emerald-950/40 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500'
-                    : 'bg-zinc-900/50 border-zinc-800 hover:border-zinc-700'
-                }`}
-              >
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <Layers className="w-4 h-4" /> Adopt & Polish (Recommended)
-                    </span>
-                    {selectedMode === 'adopt_existing' && (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    )}
-                  </div>
-                  <p className="text-xs text-zinc-300 leading-relaxed">
-                    Keep the community-indexed discography, metal archives links, and bio. You can edit or replace any data instantly while keeping the existing foundation.
-                  </p>
-                </div>
-
-                <div className="text-[10px] font-mono text-emerald-300/80 bg-emerald-950/60 p-2 rounded-lg border border-emerald-800/40">
-                  ✓ Preserves followers • ✓ Keeps tracklists & albums • ✓ Fastest setup
-                </div>
-              </button>
-
-              {/* Option 2: Clean Slate */}
-              <button
-                type="button"
-                onClick={() => setSelectedMode('clean_slate')}
-                className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-3 ${
-                  selectedMode === 'clean_slate'
-                    ? 'bg-purple-950/40 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.15)] ring-1 ring-purple-500'
-                    : 'bg-zinc-900/50 border-zinc-800 hover:border-zinc-700'
-                }`}
-              >
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-black text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4" /> Clean Slate (Start Fresh)
-                    </span>
-                    {selectedMode === 'clean_slate' && (
-                      <CheckCircle2 className="w-4 h-4 text-purple-400" />
-                    )}
-                  </div>
-                  <p className="text-xs text-zinc-300 leading-relaxed">
-                    Clear all unofficial placeholder bios and fan tracklists. Start with a pristine official slate while retaining your inherited follower audience.
-                  </p>
-                </div>
-
-                <div className="text-[10px] font-mono text-purple-300/80 bg-purple-950/60 p-2 rounded-lg border border-purple-800/40">
-                  ✓ Preserves followers • ✕ Clears placeholder bios & mock items
-                </div>
-              </button>
+          {/* Seamless Handover Guarantee Info */}
+          <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-950/20 space-y-3">
+            <div className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-emerald-400" />
+              <span className="text-xs font-mono font-black text-emerald-400 uppercase tracking-wider">
+                Full Profile & Catalog Handover
+              </span>
             </div>
+
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              Everything on this community band page—including the complete discography, tracklists, lineup, photos, biography, genres, and streaming links—will be <strong>passed along exactly as is</strong> to your official band ownership.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+              <div className="text-[11px] font-mono text-emerald-300/90 bg-emerald-950/50 p-2.5 rounded-lg border border-emerald-800/40 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>100% Discography Intact</span>
+              </div>
+              <div className="text-[11px] font-mono text-emerald-300/90 bg-emerald-950/50 p-2.5 rounded-lg border border-emerald-800/40 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>Lineup & Bios Preserved</span>
+              </div>
+              <div className="text-[11px] font-mono text-emerald-300/90 bg-emerald-950/50 p-2.5 rounded-lg border border-emerald-800/40 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>Followers Inherited</span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-zinc-400 italic pt-0.5">
+              Nothing is ever wiped. Once claimed, you can freely modify, add, or update any detail at your convenience from your Band Workspace settings.
+            </p>
           </div>
 
           {/* Fan Contributor Respect Banner */}

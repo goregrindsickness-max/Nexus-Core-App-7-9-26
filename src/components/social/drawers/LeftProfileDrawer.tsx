@@ -3336,6 +3336,7 @@ if (!leftDrawerOpen) return null;
                 isOpen={isCommunityCuratorOpen}
                 onClose={() => setIsCommunityCuratorOpen(false)}
                 userProfile={userProfile}
+                triggerNotification={triggerNotification}
                 onSaved={(band) => {
                   triggerNotification?.(`⚡ Saved community archive for "${band.name}"!`);
                 }}

@@ -12,6 +12,7 @@ export interface SocialMapOverlayProps {
   setMapFilterGenre: (genre: string) => void;
   userProfile: any;
   triggerNotification?: (msg: string) => void;
+  liveEvents?: any[];
 }
 
 export const SocialMapOverlay: React.FC<SocialMapOverlayProps> = (props) => {

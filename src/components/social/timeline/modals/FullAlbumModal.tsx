@@ -70,7 +70,7 @@ export const FullAlbumModal: React.FC<FullAlbumModalProps> = ({
               : ANALEPSY_QUIESCENCE_TRACKS
             ).map((track, idx) => (
               <div 
-                key={idx}
+                key={`${track.title}-${idx}`}
                 className="flex items-center justify-between py-1.5 px-3 rounded-xl bg-zinc-950 border border-zinc-850 hover:border-red-500/40 text-xs font-mono text-zinc-200 transition-colors"
               >
                 <div className="flex items-center gap-2.5 truncate">

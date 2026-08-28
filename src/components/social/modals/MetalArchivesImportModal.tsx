@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { scrapeMetalArchivesBand, MetalArchivesScrapeResult, parseMetalArchivesRawText } from '../../../services/metalArchivesScraper';
 import { upsertReleasesBatchToDatabase, CatalogRelease } from '../../../services/releasesService';
+import { communityBandManager, DiscographyRelease } from '../../../lib/communityBands';
+import { ensureUUID } from '../../../services/schemaResilienceService';
 
 interface MetalArchivesImportModalProps {
   isOpen: boolean;
@@ -203,6 +205,59 @@ export const MetalArchivesImportModal: React.FC<MetalArchivesImportModalProps> =
       const res = await upsertReleasesBatchToDatabase(releasesToImport, bandId);
 
       if (res.success) {
+        // Direct non-destructive merge into community band manager
+        try {
+          const matchedBand = communityBandManager.getById(bandId) || (bandName ? communityBandManager.findByName(bandName) : null);
+          if (matchedBand) {
+            const existingDiscography = matchedBand.discography || [];
+            const mergedDiscography = [...existingDiscography];
+
+            const newReleases: DiscographyRelease[] = releasesToImport.map((r, idx) => ({
+              id: r.id || ensureUUID(`rel-${bandId}-${idx}-${Date.now()}`),
+              title: r.title || 'Untitled Release',
+              year: r.releaseDate || r.year || String(new Date().getFullYear()),
+              type: (r.type?.toLowerCase() || 'album') as any,
+              cover_url: r.coverUrl || r.coverImage || '',
+              cover_image: r.coverUrl || r.coverImage || '',
+              coverUrl: r.coverUrl || r.coverImage || '',
+              coverImage: r.coverUrl || r.coverImage || '',
+              image_url: r.coverUrl || r.coverImage || '',
+              release_info: r.label || '',
+              catalog_id: r.catalogId || '',
+              label: r.label || '',
+              tracks: (r.tracks || []).map((t: any, tIdx: number) => ({
+                number: t.number || tIdx + 1,
+                title: t.title || `Track ${tIdx + 1}`,
+                duration: t.duration || '3:30',
+                lyrics: t.lyrics || undefined
+              }))
+            }));
+
+            for (const nr of newReleases) {
+              const normTitle = nr.title.toLowerCase().trim();
+              const existingIdx = mergedDiscography.findIndex(
+                d => d.title.toLowerCase().trim() === normTitle || (d.id && d.id === nr.id)
+              );
+              if (existingIdx >= 0) {
+                mergedDiscography[existingIdx] = {
+                  ...mergedDiscography[existingIdx],
+                  ...nr,
+                  tracks: (nr.tracks && nr.tracks.length > 0) ? nr.tracks : mergedDiscography[existingIdx].tracks
+                };
+              } else {
+                mergedDiscography.push(nr);
+              }
+            }
+
+            communityBandManager.upsertCommunityBand({
+              ...matchedBand,
+              discography: mergedDiscography
+            });
+          }
+        } catch (commErr) {
+          console.warn('[MetalArchivesImportModal] communityBandManager update notice:', commErr);
+        }
+
         if (typeof window !== 'undefined') {
           window.dispatchEvent(
             new CustomEvent('nexus_core_toast', {

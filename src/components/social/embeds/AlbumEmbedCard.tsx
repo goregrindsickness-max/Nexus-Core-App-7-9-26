@@ -76,7 +76,7 @@ export const AlbumEmbedCard: React.FC<AlbumEmbedCardProps> = ({
           <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
             {albumData.tracks.map((track, idx) => (
               <div 
-                key={idx}
+                key={`${track.title}-${idx}`}
                 onClick={() => onOpenAlbumModal(albumData)}
                 className="flex items-center justify-between py-1 px-2.5 rounded-lg bg-zinc-950/80 border border-zinc-900/90 hover:border-red-500/50 hover:bg-zinc-900 text-[11px] font-mono text-zinc-300 transition-colors cursor-pointer group"
               >
@@ -104,7 +104,7 @@ export const AlbumEmbedCard: React.FC<AlbumEmbedCardProps> = ({
             { format: 'Vinyl', price: '$24.99', icon: '💿' }
           ].map((fmt, idx) => (
             <button
-              key={idx}
+              key={fmt.format}
               onClick={() => onBuyFormat(fmt.format, fmt.price, albumData.band, albumData.albumName)}
               className="flex flex-col sm:flex-row items-center justify-center sm:justify-between p-2 sm:px-2.5 sm:py-2 bg-zinc-950/90 hover:bg-red-950/80 border border-zinc-800/90 hover:border-red-500/60 rounded-xl text-xs font-mono font-bold text-zinc-300 hover:text-white transition-all cursor-pointer shadow-md group min-w-0 overflow-hidden"
             >

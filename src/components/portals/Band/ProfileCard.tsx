@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Check, Pencil, X, ArrowLeft, Edit2, AlertTriangle, Briefcase, Plus, Ticket, MapPin, Disc, Tag, Pause, Play, Search, Volume2, ChevronDown, Music, Download, PlayCircle, ShoppingCart, SkipBack, Square, SkipForward, UserCheck, UserPlus, MessageSquare, Shield, ShoppingBag, Calendar, Award, Network, Activity, Camera, ArrowUpRight, FileUp, Users, CheckCircle, Flame, Shirt, Building2, ShieldCheck, Sparkles } from 'lucide-react';
+import { Check, Pencil, X, ArrowLeft, Edit2, AlertTriangle, Briefcase, Plus, Ticket, MapPin, Disc, Tag, Pause, Play, Search, Volume2, ChevronDown, Music, Download, PlayCircle, ShoppingCart, SkipBack, Square, SkipForward, UserCheck, UserPlus, MessageSquare, Shield, ShoppingBag, Calendar, Award, Network, Activity, Camera, ArrowUpRight, FileUp, Users, CheckCircle, Flame, Shirt, Building2, ShieldCheck, Sparkles, Lock, Unlock } from 'lucide-react';
 import { hasRegisteredWorkspace } from '../../../types';
 import { getProfileGlowInfo } from '../../../utils/profileGlow';
 import { formatLocationDisplay } from '../../../constants/location';
@@ -139,12 +139,32 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
           return false;
         });
 
-        const finalReleases = matching.length > 0 ? matching : allDbReleases;
+        const matchedCommunityBand = communityBandManager.findMatch(bandName || selectedUserProfile?.name || '');
+        const communityDisco = matchedCommunityBand?.discography || [];
+
+        // STRICT SCOPING: Only use matching releases for this band or this band's community discography
+        let finalReleases: any[] = [];
+        if (matching.length > 0) {
+          finalReleases = matching;
+        } else if (communityDisco.length > 0) {
+          finalReleases = communityDisco.map((cd: any) => ({
+            id: cd.id,
+            band_id: validBandUUID || bandIdToUse,
+            title: cd.title,
+            type: cd.type || 'album',
+            release_date: cd.year || '',
+            release_year: cd.year || '',
+            label: cd.label || cd.release_info || '',
+            catalog_id: cd.catalog_id || '',
+            cover_url: cd.cover_url || cd.cover_image || cd.coverUrl || cd.coverImage || cd.image_url || '',
+            cover_image: cd.cover_url || cd.cover_image || cd.coverUrl || cd.coverImage || cd.image_url || '',
+            tracks: cd.tracks || []
+          }));
+        } else {
+          finalReleases = [];
+        }
 
         if (isMounted && finalReleases.length > 0) {
-          const matchedCommunityBand = communityBandManager.findMatch(bandName || selectedUserProfile?.name || '');
-          const communityDisco = matchedCommunityBand?.discography || [];
-
           const mapped = finalReleases.map((row: any) => {
             const commRel = communityDisco.find(
               (cd: any) => cd.id === row.id || (cd.title && row.title && cd.title.toLowerCase().trim() === row.title.toLowerCase().trim())
@@ -959,39 +979,61 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                   {/* Verification Status Badge or Claim/Curate Action */}
                   {isBandTarget && (
                     <div className="flex items-center gap-2 mt-1.5">
-                      {communityArchiveMatch?.verification_status === 'verified_official' || (!communityArchiveMatch && !selectedUserProfile?.is_community_archive) ? (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-mono font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                          <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                          Official Verified
-                        </span>
-                      ) : (
-                        <div className="flex items-center gap-1.5">
-                          <span className="inline-flex items-center gap-1 text-[9px] font-mono font-black uppercase px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                            <Users className="w-3 h-3 text-amber-400" />
-                            Fan-Curated Archive
+                      {(() => {
+                        const isVerifiedBand = 
+                          fetchedBandData?.is_verified === true || 
+                          communityArchiveMatch?.verification_status === 'verified_official' || 
+                          (communityArchiveMatch as any)?.is_verified === true ||
+                          selectedUserProfile?.is_verified === true;
+
+                        return isVerifiedBand ? (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-mono font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                            <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                            Official Verified
                           </span>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <span className="inline-flex items-center gap-1 text-[9px] font-mono font-black uppercase px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                              <Users className="w-3 h-3 text-amber-400" />
+                              Fan-Curated Archive
+                            </span>
 
-                          {/* Button for real band members to Claim & Take Over */}
-                          <button
-                            type="button"
-                            onClick={() => setShowClaimModal(true)}
-                            className="px-2.5 py-0.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-black text-[9px] uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-all shadow-sm"
-                            title="Are you in this band? Claim official ownership and verification"
-                          >
-                            <ShieldCheck className="w-2.5 h-2.5" /> Claim Page
-                          </button>
+                            {/* Button for real band members to Claim & Take Over */}
+                            <button
+                              type="button"
+                              onClick={() => setShowClaimModal(true)}
+                              className="px-2.5 py-0.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-black text-[9px] uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-all shadow-sm"
+                              title="Are you in this band? Claim official ownership and verification"
+                            >
+                              <ShieldCheck className="w-2.5 h-2.5" /> Claim Page
+                            </button>
 
-                          {/* Button for fans to edit/curate without forms */}
-                          <button
-                            type="button"
-                            onClick={() => setShowCuratorModal(true)}
-                            className="px-2 py-0.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono font-bold text-[9px] uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-all"
-                            title="Edit fan archive info & discography"
-                          >
-                            <Edit2 className="w-2.5 h-2.5" /> Curate
-                          </button>
-                        </div>
-                      )}
+                            {/* Button for fans to edit/curate without forms */}
+                            <button
+                              type="button"
+                              onClick={() => setShowCuratorModal(true)}
+                              className={`px-2 py-0.5 rounded-full font-mono font-bold text-[9px] uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-all ${
+                                communityArchiveMatch?.is_locked
+                                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
+                                  : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
+                              }`}
+                              title={communityArchiveMatch?.is_locked ? 'Fan archive data is locked & protected' : 'Edit fan archive info & discography'}
+                            >
+                              {communityArchiveMatch?.is_locked ? (
+                                <>
+                                  <Lock className="w-2.5 h-2.5 text-amber-400" />
+                                  <span>Locked Archive</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Edit2 className="w-2.5 h-2.5" />
+                                  <span>Curate</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
 
@@ -3756,6 +3798,8 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
         isOpen={showCuratorModal}
         onClose={() => setShowCuratorModal(false)}
         initialBand={communityArchiveMatch}
+        userProfile={userProfile}
+        triggerNotification={triggerNotification}
         onSaved={(updatedBand) => {
           setCommunityArchiveMatch(updatedBand);
           triggerNotification?.(`Community archive for "${updatedBand.name}" updated!`);
@@ -3769,12 +3813,10 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
           onClose={() => setShowClaimModal(false)}
           bandRecord={communityArchiveMatch}
           currentUserId={userProfile?.id || 'official_claimant'}
-          onClaimSuccess={(claimedBand, mode) => {
+          onClaimSuccess={(claimedBand) => {
             setCommunityArchiveMatch(claimedBand);
             triggerNotification?.(
-              mode === 'clean_slate'
-                ? `⚡ Claimed "${claimedBand.name}" with a Clean Official Slate! Followers linked.`
-                : `⚡ Claimed and Adopted "${claimedBand.name}" fan foundation! All releases & followers verified.`
+              `⚡ Successfully claimed "${claimedBand.name}"! All discography, tracklists, lineup, and followers transferred in full.`
             );
           }}
         />

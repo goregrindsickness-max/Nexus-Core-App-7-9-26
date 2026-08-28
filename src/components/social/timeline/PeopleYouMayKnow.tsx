@@ -46,6 +46,7 @@ export interface SuggestedProfile {
   isRealBand?: boolean;
   is_community_archive?: boolean;
   verification_status?: string;
+  is_verified?: boolean;
   followers_count?: number;
   registered_workspaces?: string[];
   allowed_workspaces?: string[];
@@ -164,7 +165,14 @@ export const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({
         const cbName = cb.name || cb.band_name;
         const cbLocationParts = [cb.city, cb.state || cb.state_province, cb.country].filter(Boolean);
         const cbLocationStr = cbLocationParts.length > 0 ? cbLocationParts.join(', ') : undefined;
-        const cbAvatar = cb.avatar_url || cb.logo_url || cb.avatar || cb.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=300';
+        const hasValidAvatar = cb.avatar_url && !cb.avatar_url.includes('unsplash');
+        const hasValidLogo = cb.logo_url && !cb.logo_url.includes('unsplash');
+        const discCover = cb.discography?.[0]?.cover_url || cb.discography?.[0]?.cover_image || cb.discography?.[0]?.image_url;
+        const cbAvatar = hasValidAvatar 
+          ? cb.avatar_url 
+          : hasValidLogo 
+            ? cb.logo_url 
+            : (discCover || cb.avatar_url || cb.logo_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=300');
         return {
           id: cb.id.startsWith('comm-') || cb.id.startsWith('db-') ? cb.id : `comm-band-${cb.id}`,
           raw_id: cb.id,
@@ -184,6 +192,7 @@ export const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({
           isRealBand: true,
           is_community_archive: cb.verification_status === 'community_archive',
           verification_status: cb.verification_status,
+          is_verified: cb.verification_status === 'verified_official' || (cb as any).is_verified === true,
           followers_count: cb.followers_count || 120,
           followed: false
         };
@@ -229,6 +238,7 @@ export const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({
           isRealBand: true,
           is_community_archive: cb.verification_status === 'community_archive',
           verification_status: cb.verification_status,
+          is_verified: cb.verification_status === 'verified_official' || (cb as any).is_verified === true,
           followers_count: cb.followers_count || 120,
           followed: false
         });
@@ -284,7 +294,8 @@ export const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({
               isBandProfile: true,
               isRealBand: true,
               is_community_archive: isArchive,
-              verification_status: b.verification_status || 'verified_official',
+              verification_status: b.verification_status || (b.is_verified ? 'verified_official' : 'community_archive'),
+              is_verified: b.is_verified === true || b.verification_status === 'verified_official',
               followers_count: b.followers_count || 150,
               followed: false
             });
@@ -542,12 +553,45 @@ export const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({
   };
 
   const handleToggleFollow = (profile: SuggestedProfile) => {
-    const isCurrentlyFollowed = localFollowedMap[profile.id] !== undefined
-      ? localFollowedMap[profile.id]
-      : Boolean(profile.followed);
+    let localFollows: Record<string, boolean> = {};
+    try {
+      localFollows = JSON.parse(localStorage.getItem('nexus_local_follows_v1') || '{}');
+    } catch (e) {}
 
-    const nextState = !isCurrentlyFollowed;
-    setLocalFollowedMap(prev => ({ ...prev, [profile.id]: nextState }));
+    const nameKey = (profile.name || '').toLowerCase().trim();
+    const currentFollowed = localFollowedMap[profile.id] !== undefined
+      ? localFollowedMap[profile.id]
+      : Boolean(
+          localFollows[profile.id] || 
+          localFollows[profile.band_id] || 
+          localFollows[profile.raw_id] || 
+          localFollows[nameKey] ||
+          profile.followed
+        );
+
+    const nextState = !currentFollowed;
+    setLocalFollowedMap(prev => ({ 
+      ...prev, 
+      [profile.id]: nextState,
+      ...(profile.band_id ? { [profile.band_id]: nextState } : {}),
+      ...(profile.raw_id ? { [profile.raw_id]: nextState } : {}),
+      ...(nameKey ? { [nameKey]: nextState } : {})
+    }));
+
+    try {
+      if (nextState) {
+        localFollows[profile.id] = true;
+        if (profile.band_id) localFollows[profile.band_id] = true;
+        if (profile.raw_id) localFollows[profile.raw_id] = true;
+        if (nameKey) localFollows[nameKey] = true;
+      } else {
+        delete localFollows[profile.id];
+        if (profile.band_id) delete localFollows[profile.band_id];
+        if (profile.raw_id) delete localFollows[profile.raw_id];
+        if (nameKey) delete localFollows[nameKey];
+      }
+      localStorage.setItem('nexus_local_follows_v1', JSON.stringify(localFollows));
+    } catch (e) {}
 
     if (onFollowProfile) {
       onFollowProfile(profile);
@@ -665,9 +709,24 @@ export const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({
       >
         <AnimatePresence mode="popLayout">
           {filteredProfiles.map((profile, pIdx) => {
-            const isFollowed = localFollowedMap[profile.id] !== undefined
-              ? localFollowedMap[profile.id]
-              : Boolean(profile.followed);
+            let localFollows: Record<string, boolean> = {};
+            try {
+              localFollows = JSON.parse(localStorage.getItem('nexus_local_follows_v1') || '{}');
+            } catch (e) {}
+
+            const nameKey = (profile.name || '').toLowerCase().trim();
+            const isFollowed = 
+              localFollowedMap[profile.id] !== undefined ? localFollowedMap[profile.id] :
+              localFollowedMap[profile.band_id] !== undefined ? localFollowedMap[profile.band_id] :
+              localFollowedMap[profile.raw_id] !== undefined ? localFollowedMap[profile.raw_id] :
+              localFollowedMap[nameKey] !== undefined ? localFollowedMap[nameKey] :
+              Boolean(
+                localFollows[profile.id] || 
+                localFollows[profile.band_id] || 
+                localFollows[profile.raw_id] || 
+                localFollows[nameKey] ||
+                profile.followed
+              );
 
             const theme = getRoleTheme(profile);
             const RoleIcon = theme.icon;
@@ -675,7 +734,7 @@ export const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({
 
             return (
               <motion.div
-                key={`pymk-${profile.id || profile.name || 'user'}-${pIdx}`}
+                key={`pymk-${profile.id || 'id'}-${profile.raw_id || 'raw'}-${pIdx}`}
                 layout
                 initial={{ opacity: 0, scale: 0.92, y: 6 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -766,8 +825,10 @@ export const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({
                     title={profile.name}
                   >
                     <span className="truncate">{profile.name}</span>
-                    {isBand && (
-                      <ShieldCheck className="w-3 h-3 text-emerald-400 shrink-0 inline opacity-90" />
+                    {isBand && profile.is_verified && (
+                      <span title="Verified Artist" className="inline-flex items-center">
+                        <ShieldCheck className="w-3 h-3 text-emerald-400 shrink-0 inline opacity-90" />
+                      </span>
                     )}
                   </h4>
 

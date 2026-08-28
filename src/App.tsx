@@ -122,6 +122,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sale, Show, InventoryItem, TourNote, Band, UserProfile, ChecklistItem, BankItem, Flight, InventoryAudit, UserReview, LoyaltyMember, Offer, DbNotification, SubscriptionTier, StagedDistroItem, AssetRevenueSplit, CashTransaction, BandJoinRequest, RegisteredWorkspaceRef, hasRegisteredWorkspace, normalizeRegisteredWorkspaces } from './types';
+import { communityBandManager } from './lib/communityBands';
 import { initOfflineQueue, getSupabase, testSupabaseConnection, getSupabaseUrl, getSupabaseAnonKey, subscribeToTable, sanitizeInventoryItemForDb, executeWithSchemaResilience, getOfflineQueue, processOfflineQueue, isBypassRequiredError, handleDatabaseFailover, saveToFailoverCache, generateUUID, uploadBase64ToStorage, fetchUserBands, sanitizeBandPayload, ensureValidSupabaseAuthSession, autoSyncCreativeProfile, fetchUserCreatives } from './supabase';
 import AlbumArt from './components/AlbumArt';
 import { useOfflineSync } from './hooks/useOfflineSync';
@@ -1299,6 +1300,16 @@ export default function App() {
   }, [userProfile, isOnline]);
 
   // Load account-specific offline caches instantly upon context/tenant switch to allow pristine clean slates
+  useEffect(() => {
+    // Proactively sync all community band profiles and full discographies to Supabase in the background
+    const supabase = getSupabase();
+    if (supabase && navigator.onLine) {
+      communityBandManager.syncAllToSupabase().catch((err) => {
+        console.warn('[App] Proactive background Supabase band sync notice:', err);
+      });
+    }
+  }, []);
+
   useEffect(() => {
     if (!userProfile) return;
     

@@ -27,7 +27,13 @@ import {
   ListMusic,
   ChevronDown,
   ChevronUp,
-  ArrowLeft
+  ArrowLeft,
+  Lock,
+  Unlock,
+  ShieldAlert,
+  AlertCircle,
+  Database,
+  RefreshCw
 } from 'lucide-react';
 import {
   communityBandManager,
@@ -36,7 +42,7 @@ import {
   DiscographyRelease,
   DiscographyTrack
 } from '../../../lib/communityBands';
-import { uploadBase64ToStorage } from '../../../supabase';
+import { uploadBase64ToStorage, generateUUID, ensureUUID } from '../../../supabase';
 import { MASTER_GENRES } from '../../../constants/genres';
 
 interface CommunityBandCuratorModalProps {
@@ -45,6 +51,7 @@ interface CommunityBandCuratorModalProps {
   initialBand?: CommunityBandRecord | null;
   userProfile?: any;
   onSaved?: (band: CommunityBandRecord) => void;
+  triggerNotification?: (msg: string) => void;
 }
 
 export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps> = ({
@@ -52,7 +59,8 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
   onClose,
   initialBand,
   userProfile,
-  onSaved
+  onSaved,
+  triggerNotification
 }) => {
   const [activePage, setActivePage] = useState<'list' | 'editor'>('list');
   const [bandsList, setBandsList] = useState<CommunityBandRecord[]>([]);
@@ -104,6 +112,12 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [curatorHandle, setCuratorHandle] = useState('@community_archivist');
 
+  // Archive Lock & Supabase Protection State
+  const [isLocked, setIsLocked] = useState<boolean>(false);
+  const [lockedAt, setLockedAt] = useState<string>('');
+  const [lockedBy, setLockedBy] = useState<string>('');
+  const [isTogglingLock, setIsTogglingLock] = useState<boolean>(false);
+
   // Lineup Editor State
   const [lineup, setLineup] = useState<LineupMember[]>([]);
   const [newMemberName, setNewMemberName] = useState('');
@@ -135,6 +149,31 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isUploadingAlbumImg, setIsUploadingAlbumImg] = useState(false);
+  const [isSyncingAll, setIsSyncingAll] = useState(false);
+  const [syncStatusText, setSyncStatusText] = useState('');
+
+  const handleSyncAllToSupabase = async () => {
+    if (isSyncingAll) return;
+    try {
+      setIsSyncingAll(true);
+      setSyncStatusText('Connecting to Supabase...');
+      const res = await communityBandManager.syncAllToSupabase((curr, total, name) => {
+        setSyncStatusText(`Syncing (${curr}/${total}): ${name}...`);
+      });
+      loadBands();
+      if (res.success || res.syncedCount > 0) {
+        triggerNotification?.(`⚡ Successfully pushed ${res.syncedCount} band archives and full discographies to Supabase!`);
+      } else {
+        triggerNotification?.(`❌ Database sync notice: ${res.errors.join('; ')}`);
+      }
+    } catch (err: any) {
+      console.error('Sync all error:', err);
+      triggerNotification?.(`❌ Sync error: ${err?.message || 'Unknown failure'}`);
+    } finally {
+      setIsSyncingAll(false);
+      setSyncStatusText('');
+    }
+  };
 
   const handleDeviceFileUpload = async (
     file: File,
@@ -153,11 +192,17 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
           return;
         }
         try {
+          // Dedicated storage asset path separation: never used as database primary key
+          const storageFolderId = (selectedBand?.id && ensureUUID(selectedBand.id))
+            ? ensureUUID(selectedBand.id)
+            : (userProfile?.id ? ensureUUID(userProfile.id) : 'community-uploads');
+          const fileToken = `${prefix}_${Date.now()}`;
+
           const publicUrl = await uploadBase64ToStorage(
             base64,
             bucket,
-            selectedBand?.id || `comm-band-${Date.now()}`,
-            prefix
+            storageFolderId,
+            fileToken
           );
           if (publicUrl) {
             onSuccess(publicUrl);
@@ -237,12 +282,43 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
     setMetalArchivesUrl(band.metal_archives_url || '');
     setYoutubeUrl(band.youtube_url || band.featured_youtube_url || '');
     setCuratorHandle(band.curated_by || (userProfile?.console_handle || userProfile?.handle || '@community_archivist'));
+    setIsLocked(Boolean(band.is_locked));
+    setLockedAt(band.locked_at || '');
+    setLockedBy(band.locked_by || '');
     setLineup(band.lineup || []);
     setAlbums([...(band.discography || [])].sort((a, b) => parseInt(b.year || '0') - parseInt(a.year || '0')));
     setEditingAlbumIdx(null);
     setEditingMemberIdx(null);
     resetReleaseInputs();
     setActivePage('editor');
+  };
+
+  // Delete Community Band Archive with confirmation & unlock bypass
+  const handleDeleteBand = (band: CommunityBandRecord) => {
+    const bandTitle = band.name || 'this band';
+    const releaseCount = band.discography?.length || 0;
+    
+    if (band.is_locked) {
+      if (!window.confirm(`⚠️ Archive "${bandTitle}" is currently LOCKED in Supabase.\n\nAre you sure you want to unlock and permanently delete this community archive?`)) {
+        return;
+      }
+    } else {
+      if (!window.confirm(`🗑️ Are you sure you want to permanently delete "${bandTitle}" (${releaseCount} releases)?\n\nThis will remove it from community archives and Supabase.`)) {
+        return;
+      }
+    }
+
+    const res = communityBandManager.deleteCommunityBand(band.id, true);
+    if (res.success) {
+      triggerNotification?.(`🗑️ Deleted community archive for "${bandTitle}".`);
+      loadBands();
+      if (selectedBand?.id === band.id) {
+        resetForm();
+        setActivePage('list');
+      }
+    } else {
+      triggerNotification?.(`❌ Failed to delete archive: ${res.error || 'Unknown error'}`);
+    }
   };
 
   const resetForm = () => {
@@ -264,12 +340,51 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
     setMetalArchivesUrl('');
     setYoutubeUrl('');
     setCuratorHandle(userProfile?.console_handle || userProfile?.handle || '@community_archivist');
+    setIsLocked(false);
+    setLockedAt('');
+    setLockedBy('');
     setLineup([]);
     setAlbums([]);
     setEditingAlbumIdx(null);
     setEditingMemberIdx(null);
     resetReleaseInputs();
     setActivePage('editor');
+  };
+
+  // Toggle Lock mechanism: locks/freezes or unlocks archive in Supabase & LocalStorage
+  const handleToggleLock = async (explicitState?: boolean) => {
+    const nextState = explicitState !== undefined ? explicitState : !isLocked;
+    setIsTogglingLock(true);
+    try {
+      const userHandle = userProfile?.console_handle || userProfile?.handle || userProfile?.name || '@fan_archivist';
+      const nowIso = new Date().toISOString();
+
+      setIsLocked(nextState);
+      if (nextState) {
+        setLockedAt(nowIso);
+        setLockedBy(userHandle);
+      }
+
+      if (selectedBand?.id) {
+        const updatedBand = await communityBandManager.toggleLock(selectedBand.id, nextState, userHandle);
+        if (updatedBand) {
+          setSelectedBand(updatedBand);
+          setBandsList(prev => prev.map(b => b.id === updatedBand.id ? updatedBand : b));
+          onSaved?.(updatedBand);
+        }
+      }
+
+      triggerNotification?.(
+        nextState
+          ? `🔒 "${name || selectedBand?.name || 'Band'}" locked in Supabase! Discography & metadata are protected against overwriting.`
+          : `🔓 "${name || selectedBand?.name || 'Band'}" unlocked! You can now edit and sync.`
+      );
+    } catch (err: any) {
+      console.error('Failed to toggle lock:', err);
+      triggerNotification?.(`❌ Lock action failed: ${err?.message || 'Unknown error'}`);
+    } finally {
+      setIsTogglingLock(false);
+    }
   };
 
   const resetReleaseInputs = () => {
@@ -356,8 +471,12 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
   const handleSaveRelease = () => {
     if (!releaseTitle.trim()) return;
 
+    const releaseId = editingAlbumIdx !== null 
+      ? (albums[editingAlbumIdx]?.id ? ensureUUID(albums[editingAlbumIdx].id) : generateUUID())
+      : generateUUID();
+
     const releaseData: DiscographyRelease = {
-      id: editingAlbumIdx !== null ? albums[editingAlbumIdx].id : `rel-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+      id: releaseId,
       title: releaseTitle.trim(),
       year: releaseYear.trim() || new Date().getFullYear().toString(),
       type: releaseType,
@@ -423,8 +542,13 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
       const parsedFoundedYear = foundedYear.trim() ? parseInt(foundedYear.trim(), 10) : undefined;
       const validFoundedYear = (parsedFoundedYear && !isNaN(parsedFoundedYear) && parsedFoundedYear > 0) ? parsedFoundedYear : undefined;
 
+      // Assign valid UUID: new generation for new band, preserved UUID for existing band
+      const bandId = isCreatingNew
+        ? generateUUID()
+        : (selectedBand?.id ? ensureUUID(selectedBand.id) : generateUUID());
+
       const bandPayload: Partial<CommunityBandRecord> & { band_name: string } = {
-        id: selectedBand?.id,
+        id: bandId,
         band_name: name.trim(),
         name: name.trim(),
         micro_genres: microGenres.length > 0 ? microGenres : (genre ? [genre] : ['Extreme Metal']),
@@ -445,13 +569,27 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
         creator_id: resolvedCreatorId,
         curated_by: curatorHandle || userProfile?.console_handle || userProfile?.handle || '@fan_archivist',
         curator_name: userProfile?.full_name || userProfile?.name || 'Community Archivist',
-        verification_status: selectedBand?.verification_status || 'community_archive'
+        verification_status: selectedBand?.verification_status || 'community_archive',
+        is_locked: isLocked,
+        locked_at: isLocked ? (lockedAt || new Date().toISOString()) : undefined,
+        locked_by: isLocked ? (lockedBy || curatorHandle || userProfile?.console_handle || userProfile?.name) : undefined
       };
 
-      const savedRecord = communityBandManager.upsertCommunityBand(bandPayload);
+      const savedRecord = communityBandManager.upsertCommunityBand(bandPayload, { isNew: isCreatingNew });
 
-      // Force direct Supabase sync for both bands table and releases table
-      await communityBandManager.syncToSupabaseTables(savedRecord);
+      // Attempt Supabase sync with explicit isNew configuration
+      try {
+        const syncRes = await communityBandManager.syncToSupabaseTables(savedRecord, { isNew: isCreatingNew });
+        if (!syncRes.success && syncRes.error) {
+          console.error('[CommunityBandCuratorModal] Remote Supabase sync error:', syncRes.error);
+          triggerNotification?.(`⚠️ Saved locally, cloud sync notice: ${syncRes.error}`);
+        } else {
+          triggerNotification?.(`⚡ Saved & synchronized "${savedRecord.name}" to cloud archive!`);
+        }
+      } catch (syncErr: any) {
+        console.warn('[CommunityBandCuratorModal] Remote Supabase sync deferred (offline / offline queue active):', syncErr);
+        triggerNotification?.(`⚡ Saved locally (${savedRecord.name}). Remote sync queued.`);
+      }
 
       setSavedFeedback(true);
       setTimeout(() => setSavedFeedback(false), 3000);
@@ -463,9 +601,10 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
       // Return to archives list after successful save
       setTimeout(() => {
         setActivePage('list');
-      }, 1000);
+      }, 800);
     } catch (error) {
       console.error('Failed to save archive:', error);
+      triggerNotification?.(`❌ Failed to save band archive: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsSaving(false);
     }
@@ -507,13 +646,58 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
 
           <div className="flex items-center gap-2">
             {activePage === 'editor' && (
-              <button
-                onClick={() => setActivePage('list')}
-                className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-amber-400 font-mono text-xs font-bold uppercase flex items-center gap-1.5 border border-zinc-800 cursor-pointer"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Archives List</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-mono text-xs font-black uppercase flex items-center gap-1.5 transition-all cursor-pointer shadow active:scale-95"
+                  title="Start a fresh new band archive with no inherited releases"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">New Archive</span>
+                </button>
+
+                {selectedBand && !isCreatingNew && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteBand(selectedBand)}
+                    className="px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-red-950/40 text-zinc-400 hover:text-red-400 border border-zinc-800 hover:border-red-500/40 font-mono text-xs font-bold uppercase flex items-center gap-1.5 transition-all cursor-pointer shadow"
+                    title="Permanently delete this community band archive"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Delete</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => handleToggleLock()}
+                  disabled={isTogglingLock}
+                  className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold uppercase flex items-center gap-1.5 border transition-all cursor-pointer ${
+                    isLocked
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-md shadow-amber-500/10 hover:bg-amber-500/30'
+                      : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-750'
+                  }`}
+                  title={isLocked ? 'Archive is locked. Click to unlock.' : 'Click to lock data and freeze in Supabase.'}
+                >
+                  {isTogglingLock ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                  ) : isLocked ? (
+                    <Lock className="w-3.5 h-3.5 text-amber-400" />
+                  ) : (
+                    <Unlock className="w-3.5 h-3.5 text-zinc-400" />
+                  )}
+                  <span className="hidden sm:inline">{isLocked ? 'LOCKED' : 'LOCK DATA'}</span>
+                </button>
+
+                <button
+                  onClick={() => setActivePage('list')}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-amber-400 font-mono text-xs font-bold uppercase flex items-center gap-1.5 border border-zinc-800 cursor-pointer"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Archives List</span>
+                </button>
+              </>
             )}
 
             <button
@@ -538,12 +722,34 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
                 </p>
               </div>
 
-              <button
-                onClick={resetForm}
-                className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-mono font-black text-xs uppercase flex items-center justify-center gap-2 cursor-pointer transition-all shadow-lg active:scale-95"
-              >
-                <Plus className="w-4 h-4" /> New Band Archive
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSyncAllToSupabase}
+                  disabled={isSyncingAll}
+                  className="px-3.5 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-amber-400 hover:text-amber-300 border border-amber-500/30 font-mono font-bold text-xs uppercase flex items-center justify-center gap-2 cursor-pointer transition-all shadow active:scale-95 disabled:opacity-50"
+                  title="Push all community archives, members, and discography tracklists directly to Supabase cloud tables"
+                >
+                  {isSyncingAll ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                      <span className="truncate max-w-[140px] sm:max-w-[200px]">{syncStatusText || 'Syncing...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Database className="w-4 h-4 text-amber-400" />
+                      <span>Push All to Supabase</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={resetForm}
+                  className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-mono font-black text-xs uppercase flex items-center justify-center gap-2 cursor-pointer transition-all shadow-lg active:scale-95"
+                >
+                  <Plus className="w-4 h-4" /> New Band Archive
+                </button>
+              </div>
             </div>
 
             {/* Search */}
@@ -561,7 +767,7 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
             {/* Band Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-6">
               {filteredBands.map((band, bIdx) => (
-                <button
+                <div
                   key={band.id ? `band-${band.id}-${bIdx}` : `band-${bIdx}`}
                   onClick={() => populateForm(band)}
                   className="w-full text-left p-3.5 sm:p-4 rounded-xl border bg-zinc-900/60 border-zinc-800/80 hover:border-amber-500/50 hover:bg-zinc-900 transition-all flex items-center gap-3.5 cursor-pointer shadow-sm group"
@@ -579,26 +785,48 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
                       <span className="text-sm font-bold text-white truncate font-display group-hover:text-amber-300 transition-colors">
                         {band.name}
                       </span>
-                      <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border shrink-0 ${
-                        band.verification_status === 'verified_official'
-                          ? 'bg-emerald-950/80 text-emerald-400 border-emerald-500/40'
-                          : 'bg-amber-950/80 text-amber-400 border-amber-500/40'
-                      }`}>
-                        {band.verification_status === 'verified_official' ? 'VERIFIED' : 'FAN ARCHIVE'}
-                      </span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {band.is_locked && (
+                          <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border bg-amber-500/20 text-amber-300 border-amber-500/50 flex items-center gap-0.5">
+                            <Lock className="w-2.5 h-2.5" /> LOCKED
+                          </span>
+                        )}
+                        <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border shrink-0 ${
+                          band.verification_status === 'verified_official'
+                            ? 'bg-emerald-950/80 text-emerald-400 border-emerald-500/40'
+                            : 'bg-amber-950/80 text-amber-400 border-amber-500/40'
+                        }`}>
+                          {band.verification_status === 'verified_official' ? 'VERIFIED' : 'FAN ARCHIVE'}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="text-xs text-zinc-400 truncate font-mono mt-1">
                       {band.genre} • {band.city || band.country || 'Global'}
                     </div>
 
-                    <div className="text-[10px] text-zinc-500 font-mono mt-1.5 flex items-center gap-3">
-                      <span>💿 {band.discography?.length || 0} releases</span>
-                      <span>👥 {band.lineup?.length || 0} members</span>
-                      <span className="text-amber-400 font-bold ml-auto group-hover:underline">Edit Archive →</span>
+                    <div className="text-[10px] text-zinc-500 font-mono mt-1.5 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-3">
+                        <span>💿 {band.discography?.length || 0} releases</span>
+                        <span>👥 {band.lineup?.length || 0} members</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-amber-400 font-bold group-hover:underline">Edit Archive →</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteBand(band);
+                          }}
+                          className="p-1 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-950/40 border border-transparent hover:border-red-500/40 transition-colors cursor-pointer"
+                          title={`Delete "${band.name}" archive`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </button>
+                </div>
               ))}
 
               {filteredBands.length === 0 && (
@@ -665,6 +893,70 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
               {/* TAB 1: OVERVIEW & MEDIA */}
               {activeTab === 'overview' && (
                 <div className="space-y-3 animate-in fade-in duration-150">
+                  {/* ARCHIVE LOCK & IMMUTABILITY PROTECTION CARD */}
+                  <div className={`p-3.5 rounded-2xl border transition-all ${
+                    isLocked 
+                      ? 'bg-amber-950/20 border-amber-500/50 shadow-inner' 
+                      : 'bg-zinc-950 border-zinc-800/80 hover:border-zinc-700'
+                  }`}>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+                          isLocked 
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm' 
+                            : 'bg-zinc-900 text-zinc-400 border-zinc-800'
+                        }`}>
+                          {isLocked ? <Lock className="w-4 h-4 text-amber-400" /> : <Unlock className="w-4 h-4 text-zinc-500" />}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono font-bold uppercase tracking-wider text-white">
+                              Supabase Immutability & Data Lock
+                            </span>
+                            <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                              isLocked 
+                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse' 
+                                : 'bg-zinc-900 text-zinc-400 border-zinc-800'
+                            }`}>
+                              {isLocked ? 'ARCHIVE LOCKED' : 'UNLOCKED / EDITABLE'}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-zinc-400 mt-0.5 font-sans leading-relaxed">
+                            {isLocked 
+                              ? 'This archive is locked. Its albums, tracks, and lineup are protected from being overwritten by other band updates or empty syncs.' 
+                              : 'Enable this lock to freeze and protect this band’s discography and metadata against accidental overwrite in Supabase.'}
+                          </p>
+                          {isLocked && lockedAt && (
+                            <div className="text-[10px] font-mono text-zinc-500 mt-1 flex items-center gap-2">
+                              <span>Locked on: {new Date(lockedAt).toLocaleDateString()}</span>
+                              {lockedBy && <span>by {lockedBy}</span>}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleToggleLock()}
+                        disabled={isTogglingLock}
+                        className={`px-4 py-2 rounded-xl font-mono text-xs font-bold uppercase flex items-center justify-center gap-2 shrink-0 transition-all cursor-pointer shadow-md ${
+                          isLocked 
+                            ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 hover:border-amber-400' 
+                            : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700 hover:text-white'
+                        }`}
+                      >
+                        {isTogglingLock ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                        ) : isLocked ? (
+                          <Unlock className="w-3.5 h-3.5 text-amber-400" />
+                        ) : (
+                          <Lock className="w-3.5 h-3.5 text-amber-400" />
+                        )}
+                        <span>{isLocked ? 'Unlock Archive' : 'Lock This Archive'}</span>
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div className="space-y-1 sm:col-span-1">
                       <label className="text-[10px] font-mono font-bold text-zinc-300 uppercase">Band / Artist Name *</label>
@@ -688,6 +980,51 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
                       />
                     </div>
                   </div>
+
+                  {/* Smart Divergence Detection: If user edited an existing archive's name */}
+                  {selectedBand && !isCreatingNew && name.trim() && name.trim().toLowerCase() !== selectedBand.name.trim().toLowerCase() && (
+                    <div className="p-3 bg-amber-950/30 border border-amber-500/40 rounded-xl space-y-2 text-xs font-mono animate-in fade-in duration-200">
+                      <div className="flex items-center gap-1.5 text-amber-300 font-bold">
+                        <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>Creating a new band or renaming &quot;{selectedBand.name}&quot;?</span>
+                      </div>
+                      <p className="text-[11px] text-zinc-300 leading-relaxed">
+                        You changed the name while editing existing profile <strong>{selectedBand.name}</strong> ({albums.length} releases, {lineup.length} members). 
+                        To prevent copying {selectedBand.name}&apos;s discography to <strong>{name}</strong>, choose an action:
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedBand(null);
+                            setIsCreatingNew(true);
+                            setAlbums([]);
+                            setLineup([]);
+                            setBio('');
+                            setRecordLabel('');
+                            setSpotifyUrl('');
+                            setBandcampUrl('');
+                            setMetalArchivesUrl('');
+                            setYoutubeUrl('');
+                            triggerNotification?.(`✨ Started fresh archive for "${name}". Old releases and lineup cleared.`);
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-black uppercase text-[10px] cursor-pointer flex items-center gap-1.5 shadow"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" /> Start Fresh Archive for {name} (Clear Releases)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedBand({ ...selectedBand, name: name.trim() });
+                            triggerNotification?.(`🏷️ Will rename "${selectedBand.name}" to "${name.trim()}".`);
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-750 font-bold uppercase text-[10px] cursor-pointer"
+                        >
+                          Keep Releases &amp; Rename {selectedBand.name}
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div className="space-y-1">
@@ -964,12 +1301,53 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
                       />
                     </div>
                   </div>
+
+                  {/* Danger Zone: Delete Community Archive */}
+                  {selectedBand && !isCreatingNew && (
+                    <div className="p-4 rounded-xl border border-red-900/30 bg-red-950/10 space-y-2 mt-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="text-xs font-mono font-bold text-red-400 uppercase flex items-center gap-1.5">
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete Community Archive</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-400 font-mono mt-0.5">
+                            Permanently remove this community archive profile for &quot;{selectedBand.name}&quot; ({albums.length} releases, {lineup.length} members).
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteBand(selectedBand)}
+                          className="px-3 py-2 rounded-xl bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/40 text-xs font-mono font-bold uppercase flex items-center gap-1.5 cursor-pointer shadow transition-all shrink-0 active:scale-95"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Delete Archive</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* TAB 2: LINEUP */}
               {activeTab === 'lineup' && (
                 <div className="space-y-4 animate-in fade-in duration-150">
+                  {isLocked && (
+                    <div className="p-3 bg-amber-950/20 border border-amber-500/40 rounded-xl flex items-center justify-between gap-3 text-xs font-mono text-amber-300">
+                      <div className="flex items-center gap-2">
+                        <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>This band is locked. Lineup changes are protected in Supabase.</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleLock(false)}
+                        className="px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-800 text-amber-400 border border-amber-500/40 font-bold uppercase text-[10px] cursor-pointer"
+                      >
+                        Unlock
+                      </button>
+                    </div>
+                  )}
+
                   <div className="p-4 bg-zinc-950 border border-zinc-850 rounded-2xl space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-mono font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-2">
@@ -1062,7 +1440,23 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
                   </div>
 
                   <div className="space-y-2">
-                    <span className="text-xs font-mono font-bold text-zinc-400 uppercase">Current Lineup List ({lineup.length})</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono font-bold text-zinc-400 uppercase">Current Lineup List ({lineup.length})</span>
+                      {lineup.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm(`Clear all ${lineup.length} lineup members from this form?`)) {
+                              setLineup([]);
+                              setEditingMemberIdx(null);
+                            }
+                          }}
+                          className="text-[11px] font-mono text-zinc-400 hover:text-red-400 flex items-center gap-1 cursor-pointer transition-colors px-2 py-1 rounded hover:bg-red-950/20 border border-transparent hover:border-red-900/40"
+                        >
+                          <Trash2 className="w-3 h-3" /> Clear Lineup
+                        </button>
+                      )}
+                    </div>
                     {lineup.length === 0 ? (
                       <div className="p-6 text-center rounded-xl border border-dashed border-zinc-800 text-zinc-500 font-mono text-xs">
                         No lineup members added yet. Use the form above to add members.
@@ -1117,6 +1511,22 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
               {/* TAB 3: DISCOGRAPHY */}
               {activeTab === 'discography' && (
                 <div className="space-y-3.5 animate-in fade-in duration-150">
+                  {isLocked && (
+                    <div className="p-3 bg-amber-950/20 border border-amber-500/40 rounded-xl flex items-center justify-between gap-3 text-xs font-mono text-amber-300">
+                      <div className="flex items-center gap-2">
+                        <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>This archive is locked. Discography and tracklists cannot be overwritten by other bands in Supabase.</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleLock(false)}
+                        className="px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-800 text-amber-400 border border-amber-500/40 font-bold uppercase text-[10px] cursor-pointer"
+                      >
+                        Unlock
+                      </button>
+                    </div>
+                  )}
+
                   <div className="p-3 bg-zinc-950 border border-zinc-850 rounded-2xl space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-mono font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
@@ -1350,19 +1760,36 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
 
                   {/* Discography List */}
                   <div className="space-y-2 pb-6">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="text-xs font-mono font-bold text-zinc-400 uppercase">Catalog Releases ({albums.length})</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          // Open Metal Archives Import Modal
-                          const event = new CustomEvent('open_metal_archives_import', { detail: { bandId: selectedBand?.id || 'band-1', bandName: name } });
-                          window.dispatchEvent(event);
-                        }}
-                        className="px-3 py-1.5 rounded-xl bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/40 text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow"
-                      >
-                        <Disc className="w-3.5 h-3.5" /> Import from Metal-Archives
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {albums.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm(`Are you sure you want to clear all ${albums.length} releases from this archive?`)) {
+                                setAlbums([]);
+                                resetReleaseInputs();
+                                triggerNotification?.('Cleared all releases from form.');
+                              }
+                            }}
+                            className="px-2.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-red-950/40 text-zinc-400 hover:text-red-400 border border-zinc-800 hover:border-red-500/40 text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Clear All Releases
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // Open Metal Archives Import Modal
+                            const event = new CustomEvent('open_metal_archives_import', { detail: { bandId: selectedBand?.id || 'band-1', bandName: name } });
+                            window.dispatchEvent(event);
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/40 text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow"
+                        >
+                          <Disc className="w-3.5 h-3.5" /> Import from Metal-Archives
+                        </button>
+                      </div>
                     </div>
                     {albums.length === 0 ? (
                       <div className="p-6 text-center rounded-xl border border-dashed border-zinc-800 text-zinc-500 text-xs font-mono">

@@ -1,5 +1,5 @@
 import { getSupabase } from './clientService';
-import { ensureUUID } from './schemaResilienceService';
+import { ensureUUID, generateUUID, executeWithSchemaResilience } from './schemaResilienceService';
 
 export const PRIMARY_GENRE_KEYWORDS = new Set([
   'extreme metal',
@@ -119,6 +119,9 @@ export const VALID_BAND_COLUMNS = new Set([
   'featured_video_track_name',
   'verification_status',
   'is_verified',
+  'is_locked',
+  'locked_at',
+  'locked_by',
 ]);
 
 export function sanitizeBandPayload(rawPayload: any): Record<string, any> {
@@ -472,7 +475,7 @@ export function sanitizeBandPayload(rawPayload: any): Record<string, any> {
  */
 export async function upsertBandToDatabase(
   bandInput: any,
-  options?: { triggerNotification?: (msg: string) => void }
+  options?: { isNew?: boolean; triggerNotification?: (msg: string) => void }
 ): Promise<{ success: boolean; data?: any; error?: any }> {
   if (!bandInput || typeof bandInput !== 'object') {
     return { success: false, error: new Error('Invalid band input') };
@@ -480,6 +483,13 @@ export async function upsertBandToDatabase(
 
   const supabase = getSupabase();
   const cleanBand = sanitizeBandPayload(bandInput);
+
+  // Guarantee standards-compliant RFC4122 v4 UUID for database primary key
+  if (!cleanBand.id || options?.isNew) {
+    cleanBand.id = generateUUID();
+  } else {
+    cleanBand.id = ensureUUID(cleanBand.id);
+  }
 
   // Sync to local storage immediately for zero-latency UI consistency
   try {
@@ -545,60 +555,96 @@ export async function upsertBandToDatabase(
   }
 
   try {
-    // Strategy 1: Schema-resilient upsert sending the full, sanitized payload object
-    const { executeWithSchemaResilience } = await import('./schemaResilienceService');
-    const result = await executeWithSchemaResilience(
-      async (payload) => await supabase.from('bands').upsert([payload], { onConflict: 'id' }),
-      cleanBand
-    );
+    const isExplicitNew = Boolean(options?.isNew);
 
-    if (!result?.error) {
-      return { success: true, data: result.data || cleanBand };
+    if (isExplicitNew) {
+      console.log(`[bandService] Performing distinct INSERT for new band record (ID: ${cleanBand.id}, Name: "${cleanBand.band_name}")...`);
+      
+      const insertRes = await executeWithSchemaResilience(
+        async (payload) => await supabase.from('bands').insert([payload]),
+        cleanBand
+      );
+
+      if (!insertRes?.error) {
+        console.log(`[bandService] Successfully inserted new band record: ${cleanBand.id}`);
+        return { success: true, data: insertRes.data || cleanBand };
+      }
+
+      console.warn('[bandService] Resilient insert returned error, attempting direct insert fallback:', insertRes.error);
+      const directInsert = await supabase.from('bands').insert([cleanBand]);
+      if (!directInsert.error) {
+        console.log(`[bandService] Direct insert succeeded for band: ${cleanBand.id}`);
+        return { success: true, data: cleanBand };
+      }
+
+      const errMsg = directInsert.error.message || JSON.stringify(directInsert.error);
+      console.error(`[bandService] Database INSERT failed for band ${cleanBand.id}:`, errMsg);
+      options?.triggerNotification?.(`❌ Database band insert failed: ${errMsg}`);
+      return { success: false, data: cleanBand, error: errMsg };
     }
 
-    console.warn('[bandService] Initial upsert returned notice, attempting direct update/insert fallback:', result.error);
-
-    // Strategy 2: Check existence and perform targeted update / insert
+    // Existing / un-specified: Check if row exists to perform targeted UPDATE or INSERT
+    let existingRowId: string | null = null;
     if (cleanBand.id) {
-      const { data: existing } = await supabase.from('bands').select('id').eq('id', cleanBand.id).maybeSingle();
+      const { data: existing, error: checkErr } = await supabase.from('bands').select('id').eq('id', cleanBand.id).maybeSingle();
+      if (checkErr) {
+        console.warn('[bandService] Existing record check notice:', checkErr.message);
+      }
       if (existing?.id) {
-        const updateRes = await executeWithSchemaResilience(
-          async (payload) => await supabase.from('bands').update(payload).eq('id', cleanBand.id),
-          cleanBand
-        );
-        if (!updateRes?.error) {
-          return { success: true, data: updateRes.data || cleanBand };
-        }
-      } else {
-        const insertRes = await executeWithSchemaResilience(
-          async (payload) => await supabase.from('bands').insert([payload]),
-          cleanBand
-        );
-        if (!insertRes?.error) {
-          return { success: true, data: insertRes.data || cleanBand };
-        }
+        existingRowId = existing.id;
       }
     }
 
-    // Strategy 3: Direct Upsert Fallback without column restrictions
-    const directResult = await supabase.from('bands').upsert([cleanBand], { onConflict: 'id' });
-    if (!directResult.error) {
-      return { success: true, data: cleanBand };
-    }
+    if (existingRowId) {
+      console.log(`[bandService] Record exists (${existingRowId}). Performing targeted UPDATE...`);
+      const updateRes = await executeWithSchemaResilience(
+        async (payload) => await supabase.from('bands').update(payload).eq('id', cleanBand.id),
+        cleanBand
+      );
 
-    // Direct update fallback
-    if (cleanBand.id) {
+      if (!updateRes?.error) {
+        console.log(`[bandService] Successfully updated band record: ${cleanBand.id}`);
+        return { success: true, data: updateRes.data || cleanBand };
+      }
+
+      console.warn('[bandService] Resilient update returned error, attempting direct update:', updateRes.error);
       const directUpdate = await supabase.from('bands').update(cleanBand).eq('id', cleanBand.id);
       if (!directUpdate.error) {
         return { success: true, data: cleanBand };
       }
-    }
 
-    console.warn('[bandService] Final database sync notice:', directResult.error);
-    return { success: true, data: cleanBand, error: directResult.error };
+      const errMsg = directUpdate.error.message || JSON.stringify(directUpdate.error);
+      console.error(`[bandService] Database UPDATE failed for band ${cleanBand.id}:`, errMsg);
+      options?.triggerNotification?.(`❌ Database band update failed: ${errMsg}`);
+      return { success: false, data: cleanBand, error: errMsg };
+    } else {
+      console.log(`[bandService] No existing record found for ${cleanBand.id}. Performing INSERT...`);
+      const insertRes = await executeWithSchemaResilience(
+        async (payload) => await supabase.from('bands').insert([payload]),
+        cleanBand
+      );
+
+      if (!insertRes?.error) {
+        console.log(`[bandService] Successfully inserted band record: ${cleanBand.id}`);
+        return { success: true, data: insertRes.data || cleanBand };
+      }
+
+      // Upsert fallback
+      const directUpsert = await supabase.from('bands').upsert([cleanBand], { onConflict: 'id' });
+      if (!directUpsert.error) {
+        return { success: true, data: cleanBand };
+      }
+
+      const errMsg = directUpsert.error.message || JSON.stringify(directUpsert.error);
+      console.error(`[bandService] Database upsert failed for band ${cleanBand.id}:`, errMsg);
+      options?.triggerNotification?.(`❌ Database band save failed: ${errMsg}`);
+      return { success: false, data: cleanBand, error: errMsg };
+    }
   } catch (err: any) {
-    console.warn('[bandService] Band database sync exception:', err?.message || err);
-    return { success: true, data: cleanBand, error: err };
+    const errMsg = err?.message || String(err);
+    console.error('[bandService] Band database sync exception:', errMsg);
+    options?.triggerNotification?.(`❌ Database sync exception: ${errMsg}`);
+    return { success: false, data: cleanBand, error: errMsg };
   }
 }
 
