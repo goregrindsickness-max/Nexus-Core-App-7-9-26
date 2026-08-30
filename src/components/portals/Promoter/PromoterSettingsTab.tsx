@@ -1421,7 +1421,7 @@ export default function PromoterSettingsTab({
                           <span className="text-[9px] text-zinc-550 uppercase font-bold">({rev.group})</span>
                           <div className="flex gap-0.5">
                             {Array.from({ length: rev.score }).map((_, i) => (
-                              <Star key={i} className="w-3 h-3 fill-lime-400 text-lime-400" />
+                              <Star key={`rev-star-${idx}-${i}`} className="w-3 h-3 fill-lime-400 text-lime-400" />
                             ))}
                           </div>
                         </div>

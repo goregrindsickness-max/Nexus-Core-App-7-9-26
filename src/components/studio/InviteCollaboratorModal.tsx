@@ -125,11 +125,11 @@ export const InviteCollaboratorModal: React.FC<InviteCollaboratorModalProps> = (
               <span>Access Level & Permissions</span>
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {ACCESS_ROLES.map((role) => {
+              {ACCESS_ROLES.map((role, rIdx) => {
                 const isSelected = accessLevel === role.level;
                 return (
                   <button
-                    key={role.level}
+                    key={`role-${role.level}-${rIdx}`}
                     type="button"
                     onClick={() => setAccessLevel(role.level)}
                     className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative ${

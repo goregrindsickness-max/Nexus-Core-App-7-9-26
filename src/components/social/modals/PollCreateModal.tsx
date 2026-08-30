@@ -120,7 +120,7 @@ export const PollCreateModal: React.FC<PollCreateModalProps> = ({
                       ? "Which song should we play as tonight's final encore?"
                       : pollVariant === 'promoter_lineup'
                       ? "Who do you want to see most on our next showcase / fest?"
-                      : "e.g., Best Morbid Angel album?"
+                      : "e.g., Best death metal release of 2026?"
                   }
                   className={`w-full bg-zinc-950 border border-zinc-900 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none transition-all ${
                     pollVariant === 'encore_setlist'
@@ -137,7 +137,7 @@ export const PollCreateModal: React.FC<PollCreateModalProps> = ({
                 <label className="block text-[10px] font-black uppercase text-zinc-500 tracking-wide mb-1">Answers</label>
                 <div className="max-h-42 overflow-y-auto space-y-2 pr-1 no-scrollbar">
                   {pollOptions.map((option, idx) => (
-                    <div key={idx} className="flex gap-2 items-center">
+                    <div key={`poll-create-opt-${idx}`} className="flex gap-2 items-center">
                       <span className="text-[10px] font-mono text-zinc-600 w-4 shrink-0">{idx + 1}.</span>
                       <input 
                         type="text"

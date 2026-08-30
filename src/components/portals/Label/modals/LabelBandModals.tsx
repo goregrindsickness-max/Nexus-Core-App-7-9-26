@@ -69,7 +69,7 @@ export const LabelOnboardBandModal: React.FC<OnboardBandModalProps> = ({
                 <input
                   type="text"
                   required
-                  placeholder="e.g. MORBID ANGEL"
+                  placeholder="e.g. IMMOLATION"
                   value={newBandName}
                   onChange={e => setNewBandName(e.target.value)}
                   className="w-full bg-[#05080c] border border-zinc-850 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#FF9900]"

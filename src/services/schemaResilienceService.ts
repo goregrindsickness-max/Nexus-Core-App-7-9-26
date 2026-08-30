@@ -343,11 +343,13 @@ export async function executeWithSchemaResilience<T extends Record<string, any> 
     }
     payload = deduped.map((item: any) => {
       if (!item || typeof item !== 'object') return item;
-      if ('tracks' in item || 'catalog_id' in item || 'audio_vault_path' in item || 'cover_url' in item) {
-        return sanitizeReleaseForDb(item);
-      }
-      if ('band_name' in item || 'micro_genres' in item || 'tour_vehicle' in item) {
+      const isBand = 'band_name' in item || 'micro_genres' in item || 'subgenres' in item || 'tour_vehicle' in item || 'metal_archives_url' in item || ('logo_url' in item && ('genre' in item || 'city' in item || 'bio' in item));
+      if (isBand) {
         return sanitizeBandPayload(item);
+      }
+      const isRelease = 'tracks' in item || 'catalog_id' in item || 'audio_vault_path' in item || ('title' in item && ('release_date' in item || 'band_id' in item || 'formats' in item));
+      if (isRelease) {
+        return sanitizeReleaseForDb(item);
       }
       return item;
     });
@@ -358,6 +360,7 @@ export async function executeWithSchemaResilience<T extends Record<string, any> 
       !Array.isArray(payload) &&
       ('band_name' in payload ||
         'micro_genres' in payload ||
+        'subgenres' in payload ||
         'tour_vehicle' in payload ||
         'metal_archives_url' in payload ||
         ('logo_url' in payload && ('genre' in payload || 'city' in payload || 'founded_year' in payload || 'cover_url' in payload || 'bio' in payload || 'creator_id' in payload)) ||
@@ -431,7 +434,16 @@ export async function executeWithSchemaResilience<T extends Record<string, any> 
       payload = sanitizeProfilePayload(payload);
     }
 
-    if (payload && typeof payload === 'object' && ('tracks' in payload || 'catalog_id' in payload || 'cover_url' in payload)) {
+    const isReleasePayload =
+      !isBandPayload &&
+      !isCreativePayload &&
+      !isProfilePayload &&
+      payload &&
+      typeof payload === 'object' &&
+      !Array.isArray(payload) &&
+      ('tracks' in payload || 'catalog_id' in payload || 'audio_vault_path' in payload || ('title' in payload && ('release_date' in payload || 'formats' in payload || 'digital' in payload || 'band_id' in payload)));
+
+    if (isReleasePayload) {
       payload = sanitizeReleaseForDb(payload);
     }
   }

@@ -71,7 +71,7 @@ export const DigitalReceiptModal: React.FC<DigitalReceiptModalProps> = ({
                 {selectedSaleReceipt.cart_items && selectedSaleReceipt.cart_items.length > 0 ? (
                   <div className="space-y-3">
                     {selectedSaleReceipt.cart_items.map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-start gap-3">
+                      <div key={`receipt-item-${idx}`} className="flex justify-between items-start gap-3">
                         <div className="flex gap-3 overflow-hidden w-full">
                           {item.image_url ? (
                             <img src={item.image_url} alt={item?.name} className="w-12 h-12 object-cover rounded-lg border border-zinc-800 bg-zinc-900 shrink-0" referrerPolicy="no-referrer" />

@@ -229,7 +229,7 @@ export default function PacingTracker({
                            <span className="text-indigo-400 block mb-1 font-black tracking-wider text-[8px]">Included Variants & Options</span>
                            <div className="flex flex-col gap-1 text-[9px]">
                              {tier.multiOptions ? tier.multiOptions.map((o, idx) => (
-                               <div key={idx} className="flex justify-between border-b border-indigo-900/20 last:border-0 pb-1 last:pb-0">
+                               <div key={`pacing-row-${idx}`} className="flex justify-between border-b border-indigo-900/20 last:border-0 pb-1 last:pb-0">
                                  <span>{o.label}:</span>
                                  <span className="text-zinc-300">{o.choices.join(', ')}</span>
                                </div>

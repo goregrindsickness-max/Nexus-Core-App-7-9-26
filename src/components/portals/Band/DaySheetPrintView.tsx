@@ -721,7 +721,7 @@ export default function DaySheetPrintView({
             </h2>
             {show.support_lineup && show.support_lineup.length > 0 ? (
               show.support_lineup.map((band: any, i: number) => (
-                <div key={i} className="flex items-center gap-3">
+                <div key={`daysheet-person-${i}`} className="flex items-center gap-3">
                   <span className="text-[11px] font-mono font-bold text-zinc-500 min-w-[100px]">{formatTimePrint(band.start_time)} - {formatTimePrint(band.end_time)}</span>
                   <span className="text-zinc-300">--</span>
                   <span className="text-[11px] font-bold text-zinc-900">{band.name || 'Support'}</span>
@@ -1018,7 +1018,7 @@ export default function DaySheetPrintView({
           
           {/* Support Lineup */}
           {show.support_lineup && show.support_lineup.length > 0 && show.support_lineup.map((band: any, idx: number) => (
-            <div className="relative" key={idx}>
+            <div className="relative" key={`daysheet-rel-${idx}`}>
               <span className="absolute -left-[27px] top-0.5 w-3 h-3 rounded-full bg-zinc-700 border-2 border-zinc-950" />
               <div className="flex items-center justify-between">
                 <span className="text-zinc-400 font-mono text-xs uppercase">Support: {band.name || 'Opening Act'}</span>
@@ -1275,7 +1275,7 @@ export default function DaySheetPrintView({
               </thead>
               <tbody className="divide-y divide-zinc-900 text-zinc-300">
                 {show.guest_list.map((guest: any, idx: number) => (
-                  <tr key={idx} className="hover:bg-zinc-900/40">
+                  <tr key={`daysheet-row-${idx}`} className="hover:bg-zinc-900/40">
                     <td className="p-2.5 font-bold text-white">{guest.name}</td>
                     <td className="p-2.5 text-zinc-400">{guest.access_type || 'General'}</td>
                     <td className="p-2.5 text-right font-black text-purple-400">+{guest.additional_count}</td>

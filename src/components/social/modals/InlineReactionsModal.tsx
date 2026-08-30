@@ -84,7 +84,7 @@ export const InlineReactionsModal: React.FC<InlineReactionsModalProps> = ({
                       const token = matrix[r.type] || matrix['hype'];
                       return (
                         <button
-                          key={r.type}
+                          key={`inline-react-tab-${r.type}-${rIdx}`}
                           onClick={() => setReactionsActiveTab(r.type)}
                           className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-1.5 shrink-0 ${
                             reactionsActiveTab === r.type

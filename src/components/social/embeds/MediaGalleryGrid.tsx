@@ -50,7 +50,7 @@ export const MediaGalleryGrid: React.FC<MediaGalleryGridProps> = ({
       return (
         <div className="mb-3 grid grid-cols-2 gap-1.5 rounded-2xl overflow-hidden border border-zinc-800 bg-black aspect-[3/2] cursor-pointer shadow-xl">
           {images.map((img, i) => (
-            <div key={i} className="relative h-full group overflow-hidden" onClick={() => onOpenLightbox(images, i)}>
+            <div key={`mg-2-${i}-${img.slice(0, 15)}`} className="relative h-full group overflow-hidden" onClick={() => onOpenLightbox(images, i)}>
               <img 
                 src={img} 
                 alt={`Media ${i}`} 
@@ -90,7 +90,7 @@ export const MediaGalleryGrid: React.FC<MediaGalleryGridProps> = ({
           </div>
           <div className="grid grid-rows-2 gap-1.5 h-full">
             {images.slice(1, 3).map((img, i) => (
-              <div key={i + 1} className="relative h-full group overflow-hidden" onClick={() => onOpenLightbox(images, i + 1)}>
+              <div key={`mg-3-${i + 1}-${img.slice(0, 15)}`} className="relative h-full group overflow-hidden" onClick={() => onOpenLightbox(images, i + 1)}>
                 <img 
                   src={img} 
                   alt={`Media ${i + 1}`} 
@@ -114,7 +114,7 @@ export const MediaGalleryGrid: React.FC<MediaGalleryGridProps> = ({
     return (
       <div className="mb-3 grid grid-cols-2 grid-rows-2 gap-1.5 rounded-2xl overflow-hidden border border-zinc-800 bg-black aspect-square cursor-pointer shadow-xl">
         {images.slice(0, 4).map((img, i) => (
-          <div key={i} className="relative h-full group overflow-hidden" onClick={() => onOpenLightbox(images, i)}>
+          <div key={`mg-4-${i}-${img.slice(0, 15)}`} className="relative h-full group overflow-hidden" onClick={() => onOpenLightbox(images, i)}>
             <img 
               src={img} 
               alt={`Media ${i}`} 

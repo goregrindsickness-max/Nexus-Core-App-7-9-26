@@ -268,7 +268,7 @@ export const SubmitEpkModal: React.FC<SubmitEpkModalProps> = ({
                     {epkFormTracks.length > 0 && (
                       <div className="bg-black/80 rounded-xl border border-zinc-850 p-2.5 max-h-24 overflow-y-auto space-y-1.5 no-scrollbar">
                         {epkFormTracks.map((track, i) => (
-                          <div key={i} className="flex items-center justify-between bg-zinc-950/80 border border-zinc-900 rounded px-2 py-1 text-[10px] font-mono">
+                          <div key={`epk-track-${track.name}-${i}`} className="flex items-center justify-between bg-zinc-950/80 border border-zinc-900 rounded px-2 py-1 text-[10px] font-mono">
                             <div className="flex items-center gap-2 truncate">
                               <Music className="w-3 h-3 text-emerald-400 shrink-0" />
                               <span className="text-zinc-300 truncate">{track.name}</span>

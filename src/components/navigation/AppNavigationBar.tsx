@@ -237,7 +237,7 @@ export function AppNavigationBar({
                       ]
                     }
                   ].map((group, groupIdx) => (
-                    <div key={groupIdx} className="space-y-1">
+                    <div key={`nav-group-${group.groupTitle}-${groupIdx}`} className="space-y-1">
                       <p className="px-2.5 pb-1.5 text-[8.5px] font-extrabold font-mono text-zinc-500 uppercase tracking-widest border-b border-zinc-800/30 pb-1 mb-1">
                         {group.groupTitle}
                       </p>

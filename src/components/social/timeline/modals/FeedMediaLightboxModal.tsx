@@ -327,7 +327,7 @@ export const FeedMediaLightboxModal: React.FC<FeedMediaLightboxModalProps> = ({
 
           <div className="flex-1 overflow-y-auto p-4 space-y-3.5">
             {comments.map((c, i) => (
-              <div key={i} className="flex gap-2.5">
+              <div key={`lightbox-comm-${c.user}-${i}`} className="flex gap-2.5">
                 <div className={`w-7 h-7 rounded-full bg-zinc-900 shrink-0 border border-white/10 flex items-center justify-center font-bold text-xs ${c.roleColor}`}>
                   {c.avatarChar}
                 </div>

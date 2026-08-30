@@ -951,7 +951,7 @@ export default function ReportsView({
                         dot={(props: any) => {
                           const { cx, cy, index } = props;
                           // If last or has value, maybe custom dot. Standard dot is fine.
-                          return <circle key={index} cx={cx} cy={cy} r={props.value === 121.52 || index === salesTrendData.length - 1 ? 2.5 : 0} fill="#00ffcc" />;
+                          return <circle key={`sales-trend-dot-${index}`} cx={cx} cy={cy} r={props.value === 121.52 || index === salesTrendData.length - 1 ? 2.5 : 0} fill="#00ffcc" />;
                         }}
                         label={{
                           position: "top",
@@ -976,7 +976,7 @@ export default function ReportsView({
             <div className="p-4 space-y-3.5">
                   {topSellersList.length > 0 ? (
                     topSellersList.map((item, idx) => (
-                      <div key={idx} className="space-y-1.5">
+                      <div key={`report-sec-${idx}`} className="space-y-1.5">
                         <div className="flex justify-between items-center text-xs">
                           <div>
                             <span className="font-bold text-white block">
@@ -1037,7 +1037,7 @@ export default function ReportsView({
 
                           return (
                             <circle 
-                              key={idx}
+                              key={`report-row-${idx}`}
                               cx="50" cy="50" r="40" 
                               fill="transparent" 
                               stroke={item.color} 
@@ -1067,7 +1067,7 @@ export default function ReportsView({
                   <div className="w-full mt-4 grid grid-cols-2 gap-2 text-xs">
                     {categorySummary.length > 0 ? (
                       categorySummary.map((item, idx) => (
-                        <div key={idx} className="flex items-center gap-2 bg-zinc-950/40 p-2 rounded-xl border border-zinc-900/60">
+                        <div key={`report-entry-${idx}`} className="flex items-center gap-2 bg-zinc-950/40 p-2 rounded-xl border border-zinc-900/60">
                           <div 
                             className="w-2.5 h-2.5 rounded-full shrink-0" 
                             style={{ backgroundColor: item.color }}
@@ -1516,7 +1516,7 @@ export default function ReportsView({
 
                           return (
                             <motion.circle
-                              key={idx}
+                              key={`report-donut-seg-${segment.color}-${idx}`}
                               cx="50"
                               cy="50"
                               r={radius}

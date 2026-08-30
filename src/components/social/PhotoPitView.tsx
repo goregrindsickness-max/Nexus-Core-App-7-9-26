@@ -1919,7 +1919,7 @@ export const PhotoPitView: React.FC<PhotoPitViewProps> = ({
                 </div>
                 <div className="grid grid-cols-4 gap-2 max-h-36 overflow-y-auto p-1 bg-zinc-950/80 rounded-2xl border border-zinc-900">
                   {pendingPhotos.map((photo, idx) => (
-                    <div key={idx} className="relative aspect-square bg-zinc-900 rounded-xl overflow-hidden border border-zinc-850 group">
+                    <div key={`pending-photo-${idx}`} className="relative aspect-square bg-zinc-900 rounded-xl overflow-hidden border border-zinc-850 group">
                       <img src={photo} alt="" className="w-full h-full object-cover" />
                       {!isSubmittingPhotos && (
                         <button
@@ -2461,7 +2461,7 @@ export const PhotoPitView: React.FC<PhotoPitViewProps> = ({
                   <div className="bg-black/80 border border-zinc-900 rounded-xl p-3 font-mono text-[11px] space-y-1.5 text-zinc-300">
                     <div className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold mb-1">Diagnostic Details:</div>
                     {diagnosticsResult.diagnostics?.map((line: string, i: number) => (
-                      <div key={i} className="leading-relaxed">{line}</div>
+                      <div key={`diag-line-${i}`} className="leading-relaxed">{line}</div>
                     ))}
                   </div>
 

@@ -407,16 +407,21 @@ export const FeedViewRouter: React.FC<any> = (props) => {
                     bandName: item.bandName,
                     price: item.price,
                     type: item.format,
-                    image: 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/public-assets/Suffocation%20Human%20Waste.jpg'
+                    image: (item as any).image || (item as any).coverUrl || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&q=80'
                   }]
                 });
               }}
               onOpenProfile={(authorId, authorName) => {
-                setSelectedUserProfile(getProfileForUser({
-                  name: authorName,
-                  avatar: authorName.charAt(0),
-                  role: 'Fan'
-                }));
+                if (typeof authorId === 'object' && authorId !== null) {
+                  setSelectedUserProfile(getProfileForUser(authorId));
+                } else if (typeof authorName === 'object' && authorName !== null) {
+                  setSelectedUserProfile(getProfileForUser(authorName));
+                } else {
+                  setSelectedUserProfile(getProfileForUser({
+                    id: authorId,
+                    name: authorName
+                  }));
+                }
               }}
               onOpenTicketModal={(ticketData) => {
                 setActiveEventData({

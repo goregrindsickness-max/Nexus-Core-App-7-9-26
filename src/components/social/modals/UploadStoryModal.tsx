@@ -320,7 +320,7 @@ export const UploadStoryModal: React.FC<UploadStoryModalProps> = ({
                 {/* Stickers Overlay */}
                 {newStoryStickers.map((stk, idx) => (
                   <div
-                    key={idx}
+                    key={`story-sticker-${stk}-${idx}`}
                     style={{
                       top: `${newStoryStickerY}%`,
                       left: `${newStoryStickerX}%`,
@@ -540,12 +540,12 @@ export const UploadStoryModal: React.FC<UploadStoryModalProps> = ({
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto custom-scrollbar pr-1">
                       {[
-                        'SUFFOCATION - Infecting The Crypts',
+                        'IMMOLATION - Father You’re Not a Father',
                         'CRYPTOPSY - Slit Your Gut',
                         'DYING FETUS - Subjected to a Beating',
                         'DEVOURMENT - Babykiller',
                         'INTERNAL BLEEDING - Uncontrollable Demise',
-                        'DISGORGE - She Lay Gutted'
+                        'MORTICIAN - Chainsaw Dismemberment'
                       ].map((trk, trkIdx) => (
                         <button
                           key={`story-trk-${trk}-${trkIdx}`}

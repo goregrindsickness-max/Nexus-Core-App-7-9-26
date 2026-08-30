@@ -283,7 +283,7 @@ export default function TourNotesCard({
               <div className="flex justify-center gap-2 pt-2">
                 {filteredNotes.map((_, i) => (
                   <button
-                    key={i}
+                    key={`tour-note-card-item-${i}`}
                     onClick={() => setActiveNoteIndex(i)}
                     className={`h-2 rounded-full transition-all duration-350 cursor-pointer ${
                       activeNoteIndex === i ? 'w-5 bg-amber-500' : 'w-2 bg-zinc-800 hover:bg-zinc-700'

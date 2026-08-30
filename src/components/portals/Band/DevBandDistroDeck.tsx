@@ -2554,7 +2554,7 @@ Keep it heavy, keep it loud!
                         
                         <div className="space-y-1 max-h-[140px] overflow-y-auto bg-black border border-zinc-900 rounded p-3 text-[9px] leading-relaxed scrollbar-barely-visible">
                           {audioPipelineLog.map((log, index) => (
-                            <div key={index} className={`font-mono ${log.includes('[SUCCESS]') ? 'text-[#39ff14] font-bold' : log.includes('[ERROR]') ? 'text-red-500 font-bold' : 'text-zinc-300'}`}>
+                            <div key={`distro-deck-log-${index}`} className={`font-mono ${log.includes('[SUCCESS]') ? 'text-[#39ff14] font-bold' : log.includes('[ERROR]') ? 'text-red-500 font-bold' : 'text-zinc-300'}`}>
                               {log}
                             </div>
                           ))}

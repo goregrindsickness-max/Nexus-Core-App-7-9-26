@@ -299,7 +299,7 @@ export default function PlansView({
                 const y1 = 50 + 38 * Math.sin(angle);
                 const x2 = 50 + 44 * Math.cos(angle);
                 const y2 = 50 + 44 * Math.sin(angle);
-                return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} strokeWidth="0.8" />;
+                return <line key={`plan-grid-line-${i}`} x1={x1} y1={y1} x2={x2} y2={y2} strokeWidth="0.8" />;
               })}
               {/* Hands */}
               <line x1="50" y1="50" x2="50" y2="22" strokeWidth="1.2" strokeLinecap="round" />

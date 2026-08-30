@@ -104,9 +104,9 @@ export const FullAlbumModal: React.FC<FullAlbumModalProps> = ({
               { format: 'Digital', price: '$9.99', icon: '📥', color: 'hover:border-sky-500/60 hover:text-sky-300' },
               { format: 'CD', price: '$14.99', icon: '🎵', color: 'hover:border-emerald-500/60 hover:text-emerald-300' },
               { format: 'Vinyl', price: '$24.99', icon: '💿', color: 'hover:border-rose-500/60 hover:text-rose-300' }
-            ].map((option) => (
+            ].map((option, optIdx) => (
               <button
-                key={option.format}
+                key={`album-opt-${option.format}-${optIdx}`}
                 onClick={() => {
                   onBuyFormat(option.format, option.price, album.band, album.albumName);
                   onClose();

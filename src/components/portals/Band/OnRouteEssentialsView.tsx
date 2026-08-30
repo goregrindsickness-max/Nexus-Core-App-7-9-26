@@ -518,7 +518,7 @@ export default function OnRouteEssentialsView({ onBack, venueAddress }: OnRouteE
           )}
 
           {results.map((res, i) => (
-            <div key={res.id} className="border border-orange-500/20 bg-black/40 backdrop-blur-sm p-5 flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-5 hover:border-orange-500/65 hover:bg-black/60 hover:shadow-[0_0_20px_rgba(249,115,22,0.15)] transition-all duration-300 group" style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}>
+            <div key={`radar-res-${res.id || 'r'}-${i}`} className="border border-orange-500/20 bg-black/40 backdrop-blur-sm p-5 flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-5 hover:border-orange-500/65 hover:bg-black/60 hover:shadow-[0_0_20px_rgba(249,115,22,0.15)] transition-all duration-300 group" style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}>
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
                   <h3 className="font-mono text-orange-500 font-black uppercase tracking-widest text-sm md:text-base group-hover:drop-shadow-[0_0_8px_rgba(249,115,22,0.6)] transition-all">{res.name}</h3>

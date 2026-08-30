@@ -377,9 +377,9 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
                   { id: 'vinyl', label: 'Vinyl' },
                   { id: 'cds', label: 'CDs' },
                   { id: 'cassettes', label: 'Cassettes' }
-                ].map((cat) => (
+                ].map((cat, catIdx) => (
                   <button
-                    key={cat.id}
+                    key={`shop-cat-${cat.id}-${catIdx}`}
                     onClick={() => setShopCategory(cat.id)}
                     className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase border tracking-wider transition-all duration-200 shrink-0 ${
                       shopCategory === cat.id
@@ -415,8 +415,7 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
                         itemName.includes('tdf') ||
                         itemName.includes('torture') ||
                         itemName.includes('virulent excision') ||
-                        itemName.includes('heinous') ||
-                        itemName.includes('suffocation');
+                        itemName.includes('heinous');
                     } else {
                       matchesBrand = itemName.includes(bf) || itemDesc.includes(bf);
                     }
@@ -555,9 +554,9 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
                       { id: 'all', label: 'All Community' },
                       { id: 'gear', label: 'Gear Swap 🎸' },
                       { id: 'classifieds', label: 'Classifieds 📋' }
-                    ].map((cat) => (
+                    ].map((cat, catIdx) => (
                       <button
-                        key={cat.id}
+                        key={`comm-cat-${cat.id}-${catIdx}`}
                         onClick={() => setCommunityCategory(cat.id)}
                         className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border tracking-wider transition-all duration-200 shrink-0 ${
                           communityCategory === cat.id

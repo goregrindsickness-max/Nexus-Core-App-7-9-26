@@ -523,7 +523,7 @@ export default function TourChecklistView({
                   </div>
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                     {alerts.map((alert, index) => (
-                      <div key={index} className="bg-black/40 border border-amber-600/15 rounded-lg p-3 text-xs leading-relaxed text-zinc-300 font-sans">
+                      <div key={`tour-chk-${index}`} className="bg-black/40 border border-amber-600/15 rounded-lg p-3 text-xs leading-relaxed text-zinc-300 font-sans">
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-bold text-amber-400 font-display text-[11px]">{alert.showName}</span>
                           <span className="text-[9px] font-mono text-zinc-500">{new Date(alert.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
@@ -868,7 +868,7 @@ export default function TourChecklistView({
                     <p className="text-xs text-zinc-500 font-mono mb-2">{g.items.length} Tasks included</p>
                     <div className="flex flex-wrap gap-2">
                       {g.items.slice(0, 3).map((item, idx) => (
-                        <span key={idx} className="bg-zinc-900 border border-zinc-800 text-zinc-400 text-[10px] px-2 py-1 rounded truncate max-w-[200px]">
+                        <span key={`tour-chk-tag-${idx}`} className="bg-zinc-900 border border-zinc-800 text-zinc-400 text-[10px] px-2 py-1 rounded truncate max-w-[200px]">
                           {item}
                         </span>
                       ))}

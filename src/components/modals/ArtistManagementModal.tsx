@@ -186,7 +186,7 @@ export const ArtistManagementModal: React.FC<ArtistManagementModalProps> = ({
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {logoPresets.map((preset, idx) => (
                             <button
-                              key={idx}
+                              key={`edit-logo-preset-${idx}`}
                               type="button"
                               onClick={() => {
                                 setEditLogoUrl(preset);
@@ -430,7 +430,7 @@ export const ArtistManagementModal: React.FC<ArtistManagementModalProps> = ({
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 {logoPresets.map((preset, idx) => (
                                   <button
-                                    key={idx}
+                                    key={`new-logo-preset-${idx}`}
                                     type="button"
                                     onClick={() => {
                                       setCustomLogoPreset(idx);

@@ -659,7 +659,7 @@ export const ReleaseDetailsModal: React.FC<ReleaseDetailsModalProps> = ({
                 <div className="flex flex-wrap gap-2">
                   {digitalLinks.map((link: any, lIdx: number) => (
                     <a
-                      key={lIdx}
+                      key={`release-link-${lIdx}`}
                       href={link.url || '#'}
                       target="_blank"
                       rel="noopener noreferrer"

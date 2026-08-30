@@ -4,7 +4,7 @@ import { loadDiscoverProfilesCache, saveDiscoverProfilesCache } from '../utils/f
 import { extractUUID } from '../../../utils/socialFeedUtils';
 import { getSupabase, executeWithSchemaResilience, sanitizeBandPayload } from '../../../supabase';
 import { isMiguelNameOrProfile } from '../utils/profileUtils';
-import { communityBandManager } from '../../../lib/communityBands';
+import { communityBandManager, isDeletedOrZombieBand } from '../../../lib/communityBands';
 
 const isValidUUID = (str: string | null | undefined): boolean => {
   return typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str.trim());
@@ -279,6 +279,7 @@ export function useSocialFollowsAndProfiles({
             bandsList.forEach((b: any) => {
               const bName = b.band_name || b.name || '';
               if (!bName) return;
+              if (isDeletedOrZombieBand(b.id) || isDeletedOrZombieBand(bName)) return;
               if ((list || []).some(x => x.name.toLowerCase() === bName.toLowerCase())) return;
 
               list.push({
@@ -315,7 +316,15 @@ export function useSocialFollowsAndProfiles({
           const commBands = communityBandManager.getAll();
           commBands.forEach((cb) => {
             if ((list || []).some(x => x.name.toLowerCase() === cb.name.toLowerCase())) return;
-            const cbAvatar = cb.avatar_url || cb.logo_url || (cb as any).avatar || (cb as any).image;
+            const isUnsplash = (url?: string) => !url || typeof url !== 'string' || url.includes('unsplash');
+            const discCover = cb.discography?.[0]?.cover_url || cb.discography?.[0]?.cover_image || cb.discography?.[0]?.image_url;
+            const cbAvatar = (cb.logo_url && !isUnsplash(cb.logo_url))
+              ? cb.logo_url
+              : (cb.avatar_url && !isUnsplash(cb.avatar_url))
+              ? cb.avatar_url
+              : (discCover && !isUnsplash(discCover))
+              ? discCover
+              : (cb.logo_url || cb.avatar_url || (cb as any).avatar || (cb as any).image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=200');
             const cbCover = cb.cover_url || cb.banner_url || (cb as any).cover || (cb as any).banner;
             list.push({
               ...cb,
@@ -333,8 +342,8 @@ export function useSocialFollowsAndProfiles({
               desc: cb.bio || cb.genre,
               avatar: cbAvatar,
               image: cbAvatar,
-              avatar_url: cbAvatar,
-              logo_url: cbAvatar,
+              avatar_url: cb.avatar_url || cbAvatar,
+              logo_url: cb.logo_url || cbAvatar,
               cover_url: cbCover,
               banner_url: cbCover,
               banner: cbCover || '',

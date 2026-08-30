@@ -188,20 +188,14 @@ export const EventCompanionModal: React.FC<EventCompanionModalProps> = ({
 
     // Curated tour package rosters
     const upper = headlinerName.toUpperCase();
-    if (upper.includes('MORBID ANGEL')) {
-      return ['MORBID ANGEL', 'SUFFOCATION', 'IMMOLATION', 'MORTICIAN', 'SKELETAL REMAINS'];
-    }
-    if (upper.includes('SUFFOCATION')) {
-      return ['SUFFOCATION', 'INCANTATION', 'DEFEATED SANITY', 'SANGUISUGABOGG', 'PHOBOPHILIC'];
-    }
     if (upper.includes('CRYPTOPSY')) {
       return ['CRYPTOPSY', 'DYING FETUS', 'ABORTED', 'DECREPIT BIRTH', 'ARCHSPIRE'];
     }
-    if (upper.includes('TESTAMENT')) {
-      return ['TESTAMENT', 'EXODUS', 'DEATH ANGEL', 'OVERKILL', 'MUNICIPAL WASTE'];
+    if (upper.includes('DYING FETUS')) {
+      return ['DYING FETUS', 'DEVOURMENT', 'CORDYCEPS', 'SANGUISUGABOGG'];
     }
-    if (upper.includes('JUNGLE ROT')) {
-      return ['JUNGLE ROT', 'INTERNAL BLEEDING', 'PYREXIA', 'SKINLESS', 'CREEPING DEATH'];
+    if (upper.includes('MORTICIAN')) {
+      return ['MORTICIAN', 'INCANTATION', 'SANGUISUGABOGG', 'PHOBOPHILIC'];
     }
     if (upper.includes('DARK FUNERAL')) {
       return ['DARK FUNERAL', 'BELPHEGOR', 'INCANTATION', 'ROTTING CHRIST', 'GHOST BATH'];
@@ -808,7 +802,7 @@ export const EventCompanionModal: React.FC<EventCompanionModalProps> = ({
                               {tracks && tracks.length > 0 ? (
                                 tracks.map((song, songIdx) => (
                                   <div
-                                    key={`song-${song}`}
+                                    key={`companion-song-${song}-${songIdx}`}
                                     className="flex items-center justify-between py-2.5 px-2 hover:bg-zinc-900/30 transition-all rounded-lg"
                                   >
                                     <div className="flex items-center gap-2.5 min-w-0">

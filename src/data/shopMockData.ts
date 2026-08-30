@@ -21,7 +21,7 @@ export const mockShopItems = [
     price: 0,
     category: 'classifieds',
     subcategory: 'classifieds',
-    description: 'Looking for a drummer in the LA area into Morbid Angel, Suffocation, Cryptopsy.',
+    description: 'Looking for a drummer in the LA area into Incantation, Immolation, Cryptopsy.',
     thumbnail: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=600',
     fallbackThumbnail: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=600',
     location: 'Los Angeles, CA',

@@ -1182,7 +1182,7 @@ export default function TourNotesView({
                                 const isSelected = activeEmergencyIndex === idx;
                                 return (
                                   <button
-                                    key={idx}
+                                    key={`tour-note-row-${idx}`}
                                     type="button"
                                     onClick={() => setActiveEmergencyIndex(idx)}
                                     className={`text-[10px] px-3 py-1.5 rounded-full whitespace-nowrap font-medium transition-colors border cursor-pointer focus:outline-none ${
@@ -1223,7 +1223,7 @@ export default function TourNotesView({
 
                               <div className="max-h-40 overflow-y-auto space-y-1.5 scrollbar-thin">
                                 {emergencyPhoneLogs.map((contact, idx) => (
-                                  <div key={idx} className="bg-zinc-950/50 border border-zinc-900 rounded p-1.5 flex justify-between items-center mb-1.5 text-xs">
+                                  <div key={`tour-note-sub-${idx}`} className="bg-zinc-950/50 border border-zinc-900 rounded p-1.5 flex justify-between items-center mb-1.5 text-xs">
                                     <div className="min-w-0 text-left">
                                       <div className="flex items-center gap-1.5 leading-none mb-1">
                                         <span className="text-[8.5px] text-rose-400 font-mono font-bold uppercase tracking-wider">{contact.type}</span>

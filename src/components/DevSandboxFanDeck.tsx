@@ -472,7 +472,7 @@ ALTER TABLE public.staged_tickets ENABLE ROW LEVEL SECURITY;
         </div>
         <div className="bg-black p-3.5 border border-zinc-900 rounded-xl space-y-1 max-h-[120px] overflow-y-auto font-mono text-[10.5px] text-zinc-500 leading-normal scroll-smooth">
           {sandboxLogs.map((log, i) => (
-            <div key={i} className="font-mono text-zinc-400 truncate">
+            <div key={`fan-deck-row-${i}`} className="font-mono text-zinc-400 truncate">
               <span className="text-purple-400/80 mr-1.5">▋</span>
               {log}
             </div>

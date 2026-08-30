@@ -283,9 +283,9 @@ interface ForumViewProps {
 const DEFAULT_FORUM_THREADS = [
   {
     id: 't1',
-    title: "Effigy of the Forgotten's album art is a masterpiece. Who is the artist?",
+    title: "Close to a World Below's album art is a masterpiece. Who is the artist?",
     content:
-      'The surreal mechanical bio-organic aesthetic fits the technical slam death metal sound so perfectly. Is it Dan Seagrave or someone inspired by him?',
+      'The surreal apocalyptic aesthetic fits the dissonant death metal sound so perfectly. Is it Andreas Marschall or someone inspired by him?',
     category: 'Album Art',
     genre: 'Death Metal',
     author: '@StarGazer',
@@ -297,7 +297,7 @@ const DEFAULT_FORUM_THREADS = [
       {
         id: 'fc1',
         author: '@CosmicVoid',
-        text: "It's actually painted by the legendary Dan Seagrave! Incredible choice by Suffocation.",
+        text: "It's actually painted by Andreas Marschall! Incredible choice by Immolation.",
         timeAgo: '1h ago',
         replies: [
           {
@@ -312,9 +312,9 @@ const DEFAULT_FORUM_THREADS = [
   },
   {
     id: 't2',
-    title: 'Morbid Angel - Altars of Madness: Decades Later',
+    title: 'Immolation - Close to a World Below: Decades Later',
     content:
-      "Can we talk about how well this legendary record has aged? The lightning speed, the dual guitar mastery of Trey and Richard, and David Vincent's iconic vocal delivery.",
+      "Can we talk about how well this legendary record has aged? The crushing riffs, the intricate dissonant chords, and Ross Dolan's iconic vocal delivery.",
     category: 'Album Reviews',
     genre: 'Death Metal',
     author: '@OnyxRiff',
@@ -325,7 +325,7 @@ const DEFAULT_FORUM_THREADS = [
       {
         id: 'fc2',
         author: '@PummelingBass',
-        text: 'Totally agree. It pioneered a resurgence of high-speed technical death metal. Every track is a 10/10.',
+        text: 'Totally agree. It pioneered a resurgence of dark dissonant death metal. Every track is a 10/10.',
         timeAgo: '3h ago',
         replies: [],
       },
@@ -335,7 +335,7 @@ const DEFAULT_FORUM_THREADS = [
     id: 't3',
     title: 'Maryland Deathfest 2026 predictions and wishlist',
     content:
-      "Who are we hoping to see on the bill next year? I'm hoping for a Morbid Angel/Suffocation co-headlining set, plus maybe some European legends.",
+      "Who are we hoping to see on the bill next year? I'm hoping for a Cryptopsy/Immolation co-headlining set, plus maybe some European legends.",
     category: 'Show & Fest',
     genre: 'Death Metal',
     author: '@FestivalGoon',

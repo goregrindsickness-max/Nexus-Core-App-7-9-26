@@ -7,4 +7,5 @@ export * from './modals/SharePostModal';
 export * from './modals/TicketPurchaseModal';
 export * from './modals/FeedMediaLightboxModal';
 export * from './modals/MerchLightboxModal';
+export * from './DiscoveryZone';
 export * from './PeopleYouMayKnow';

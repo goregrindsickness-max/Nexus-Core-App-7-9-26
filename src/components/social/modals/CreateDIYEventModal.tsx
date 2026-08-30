@@ -156,7 +156,7 @@ export const CreateDIYEventModal: React.FC<CreateDIYEventModalProps> = ({
                     const isSelected = eventType === cat.id;
                     return (
                       <button
-                        key={cat.id}
+                        key={`diy-cat-${cat.id}-${catIdx}`}
                         type="button"
                         onClick={() => setEventType(cat.id)}
                         className={`flex flex-col items-start p-2 rounded-xl border text-left transition-all cursor-pointer ${

@@ -58,17 +58,17 @@ interface ClipsViewProps {
 const DEFAULT_CLIPS: ClipItem[] = [
   {
     id: 'c1',
-    creator: 'Suffocation',
+    creator: 'Dying Fetus',
     role: '💀 Band',
     avatar: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=100',
-    caption: 'Live breakdown in Montreal! Technical slam riffs in full force. 🔥 #Suffocation #DeathMetal',
+    caption: 'Live breakdown in Montreal! Technical slam riffs in full force. 🔥 #DyingFetus #DeathMetal',
     videoUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800',
     likes: 1420,
     comments: 89,
     shares: 210,
     reposts: 45,
     views: 8900,
-    audio: 'Suffocation - Pierced From Within (Live)',
+    audio: 'Dying Fetus - Grotesque Impalement (Live)',
     hasLiked: false,
     isFollowed: false,
   },
@@ -653,8 +653,8 @@ export const ClipsView: React.FC<ClipsViewProps> = ({
                     { id: '1', title: 'Voracious Cleansing', band: 'Infestment', duration: '3:45' },
                     { id: '2', title: 'Hammer Smashed Face', band: 'Cannibal Corpse', duration: '4:02' },
                     { id: '3', title: 'Scourge of Iron', band: 'Cannibal Corpse', duration: '4:44' },
-                    { id: '4', title: 'Altars of Madness', band: 'Morbid Angel', duration: '5:12' },
-                    { id: '5', title: 'Pierced From Within', band: 'Suffocation', duration: '4:26' },
+                    { id: '4', title: 'Close to a World Below', band: 'Immolation', duration: '5:12' },
+                    { id: '5', title: 'Grotesque Impalement', band: 'Dying Fetus', duration: '4:26' },
                   ].map((track, trkIdx) => (
                     <div
                       key={track.id ? `trk-${track.id}-${trkIdx}` : `trk-${trkIdx}`}

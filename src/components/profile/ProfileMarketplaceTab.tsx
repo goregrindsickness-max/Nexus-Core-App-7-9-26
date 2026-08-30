@@ -149,7 +149,7 @@ export function ProfileMarketplaceTab({ selectedUserProfile, openCheckout, trigg
       ) : (
         <div className="space-y-3">
           {marketplaceItems.map((item, idx) => (
-            <div key={item.id || idx} className="flex items-center justify-between p-3 bg-black border border-zinc-800/80 hover:border-zinc-700 transition-colors rounded-xl">
+            <div key={`profile-market-${item.id || "item"}-${idx}`} className="flex items-center justify-between p-3 bg-black border border-zinc-800/80 hover:border-zinc-700 transition-colors rounded-xl">
               <div className="flex items-center gap-3 overflow-hidden">
                 <div className="w-12 h-12 bg-zinc-900 rounded flex items-center justify-center shrink-0 overflow-hidden border border-zinc-800">
                   {item.image_url ? (

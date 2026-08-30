@@ -1309,7 +1309,7 @@ export default function SalesDashboardView({
                       {getVariantsForProduct(featuredProduct).map((v, idx, arr) => {
                         const isSoldOut = v.stock === 0;
                         return (
-                          <span key={idx} className="flex items-center gap-1">
+                          <span key={`variant-${v.name}-${idx}`} className="flex items-center gap-1">
                             <span className={isSoldOut ? 'text-red-500 line-through font-semibold' : 'text-[#00ffcc] font-medium'}>
                               {v.name}
                             </span>
@@ -1494,7 +1494,7 @@ export default function SalesDashboardView({
             
             <div className="space-y-1.5">
               {cart.map((c, i) => (
-                <div key={i} className="flex items-center justify-between bg-[#13161d] p-1.5 rounded-lg border border-zinc-800/80">
+                <div key={`sales-tax-row-${i}`} className="flex items-center justify-between bg-[#13161d] p-1.5 rounded-lg border border-zinc-800/80">
                   <div className="flex items-center gap-2 overflow-hidden">
                     <div className="w-7 h-7 rounded bg-zinc-900 shrink-0 border border-zinc-800 overflow-hidden">
                       <img src={c.image_url} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
@@ -1567,13 +1567,13 @@ export default function SalesDashboardView({
                 </div>
 
                 <div className="flex-1 overflow-y-auto my-4 space-y-2 max-h-[300px] pr-2">
-                  {filteredInventory.map(item => {
+                  {filteredInventory.map((item, itemIdx) => {
                     const variants = getVariantsForProduct(item);
-                    return variants.map(variant => {
+                    return variants.map((variant, vIdx) => {
                       const isSelected = (bundleItems || []).some(bi => bi.item.id === item.id && bi.variantName === variant.name);
                       return (
                         <div 
-                          key={`${item.id}-${variant.name}`}
+                          key={`bundle-item-${item.id || itemIdx}-${itemIdx}-${variant.name || vIdx}-${vIdx}`}
                           onClick={() => handleToggleBundleItem(item, variant.name)}
                           className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${
                             isSelected ? 'bg-purple-500/10 border-purple-500 text-purple-100' : 'bg-[#111319] border-zinc-800 text-zinc-400 hover:border-zinc-600'
@@ -1652,7 +1652,7 @@ export default function SalesDashboardView({
                     const isSoldOut = variant.stock === 0;
 
                     return (
-                      <div key={index} className="flex items-center justify-between gap-3 text-sm py-1">
+                      <div key={`sales-stat-${index}`} className="flex items-center justify-between gap-3 text-sm py-1">
                         
                         {/* 1. Decrement / Increment group */}
                         <div className="flex items-center gap-1.5 bg-[#12151e]/90 border border-zinc-800 rounded-lg p-1 text-center font-mono">
@@ -1794,7 +1794,7 @@ export default function SalesDashboardView({
                   </span>
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-1 scrollbar-barely-visible">
                     {cart.map((cartItem, idx) => (
-                      <div key={idx} className="bg-[#111319] border border-zinc-800 p-3 rounded-xl flex items-center justify-between shadow-sm">
+                      <div key={`${cartItem.itemId}-${cartItem.variantName}-${idx}`} className="bg-[#111319] border border-zinc-800 p-3 rounded-xl flex items-center justify-between shadow-sm">
                         <div className="flex items-center gap-3 min-w-0">
                           <img src={cartItem.image_url} className="w-10 h-10 rounded bg-zinc-900 border border-zinc-800 object-cover shrink-0" referrerPolicy="no-referrer" />
                           <div className="flex flex-col truncate">
@@ -2934,7 +2934,7 @@ export default function SalesDashboardView({
 
                 return (
                   <motion.div
-                    key={i}
+                    key={`sales-dash-item-${i}`}
                     initial={{ 
                       opacity: 1, 
                       y: '-10vh', 

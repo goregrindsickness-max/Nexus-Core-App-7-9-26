@@ -186,7 +186,7 @@ export const ViewEpksModal: React.FC<ViewEpksModalProps> = ({
                             <h4 className="text-[9px] uppercase font-mono font-black text-zinc-500 tracking-wider">Demo Tracks</h4>
                             <div className="space-y-2 max-w-md">
                               {epk.tracks.map((track: any, i: number) => (
-                                <div key={i} className="flex items-center justify-between bg-zinc-950/80 border border-zinc-900 rounded-lg p-2.5 text-[10px] font-mono">
+                                <div key={`view-epk-track-${track.name}-${i}`} className="flex items-center justify-between bg-zinc-950/80 border border-zinc-900 rounded-lg p-2.5 text-[10px] font-mono">
                                   <div className="flex items-center gap-2.5 min-w-0">
                                     <Music className="w-4 h-4 text-emerald-400 shrink-0" />
                                     <span className="text-zinc-200 truncate font-bold">{track.name}</span>

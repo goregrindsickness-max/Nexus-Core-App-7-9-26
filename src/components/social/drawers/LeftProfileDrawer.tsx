@@ -1213,7 +1213,7 @@ if (!leftDrawerOpen) return null;
                                               { artist: "Abyssal", title: "Into the Void" },
                                               { artist: "Abyssal", title: "Necrotic Ritual" },
                                               { artist: "Devourment", title: "Babykiller" },
-                                              { artist: "Suffocation", title: "Liege of Inveracity" }
+                                              { artist: "Cryptopsy", title: "Phobophile" }
                                             ];
                                             const item = popularTracks[Math.floor(Math.random() * popularTracks.length)];
                                             setProfileTopSongArtist(item.artist);
@@ -1859,7 +1859,6 @@ if (!leftDrawerOpen) return null;
                                   nameL.includes('torture') ||
                                   nameL.includes('virulent excision') ||
                                   nameL.includes('heinous') ||
-                                  nameL.includes('suffocation') ||
                                   item.brand?.toLowerCase() === 'torture' ||
                                   (item as any).isLabelProduct
                                 );
@@ -2130,7 +2129,7 @@ if (!leftDrawerOpen) return null;
                                               };
                                               return (
                                                 <button
-                                                  key={`lvl-${lvl}`}
+                                                  key={`member-${member.id || 'idx'}-lvl-${lvl}`}
                                                   type="button"
                                                   onClick={() => {
                                                     setTeamMembers(prev => prev.map(m => m.id === member.id ? { ...m, clearanceLevel: lvl } : m));
@@ -2434,7 +2433,7 @@ if (!leftDrawerOpen) return null;
                                                   const rating = collPlayerRatings[activeMusicItem.id] || 0;
                                                   return (
                                                     <button
-                                                      key={`star-${star}`}
+                                                      key={`music-star-${activeMusicItem.id}-${star}`}
                                                       type="button"
                                                       onClick={() => {
                                                         setCollPlayerRatings(prev => ({ ...prev, [activeMusicItem.id]: star }));
@@ -2454,7 +2453,7 @@ if (!leftDrawerOpen) return null;
                                           <div className="h-3 flex items-end justify-center gap-0.5 overflow-hidden border-b border-zinc-900/40 pb-0.5 w-full max-w-xs mx-auto">
                                             {Array.from({ length: 24 }).map((_, idx) => (
                                               <div
-                                                key={idx}
+                                                key={`eq-bar-${activeMusicItem.id}-${idx}`}
                                                 className={`flex-1 rounded-t-sm transition-all duration-300 ${collPlayerIsPlaying ? 'bg-rose-500' : 'bg-zinc-850'}`}
                                                 style={{ height: `${collPlayerIsPlaying ? Math.floor(15 + Math.random() * 85) : 10}%` }}
                                               />

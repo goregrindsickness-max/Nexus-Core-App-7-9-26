@@ -2282,7 +2282,7 @@ export default function ShowsView({
                               {/* Dynamic and Colorful Weather Warnings */}
                               {weatherData.warnings.map((warn, wIdx) => (
                                 <div 
-                                  key={wIdx} 
+                                  key={`show-warn-${wIdx}`} 
                                   className={`p-2 rounded-lg border text-[9.5px] leading-relaxed flex items-start gap-1.5 ${warn.color}`}
                                 >
                                   <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-inherit" />

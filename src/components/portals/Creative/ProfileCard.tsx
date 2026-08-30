@@ -1292,7 +1292,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                     <div className="mt-2.5 flex flex-wrap gap-1.5">
                       {badgesToRender.map((b, idx) => (
                         <span 
-                          key={idx} 
+                          key={`creative-badge-${b.label || ''}-${idx}`} 
                           className={`inline-flex items-center gap-1 text-[9px] font-mono font-black px-2.5 py-0.5 rounded uppercase tracking-wider ${b.classes}`}
                         >
                           {b.label}
@@ -1747,7 +1747,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                         return true;
                       })
                       .map((badge: string, idx: number) => (
-                        <span key={idx} className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full uppercase tracking-widest ${
+                        <span key={`creative-secbadge-${badge}-${idx}`} className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full uppercase tracking-widest ${
                           (selectedUserProfile?.role || '').toLowerCase().includes('label') 
                             ? 'bg-orange-500/5 text-orange-400 border border-orange-950' 
                             : 'bg-rose-500/5 text-rose-400 border border-rose-950'
@@ -2145,7 +2145,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                               <div className="flex flex-wrap gap-1">
                                 {tags.map((genre, idx) => (
                                   <span
-                                    key={idx}
+                                    key={`creative-tag-${clusterName}-${genre}-${idx}`}
                                     className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] leading-tight font-mono font-bold tracking-tight border transition-all shadow-sm ${theme.bg} ${theme.border} ${theme.text}`}
                                   >
                                     #{genre}
@@ -2165,7 +2165,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                             <div className="flex flex-wrap gap-1">
                               {unassignedGenres.map((genre, idx) => (
                                 <span
-                                  key={idx}
+                                  key={`creative-unassigned-${genre}-${idx}`}
                                   className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] leading-tight font-mono font-bold tracking-tight border bg-zinc-900/60 border-zinc-800 text-zinc-300"
                                 >
                                   #{genre}
@@ -2404,7 +2404,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                                 }
                                 triggerNotification?.("💾 Artist / Creator name updated.");
                               }}
-                              placeholder={isCreative ? "e.g. Gorgasm" : "e.g. Suffocation"}
+                              placeholder={isCreative ? "e.g. Gorgasm" : "e.g. Dying Fetus"}
                               className="w-full bg-black/80 border border-zinc-800 focus:border-emerald-500 rounded px-2 py-1 text-xs text-white font-mono outline-none"
                             />
                           </div>
@@ -2508,7 +2508,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                     <div className="flex items-center justify-between bg-zinc-950/60 border border-zinc-900 rounded-lg p-2.5">
                       <div>
                         <p className="text-xs font-bold text-white">European Annihilation Tour</p>
-                        <p className="text-[10px] text-zinc-500 font-mono uppercase mt-0.5">feat. Devourment, Gorgasm & Epicardiectomy</p>
+                        <p className="text-[10px] text-zinc-500 font-mono uppercase mt-0.5">feat. Devourment, Gorgasm & Putrid Pile</p>
                       </div>
                       <span className="text-[10px] text-orange-400 font-bold bg-orange-950/30 px-2 py-1 rounded">AUG 2026</span>
                     </div>
@@ -2766,7 +2766,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
 
                           <div className="flex items-center gap-1 text-amber-400">
                             {Array.from({ length: currentTestimonial.score || 5 }).map((_, i) => (
-                              <Star key={i} className="w-3.5 h-3.5 fill-amber-400" />
+                              <Star key={`testim-star-${currentTestimonial.author || "current"}-${i}`} className="w-3.5 h-3.5 fill-amber-400" />
                             ))}
                           </div>
                         </div>
@@ -2910,7 +2910,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                           desc: "Limited edition screenprinted posters for 18 North American tour dates."
                         }
                       ].map((project, idx) => (
-                        <div key={idx} className="bg-zinc-950 border border-zinc-900 hover:border-fuchsia-500/40 rounded-xl overflow-hidden transition-all group">
+                        <div key={`proj-${project.title}-${idx}`} className="bg-zinc-950 border border-zinc-900 hover:border-fuchsia-500/40 rounded-xl overflow-hidden transition-all group">
                           <div className="relative h-36 overflow-hidden bg-black">
                             <img src={project.image} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100" />
                             <div className="absolute top-2 right-2 px-2 py-0.5 bg-black/80 border border-fuchsia-500/40 text-fuchsia-400 rounded text-[8px] font-mono font-bold uppercase">
@@ -3046,7 +3046,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                             <div className="flex items-center gap-2 shrink-0">
                               <div className="flex gap-0.5">
                                 {Array.from({ length: rev.score || 5 }).map((_, i) => (
-                                  <Star key={i} className="w-3.5 h-3.5 fill-fuchsia-400 text-fuchsia-400" />
+                                  <Star key={`rev-star-${rev.id || idx}-${i}`} className="w-3.5 h-3.5 fill-fuchsia-400 text-fuchsia-400" />
                                 ))}
                               </div>
                               {rev.date && (
@@ -3113,7 +3113,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                       {[
                         {
                           title: "Brutal Deathfest IX 2026",
-                          lineup: "Devourment, Gorgasm, Epicardiectomy, Putrid Pile",
+                          lineup: "Devourment, Gorgasm, Cephalotripsy, Putrid Pile",
                           venue: "The Palladium, Worcester MA",
                           date: "OCT 24, 2026 • 6:00 PM",
                           price: "$45.00",
@@ -3121,7 +3121,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                           thumbnail: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=200"
                         }
                       ].map((event, idx) => (
-                        <div key={idx} className="bg-zinc-950 border border-zinc-900 hover:border-yellow-500/40 rounded-xl p-3.5 flex flex-col sm:flex-row items-center gap-4 transition-all">
+                        <div key={`ticket-${event.title}-${idx}`} className="bg-zinc-950 border border-zinc-900 hover:border-yellow-500/40 rounded-xl p-3.5 flex flex-col sm:flex-row items-center gap-4 transition-all">
                           <img src={event.thumbnail} alt={event.title} className="w-20 h-20 rounded-lg object-cover border border-zinc-800 shrink-0" />
                           <div className="flex-1 min-w-0 text-left">
                             <div className="flex items-center gap-2">
@@ -3607,7 +3607,6 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                           className="bg-black border border-orange-500/30 text-orange-400 text-[10px] uppercase font-bold tracking-widest pl-3 pr-7 py-1.5 rounded-full outline-none cursor-pointer appearance-none min-w-[120px] text-center shadow-[0_0_10px_rgba(255,153,0,0.1)]"
                         >
                           <option value="Devourment">Devourment</option>
-                          <option value="Epicardiectomy">Epicardiectomy</option>
                           <option value="Gorgasm">Gorgasm</option>
                           <option value="Lust of Decay">Lust of Decay</option>
                           <option value="Putrid Pile">Putrid Pile</option>

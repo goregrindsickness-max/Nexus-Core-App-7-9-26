@@ -47,7 +47,7 @@ export const GigMapModal: React.FC<GigMapModalProps> = ({
     },
     {
       id: 'evt_2',
-      title: 'Morbid Angel (Blessed Are the Sick 35th Anniv)',
+      title: 'Immolation (Close to a World Below Anniv)',
       venue: 'The Metro',
       city: 'Chicago, IL',
       date: 'Tomorrow • 7:30 PM',
@@ -55,7 +55,7 @@ export const GigMapModal: React.FC<GigMapModalProps> = ({
       lat: 41.94,
       lng: -87.65,
       genre: 'Death Metal',
-      headliner: 'Morbid Angel',
+      headliner: 'Immolation',
       support: ['Incantation', 'Fulci'],
       verified: true,
       ticketUrl: 'https://metrochicago.com',
@@ -262,7 +262,7 @@ export const GigMapModal: React.FC<GigMapModalProps> = ({
                         <span className="text-[10px] font-mono text-zinc-500 uppercase font-bold block mb-1">Supporting Acts</span>
                         <div className="flex flex-wrap gap-1">
                           {selectedMapEvent.support.map((act: string, i: number) => (
-                            <span key={i} className="px-2 py-0.5 rounded bg-zinc-900 text-zinc-300 text-[10px] font-mono border border-zinc-800">
+                            <span key={`gig-act-${act}-${i}`} className="px-2 py-0.5 rounded bg-zinc-900 text-zinc-300 text-[10px] font-mono border border-zinc-800">
                               {act}
                             </span>
                           ))}

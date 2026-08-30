@@ -503,7 +503,7 @@ export default function EventsWorkspace(props: any) {
                                   </div>
                                 </div>;
           } else {
-            return <div key={`empty`} onClick={() => {
+            return <div key={`empty-tour-stop-${index}`} onClick={() => {
               setModalType('show');
               setIsModalOpen(true);
             }} className="p-3 bg-zinc-950/20 hover:bg-zinc-950/45 border border-dashed border-zinc-800 hover:border-teal-500/30 rounded-xl flex items-center justify-between opacity-50 hover:opacity-100 transition-all cursor-pointer group">
@@ -1094,7 +1094,7 @@ export default function EventsWorkspace(props: any) {
                                   {(localWeather?.forecast || getSimulatedForecast(parseFloat(tempVal) || 72, condStr)).map((day, fIdx) => {
                 let dayIcon = <CloudSun className="w-5 h-5 text-teal-400 mx-auto" />;
                 if (day.iconType === 'clear') dayIcon = <Sun className="w-5 h-5 text-amber-400 mx-auto" />;else if (day.iconType === 'rain') dayIcon = <CloudRain className="w-5 h-5 text-sky-400 mx-auto" />;else if (day.iconType === 'snow') dayIcon = <CloudSnow className="w-5 h-5 text-teal-200 mx-auto" />;else if (day.iconType === 'thunder') dayIcon = <CloudLightning className="w-5 h-5 text-yellow-400 mx-auto" />;else if (day.iconType === 'fog') dayIcon = <Cloud className="w-5 h-5 text-zinc-400 mx-auto" />;
-                return <div key={fIdx} className="bg-zinc-950 rounded-xl p-3 border border-zinc-900 text-center">
+                return <div key={`forecast-day-${fIdx}`} className="bg-zinc-950 rounded-xl p-3 border border-zinc-900 text-center">
                                         <span className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-tight block">{day.day}</span>
                                         <div className="my-2">{dayIcon}</div>
                                         <span className="text-sm font-mono text-zinc-100 font-extrabold block">{day.tempMax}</span>
@@ -1123,7 +1123,7 @@ export default function EventsWorkspace(props: any) {
                                         {showsWithAlerts.map(({
                   show,
                   weather
-                }, idx) => <div key={show.id || idx} className="bg-zinc-950/40 border border-zinc-850/60 rounded-xl p-3 space-y-2 text-left font-sans text-xs">
+                }, idx) => <div key={`weather-alert-show-${show.id || "show"}-${idx}`} className="bg-zinc-950/40 border border-zinc-850/60 rounded-xl p-3 space-y-2 text-left font-sans text-xs">
                                             <div className="flex justify-between items-start border-b border-zinc-900 pb-1.5">
                                               <div>
                                                 <span className="text-[11px] font-bold text-zinc-150 block">{show.festival_name || show.name}</span>
@@ -1140,7 +1140,7 @@ export default function EventsWorkspace(props: any) {
                                             </div>
                                             
                                             <div className="space-y-1.5">
-                                              {weather.warnings.map((warn, wIdx) => <div key={wIdx} className={`p-2 rounded-lg border text-[9.5px] leading-relaxed flex items-start gap-1.5 ${warn.color}`}>
+                                              {weather.warnings.map((warn, wIdx) => <div key={`weather-warn-${wIdx}`} className={`p-2 rounded-lg border text-[9.5px] leading-relaxed flex items-start gap-1.5 ${warn.color}`}>
                                                   <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-inherit" />
                                                   <div>
                                                     <p className="font-bold tracking-wide uppercase text-[9.5px]">{warn.title}</p>

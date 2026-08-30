@@ -2944,7 +2944,7 @@ export default function PromoterPortalView({
 
                         if (portal.key === 'fan_only' && isIndustryPro) {
                           return (
-                            <div key={portal.key} className="w-full flex items-center justify-between p-2 rounded-xl bg-zinc-950/20 border border-zinc-900/30 text-zinc-650 opacity-40 select-none cursor-not-allowed">
+                            <div key={`promoter-portal-disabled-${portal.key}-${idx}`} className="w-full flex items-center justify-between p-2 rounded-xl bg-zinc-950/20 border border-zinc-900/30 text-zinc-650 opacity-40 select-none cursor-not-allowed">
                               <div className="flex items-center gap-2">
                                 <span className="text-xs grayscale opacity-50">{portal.icon}</span>
                                 <div className="text-left">
@@ -2965,7 +2965,7 @@ export default function PromoterPortalView({
 
                         if (isActive) {
                           return (
-                            <div key={portal.key} className={`w-full flex items-center justify-between p-2 rounded-xl ${portal.theme.bgClass} border ${portal.theme.borderClass} ${portal.theme.textClass}`}>
+                            <div key={`promoter-portal-active-${portal.key}-${idx}`} className={`w-full flex items-center justify-between p-2 rounded-xl ${portal.theme.bgClass} border ${portal.theme.borderClass} ${portal.theme.textClass}`}>
                               <div className="flex items-center gap-2">
                                 <span className="text-xs">{portal.icon}</span>
                                 <div className="text-left">
@@ -2981,7 +2981,7 @@ export default function PromoterPortalView({
                         if (isAllowed) {
                           return (
                             <button
-                              key={portal.key}
+                              key={`promoter-portal-allowed-${portal.key}-${idx}`}
                               type="button"
                               onClick={() => {
                                 setRoleMenuOpen(false);
@@ -4441,7 +4441,7 @@ export default function PromoterPortalView({
 
                               {/* Draggable Content Card */}
                               <motion.div
-                                key={`modal-show-${ev.eventType}-${ev.id}`}
+                                key={`modal-show-${ev.eventType}-${ev.id}-${index}`}
                                 onClick={() => {
                                   handleOpenShowInWorkspace(ev);
                                   setShowAllShowsDraftsModal(false);
@@ -5044,7 +5044,7 @@ export default function PromoterPortalView({
                         {plannerAddIsExternal ? (
                           <input
                             type="text"
-                            placeholder="e.g. Morbid Angel"
+                            placeholder="e.g. Immolation"
                             value={plannerAddCustomName}
                             onChange={(e) => setPlannerAddCustomName(e.target.value)}
                             className="w-full bg-[#050608] border border-zinc-800 focus:border-emerald-500 text-zinc-100 rounded-xl p-2.5 text-xs outline-none uppercase tracking-wide font-mono"
@@ -5230,7 +5230,7 @@ export default function PromoterPortalView({
 
                           return (
                             <div 
-                              key={`draft-${item.id}`}
+                              key={`draft-${item.id}-${index}`}
                               draggable
                               onDragStart={(e) => e.dataTransfer.setData('itemId', item.id)}
                               className={`border rounded-xl transition-all duration-200 overflow-hidden text-zinc-300 font-mono text-[11px] cursor-grab active:cursor-grabbing hover:scale-[1.01] ${cardBorders}`}
@@ -5651,7 +5651,7 @@ export default function PromoterPortalView({
 
                     {/* Draggable Content Card */}
                     <motion.div
-                      key={`upcoming-show-flat-${ev.eventType}-${ev.id}`}
+                      key={`upcoming-show-flat-${ev.eventType}-${ev.id}-${index}`}
                       onClick={() => handleOpenShowInWorkspace(ev)}
                       className={`p-3 border w-full rounded-xl transition-colors text-left flex flex-col gap-1.5 relative overflow-hidden group ${cardBorderClass} cursor-pointer active:cursor-grabbing z-10`}
                       drag="x"
@@ -7783,7 +7783,7 @@ export default function PromoterPortalView({
                     {homeVenueStages.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mb-1.5">
                         {homeVenueStages.map((stg, sIdx) => (
-                          <span key={sIdx} className="bg-zinc-900 border border-yellow-500/20 text-yellow-400 text-[10px] font-mono px-2 py-1 rounded-md flex items-center gap-1.5">
+                          <span key={`home-venue-stage-${stg}-${sIdx}`} className="bg-zinc-900 border border-yellow-500/20 text-yellow-400 text-[10px] font-mono px-2 py-1 rounded-md flex items-center gap-1.5">
                             <span>{stg}</span>
                             <button
                               type="button"
@@ -7860,7 +7860,7 @@ export default function PromoterPortalView({
                     ) : (
                       <div className="space-y-2 max-h-[180px] overflow-y-auto bg-black/35 p-2 rounded-xl border border-zinc-900 scrollbar-thin">
                         {savedVenuesList.map((venue, idx) => (
-                          <div key={venue.id || idx} className="flex items-center justify-between p-2.5 bg-zinc-950/80 border border-yellow-950/40 rounded-lg text-xs font-mono hover:border-yellow-500/30 transition-all">
+                          <div key={`promoter-venue-${venue.id || "v"}-${idx}`} className="flex items-center justify-between p-2.5 bg-zinc-950/80 border border-yellow-950/40 rounded-lg text-xs font-mono hover:border-yellow-500/30 transition-all">
                             <div>
                               <div className="text-white font-black">
                                 {venue.name}{' '}
@@ -8045,7 +8045,7 @@ export default function PromoterPortalView({
                       {newVenueStages.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mb-1.5">
                           {newVenueStages.map((stg, sIdx) => (
-                            <span key={sIdx} className="bg-yellow-950/15 border border-yellow-500/20 text-yellow-400 text-[10px] font-mono px-2 py-0.5 rounded flex items-center gap-1.5">
+                            <span key={`new-venue-stage-${stg}-${sIdx}`} className="bg-yellow-950/15 border border-yellow-500/20 text-yellow-400 text-[10px] font-mono px-2 py-0.5 rounded flex items-center gap-1.5">
                               <span>{stg}</span>
                               <button
                                 type="button"
@@ -8375,7 +8375,7 @@ export default function PromoterPortalView({
                             const isIncoming = message.sender === 'me';
                             return (
                               <div 
-                                key={message.id || idx}
+                                key={`promoter-chat-msg-${message.id || "msg"}-${idx}`}
                                 className={`flex flex-col max-w-[85%] ${isIncoming ? 'mr-auto' : 'ml-auto items-end'}`}
                               >
                                 <div className="flex items-center gap-2 mb-1 text-[8px] font-mono text-zinc-500 uppercase tracking-widest font-black">

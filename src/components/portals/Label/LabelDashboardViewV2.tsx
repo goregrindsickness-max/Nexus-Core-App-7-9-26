@@ -2964,7 +2964,7 @@ export default function LabelDashboardViewV2({
                               <div className="flex items-center gap-2">
                                 <div className="flex-1 h-3 bg-zinc-900 rounded-sm overflow-hidden flex border border-zinc-800">
                                     {Array.from({length: 10}).map((_, i) => (
-                                      <div key={i} className={`flex-1 border-r border-[#000000] last:border-r-0 ${i < Math.round(band.inventory_level / 10) ? 'bg-[#FF9900]' : 'bg-transparent'}`} />
+                                      <div key={`inv-bar-${band.id || band.name || "inv"}-${i}`} className={`flex-1 border-r border-[#000000] last:border-r-0 ${i < Math.round(band.inventory_level / 10) ? 'bg-[#FF9900]' : 'bg-transparent'}`} />
                                     ))}
                                 </div>
                                 <span className="text-zinc-400 font-bold whitespace-nowrap text-[9px]">{band.inventory_level}%</span>
@@ -3338,7 +3338,7 @@ export default function LabelDashboardViewV2({
                       const dayEvents = productionEvents.filter(e => e.date === cell.dateStr && (calendarFilter === 'ALL' || e.bandId === calendarFilter));
 
                       return (
-                        <div key={idx} className={`bg-[#000000] p-1 sm:p-1.5 flex flex-col justify-between hover:bg-zinc-950/40 transition-colors ${cell.isCurrentMonth ? '' : 'opacity-25'}`}>
+                        <div key={`label-cal-cell-${idx}`} className={`bg-[#000000] p-1 sm:p-1.5 flex flex-col justify-between hover:bg-zinc-950/40 transition-colors ${cell.isCurrentMonth ? '' : 'opacity-25'}`}>
                           <div className="text-right text-[9px] sm:text-[10px] font-mono font-bold text-zinc-550 leading-none">{cell.day}</div>
                           
                           {/* Event Markers Container */}
@@ -4367,7 +4367,7 @@ export default function LabelDashboardViewV2({
                     </span>
                     <div className="bg-black border border-zinc-900 rounded-xl p-3.5 font-mono text-[9px] text-zinc-450 h-20 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-zinc-800">
                       {satelliteLogs.map((log, lIdx) => (
-                        <div key={lIdx} className="flex items-start gap-2">
+                        <div key={`label-log-${lIdx}`} className="flex items-start gap-2">
                           <span className="text-[#FF9900]/80 select-none">&gt;&gt;</span>
                           <span className="leading-relaxed break-all text-zinc-300">{log}</span>
                         </div>
@@ -4999,7 +4999,7 @@ export default function LabelDashboardViewV2({
                                 </div>
                                 <div className="divide-y divide-zinc-900/40">
                                   {itemsList.map((item, idx) => (
-                                    <div key={idx} className="py-1.5 flex items-start gap-2.5 text-[11px] font-mono text-zinc-300 leading-normal">
+                                    <div key={`label-feed-item-${idx}`} className="py-1.5 flex items-start gap-2.5 text-[11px] font-mono text-zinc-300 leading-normal">
                                       {item.toLowerCase().includes('lp') || item.toLowerCase().includes('vinyl') || item.toLowerCase().includes('cd') || item.toLowerCase().includes('cassette') ? (
                                         <Disc className="w-3.5 h-3.5 text-[#00ffcc] shrink-0 mt-0.5" />
                                       ) : (
@@ -5176,7 +5176,7 @@ export default function LabelDashboardViewV2({
                          <div className="space-y-4 pt-4 border-t border-zinc-900/80 mt-3">
                            <div className="space-y-3">
                              {promoCodes.map((p, i) => (
-                               <div key={i} className="flex items-center justify-between bg-[#0a0a0c] border border-zinc-850 rounded-lg px-3.5 py-2.5">
+                               <div key={`notif-item-${i}`} className="flex items-center justify-between bg-[#0a0a0c] border border-zinc-850 rounded-lg px-3.5 py-2.5">
                                  <span className="text-[11px] font-mono text-zinc-300 font-bold tracking-wide">
                                    {p.code} <span className="text-zinc-600 px-1">•</span> {p.value}% OFF
                                  </span>

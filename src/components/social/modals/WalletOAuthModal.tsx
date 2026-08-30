@@ -350,7 +350,7 @@ export function WalletOAuthModal({
               </div>
               <ul className="space-y-1 text-[9px] font-mono text-zinc-400 pl-2">
                 {providerConfig.scopes.map((s, idx) => (
-                  <li key={idx} className="flex items-center gap-1.5 text-zinc-300">
+                  <li key={`wallet-perm-${idx}`} className="flex items-center gap-1.5 text-zinc-300">
                     <Check className="w-2.5 h-2.5 text-emerald-400" />
                     <code>{s}</code>
                   </li>

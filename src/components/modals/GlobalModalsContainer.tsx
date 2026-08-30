@@ -368,7 +368,7 @@ export const GlobalModalsContainer: React.FC<GlobalModalsContainerProps> = ({
       {(() => {
         const [maModalOpen, setMaModalOpen] = useState(false);
         const [maBandId, setMaBandId] = useState('band-1');
-        const [maBandName, setMaBandName] = useState('Nexus Artist');
+        const [maBandName, setMaBandName] = useState('');
 
         useEffect(() => {
           const handleOpenMA = (e: any) => {

@@ -1226,7 +1226,7 @@ export default function CoOpRouteStagingView({ onBack, triggerNotification, addL
                       <div className="space-y-1.5 font-mono">
                         {alerts.map((al, idx) => (
                           <div 
-                            key={idx} 
+                            key={`coop-route-step-${idx}`} 
                             className={`p-2.5 border text-[10.5px] uppercase flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 ${
                               al.type === 'danger' ? 'bg-red-950/20 border-red-500/30 text-red-300' :
                               al.type === 'warning' ? 'bg-amber-950/20 border-amber-500/30 text-amber-300' :
@@ -1374,13 +1374,13 @@ export default function CoOpRouteStagingView({ onBack, triggerNotification, addL
                           {/* Individual Settings */}
                           {asset.utilizerIds && asset.utilizerIds.length > 0 && (
                             <div className="bg-zinc-900/40 p-2 border border-zinc-900 rounded space-y-1.5 mt-2">
-                              {asset.utilizerIds.map((bid: string) => {
+                              {asset.utilizerIds.map((bid: string, bIdx: number) => {
                                 const bandName = bands.find(x => x.id === bid)?.name || bid;
                                 const isDrums = asset.category === 'Drums' || asset.id === 'acoustic_drums';
                                 if (isDrums) {
                                   const hasCustomHead = asset.customDrumhead?.[bid] || false;
                                   return (
-                                    <div key={bid} className="flex items-center justify-between font-mono text-[9.5px]">
+                                    <div key={`asset-${asset.id}-drum-${bid}-${bIdx}`} className="flex items-center justify-between font-mono text-[9.5px]">
                                       <span className="text-zinc-400">@{bandName}</span>
                                       <label className="flex items-center gap-1 cursor-pointer text-[#A855F7]">
                                         <input
@@ -1396,7 +1396,7 @@ export default function CoOpRouteStagingView({ onBack, triggerNotification, addL
                                 } else {
                                   const hasIsolate = asset.wirelessIsolate?.[bid] || false;
                                   return (
-                                    <div key={bid} className="flex items-center justify-between font-mono text-[9.5px]">
+                                    <div key={`asset-${asset.id}-iso-${bid}-${bIdx}`} className="flex items-center justify-between font-mono text-[9.5px]">
                                       <span className="text-zinc-400">@{bandName}</span>
                                       <label className="flex items-center gap-1 cursor-pointer text-[#A855F7]">
                                         <input
@@ -2037,7 +2037,7 @@ export default function CoOpRouteStagingView({ onBack, triggerNotification, addL
                                         <div className="space-y-1.5">
                                           {weatherData.warnings.map((w, wIdx) => (
                                             <div 
-                                              key={wIdx} 
+                                              key={`coop-route-warn-${wIdx}`} 
                                               className={`p-2 border rounded flex items-start gap-2 text-[10.5px] leading-relaxed transition-all ${w.color}`}
                                             >
                                               <span className={`px-1.5 py-0.5 text-[8.5px] font-black uppercase rounded shrink-0 ${w.badgeColor}`}>

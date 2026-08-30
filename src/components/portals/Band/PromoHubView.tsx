@@ -1425,7 +1425,7 @@ export default function PromoHubView({
                   <div className="flex flex-wrap gap-2 pt-1">
                     {gradients.map((grad, i) => (
                       <button
-                        key={i}
+                        key={`promo-asset-${i}`}
                         type="button"
                         onClick={() => setActiveGradient(i)}
                         className={`w-9 h-9 rounded-xl bg-gradient-to-br ${grad} border-2 transition-transform duration-150 cursor-pointer ${

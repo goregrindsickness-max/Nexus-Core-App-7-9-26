@@ -214,7 +214,7 @@ export const TicketEscrowModal: React.FC<TicketEscrowModalProps> = ({
                         <div className="text-[10px] text-zinc-500 font-black uppercase tracking-wider font-mono">Personalized Attendee Passes ({viewingReceipt.quantity})</div>
                         <div className="space-y-2 max-h-[22vh] overflow-y-auto pr-1">
                           {viewingReceipt.data.attendees.map((att: any, idx: number) => (
-                            <div key={idx} className="flex items-center justify-between p-3 bg-zinc-950 border border-zinc-900 rounded-xl relative overflow-hidden group">
+                            <div key={`attendee-pass-${att?.name || ''}-${idx}`} className="flex items-center justify-between p-3 bg-zinc-950 border border-zinc-900 rounded-xl relative overflow-hidden group">
                               <div className="flex items-center gap-2.5">
                                 <div className="w-5 h-5 rounded-full bg-rose-950/40 border border-rose-500/30 flex items-center justify-center text-[10px] text-rose-400 font-bold font-mono">
                                   {idx + 1}
@@ -295,7 +295,7 @@ export const TicketEscrowModal: React.FC<TicketEscrowModalProps> = ({
                           <div className="space-y-1.5">
                             {(viewingReceipt.data.attendees || [{ name: 'Attendee 1', tier: 'ga' }]).map((att: any, idx: number) => (
                               <button
-                                key={idx}
+                                key={`transfer-att-${att?.name || ''}-${idx}`}
                                 onClick={() => setTransferringAttendeeIndex(idx)}
                                 className={`w-full p-2.5 rounded-lg border text-left flex items-center justify-between transition-all ${
                                   transferringAttendeeIndex === idx

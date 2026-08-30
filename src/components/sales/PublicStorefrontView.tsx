@@ -433,7 +433,7 @@ export default function PublicStorefrontView({
                   </div>
                 ) : (
                   cart.map((c, i) => (
-                    <div key={i} className="flex items-center justify-between bg-[#13161d] p-3 rounded-xl border border-zinc-800/80">
+                    <div key={`tax-row-${i}`} className="flex items-center justify-between bg-[#13161d] p-3 rounded-xl border border-zinc-800/80">
                       <div className="flex flex-col min-w-0 pr-4">
                         <span className="text-xs font-black text-white leading-tight uppercase line-clamp-2">{c.title}</span>
                         <span className="text-[10px] font-mono text-zinc-500 tracking-wider mt-1 block">VARIANT: {c.variantName}</span>

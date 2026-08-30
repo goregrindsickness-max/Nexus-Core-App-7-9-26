@@ -59,7 +59,7 @@ export const RealAudioWaveform: React.FC<{
         const bottomPx = Math.round(peak * 9);
 
         return (
-          <div key={i} className="flex-1 flex flex-col items-center justify-center h-full relative z-10">
+          <div key={`song-wave-bar-${postId || songTitle || 's'}-${i}`} className="flex-1 flex flex-col items-center justify-center h-full relative z-10">
             <div
               style={{ height: `${topPx}px` }}
               className={`w-full rounded-t-[1px] transition-all duration-150 ${

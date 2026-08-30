@@ -895,7 +895,7 @@ export const PostCard: React.FC<PostCardProps> = ({
           <div className="absolute -top-14 left-0 z-50 bg-zinc-950/95 border border-zinc-700/90 rounded-2xl p-1.5 shadow-2xl flex items-center gap-1 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-md">
             {REACTION_PALETTE.map((r, rIdx) => (
               <button
-                key={`react-pal-${r.id}`}
+                key={`react-pal-${r.id}-${rIdx}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   onTriggerEmojiReact(r.id);

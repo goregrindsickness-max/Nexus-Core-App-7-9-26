@@ -27,6 +27,7 @@ import {
   TicketPurchaseModal,
   FeedMediaLightboxModal,
   MerchLightboxModal,
+  DiscoveryZone,
   PeopleYouMayKnow,
 } from './timeline';
 
@@ -394,7 +395,7 @@ export const TimelineFeed: React.FC<TimelineFeedProps> = ({
             {processedPosts.map((post, index) => {
               const showSuggestionsAfterThis = (index === 3) || (processedPosts.length < 4 && index === processedPosts.length - 1);
               return (
-                <React.Fragment key={post.id ? `feed-post-${post.id}-${index}` : `feed-post-${index}`}>
+                <React.Fragment key={post.id ? `feed-post-${index}-${post.id}` : `feed-post-${index}`}>
                   <PostCard
                     post={post}
                     currentUserId={currentUserId}
@@ -489,8 +490,8 @@ export const TimelineFeed: React.FC<TimelineFeedProps> = ({
                     onOpenShareModal={() => setActiveSharePost(post)}
                   />
                   {showSuggestionsAfterThis && (
-                    <PeopleYouMayKnow
-                      key={`people-you-may-know-after-${post.id || index}`}
+                    <DiscoveryZone
+                      key={`discovery-zone-after-${post.id || index}`}
                       discoverProfiles={discoverProfiles}
                       currentUserId={currentUserId}
                       currentUserName={currentUserName}

@@ -551,18 +551,26 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
         id: bandId,
         band_name: name.trim(),
         name: name.trim(),
+        genre: genre || (microGenres.length > 0 ? microGenres[0] : 'Extreme Metal'),
         micro_genres: microGenres.length > 0 ? microGenres : (genre ? [genre] : ['Extreme Metal']),
+        subgenres: microGenres.length > 0 ? microGenres : (genre ? [genre] : ['Extreme Metal']),
         founded_year: validFoundedYear !== undefined ? String(validFoundedYear) : undefined,
         city: city.trim(),
         state_province: stateProvince.trim(),
         country: country.trim(),
         record_label: recordLabel.trim() || undefined,
+        label: recordLabel.trim() || undefined,
         bio: bio.trim(),
+        avatar_url: avatarUrl.trim(),
         logo_url: avatarUrl.trim(),
         cover_url: coverUrl.trim(),
+        banner_url: coverUrl.trim(),
+        spotify_url: spotifyUrl.trim() || undefined,
         spotify: spotifyUrl.trim() || undefined,
+        bandcamp_url: bandcampUrl.trim() || undefined,
         bandcamp: bandcampUrl.trim() || undefined,
         metal_archives_url: metalArchivesUrl.trim() || undefined,
+        youtube_url: youtubeUrl.trim() || undefined,
         featured_youtube_url: youtubeUrl.trim() || undefined,
         lineup,
         discography: albums,
@@ -650,11 +658,11 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-mono text-xs font-black uppercase flex items-center gap-1.5 transition-all cursor-pointer shadow active:scale-95"
-                  title="Start a fresh new band archive with no inherited releases"
+                  className="px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 font-mono text-xs font-bold uppercase flex items-center gap-1.5 transition-all cursor-pointer shadow"
+                  title="Start a blank band profile from scratch"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">New Archive</span>
+                  <Plus className="w-3.5 h-3.5 text-zinc-400" />
+                  <span className="hidden sm:inline">Blank</span>
                 </button>
 
                 {selectedBand && !isCreatingNew && (
@@ -744,10 +752,12 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
                 </button>
 
                 <button
+                  type="button"
                   onClick={resetForm}
-                  className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-mono font-black text-xs uppercase flex items-center justify-center gap-2 cursor-pointer transition-all shadow-lg active:scale-95"
+                  className="px-3.5 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 font-mono font-bold text-xs uppercase flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow active:scale-95"
+                  title="Start a blank profile from scratch"
                 >
-                  <Plus className="w-4 h-4" /> New Band Archive
+                  <Plus className="w-4 h-4 text-zinc-400" /> Blank
                 </button>
               </div>
             </div>
@@ -810,8 +820,8 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
                         <span>💿 {band.discography?.length || 0} releases</span>
                         <span>👥 {band.lineup?.length || 0} members</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-amber-400 font-bold group-hover:underline">Edit Archive →</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-amber-400 font-bold group-hover:underline text-xs">Edit →</span>
                         <button
                           type="button"
                           onClick={(e) => {
@@ -831,7 +841,7 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
 
               {filteredBands.length === 0 && (
                 <div className="col-span-full py-12 text-center text-zinc-500 font-mono text-xs border border-dashed border-zinc-800 rounded-2xl">
-                  No band archives found matching "{searchQuery}". Click "New Band Archive" above to add one.
+                  No band archives found matching "{searchQuery}". Click "Blank" above to create one.
                 </div>
               )}
             </div>
@@ -1894,7 +1904,7 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
                     </div>
                   ) : (
                     syncLogs.map((log, lIdx) => (
-                      <div key={lIdx} className="flex items-start gap-2 text-zinc-300 border-b border-zinc-900/60 pb-1 last:border-0">
+                      <div key={`sync-log-${lIdx}-${log.timestamp}`} className="flex items-start gap-2 text-zinc-300 border-b border-zinc-900/60 pb-1 last:border-0">
                         <span className="text-zinc-500 shrink-0">
                           {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })}
                         </span>

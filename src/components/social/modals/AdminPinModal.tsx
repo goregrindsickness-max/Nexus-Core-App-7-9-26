@@ -33,7 +33,7 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
             
             <div className="flex gap-2 mb-6">
               {[0, 1, 2, 3].map((i) => (
-                <div key={i} className={`w-12 h-14 rounded-lg border-2 flex items-center justify-center text-xl font-black ${adminPIN.length > i ? 'border-rose-500 text-rose-500 bg-rose-500/10' : 'border-zinc-800 text-zinc-600 bg-zinc-900/50'}`}>
+                <div key={`pin-slot-${i}`} className={`w-12 h-14 rounded-lg border-2 flex items-center justify-center text-xl font-black ${adminPIN.length > i ? 'border-rose-500 text-rose-500 bg-rose-500/10' : 'border-zinc-800 text-zinc-600 bg-zinc-900/50'}`}>
                   {adminPIN.length > i ? '•' : ''}
                 </div>
               ))}
@@ -42,7 +42,7 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
             <div className="grid grid-cols-3 gap-3 w-full mb-6">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                 <button 
-                  key={num}
+                  key={`pin-keypad-${num}`}
                   onClick={() => {
                     if (adminPIN.length < 4) {
                       const newPin = adminPIN + num.toString();

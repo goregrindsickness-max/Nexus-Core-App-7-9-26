@@ -57,6 +57,7 @@ import { profileStore, socialFeedStore } from '../../utils/indexedDB';
 import { supabase } from '../../lib/supabaseClient';
 import { getSupabase, subscribeToTable, executeWithSchemaResilience, uploadBase64ToStorage, normalizeLoadedProfile, createShopMerchItem, fetchShopMerchItems, sanitizeMicroGenres, formatBandLocation, sanitizeShowForDb, ensureUUID } from '../../supabase';
 import { uploadFeedMedia } from '../../lib/storage';
+import { communityBandManager } from '../../lib/communityBands';
 import Barcode from 'react-barcode';
 import { MASTER_GENRES } from '../../constants/genres';
 import { InboxPreferences } from '../messaging/InboxPreferences';
@@ -1152,8 +1153,8 @@ export function UniversalSocialFeed({
   // New Feature States
   const [showSceneRadio, setShowSceneRadio] = useState(true);
   const [sceneRadioTrack, setSceneRadioTrack] = useState<{title: string, artist: string, albumArt: string}>({
-    title: 'Infecting the Crypts',
-    artist: 'SUFFOCATION',
+    title: 'Phobophile',
+    artist: 'CRYPTOPSY',
     albumArt: 'https://images.unsplash.com/photo-1614113489855-66422ad300a4?w=400&q=80'
   });
   const [isEventModeActive, setIsEventModeActive] = useState(false);
@@ -2890,10 +2891,9 @@ loadProfileIndexedDBCache(portalRole, userProfile?.id).then((data: any) => {
   };
 
   const [userEndorsements, setUserEndorsements] = useState<Record<string, Record<string, number>>>({
-    'morbid angel': { 'Heaviness': 295, 'Atmosphere': 210, 'Energy': 270, 'Rawness': 180 },
     'cryptopsy': { 'Heaviness': 300, 'Atmosphere': 95, 'Energy': 290, 'Rawness': 250 },
-    'suffocation': { 'Heaviness': 298, 'Atmosphere': 110, 'Energy': 280, 'Rawness': 210 },
-    'jungle rot': { 'Heaviness': 210, 'Atmosphere': 45, 'Energy': 180, 'Rawness': 120 }
+    'devourment': { 'Heaviness': 295, 'Atmosphere': 120, 'Energy': 275, 'Rawness': 240 },
+    'dying fetus': { 'Heaviness': 298, 'Atmosphere': 110, 'Energy': 280, 'Rawness': 210 }
   });
 
 const isMiguelNameOrProfile = (p?: any): boolean => {
@@ -3175,6 +3175,72 @@ const getProfileForUser = (userParam: any) => {
     };
   }
 
+  // Check if target is an official band entity (Community Archive or Supabase Band)
+  const candidateBandId = targetId || (typeof userParam === 'object' ? (userParam.band_id || userParam.raw_id) : null);
+  const matchedCommunityBand = 
+    (candidateBandId ? communityBandManager.getById(candidateBandId) : null) ||
+    communityBandManager.findByName(cleanDisplayName) ||
+    communityBandManager.findByName(rawName) ||
+    communityBandManager.findMatch(cleanDisplayName) ||
+    communityBandManager.findMatch(rawName);
+
+  const isExplicitBand = !!(
+    (typeof userParam === 'object' && (userParam.isBandProfile || userParam.isBand || userParam.type === 'band' || userParam.category === 'bands' || userParam.account_type === 'band' || userParam.portalRole === 'band' || userParam.role === 'Artist' || userParam.role === 'Official Band' || userParam.role === 'Band' || userParam.role === 'Archive Band')) ||
+    matchedCommunityBand ||
+    (dbProfile && (dbProfile.isBandProfile || dbProfile.account_type === 'band' || dbProfile.role === 'Artist' || dbProfile.role === 'Band'))
+  );
+
+  if (matchedCommunityBand || (isExplicitBand && (matchedCommunityBand || (typeof userParam === 'object' && (userParam.isBandProfile || userParam.isRealBand || userParam.category === 'bands'))))) {
+    const bandObj = matchedCommunityBand;
+    const bandName = bandObj?.name || (bandObj as any)?.band_name || userParam?.name || userParam?.band_name || cleanDisplayName;
+    const bandLogo = bandObj?.logo_url || bandObj?.avatar_url || (bandObj as any)?.avatar || userParam?.logo_url || userParam?.avatar_url || userParam?.avatar || userParam?.image;
+    const bandBanner = bandObj?.cover_url || bandObj?.banner_url || userParam?.cover_url || userParam?.banner_url || userParam?.banner;
+    const bandGenres = (bandObj as any)?.genres || (bandObj?.genre ? [bandObj.genre] : (userParam?.genres || ['Metal']));
+    const bandLocation = bandObj ? [bandObj.city, bandObj.state || bandObj.state_province, bandObj.country].filter(Boolean).join(', ') : (userParam?.location || 'USA / Global');
+    const bandBio = bandObj?.bio || userParam?.bio || `${bandName} official band profile on Nexus.`;
+    const bandId = bandObj?.id || candidateBandId || (userParam as any)?.id || ensureUUID(bandName.toLowerCase().replace(/\s+/g, '-'));
+
+    return {
+      id: bandId,
+      raw_id: bandObj?.id || bandId,
+      band_id: bandObj?.id || bandId,
+      name: bandName,
+      band_name: bandName,
+      avatar: bandLogo,
+      avatar_url: bandLogo,
+      logo_url: bandLogo,
+      image: bandLogo,
+      banner: bandBanner,
+      banner_url: bandBanner,
+      cover_url: bandBanner,
+      location: bandLocation,
+      role: bandObj?.verification_status === 'community_archive' ? 'Archive Band' : 'Artist',
+      account_type: 'band',
+      portalRole: 'band',
+      type: 'band',
+      isBandProfile: true,
+      isPersonal: false,
+      isBand: true,
+      isRealBand: true,
+      isYou: false,
+      badges: (bandObj as any)?.badges || ['🎸 Artist', '⚡ Official Band'],
+      customBadges: (bandObj as any)?.badges || ['🎸 Artist', '⚡ Official Band'],
+      bio: bandBio,
+      genres: Array.isArray(bandGenres) ? bandGenres : [bandGenres],
+      genre: Array.isArray(bandGenres) ? bandGenres[0] : (bandGenres || 'Metal'),
+      lineup: bandObj?.lineup || [],
+      discography: bandObj?.discography || [],
+      associatedProfiles: bandObj?.lineup && bandObj.lineup.length > 0 ? bandObj.lineup.map((m: any, i: number) => ({ name: m.name, role: m.role || 'Member', avatar: m.avatar || `https://images.unsplash.com/photo-${1500000000000 + (i * 100000)}?auto=format&fit=crop&q=80&w=100`, activated: true })) : [],
+      followersCount: bandObj?.followers_count || (liveProfileStats?.followers ?? 120),
+      followingCount: (bandObj as any)?.following_count || (liveProfileStats?.following ?? 0),
+      hasProAccess: true,
+      verification_status: bandObj?.verification_status || 'verified_official',
+      is_verified: bandObj?.verification_status === 'verified_official' || (bandObj as any)?.is_verified === true,
+      is_community_archive: bandObj?.verification_status === 'community_archive',
+      musicCatalog: bandObj?.discography || []
+    };
+  }
+
   const paramName = cleanDisplayName;
   const paramRole = typeof userParam === 'object' ? (userParam.role || 'Fan Listener') : 'Fan Listener';
   const paramAvatar = typeof userParam === 'object' ? (userParam.avatar || userParam.avatar_url || '👤') : '👤';
@@ -3268,46 +3334,12 @@ const getProfileForUser = (userParam: any) => {
           { name: 'Dave Spencer', role: 'Bassist', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100', activated: true },
           { name: 'Brad Fincher', role: 'Drummer', avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100', activated: false }
         ];
-      } else if (lowerName.includes('epicardiectomy')) {
-        bandMembers = [
-          { name: 'Milan Holek', role: 'Guttural Vocals', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100', activated: true },
-          { name: 'Sergej', role: 'Guitarist', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100', activated: false },
-          { name: 'Prague Blast', role: 'Drums', avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100', activated: true }
-        ];
       } else if (lowerName.includes('cryptopsy')) {
         bandMembers = [
           { name: 'Flo Mounier', role: 'Drummer', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100', activated: true },
           { name: 'Christian Donaldson', role: 'Guitarist', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100', activated: false },
           { name: 'Matt McGachy', role: 'Lead Vocalist', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100', activated: true },
           { name: 'Olivier Pinard', role: 'Bassist', avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100', activated: false }
-        ];
-      } else if (lowerName.includes('suffocation')) {
-        bandMembers = [
-          { name: 'Terrence Hobbs', role: 'Lead Guitarist', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100', activated: true },
-          { name: 'Derek Boyer', role: 'Bassist', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100', activated: false },
-          { name: 'Eric Morotti', role: 'Drummer', avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100', activated: true },
-          { name: 'Ricky Myers', role: 'Lead Vocalist', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100', activated: false }
-        ];
-      } else if (lowerName.includes('morbid angel')) {
-        bandMembers = [
-          { name: 'Trey Azagthoth', role: 'Lead Guitarist', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100', activated: true },
-          { name: 'Steve Tucker', role: 'Vocals & Bass', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100', activated: false },
-          { name: 'Dan Vadim Von', role: 'Guitarist', avatar: 'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=100', activated: true },
-          { name: 'Scott Fuller', role: 'Drummer', avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100', activated: false }
-        ];
-      } else if (lowerName.includes('testament')) {
-        bandMembers = [
-          { name: 'Chuck Billy', role: 'Vocals', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100', activated: true },
-          { name: 'Eric Peterson', role: 'Guitarist', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100', activated: false },
-          { name: 'Alex Skolnick', role: 'Lead Guitarist', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100', activated: true },
-          { name: 'Steve Di Giorgio', role: 'Bassist', avatar: 'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=100', activated: false }
-        ];
-      } else if (lowerName.includes('jungle rot')) {
-        bandMembers = [
-          { name: 'Dave Matrise', role: 'Vocals / Guitar', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100', activated: true },
-          { name: 'James Genenz', role: 'Bassist', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100', activated: false },
-          { name: 'Geoff Bub', role: 'Guitarist', avatar: 'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=100', activated: true },
-          { name: 'Spenser Syphers', role: 'Drummer', avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100', activated: false }
         ];
       } else {
         bandMembers = [
@@ -3381,10 +3413,8 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
       dynamicUserTies.length > 0 ? dynamicUserTies :
       userRoleLower.includes('label') ? [
         { name: 'Devourment', role: 'Artist', avatar: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&q=80&w=100' },
-        { name: 'Epicardiectomy', role: 'Artist', avatar: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&q=80&w=100' },
         { name: 'Pathology', role: 'Artist', avatar: 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?auto=format&fit=crop&q=80&w=100' },
         { name: 'Origin', role: 'Artist', avatar: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=200' },
-        { name: 'Exhumed', role: 'Artist', avatar: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=100' },
         { name: 'Incinerate', role: 'Artist', avatar: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=200' },
         { name: 'Stabbing', role: 'Artist', avatar: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&q=80&w=200' }
       ] : [];

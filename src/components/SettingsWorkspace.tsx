@@ -7,7 +7,7 @@ import TermsOfServiceView from './TermsOfServiceView';
 import { fetchReleasesFromDatabase, upsertReleaseToDatabase, deleteReleaseFromDatabase } from '../services/releasesService';
 const concertBg = "https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/public-assets/High%20energy%20concert%202.png";
 import { profileStore } from '../utils/indexedDB';
-import { getSupabase, executeWithSchemaResilience, uploadBase64ToStorage, sanitizeBandPayload, sanitizeMicroGenres, parseLocationFields, upsertBandToDatabase } from '../supabase';
+import { getSupabase, executeWithSchemaResilience, uploadBase64ToStorage, sanitizeBandPayload, sanitizeMicroGenres, parseLocationFields, upsertBandToDatabase, ensureUUID } from '../supabase';
 
 const GENRE_CLUSTERS = [
   {
@@ -89,10 +89,12 @@ export default function SettingsWorkspace(props: any) {
     if (!supabase || !props.activeBand?.id) return;
     setIsReleasesLoading(true);
     try {
+      const rawBandId = String(props.activeBand.id).trim();
+      const bandUUID = ensureUUID(rawBandId);
       const { data, error } = await supabase
         .from('releases')
         .select('*')
-        .eq('band_id', props.activeBand.id);
+        .or(`band_id.eq.${rawBandId},band_id.eq.${bandUUID}`);
       if (data && !error) {
         setReleasesList(data.map((row: any) => ({
           id: row.id,
@@ -320,7 +322,7 @@ export default function SettingsWorkspace(props: any) {
                <div className="flex flex-wrap items-center justify-center gap-1.5 w-full">
                  {Array.isArray(bandLineup) && bandLineup.length > 0 ? (
                    bandLineup.map((member: any, idx: number) => (
-                     <div key={member.id || member.name || idx} className="flex items-center gap-1.5 bg-zinc-950/70 border border-zinc-800 px-2 py-0.5 rounded-md text-[9px]">
+                     <div key={member.id ? `roster-mem-${member.id}-${idx}` : `roster-mem-${member.name || idx}-${idx}`} className="flex items-center gap-1.5 bg-zinc-950/70 border border-zinc-800 px-2 py-0.5 rounded-md text-[9px]">
                        <span className="font-bold text-zinc-100">{member?.name || 'Unnamed'}</span>
                        <span className="text-zinc-500 font-mono font-medium">{member.role || 'Vocals'}</span>
                        <span className="text-[#00ffcc] font-mono font-black bg-[#00ffcc]/10 border border-[#00ffcc]/20 rounded px-1 text-[8px]">
@@ -704,7 +706,7 @@ export default function SettingsWorkspace(props: any) {
                       
                       return (
                         <div 
-                          key={member.id || index} 
+                          key={member.id ? `lineup-mem-${member.id}-${index}` : `lineup-mem-${index}`} 
                           className="bg-zinc-950/70 border border-zinc-900 rounded-xl p-3.5 space-y-3.5 relative group hover:border-[#00ffcc]/20 transition-all shadow-md"
                         >
                           {/* Delete button */}
@@ -1293,7 +1295,7 @@ export default function SettingsWorkspace(props: any) {
                       <p className="text-[10px] text-zinc-500 font-mono text-center py-4">No tracks added to this release. Click 'Add Track' to begin building the tracklist.</p>
                     ) : (
                       editingRelease.tracks.map((trk: any, tIdx: number) => (
-                        <div key={trk.id || tIdx} className="p-2.5 bg-zinc-950 border border-zinc-850 rounded-lg space-y-2">
+                        <div key={trk.id ? `release-trk-${trk.id}-${tIdx}` : `release-trk-${tIdx}`} className="p-2.5 bg-zinc-950 border border-zinc-850 rounded-lg space-y-2">
                           <div className="flex items-center gap-2">
                             <span className="text-[10px] font-mono text-zinc-500 font-black shrink-0">{tIdx + 1}.</span>
                             <input
@@ -1424,7 +1426,7 @@ export default function SettingsWorkspace(props: any) {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-2">
                 {crewMembers.map((crew: any, idx: number) => (
                   <div 
-                    key={crew.id || crew.name || idx} 
+                    key={crew.id ? `crew-${crew.id}-${idx}` : `crew-${idx}`} 
                     className="bg-zinc-950/80 border border-zinc-800/80 p-3 rounded-xl flex items-start justify-between group hover:border-emerald-500/30 transition-all"
                   >
                     <div className="flex flex-col flex-grow min-w-0 pr-2">
@@ -1482,7 +1484,7 @@ export default function SettingsWorkspace(props: any) {
             </p>
             <div className="space-y-3">
               {props.bandJoinRequests.filter((r: any) => r.status === 'pending').map((request: any, idx: number) => (
-                <div key={request.id || idx} className="bg-zinc-950/80 border border-emerald-500/30 p-4 rounded-xl flex items-center justify-between group">
+                <div key={request.id ? `join-req-${request.id}-${idx}` : `join-req-${idx}`} className="bg-zinc-950/80 border border-emerald-500/30 p-4 rounded-xl flex items-center justify-between group">
                   <div className="text-left space-y-1">
                     <p className="text-sm font-bold text-white">{request.user_name}</p>
                     <p className="text-xs text-zinc-500 font-mono">{request.user_email}</p>
@@ -1549,11 +1551,11 @@ export default function SettingsWorkspace(props: any) {
                     <div className="space-y-2 text-left">
                       <span className="text-[8.5px] font-mono font-bold text-zinc-500 uppercase tracking-widest">My Recent Reviews ({userReviews.length})</span>
                       {userReviews.map((rev: any, idx: number) => (
-                        <div key={rev.id || idx} className="bg-zinc-900/60 border border-zinc-800 p-2.5 rounded-xl space-y-1 text-xs">
+                        <div key={rev.id ? `user-rev-${rev.id}-${idx}` : `user-rev-${idx}`} className="bg-zinc-900/60 border border-zinc-800 p-2.5 rounded-xl space-y-1 text-xs">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-0.5">
                               {Array.from({ length: 5 }).map((_, i) => (
-                                <Star key={i} className={`w-3 h-3 ${rev.rating > i ? 'text-amber-400 fill-amber-400' : 'text-zinc-700'}`} />
+                                <Star key={`rev-star-${rev.id || idx}-${i}`} className={`w-3 h-3 ${rev.rating > i ? 'text-amber-400 fill-amber-400' : 'text-zinc-700'}`} />
                               ))}
                             </div>
                             <span className="text-[8.5px] font-mono text-zinc-500">{new Date(rev.created_at).toLocaleDateString()}</span>

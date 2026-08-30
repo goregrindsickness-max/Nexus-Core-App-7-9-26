@@ -1260,7 +1260,7 @@ export default function PromoterDashboardViewV2({
     };
 
     return (
-      <div key={gig.id} className={`${currentStyles.bg} ${currentStyles.hover} border rounded-2xl transition-all duration-300 relative overflow-hidden group`}>
+      <div key={`promoter-gig-lead-${gig.id}`} className={`${currentStyles.bg} ${currentStyles.hover} border rounded-2xl transition-all duration-300 relative overflow-hidden group`}>
         <div className="bg-[linear-gradient(rgba(255,255,255,0.006)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.006)_1px,transparent_1px)] bg-[size:16px_16px] absolute inset-0 rounded-2xl pointer-events-none" />
         <div className="absolute top-0 right-0 w-16 h-16 bg-white/[0.01] rounded-bl-full pointer-events-none" />
         

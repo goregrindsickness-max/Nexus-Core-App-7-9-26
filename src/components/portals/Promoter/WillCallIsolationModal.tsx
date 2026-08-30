@@ -133,7 +133,7 @@ export default function WillCallIsolationModal({ shows }: WillCallIsolationModal
             
             <div className="space-y-3">
               {willCallOrders.map((order, idx) => (
-                <div key={order.id || idx} className="bg-black border border-zinc-800 p-4 flex items-center justify-between gap-4 group hover:border-zinc-700 transition-colors">
+                <div key={`willcall-order-${order.id || "order"}-${idx}`} className="bg-black border border-zinc-800 p-4 flex items-center justify-between gap-4 group hover:border-zinc-700 transition-colors">
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">

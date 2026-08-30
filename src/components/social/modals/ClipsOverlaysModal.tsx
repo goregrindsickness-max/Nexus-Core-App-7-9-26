@@ -119,7 +119,7 @@ export const ClipsOverlaysModal: React.FC<ClipsOverlaysModalProps> = ({
                     { label: 'Total Shares', val: '8.4K', color: 'text-cyan-400' },
                     { label: 'Growth', val: '+22%', color: 'text-emerald-400', icon: TrendingUp }
                   ].map((stat, i) => (
-                    <div key={i} className="bg-black border border-zinc-900 p-3 rounded-xl flex flex-col items-center justify-center text-center">
+                    <div key={`stat-box-${stat.label}-${i}`} className="bg-black border border-zinc-900 p-3 rounded-xl flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] uppercase font-bold text-zinc-500 font-mono tracking-wider">{stat.label}</span>
                       <div className={`text-xl font-black mt-1 ${stat.color} flex items-center gap-1`}>
                         {stat.icon && <stat.icon className="w-4 h-4" />}
@@ -262,8 +262,8 @@ export const ClipsOverlaysModal: React.FC<ClipsOverlaysModalProps> = ({
                       );
                     }
 
-                    return myRealClips.map((clip) => (
-                      <div key={clip.id} className="relative aspect-[9/16] bg-zinc-900 rounded-xl overflow-hidden group border border-zinc-850 hover:border-cyan-500/50 transition-all">
+                    return myRealClips.map((clip, clipIdx) => (
+                      <div key={clip.id ? `my-clip-${clip.id}-${clipIdx}` : `my-clip-${clipIdx}`} className="relative aspect-[9/16] bg-zinc-900 rounded-xl overflow-hidden group border border-zinc-850 hover:border-cyan-500/50 transition-all">
                         {clip.videoUrl ? (
                           <video src={clip.videoUrl} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" playsInline />
                         ) : (

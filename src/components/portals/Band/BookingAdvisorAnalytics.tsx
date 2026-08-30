@@ -724,7 +724,7 @@ export default function BookingAdvisorAnalytics({
                       <div className="pt-2 border-t border-zinc-900/60 mt-1 space-y-1">
                         <span className="text-[8px] font-mono text-zinc-500 uppercase block tracking-wide">Optimization Directives:</span>
                         {simulationResult.allRecommendations.slice(1).map((rec, i) => (
-                          <div key={i} className="flex gap-1.5 items-start text-[9.5px] text-zinc-400 font-mono uppercase">
+                          <div key={`advisor-stat-item-${i}`} className="flex gap-1.5 items-start text-[9.5px] text-zinc-400 font-mono uppercase">
                             <span className="text-amber-500 select-none shrink-0">•</span>
                             <span>{rec}</span>
                           </div>

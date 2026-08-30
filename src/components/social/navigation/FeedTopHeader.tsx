@@ -1101,7 +1101,7 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                             const displayAvatar = item.avatar_url || item.avatar || item.logo_url || item.band_logo || item.creative_avatar || item.promoter_logo || item.label_avatar;
                             const subRole = item.genre || item.homebase || item.portalRole || item.role || (catName === 'Bands & Artists' ? 'Registered Band' : 'Scene Member');
 
-                            const uniqueKey = `search-item-${item.id || ''}-${item.band_id || ''}-${item.role || item.portalRole || item.type || ''}-${itemIdx}`;
+                            const uniqueKey = `search-item-${catIdx}-${item.id || ''}-${item.band_id || ''}-${item.role || item.portalRole || item.type || ''}-${itemIdx}`;
 
                             return (
                               <div

@@ -11,7 +11,7 @@ export const renderPostMessage = (text: string, onOpenProfile?: (authorId: strin
           const handle = part.substring(1);
           return (
             <span
-              key={i}
+              key={`mention-${handle}-${i}`}
               onClick={() => onOpenProfile?.('search', handle)}
               className="text-[#00ffcc] hover:text-[#00ccaa] cursor-pointer font-bold inline-flex items-center gap-0.5"
             >
@@ -21,7 +21,7 @@ export const renderPostMessage = (text: string, onOpenProfile?: (authorId: strin
         } else if (part.match(/^https?:\/\//i)) {
           return (
             <a
-              key={i}
+              key={`link-${i}`}
               href={part}
               target="_blank"
               rel="noopener noreferrer"
@@ -33,7 +33,7 @@ export const renderPostMessage = (text: string, onOpenProfile?: (authorId: strin
             </a>
           );
         }
-        return <React.Fragment key={i}>{part}</React.Fragment>;
+        return <React.Fragment key={`txt-frag-${i}`}>{part}</React.Fragment>;
       })}
     </>
   );
@@ -226,7 +226,7 @@ export const RealAudioWaveform: React.FC<{
         const bottomPx = Math.round(peak * 9);
 
         return (
-          <div key={i} className="flex-1 flex flex-col items-center justify-center h-full relative z-10">
+          <div key={`waveform-bar-${postId || songTitle || 's'}-${i}`} className="flex-1 flex flex-col items-center justify-center h-full relative z-10">
             <div
               style={{ height: `${topPx}px` }}
               className={`w-full rounded-t-[1px] transition-all duration-150 ${

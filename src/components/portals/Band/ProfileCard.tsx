@@ -5,7 +5,7 @@ import { hasRegisteredWorkspace } from '../../../types';
 import { getProfileGlowInfo } from '../../../utils/profileGlow';
 import { formatLocationDisplay } from '../../../constants/location';
 import { ROSTER_CATALOGS } from '../../../data/socialFeedMockData';
-import { normalizeLoadedProfile, getSupabase, executeWithSchemaResilience, executeSanitizedProfileUpsert, upsertBandToDatabase } from '../../../supabase';
+import { normalizeLoadedProfile, getSupabase, executeWithSchemaResilience, executeSanitizedProfileUpsert, upsertBandToDatabase, generateUUID } from '../../../supabase';
 import { getEmbedUrl, getCollectionsTrackDuration, extractUUID } from '../../../utils/socialFeedUtils';
 import { communityBandManager, CommunityBandRecord } from '../../../lib/communityBands';
 import CommunityBandCuratorModal from '../../social/modals/CommunityBandCuratorModal';
@@ -115,12 +115,29 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
   const [isEditingTopSong, setIsEditingTopSong] = React.useState(false);
   const [isEditingTicker, setIsEditingTicker] = React.useState(false);
 
-  // Community Archive and Claim Modals State
-  const [communityArchiveMatch, setCommunityArchiveMatch] = useState<CommunityBandRecord | null>(null);
+  // Community Archive and Claim Modals State - Synchronously initialized to eliminate mount-time flicker
+  const [communityArchiveMatch, setCommunityArchiveMatch] = useState<CommunityBandRecord | null>(() => {
+    const candidateName = selectedUserProfile?.band_name || selectedUserProfile?.bandName || selectedUserProfile?.name || targetProfile?.band_name || targetProfile?.bandName || targetProfile?.name;
+    if (candidateName) {
+      return communityBandManager.findMatch(candidateName) || communityBandManager.findByName(candidateName) || null;
+    }
+    return null;
+  });
   const [dbReleases, setDbReleases] = useState<any[]>([]);
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [showCuratorModal, setShowCuratorModal] = useState(false);
   const [selectedRelease, setSelectedRelease] = React.useState<any>(null);
+
+  // Synchronous sync of communityArchiveMatch on profile selection changes
+  React.useEffect(() => {
+    const candidateName = selectedUserProfile?.band_name || selectedUserProfile?.bandName || selectedUserProfile?.name || targetProfile?.band_name || targetProfile?.bandName || targetProfile?.name;
+    if (candidateName) {
+      const match = communityBandManager.findMatch(candidateName) || communityBandManager.findByName(candidateName);
+      if (match) {
+        setCommunityArchiveMatch(match);
+      }
+    }
+  }, [selectedUserProfile?.id, selectedUserProfile?.name, selectedUserProfile?.band_name, selectedUserProfile?.bandName, targetProfile?.id, targetProfile?.name, targetProfile?.band_name, targetProfile?.bandName]);
 
   React.useEffect(() => {
     let isMounted = true;
@@ -286,21 +303,25 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
       if (!base) return;
 
       const targetRoleStr = (base?.role || base?.portalRole || '').toLowerCase();
-      const isPersonal = !!(
+      const isBand = !!(
+        base?.isBandProfile ||
+        base?.type === 'band' ||
+        base?.account_type === 'band' ||
+        targetRoleStr === 'band' ||
+        targetRoleStr === 'artist' ||
+        targetRoleStr === 'official band' ||
+        targetRoleStr === 'archive band' ||
+        base?.band_name
+      );
+      const isPersonal = !isBand && !!(
         base?.isPersonal ||
         targetRoleStr === 'fan' ||
+        targetRoleStr === 'fan listener' ||
         targetRoleStr === 'industry pro' ||
         targetRoleStr === 'member' ||
         targetRoleStr === 'creative' ||
         targetRoleStr === 'promoter' ||
         targetRoleStr === 'label'
-      );
-
-      const isBand = !isPersonal && !!(
-        base?.isBandProfile ||
-        base?.type === 'band' ||
-        targetRoleStr === 'band' ||
-        targetRoleStr === 'artist'
       );
 
       const targetId = base.id || selectedUserProfile?.id;
@@ -572,7 +593,35 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
     if (localStr) localSavedBand = JSON.parse(localStr);
   } catch (e) {}
 
-  const bData = communityArchiveMatch || fetchedBandData || localSavedBand || null;
+  const bData = React.useMemo(() => {
+    const candidateName = selectedUserProfile?.band_name || selectedUserProfile?.bandName || selectedUserProfile?.name || targetProfile?.band_name || targetProfile?.bandName || targetProfile?.name;
+    const directMatch = communityArchiveMatch || (candidateName ? (communityBandManager.findMatch(candidateName) || communityBandManager.findByName(candidateName)) : null);
+    if (!fetchedBandData && !directMatch && !localSavedBand) return null;
+
+    const rawLogo = fetchedBandData?.logo_url || fetchedBandData?.avatar_url || directMatch?.logo_url || directMatch?.avatar_url || localSavedBand?.logo_url || localSavedBand?.avatar_url;
+    const rawAvatar = fetchedBandData?.avatar_url || fetchedBandData?.logo_url || directMatch?.avatar_url || directMatch?.logo_url || localSavedBand?.avatar_url || localSavedBand?.logo_url;
+
+    let rawCover = fetchedBandData?.cover_url || fetchedBandData?.banner_url;
+    if ((!rawCover || (typeof rawCover === 'string' && rawCover.includes('unsplash'))) && (directMatch?.cover_url || directMatch?.banner_url)) {
+      rawCover = directMatch.cover_url || directMatch.banner_url;
+    }
+    if (!rawCover) {
+      rawCover = directMatch?.cover_url || directMatch?.banner_url || localSavedBand?.cover_url || localSavedBand?.banner_url;
+    }
+
+    return {
+      ...(directMatch || {}),
+      ...(localSavedBand || {}),
+      ...(fetchedBandData || {}),
+      logo_url: rawLogo,
+      avatar_url: rawAvatar,
+      cover_url: rawCover,
+      banner_url: rawCover,
+      bio: directMatch?.bio || fetchedBandData?.bio || localSavedBand?.bio,
+      lineup: (directMatch?.lineup && directMatch.lineup.length > 0) ? directMatch.lineup : (fetchedBandData?.lineup?.length ? fetchedBandData.lineup : (localSavedBand?.lineup || [])),
+      discography: (directMatch?.discography && directMatch.discography.length > 0) ? directMatch.discography : (fetchedBandData?.discography?.length ? fetchedBandData.discography : (localSavedBand?.discography || [])),
+    };
+  }, [fetchedBandData, communityArchiveMatch, localSavedBand, selectedUserProfile?.name, selectedUserProfile?.band_name, selectedUserProfile?.bandName, targetProfile?.name, targetProfile?.band_name, targetProfile?.bandName]);
 
   const isArtistOrBand = !isExplicitPersonal && Boolean(
     baseTarget?.isBandProfile ||
@@ -607,10 +656,26 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
   );
 
   const rawResolvedBandName = isBandTarget ? (
-    bData?.band_name || bData?.name || communityArchiveMatch?.name || baseTarget?.band_name || baseTarget?.bandName || baseTarget?.name || (fetchedProfileData as any)?.band_name || 'Virulent Excision'
+    bData?.band_name || bData?.name || communityArchiveMatch?.name || baseTarget?.band_name || baseTarget?.bandName || baseTarget?.name || (fetchedProfileData as any)?.band_name || 'Band'
   ) : null;
 
+  const resolvedBandHandle = (() => {
+    if (!isBandTarget) return null;
+    const bandSlug = bData?.custom_slug || baseTarget?.custom_slug || (bData as any)?.slug || (baseTarget as any)?.slug;
+    if (bandSlug && typeof bandSlug === 'string' && bandSlug.trim() && bandSlug.trim() !== 'user' && bandSlug.trim() !== '@user') {
+      const cleanSlug = bandSlug.trim().replace(/^@+/, '');
+      return `@${cleanSlug}`;
+    }
+    const nameToUse = rawResolvedBandName || bData?.band_name || bData?.name || baseTarget?.band_name || baseTarget?.name;
+    if (nameToUse && typeof nameToUse === 'string' && nameToUse.trim() && nameToUse.trim() !== 'User') {
+      const cleanName = nameToUse.trim().replace(/^@+/, '').replace(/\s+/g, '');
+      return `@${cleanName}`;
+    }
+    return '@band';
+  })();
+
   const rawResolvedBandLogo = isBandTarget ? (
+    fetchedBandData?.logo_url || fetchedBandData?.avatar_url ||
     bData?.logo_url || bData?.avatar_url || (bData as any)?.avatar || (bData as any)?.image ||
     communityArchiveMatch?.avatar_url || communityArchiveMatch?.logo_url || (communityArchiveMatch as any)?.avatar || (communityArchiveMatch as any)?.image ||
     baseTarget?.logo_url || baseTarget?.avatar_url || baseTarget?.avatar || baseTarget?.band_logo ||
@@ -644,8 +709,16 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
       full_name: isBandTarget && rawResolvedBandName ? rawResolvedBandName : (fetchedProfileData.full_name || fetchedProfileData.name || baseTarget.full_name || baseTarget.name),
       name: isBandTarget && rawResolvedBandName ? rawResolvedBandName : (fetchedProfileData.full_name || fetchedProfileData.name || baseTarget.name),
       band_name: isBandTarget ? (rawResolvedBandName || baseTarget?.band_name) : baseTarget?.band_name,
-      console_handle: fetchedProfileData.console_handle || fetchedProfileData.username || fetchedProfileData.handle || baseTarget.console_handle,
-      handle: fetchedProfileData.console_handle || fetchedProfileData.username || fetchedProfileData.handle || baseTarget.handle,
+      console_handle: isBandTarget && resolvedBandHandle 
+        ? resolvedBandHandle 
+        : (fetchedProfileData.console_handle && fetchedProfileData.console_handle !== 'user' && fetchedProfileData.console_handle !== '@user'
+            ? (fetchedProfileData.console_handle.startsWith('@') ? fetchedProfileData.console_handle : `@${fetchedProfileData.console_handle}`)
+            : (baseTarget.console_handle || (baseTarget.name ? `@${baseTarget.name.replace(/\s+/g, '')}` : '@user'))),
+      handle: isBandTarget && resolvedBandHandle 
+        ? resolvedBandHandle 
+        : (fetchedProfileData.console_handle && fetchedProfileData.console_handle !== 'user' && fetchedProfileData.console_handle !== '@user'
+            ? (fetchedProfileData.console_handle.startsWith('@') ? fetchedProfileData.console_handle : `@${fetchedProfileData.console_handle}`)
+            : (baseTarget.handle || baseTarget.console_handle || (baseTarget.name ? `@${baseTarget.name.replace(/\s+/g, '')}` : '@user'))),
       registered_workspaces: fetchedProfileData.registered_workspaces || baseTarget.registered_workspaces,
       allowed_workspaces: fetchedProfileData.allowed_workspaces || baseTarget.allowed_workspaces,
       city: fetchedProfileData.city || baseTarget.city,
@@ -678,7 +751,12 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
       homebase: isBandTarget ? (bData.homebase || formatLocationDisplay(bData) || baseTarget.homebase) : (fetchedProfileData?.homebase || formatLocationDisplay(fetchedProfileData) || baseTarget.homebase || 'Global Scene'),
       bio: isBandTarget ? (resolvedBandBio || bData.bio || '') : (fetchedProfileData?.bio || baseTarget.bio || ''),
       custom_slug: isBandTarget ? (bData.custom_slug || baseTarget.custom_slug) : (fetchedProfileData?.custom_slug || baseTarget.custom_slug),
-      console_handle: isBandTarget ? (bData.custom_slug ? `@${bData.custom_slug.replace('@', '')}` : (baseTarget.console_handle || baseTarget.handle)) : (fetchedProfileData?.console_handle || fetchedProfileData?.username || fetchedProfileData?.handle || baseTarget.console_handle || baseTarget.handle),
+      console_handle: isBandTarget && resolvedBandHandle 
+        ? resolvedBandHandle 
+        : (bData.custom_slug ? `@${bData.custom_slug.replace('@', '')}` : (baseTarget.console_handle || baseTarget.handle)),
+      handle: isBandTarget && resolvedBandHandle 
+        ? resolvedBandHandle 
+        : (bData.custom_slug ? `@${bData.custom_slug.replace('@', '')}` : (baseTarget.handle || baseTarget.console_handle)),
       genre: bData.genre || baseTarget.genre,
       genre_tags: bData.genre_tags || (bData.genre ? [bData.genre] : baseTarget.genre_tags),
       micro_genres: bData.micro_genres || baseTarget.micro_genres || baseTarget.profileMicroGenres || [],
@@ -695,11 +773,14 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
       booking_phone: bData.booking_phone || baseTarget.booking_phone,
     } : {
       name: isBandTarget && rawResolvedBandName ? rawResolvedBandName : (baseTarget?.name || baseTarget?.legalName || baseTarget?.full_name || 'User'),
-      console_handle: baseTarget?.console_handle || baseTarget?.handle || (
-        targetRole === 'industry_pro' 
-          ? (userProfile?.console_handle || userProfile?.handle || 'pro_user')
-          : 'user'
-      )
+      console_handle: isBandTarget && resolvedBandHandle 
+        ? resolvedBandHandle 
+        : (baseTarget?.console_handle && baseTarget.console_handle !== 'user' && baseTarget.console_handle !== '@user'
+            ? baseTarget.console_handle 
+            : (baseTarget?.name && baseTarget.name !== 'User' ? `@${baseTarget.name.replace(/\s+/g, '')}` : '@user')),
+      handle: isBandTarget && resolvedBandHandle 
+        ? resolvedBandHandle 
+        : (baseTarget?.handle || baseTarget?.console_handle || (baseTarget?.name && baseTarget.name !== 'User' ? `@${baseTarget.name.replace(/\s+/g, '')}` : '@user'))
     })
   };
 
@@ -1425,7 +1506,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                 {/* DISCOGRAPHY & LINEUP SECTIONS (BANDS ONLY) / ASSOCIATED ENTITIES (INDUSTRY PROS & PERSONAL) */}
                 {isBandProfile ? (() => {
                   const communityList = communityArchiveMatch?.discography || [];
-                  const resolvedDiscography = dbReleases.length > 0
+                  const rawResolved = dbReleases.length > 0
                     ? dbReleases.map((dbRel: any) => {
                         const commRel = communityList.find(
                           (c: any) => c.id === dbRel.id || (c.title && dbRel.title && c.title.toLowerCase().trim() === dbRel.title.toLowerCase().trim())
@@ -1437,6 +1518,15 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                         return dbRel;
                       })
                     : communityList;
+
+                  const resolvedDiscography = [...rawResolved].sort((a: any, b: any) => {
+                    const parseY = (r: any) => {
+                      const raw = r.year || r.release_year || r.release_date || r.date || '0';
+                      const num = parseInt(String(raw).replace(/\D/g, ''), 10);
+                      return isNaN(num) ? 0 : num;
+                    };
+                    return parseY(b) - parseY(a);
+                  });
 
                   return (
                     <div className="space-y-6 text-left">
@@ -2633,7 +2723,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                                 saveProfileData(true);
                                 triggerNotification?.("💾 Band/Artist name updated.");
                               }}
-                              placeholder="e.g. Suffocation"
+                              placeholder="e.g. Dying Fetus"
                               className="w-full bg-black/80 border border-zinc-800 focus:border-emerald-500 rounded px-2 py-1 text-xs text-white font-mono outline-none"
                             />
                           </div>
@@ -2718,7 +2808,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                     <div className="flex items-center justify-between bg-zinc-950/60 border border-zinc-900 rounded-lg p-2.5">
                       <div>
                         <p className="text-xs font-bold text-white">European Annihilation Tour</p>
-                        <p className="text-[10px] text-zinc-500 font-mono uppercase mt-0.5">feat. Devourment, Gorgasm & Epicardiectomy</p>
+                        <p className="text-[10px] text-zinc-500 font-mono uppercase mt-0.5">feat. Devourment, Gorgasm & Putrid Pile</p>
                       </div>
                       <span className="text-[10px] text-orange-400 font-bold bg-orange-950/30 px-2 py-1 rounded">AUG 2026</span>
                     </div>
@@ -2960,7 +3050,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                       {[
                         {
                           title: "Brutal Deathfest IX 2026",
-                          lineup: "Devourment, Gorgasm, Epicardiectomy, Putrid Pile",
+                          lineup: "Devourment, Gorgasm, Cephalotripsy, Putrid Pile",
                           venue: "The Palladium, Worcester MA",
                           date: "OCT 24, 2026 • 6:00 PM",
                           price: "$45.00",
@@ -3384,7 +3474,15 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                       </div>
                     ) : (
                     (() => {
-                      const communityDiscography = dbReleases.length > 0 ? dbReleases : (communityArchiveMatch?.discography || []);
+                      const rawCommunityDiscography = dbReleases.length > 0 ? dbReleases : (communityArchiveMatch?.discography || []);
+                      const communityDiscography = [...rawCommunityDiscography].sort((a: any, b: any) => {
+                        const parseY = (r: any) => {
+                          const raw = r.year || r.release_year || r.release_date || r.date || '0';
+                          const num = parseInt(String(raw).replace(/\D/g, ''), 10);
+                          return isNaN(num) ? 0 : num;
+                        };
+                        return parseY(b) - parseY(a);
+                      });
 
                       if ((communityDiscography && communityDiscography.length > 0) || hasLineup) {
                         return (
@@ -3653,7 +3751,6 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                           className="bg-black border border-orange-500/30 text-orange-400 text-[10px] uppercase font-bold tracking-widest pl-3 pr-7 py-1.5 rounded-full outline-none cursor-pointer appearance-none min-w-[120px] text-center shadow-[0_0_10px_rgba(255,153,0,0.1)]"
                         >
                           <option value="Devourment">Devourment</option>
-                          <option value="Epicardiectomy">Epicardiectomy</option>
                           <option value="Gorgasm">Gorgasm</option>
                           <option value="Lust of Decay">Lust of Decay</option>
                           <option value="Putrid Pile">Putrid Pile</option>
@@ -3757,7 +3854,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                   <div className="grid grid-cols-3 gap-2 sm:gap-3">
                     {formatOptions.map((link: any, idx: number) => (
                       <button
-                        key={`format-${link.format || idx}`}
+                        key={`format-${link.format || 'opt'}-${idx}`}
                         onClick={() => {
                           openCheckout?.('merch', {
                             name: `${selectedLabelBand} - ${currentAlbum.albumName} (${link.format})`,
@@ -3797,7 +3894,30 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
       <CommunityBandCuratorModal
         isOpen={showCuratorModal}
         onClose={() => setShowCuratorModal(false)}
-        initialBand={communityArchiveMatch}
+        initialBand={
+          communityArchiveMatch ||
+          (rawResolvedBandName && rawResolvedBandName !== 'Band' ? communityBandManager.findByName(rawResolvedBandName) : null) ||
+          (bData ? {
+            id: bData.id || generateUUID(),
+            name: rawResolvedBandName || bData.name || bData.band_name || 'Band',
+            band_name: rawResolvedBandName || bData.name || bData.band_name || 'Band',
+            genre: bData.genre || 'Extreme Metal',
+            micro_genres: bData.micro_genres || bData.subgenres || [],
+            bio: resolvedBandBio || bData.bio || '',
+            avatar_url: rawResolvedBandLogo || bData.avatar_url || '',
+            cover_url: bData.cover_url || bData.banner_url || '',
+            city: bData.city || '',
+            state_province: bData.state_province || bData.state || '',
+            country: bData.country || 'USA',
+            record_label: bData.record_label || bData.label || '',
+            spotify_url: bData.spotify_url || '',
+            bandcamp_url: bData.bandcamp_url || '',
+            metal_archives_url: bData.metal_archives_url || '',
+            youtube_url: bData.youtube_url || '',
+            lineup: bData.lineup || [],
+            discography: bData.discography || []
+          } as CommunityBandRecord : null)
+        }
         userProfile={userProfile}
         triggerNotification={triggerNotification}
         onSaved={(updatedBand) => {

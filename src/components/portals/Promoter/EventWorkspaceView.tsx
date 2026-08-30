@@ -325,7 +325,7 @@ export default function EventWorkspaceView({
                     className="w-full bg-black border border-zinc-800 rounded px-3 py-2 text-yellow-400 focus:outline-none focus:border-yellow-500/50 text-sm font-mono appearance-none"
                   >
                     {activeAllVenues.map((v, i) => (
-                      <option key={i} value={i}>{v.name} (Cap: {v.capacity})</option>
+                      <option key={`venue-opt-${v.id || i}-${i}`} value={i}>{v.name} (Cap: {v.capacity})</option>
                     ))}
                   </select>
                 </div>
@@ -420,7 +420,7 @@ export default function EventWorkspaceView({
                     </button>
                     {Array.from({length: festivalDuration}).map((_, i) => (
                       <button 
-                        key={i} 
+                        key={`fest-day-btn-${i}`} 
                         onClick={() => setActiveDayFilter(`Day ${i + 1}`)}
                         className={`px-3 py-1.5 text-[10px] uppercase font-bold tracking-widest rounded border transition-all whitespace-nowrap ${
                           activeDayFilter === `Day ${i + 1}` ? 'bg-yellow-500 text-black border-yellow-500' : 'bg-black text-zinc-500 border-zinc-800 hover:border-zinc-700'

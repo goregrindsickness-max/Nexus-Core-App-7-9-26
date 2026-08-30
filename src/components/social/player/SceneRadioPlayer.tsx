@@ -543,7 +543,7 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
                         }`}
                       >
                         {RADIO_PLAYLISTS[genreKey].name.split(' ').map((word, wIdx) => (
-                          <span key={wIdx} className={wIdx > 0 ? 'text-rose-300 ml-0.5' : ''}>{word} </span>
+                          <span key={`radio-word-${genreKey}-${wIdx}-${word}`} className={wIdx > 0 ? 'text-rose-300 ml-0.5' : ''}>{word} </span>
                         ))}
                       </button>
                     );
@@ -992,7 +992,7 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
                 const isActive = selectedRadioGenre === genreKey;
                 return (
                   <button
-                    key={genreKey}
+                    key={`radio-quick-genre-${genreKey}-${gIdx}`}
                     onClick={(e) => {
                       e.stopPropagation();
                       if (selectedRadioGenre !== genreKey) {

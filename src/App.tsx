@@ -1301,11 +1301,11 @@ export default function App() {
 
   // Load account-specific offline caches instantly upon context/tenant switch to allow pristine clean slates
   useEffect(() => {
-    // Proactively sync all community band profiles and full discographies to Supabase in the background
+    // Fetch live community band profiles and full discographies from Supabase in the background
     const supabase = getSupabase();
     if (supabase && navigator.onLine) {
-      communityBandManager.syncAllToSupabase().catch((err) => {
-        console.warn('[App] Proactive background Supabase band sync notice:', err);
+      communityBandManager.fetchFromSupabase().catch((err) => {
+        console.warn('[App] Background Supabase band fetch notice:', err);
       });
     }
   }, []);

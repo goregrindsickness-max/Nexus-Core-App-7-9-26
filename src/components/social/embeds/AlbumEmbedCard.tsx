@@ -104,7 +104,7 @@ export const AlbumEmbedCard: React.FC<AlbumEmbedCardProps> = ({
             { format: 'Vinyl', price: '$24.99', icon: '💿' }
           ].map((fmt, idx) => (
             <button
-              key={fmt.format}
+              key={`album-fmt-${fmt.format}-${idx}`}
               onClick={() => onBuyFormat(fmt.format, fmt.price, albumData.band, albumData.albumName)}
               className="flex flex-col sm:flex-row items-center justify-center sm:justify-between p-2 sm:px-2.5 sm:py-2 bg-zinc-950/90 hover:bg-red-950/80 border border-zinc-800/90 hover:border-red-500/60 rounded-xl text-xs font-mono font-bold text-zinc-300 hover:text-white transition-all cursor-pointer shadow-md group min-w-0 overflow-hidden"
             >

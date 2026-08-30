@@ -38,7 +38,7 @@ export const MetalArchivesImportModal: React.FC<MetalArchivesImportModalProps> =
   isOpen,
   onClose,
   bandId,
-  bandName = 'Nexus Artist',
+  bandName = '',
   onImportSuccess
 }) => {
   const [activeTab, setActiveTab] = useState<'search' | 'paste'>('search');
@@ -472,9 +472,9 @@ export const MetalArchivesImportModal: React.FC<MetalArchivesImportModalProps> =
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {Object.keys(filters).map((type) => (
+                  {Object.keys(filters).map((type, typeIdx) => (
                     <button
-                      key={type}
+                      key={`filter-type-${type}-${typeIdx}`}
                       type="button"
                       onClick={() => toggleFilter(type)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors flex items-center gap-2 cursor-pointer ${
@@ -626,7 +626,7 @@ export const MetalArchivesImportModal: React.FC<MetalArchivesImportModalProps> =
                               <div className="space-y-1.5">
                                 {rel.tracks.map((t: any, tIdx: number) => (
                                   <div
-                                    key={t.id || tIdx}
+                                    key={t.id ? `ma-trk-${t.id}-${tIdx}` : `ma-trk-${tIdx}`}
                                     className="flex items-center justify-between text-xs py-1 px-2 rounded-lg bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800/40 text-zinc-300"
                                   >
                                     <div className="flex items-center gap-2.5 truncate">

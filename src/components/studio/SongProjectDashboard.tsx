@@ -89,7 +89,7 @@ export const SongProjectDashboard: React.FC<SongProjectDashboardProps> = ({
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[1, 2, 3].map((n) => (
-              <div key={n} className="h-48 rounded-2xl bg-zinc-900/50 border border-zinc-800 animate-pulse" />
+              <div key={`song-proj-skel-${n}`} className="h-48 rounded-2xl bg-zinc-900/50 border border-zinc-800 animate-pulse" />
             ))}
           </div>
         ) : (!projects || projects.length === 0) ? (

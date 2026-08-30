@@ -1361,14 +1361,14 @@ export default function MerchandisePrintersView({
                             ) : (
                               <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
                                 {printer.reviews.map((rev: any, rIdx: number) => (
-                                  <div key={rIdx} className="bg-black/30 border border-zinc-900 p-2.5 rounded-lg text-left text-xs">
+                                  <div key={`printer-rev-${rIdx}`} className="bg-black/30 border border-zinc-900 p-2.5 rounded-lg text-left text-xs">
                                     <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500">
                                       <span className="text-white font-bold">{rev.name}</span>
                                       <span>{rev.date}</span>
                                     </div>
                                     <div className="flex items-center gap-0.5 py-0.5 select-none">
                                       {Array.from({ length: 5 }).map((_, st) => (
-                                        <Star key={st} className={`w-2.5 h-2.5 ${st < rev.rating ? 'text-yellow-400 fill-yellow-400' : 'text-zinc-700'}`} />
+                                        <Star key={`rev-star-${printer.id}-${rIdx}-${st}`} className={`w-2.5 h-2.5 ${st < rev.rating ? 'text-yellow-400 fill-yellow-400' : 'text-zinc-700'}`} />
                                       ))}
                                     </div>
                                     <p className="text-[10.5px] italic font-mono text-zinc-300">"{rev.text}"</p>
@@ -1500,7 +1500,7 @@ export default function MerchandisePrintersView({
                                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
                                       {presetWorkPhotos.map((preset, idx) => (
                                         <button
-                                          key={idx}
+                                          key={`printer-item-${idx}`}
                                           type="button"
                                           onClick={() => setNewWorkForm(prev => ({ ...prev, presetIdx: idx }))}
                                           className={`relative p-1 rounded border text-left flex flex-col items-center justify-between text-center overflow-hidden h-20 group transition-all cursor-pointer ${

@@ -768,7 +768,7 @@ Representing ${activeBandName}`;
                   <div className="flex-1 flex overflow-x-auto space-x-2 py-2 scrollbar-none hide-scrollbar">
                     {beacons.map((beacon, i) => (
                       <div 
-                        key={i} 
+                        key={`bb-beacon-${beacon.id || beacon.target_region || ''}-${i}`} 
                         className="bg-zinc-900 border border-zinc-800 text-zinc-300 text-[11px] px-3 py-1 rounded-full flex items-center gap-1.5 whitespace-nowrap shrink-0"
                       >
                         <Radio className="w-3 h-3 text-[#00ffcc] animate-pulse shrink-0" />
@@ -1148,7 +1148,7 @@ Representing ${activeBandName}`;
                       { label: "+ technical brief", text: "\n\n- Production Specs: We travel with our own front-of-house tech engineer and carry minimal input racks." }
                     ].map((sug, i) => (
                       <button
-                        key={i}
+                        key={`bb-pitch-sug-${i}-${sug.label}`}
                         type="button"
                         onClick={() => setPitchText(prev => prev + sug.text)}
                         className="px-2.5 py-1.5 bg-purple-950/25 hover:bg-[#a855f7] hover:text-black border border-purple-800/40 hover:border-[#a855f7] text-[9.5px] uppercase font-bold text-purple-300 rounded transition-all cursor-pointer font-mono"
@@ -1410,7 +1410,7 @@ Representing ${activeBandName}`;
                   </span>
                   <div className="space-y-1.5 mt-2">
                     {routingGaps.map((gap, gIdx) => (
-                      <div key={gIdx} className="inline-flex bg-purple-950/40 text-purple-300 border border-purple-500/20 px-2.5 py-1 rounded-md text-[10px] font-mono font-bold leading-normal w-full items-center space-x-1.5 shadow-[0_0_10px_rgba(168,85,247,0.05)] select-all">
+                      <div key={`bb-genre-${gIdx}`} className="inline-flex bg-purple-950/40 text-purple-300 border border-purple-500/20 px-2.5 py-1 rounded-md text-[10px] font-mono font-bold leading-normal w-full items-center space-x-1.5 shadow-[0_0_10px_rgba(168,85,247,0.05)] select-all">
                         <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
                         <span className="truncate">{gap}</span>
                       </div>
@@ -1433,7 +1433,7 @@ Representing ${activeBandName}`;
                   ) : (
                     chatMessages[selectedPromoter.name].map((msg, mIdx) => (
                       <div
-                        key={mIdx}
+                        key={`bb-chat-msg-${mIdx}`}
                         className={`flex flex-col max-w-[85%] ${
                           msg.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'
                         }`}

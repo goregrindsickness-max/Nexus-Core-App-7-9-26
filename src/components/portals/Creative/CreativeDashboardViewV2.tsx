@@ -1317,7 +1317,7 @@ export default function CreativeDashboardViewV2({
   const secondaryGigsCount = secondaryMatchingGigs.length;
   const hasSecondaryAlerts = secondaryGigsCount > 0;
 
-  const renderGigItem = (gig: typeof SAMPLE_GIG_LEADS[0]) => {
+  const renderGigItem = (gig: typeof SAMPLE_GIG_LEADS[0], listType = 'gig', idx = 0) => {
     const hasApplied = appliedGigIds.includes(gig.id);
     const isExpanded = !!expandedGigs[gig.id];
     
@@ -1364,7 +1364,7 @@ export default function CreativeDashboardViewV2({
     };
 
     return (
-      <div key={gig.id} className={`${currentStyles.bg} ${currentStyles.hover} border rounded-2xl transition-all duration-300 relative overflow-hidden group`}>
+      <div key={`gig-${listType}-${gig.id}-${idx}`} className={`${currentStyles.bg} ${currentStyles.hover} border rounded-2xl transition-all duration-300 relative overflow-hidden group`}>
         <div className="bg-[linear-gradient(rgba(255,255,255,0.006)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.006)_1px,transparent_1px)] bg-[size:16px_16px] absolute inset-0 rounded-2xl pointer-events-none" />
         <div className="absolute top-0 right-0 w-16 h-16 bg-white/[0.01] rounded-bl-full pointer-events-none" />
         
@@ -2551,7 +2551,7 @@ export default function CreativeDashboardViewV2({
                           </div>
 
                           <div className="grid grid-cols-1 gap-4">
-                            {matchingGigs.map(gig => renderGigItem(gig))}
+                            {matchingGigs.map((gig, idx) => renderGigItem(gig, 'primary', idx))}
                             {matchingGigs.length === 0 && (
                               <div className="p-8 text-center bg-zinc-950/20 border border-dashed border-zinc-900 rounded-xl font-mono">
                                 <p className="text-[10px] text-zinc-500 uppercase tracking-wider">No matching opportunities in this specialty today.</p>
@@ -2576,7 +2576,7 @@ export default function CreativeDashboardViewV2({
                           </div>
 
                           <div className="grid grid-cols-1 gap-4">
-                            {secondaryMatchingGigs.map(gig => renderGigItem(gig))}
+                            {secondaryMatchingGigs.map((gig, idx) => renderGigItem(gig, 'secondary', idx))}
                             {secondaryMatchingGigs.length === 0 && (
                               <div className="p-8 text-center bg-zinc-950/20 border border-dashed border-zinc-900 rounded-xl font-mono">
                                 <p className="text-[10px] text-zinc-500 uppercase tracking-wider">No matching secondary opportunities today.</p>
@@ -2601,7 +2601,7 @@ export default function CreativeDashboardViewV2({
                           </div>
 
                           <div className="grid grid-cols-1 gap-4">
-                            {otherGigs.map(gig => renderGigItem(gig))}
+                            {otherGigs.map((gig, idx) => renderGigItem(gig, 'other', idx))}
                           </div>
                         </div>
                       )}
@@ -3308,7 +3308,7 @@ export default function CreativeDashboardViewV2({
 
                           daysArr.push(
                             <button
-                              key={`leads-cal-day-${d}`}
+                              key={`leads-cal-day-${calendarCurrentDate.getFullYear()}-${calendarCurrentDate.getMonth()}-${d}`}
                               type="button"
                               onClick={() => {
                                 setCalendarSelectedDate(dayDate);
@@ -3390,10 +3390,10 @@ export default function CreativeDashboardViewV2({
                                     );
                                   }
 
-                                  return selectedEvents.map((ev) => {
+                                  return selectedEvents.map((ev, evIdx) => {
                                     if (ev.type === 'proposal') {
                                       return (
-                                        <div key={ev.id} className={`p-4 border rounded-xl space-y-2.5 transition-all shadow ${
+                                        <div key={`cal-event-prop-${ev.id || 'ev'}-${evIdx}`} className={`p-4 border rounded-xl space-y-2.5 transition-all shadow ${
                                           ev.status === 'accepted' ? 'bg-emerald-950/20 border-emerald-500/30' : 
                                           ev.status === 'declined' ? 'bg-red-950/20 border-red-500/30' : 'bg-amber-950/20 border-amber-500/30'
                                         }`}>
@@ -3439,7 +3439,7 @@ export default function CreativeDashboardViewV2({
                                     } else {
                                       // Blocked date
                                       return (
-                                        <div key={ev.id} className="p-4 bg-sky-950/10 border border-sky-500/20 rounded-xl space-y-2 text-center flex flex-col items-center justify-center w-full">
+                                        <div key={`cal-event-block-${ev.id || 'ev'}-${evIdx}`} className="p-4 bg-sky-950/10 border border-sky-500/20 rounded-xl space-y-2 text-center flex flex-col items-center justify-center w-full">
                                           <div className="flex flex-col items-center justify-center gap-2 w-full">
                                             <div className="flex flex-col items-center justify-center text-center">
                                               <span className="text-[9.5px] font-mono font-bold text-sky-450 bg-sky-950/50 border border-sky-500/25 px-2 py-0.5 rounded tracking-wide uppercase">

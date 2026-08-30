@@ -201,7 +201,7 @@ export default function PromoterAlliancesView({
               </button>
             </div>
             {partners.map((partner, idx) => (
-              <div key={idx} className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-[#0a0a0a] p-4 border border-[#262626] relative">
+              <div key={`promoter-lead-item-${idx}`} className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-[#0a0a0a] p-4 border border-[#262626] relative">
                 {partners.length > 1 && (
                   <button
                     type="button"
@@ -372,7 +372,7 @@ export default function PromoterAlliancesView({
                 </div>
                 {selectedAlliance.partners && selectedAlliance.partners.length > 0 ? (
                   selectedAlliance.partners.map((p: any, idx: number) => (
-                    <div key={idx} className="flex justify-between items-center text-zinc-400 text-xs">
+                    <div key={`promoter-alliance-row-${idx}`} className="flex justify-between items-center text-zinc-400 text-xs">
                       <span>{p.name} <span className="text-[9.5px] text-zinc-600 ml-1">({p.role})</span></span>
                       <span>{p.split}%</span>
                     </div>
@@ -393,7 +393,7 @@ export default function PromoterAlliancesView({
                 <div className="flex-1 space-y-3 overflow-y-auto">
                   {(selectedAlliance.messages && selectedAlliance.messages.length > 0) ? (
                     selectedAlliance.messages.map((msg: any, i: number) => (
-                      <div key={i} className={`flex flex-col ${msg.sender === (userProfile?.id || 'promoter-lead-soren') ? 'items-end' : 'items-start'}`}>
+                      <div key={`promoter-msg-${msg.id || i}-${i}`} className={`flex flex-col ${msg.sender === (userProfile?.id || 'promoter-lead-soren') ? 'items-end' : 'items-start'}`}>
                         <span className="text-[8.5px] text-zinc-600 mb-0.5">{msg.timestamp} // {msg.senderName}</span>
                         <div className={`px-3 py-2 text-xs max-w-[85%] ${msg.sender === (userProfile?.id || 'promoter-lead-soren') ? 'bg-[#A855F7]/20 border border-[#A855F7]/40 text-purple-100' : 'bg-zinc-900 border border-zinc-800 text-zinc-200'}`}>
                           {msg.text}

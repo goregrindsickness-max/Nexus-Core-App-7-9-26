@@ -457,7 +457,7 @@ export const BandRegistrationSection: React.FC<BandRegistrationSectionProps> = (
                 </label>
                 <div className="space-y-2">
                   {bandRoster.map((member, index) => (
-                    <div key={index} className="flex flex-col sm:flex-row gap-2 bg-zinc-900/50 p-2 border border-zinc-800 rounded">
+                    <div key={`reg-member-row-${index}`} className="flex flex-col sm:flex-row gap-2 bg-zinc-900/50 p-2 border border-zinc-800 rounded">
                       <input 
                         type="text" 
                         placeholder="Member Name"

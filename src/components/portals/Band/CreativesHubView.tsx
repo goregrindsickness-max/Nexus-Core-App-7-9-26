@@ -3038,7 +3038,7 @@ export default function CreativesHubView({
                                   <div className="flex flex-wrap gap-1.5 pt-1">
                                     {talent.skills.map((skill, si) => (
                                       <span
-                                        key={si}
+                                        key={`creative-service-${si}`}
                                         className={`text-[9.5px] px-2.5 py-0.5 lowercase tracking-tight border backdrop-blur-sm ${
                                           talent.category === "visual"
                                             ? "bg-fuchsia-950/30 border-fuchsia-900/40 text-fuchsia-300"
@@ -3239,7 +3239,7 @@ export default function CreativesHubView({
 
                             return (
                               <div
-                                key={bIdx}
+                                key={`creative-badge-${bIdx}`}
                                 className="bg-black border border-zinc-900 p-3 space-y-2.5 flex flex-col justify-between hover:border-emerald-500/30 transition-all select-none relative overflow-hidden rounded-xl"
                               >
                                 <div className="absolute top-0 right-0 w-8 h-8 bg-emerald-500/[0.02] rounded-full blur-md pointer-events-none" />
@@ -3554,7 +3554,7 @@ export default function CreativesHubView({
                       if (isRental && rentalDetails) {
                         return (
                           <div
-                            key={contract.id}
+                            key={`rental-contract-${contract.id}-${idx}`}
                             className="bg-[#030406] py-10 px-5 w-full space-y-6 relative overflow-hidden flex flex-col items-center border-t-2 border-dashed border-[#39ff14]"
                           >
                             {/* Header */}
@@ -4713,7 +4713,7 @@ export default function CreativesHubView({
                       {(selectedDrawerTalent.skills || []).map(
                         (skill: string, index: number) => (
                           <span
-                            key={index}
+                            key={`creative-index-${index}`}
                             className="text-[9px] font-mono font-bold text-zinc-300 bg-zinc-900 border border-zinc-800 px-2 py-1 rounded-[4px] uppercase tracking-wide shadow-sm"
                           >
                             {skill}
@@ -4763,7 +4763,7 @@ export default function CreativesHubView({
                             <div className="absolute inset-0 z-10 hover:bg-white/5 transition-colors rounded" />
                             {[...Array(45)].map((_, i) => (
                               <div
-                                key={i}
+                                key={`creative-item-${i}`}
                                 className={`flex-1 rounded-t transition-all duration-300 ${isPlayingAudio ? "bg-emerald-400" : "bg-zinc-700"}`}
                                 style={{ height: `${Math.random() * 100}%` }}
                               />
@@ -5021,7 +5021,7 @@ export default function CreativesHubView({
                     selectedDrawerTalent.gear.length > 0 ? (
                       selectedDrawerTalent.gear.map((gearItem, gidx) => (
                         <div
-                          key={gidx}
+                          key={`creative-gallery-${gidx}`}
                           className="border border-zinc-850 bg-zinc-950/60 p-3 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 group hover:border-zinc-800 transition-colors"
                         >
                           <div className="text-[10.5px] font-bold uppercase text-zinc-300 tracking-tight flex items-center gap-1.5">

@@ -925,7 +925,7 @@ export default function ShowFormModal({
                       <div className="max-h-56 overflow-y-auto custom-scrollbar">
                         {venueSuggestions.map((sug, i) => (
                           <div 
-                            key={i}
+                            key={`show-lineup-band-${i}`}
                             onClick={() => {
                               setName(sug.name || '');
                               if (sug.address) setVenueAddress(sug.address);
@@ -1367,7 +1367,7 @@ export default function ShowFormModal({
                 {supportLineup.length > 0 ? (
                   <div className="space-y-2">
                     {supportLineup.map((band, idx) => (
-                      <div key={idx} className="flex flex-wrap sm:flex-nowrap gap-2 items-end bg-[#0a0c10] border border-zinc-800 p-2 rounded relative group">
+                      <div key={`show-member-row-${idx}`} className="flex flex-wrap sm:flex-nowrap gap-2 items-end bg-[#0a0c10] border border-zinc-800 p-2 rounded relative group">
                         <div className="flex-grow">
                           <label className="block text-[8px] font-mono text-zinc-500 mb-1 uppercase tracking-wider">Band Name</label>
                           <input 

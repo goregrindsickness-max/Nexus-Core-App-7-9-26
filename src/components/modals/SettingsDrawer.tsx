@@ -588,7 +588,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
                 ) : (
                   <div className="space-y-2 max-h-72 overflow-y-auto">
                     {offlineActions.map((action, idx) => (
-                      <div key={action.id || idx} className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl space-y-1 text-xs font-mono">
+                      <div key={action.id ? `action-${action.id}-${idx}` : `action-${idx}`} className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl space-y-1 text-xs font-mono">
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-[#00ffcc] uppercase">
                             [{action.action}] {action.table}

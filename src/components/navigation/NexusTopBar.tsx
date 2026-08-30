@@ -391,7 +391,7 @@ export const NexusTopBar: React.FC<NexusTopBarProps> = ({
                           
                           if (portal.key === 'fan_only' && isIndustryPro) {
                             return (
-                              <div key={`portal-disabled-${portal.key}`} className="w-full flex items-center justify-between p-2 rounded-xl bg-zinc-950/20 border border-zinc-900/30 text-zinc-650 opacity-40 select-none cursor-not-allowed">
+                              <div key={`portal-disabled-${portal.key}-${idx}`} className="w-full flex items-center justify-between p-2 rounded-xl bg-zinc-950/20 border border-zinc-900/30 text-zinc-650 opacity-40 select-none cursor-not-allowed">
                                 <div className="flex items-center gap-2">
                                   <span className="text-xs grayscale opacity-50">{portal.icon}</span>
                                   <div className="text-left">
@@ -408,7 +408,7 @@ export const NexusTopBar: React.FC<NexusTopBarProps> = ({
 
                           if (isActive) {
                             return (
-                              <div key={`portal-active-${portal.key}`} className={`w-full flex items-center justify-between p-2 rounded-xl ${portal.bg} border ${portal.border} ${portal.text}`}>
+                              <div key={`portal-active-${portal.key}-${idx}`} className={`w-full flex items-center justify-between p-2 rounded-xl ${portal.bg} border ${portal.border} ${portal.text}`}>
                                 <div className="flex items-center gap-2">
                                   <span className="text-xs">{portal.icon}</span>
                                   <div className="text-left">

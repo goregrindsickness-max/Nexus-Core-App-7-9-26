@@ -258,7 +258,7 @@ export const StemTrackRow: React.FC<StemTrackRowProps> = ({
 
               return (
                 <div
-                  key={idx}
+                  key={`wave-bar-${idx}`}
                   style={{ height: `${barHeight}%` }}
                   className={`w-full rounded-sm transition-all duration-75 ${
                     isPlayed

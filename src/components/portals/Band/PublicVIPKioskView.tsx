@@ -932,7 +932,7 @@ export default function PublicVIPKioskView({
                         {/* Barcode line mock */}
                         <div className="flex gap-0.5 justify-center items-stretch h-7 w-5/6 opacity-85">
                           {[1,3,1,4,2,1,5,1,2,4,1,2,1,1,3,1,2,4,1,3,1,4,2,1,1,3,2,1,5].map((weight, i) => (
-                            <div key={i} className="bg-white" style={{ width: `${weight * 1.5}px` }} />
+                            <div key={`vip-bar-${i}`} className="bg-white" style={{ width: `${weight * 1.5}px` }} />
                           ))}
                         </div>
                       </div>

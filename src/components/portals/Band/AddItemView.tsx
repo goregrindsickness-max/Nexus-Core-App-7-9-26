@@ -694,7 +694,7 @@ export default function AddItemView({ onBack, onSave, onDelete, triggerNotificat
                 
                 <div className="space-y-2">
                   {variants.map((v, i) => (
-                    <div key={v.id} className="flex gap-2 items-center">
+                    <div key={`variant-${v.id || 'v'}-${i}`} className="flex gap-2 items-center">
                       <div className="flex-1">
                          {i === 0 && <label className="text-zinc-400 text-[10px] mb-1 block">Size / Variant</label>}
                          <input 
@@ -1263,7 +1263,7 @@ function SKUBarcode({ sku }: { sku: string }) {
       }
       bars.push(
         <rect
-          key={i}
+          key={`additem-stock-bar-${i}`}
           x={currentPos}
           y={0}
           width={run * barWidth}

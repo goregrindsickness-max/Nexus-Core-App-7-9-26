@@ -246,44 +246,34 @@ export interface FeedItem {
 }
 
 export const mockLiveTonight = [
-  { id: '1', venue: 'The Underground', headliner: 'MORBID ANGEL', date: 'Tonight', time: 'Doors 8:00 PM', city: 'Los Angeles, CA', distance: '3.2 mi', price: '$35.00' },
-  { id: '2', venue: 'Nexus Hub', headliner: 'SUFFOCATION', date: 'Tonight', time: 'Set 9:30 PM', city: 'Long Beach, CA', distance: '8.4 mi', price: '$30.00' },
+  { id: '1', venue: 'The Underground', headliner: 'AUTOPSY', date: 'Tonight', time: 'Doors 8:00 PM', city: 'Los Angeles, CA', distance: '3.2 mi', price: '$35.00' },
+  { id: '2', venue: 'Nexus Hub', headliner: 'INCANTATION', date: 'Tonight', time: 'Set 9:30 PM', city: 'Long Beach, CA', distance: '8.4 mi', price: '$30.00' },
   { id: '3', venue: 'Warehouse 4', headliner: 'CRYPTOPSY', date: 'Tomorrow', time: 'Doors 7:00 PM', city: 'Anaheim, CA', distance: '14.1 mi', price: '$28.00' },
-  { id: '4', venue: 'Masonic Temple', headliner: 'TESTAMENT', date: 'Fri, Oct 24', time: 'Doors 6:30 PM', city: 'San Francisco, CA', distance: '22 mi', price: '$45.00' },
-  { id: '5', venue: 'The Pit Stage', headliner: 'JUNGLE ROT', date: 'Sat, Oct 25', time: 'Set 10:00 PM', city: 'San Diego, CA', distance: '45 mi', price: '$25.00' },
+  { id: '4', venue: 'Masonic Temple', headliner: 'DEATH ANGEL', date: 'Fri, Oct 24', time: 'Doors 6:30 PM', city: 'San Francisco, CA', distance: '22 mi', price: '$45.00' },
+  { id: '5', venue: 'The Pit Stage', headliner: 'SKINLESS', date: 'Sat, Oct 25', time: 'Set 10:00 PM', city: 'San Diego, CA', distance: '45 mi', price: '$25.00' },
   { id: '6', venue: 'Cathedral of Doom', headliner: 'DARK FUNERAL', date: 'Sun, Oct 26', time: 'Doors 8:30 PM', city: 'Phoenix, AZ', distance: '120 mi', price: '$32.00' },
   { id: '7', venue: 'Vortex Room', headliner: 'HYPOCRISY', date: 'Tue, Oct 28', time: 'Set 11:00 PM', city: 'Las Vegas, NV', distance: '180 mi', price: '$30.00' },
   { id: '8', venue: 'Monarch Theatre', headliner: 'IMMOLATION', date: 'Fri, Oct 31', time: 'Doors 7:30 PM', city: 'Seattle, WA', distance: '240 mi', price: '$35.00' },
 ];
 
 export const bandSetlists: Record<string, string[]> = {
-  'MORBID ANGEL': [
-    'Piles of Little Arms',
-    'D.E.A.D.',
-    'Garden of Disdain',
-    'God of Emptiness',
-    'Architect and Iconoclast',
-    'Curse the Flesh',
-    'Praise the Strength',
-    'Day of Suffering',
-    'Unholy Blasphemies',
-    'Rapture',
-    'Ageless, Still I Am',
-    'Summoning Redemption',
-    'Paradigms Warped',
-    'To the Victor the Spoils'
+  'AUTOPSY': [
+    'Severed Survival',
+    'Charred Remains',
+    'Service for a Vacant Coffin',
+    'Ridden with Disease',
+    'Disembowel',
+    'Pagan Saviour',
+    'Gasping for Air'
   ],
-  'SUFFOCATION': [
-    'Liege of Inveracity',
-    'Infecting the Crypts',
-    'Effigy of the Forgotten',
-    'Seeds of the Suffering',
-    'Thrones of Blood',
-    'Pierced from Within',
-    'Catatonia',
-    'Funeral Inception',
-    'Bind Torture Kill',
-    'As Grace Descends'
+  'INCANTATION': [
+    'Entrantment of Evil',
+    'Golgotha',
+    'Devoured Death',
+    'Unholy Massacre',
+    'Deliverance of Horrific Prophecies',
+    'Rotting Spiritual Embodiment',
+    'Profanation'
   ],
   'CRYPTOPSY': [
     'Crown of Horns',
@@ -295,24 +285,22 @@ export const bandSetlists: Record<string, string[]> = {
     'Lichmistress',
     'Orgiastic Disembowelment'
   ],
-  'TESTAMENT': [
-    'Over the Wall',
-    'The Preacher',
-    'Practice What You Preach',
-    'The New Order',
-    'Electric Crown',
-    'Into the Pit',
-    'Disciples of the Watch',
-    'Alone in the Dark'
+  'DEATH ANGEL': [
+    'The Ultra-Violence',
+    'Evil Priest',
+    'Voracious Souls',
+    'Mistress of Pain',
+    'Kill as One',
+    'Seemingly Endless Time',
+    'Thrown to the Wolves'
   ],
-  'JUNGLE ROT': [
-    'A Calling for Blood',
-    'Worst Case Scenario',
-    'Paralyzed Prey',
-    'Send Forth to Kill',
-    'Jungle Rot',
-    'Decapitated',
-    'Fearmonger'
+  'SKINLESS': [
+    'Foreshadowing Our Demise',
+    'Smothered',
+    'The Optimist',
+    'Crispy Kids',
+    'Tampon Lollipops',
+    'Tug of War Intestines'
   ],
   'DARK FUNERAL': [
     'Unchain My Soul',
@@ -341,26 +329,26 @@ export const bandSetlists: Record<string, string[]> = {
 };
 
 export const mockStories = [
-  { id: 's1', name: 'MORBID ANGEL', avatar: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=150', image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=600', border: 'border-rose-500/80', textColor: 'text-rose-400' },
+  { id: 's1', name: 'AUTOPSY', avatar: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=150', image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=600', border: 'border-rose-500/80', textColor: 'text-rose-400' },
   { id: 's2', name: 'Nexus Promoters', avatar: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&q=80&w=150', image: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&q=80&w=600', border: 'border-purple-500', textColor: 'text-purple-400' },
   { id: 's3', name: 'CRYPTOPSY', avatar: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&q=80&w=150', image: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&q=80&w=600', border: 'border-rose-500/80', textColor: 'text-rose-400' },
-  { id: 's4', name: 'SUFFOCATION', avatar: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&q=80&w=150', image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=600', border: 'border-rose-500/80', textColor: 'text-rose-400' },
-  { id: 's5', name: 'JUNGLE ROT', avatar: 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?auto=format&fit=crop&q=80&w=150', image: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&q=80&w=600', border: 'border-rose-500/80', textColor: 'text-rose-400' },
-  { id: 's6', name: 'TESTAMENT', avatar: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=150', image: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=600', border: 'border-rose-500/80', textColor: 'text-rose-400' },
+  { id: 's4', name: 'INCANTATION', avatar: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&q=80&w=150', image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=600', border: 'border-rose-500/80', textColor: 'text-rose-400' },
+  { id: 's5', name: 'SKINLESS', avatar: 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?auto=format&fit=crop&q=80&w=150', image: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&q=80&w=600', border: 'border-rose-500/80', textColor: 'text-rose-400' },
+  { id: 's6', name: 'DEATH ANGEL', avatar: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=150', image: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=600', border: 'border-rose-500/80', textColor: 'text-rose-400' },
   { id: 's7', name: 'DARK FUNERAL', avatar: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&q=80&w=150', image: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&q=80&w=600', border: 'border-purple-500', textColor: 'text-purple-400' },
   { id: 's8', name: 'HYPOCRISY', avatar: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&q=80&w=150', image: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&q=80&w=600', border: 'border-rose-500/80', textColor: 'text-rose-400' },
   { id: 's9', name: 'IMMOLATION', avatar: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&q=80&w=150', image: 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?auto=format&fit=crop&q=80&w=600', border: 'border-rose-500/80', textColor: 'text-rose-400' },
 ];
 
 export const mockInAppSongs = [
-  { id: 'song1', band: 'MORBID ANGEL', title: 'Immortal Rites', album: 'Altars of Madness', duration: '4:04' },
-  { id: 'song2', band: 'MORBID ANGEL', title: 'Maze of Torment', album: 'Altars of Madness', duration: '4:25' },
+  { id: 'song1', band: 'AUTOPSY', title: 'Severed Survival', album: 'Severed Survival', duration: '3:28' },
+  { id: 'song2', band: 'INCANTATION', title: 'Golgotha', album: 'Onward to Golgotha', duration: '3:29' },
   { id: 'song3', band: 'CRYPTOPSY', title: 'Phobophile', album: 'None So Vile', duration: '4:38' },
   { id: 'song4', band: 'CRYPTOPSY', title: 'Slit Your Guts', album: 'None So Vile', duration: '4:02' },
-  { id: 'song5', band: 'SUFFOCATION', title: 'Infecting the Crypts', album: 'Effigy of the Forgotten', duration: '4:49' },
-  { id: 'song6', band: 'SUFFOCATION', title: 'Liege of Inveracity', album: 'Effigy of the Forgotten', duration: '4:30' },
-  { id: 'song7', band: 'JUNGLE ROT', title: 'A Calling for Blood', album: 'Jungle Rot Live', duration: '3:31' },
-  { id: 'song8', band: 'TESTAMENT', title: 'Over the Wall', album: 'The Legacy (Remastered)', duration: '4:07' },
+  { id: 'song5', band: 'DEVOURMENT', title: 'Babykiller', album: 'Molesting the Decapitated', duration: '4:49' },
+  { id: 'song6', band: 'MORTICIAN', title: 'Chainsaw Dismemberment', album: 'Chainsaw Dismemberment', duration: '2:30' },
+  { id: 'song7', band: 'SKINLESS', title: 'The Optimist', album: 'Foreshadowing Our Demise', duration: '3:43' },
+  { id: 'song8', band: 'DEATH ANGEL', title: 'The Ultra-Violence', album: 'The Ultra-Violence', duration: '10:33' },
   { id: 'song9', band: 'DARK FUNERAL', title: 'Where Shadows Forever Reign', album: 'Where Shadows Forever Reign', duration: '5:12' },
   { id: 'song10', band: 'HYPOCRISY', title: 'Roswell 47', album: 'Abducted', duration: '3:50' },
   { id: 'song11', band: 'IMMOLATION', title: 'Into Everlasting Fire', album: 'Dawn of Possession', duration: '5:14' },
@@ -388,23 +376,23 @@ export const mockFeed: FeedItem[] = [
   {
     id: 'mock_2',
     type: 'post',
-    author: { name: 'SUFFOCATION', avatar: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=150', role: 'ARTIST' },
+    author: { name: 'AUTOPSY', avatar: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=150', role: 'ARTIST' },
     timeAgo: '1h ago',
     timestamp: new Date(Date.now() - 60 * 60000).toISOString(),
-    content: "Our monumental release \"Human Waste\" is now streaming and available in multiple physical formats directly on our page! Grab the official CD, limited clear red vinyl, or digital high-quality download below.",
+    content: "Our monumental release \"Severed Survival\" is now streaming and available in multiple physical formats directly on our page! Grab the official CD, limited clear red vinyl, or digital high-quality download below.",
     tag: 'ALBUM RELEASE',
     albumData: {
-      band: 'SUFFOCATION',
-      albumName: 'Human Waste',
-      releaseYear: '1991',
-      coverUrl: 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/public-assets/Suffocation%20Human%20Waste.jpg',
+      band: 'AUTOPSY',
+      albumName: 'Severed Survival',
+      releaseYear: '1989',
+      coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=400',
       tracks: [
-        { title: 'Infecting the Crypts', duration: '04:37' },
-        { title: 'Synthetically Revived', duration: '03:38' },
-        { title: 'Mass Obliteration', duration: '04:28' },
-        { title: 'Catatonia', duration: '03:55' },
-        { title: 'Jesus Wept', duration: '03:38' },
-        { title: 'Human Waste', duration: '02:58' }
+        { title: 'Charred Remains', duration: '03:40' },
+        { title: 'Service for a Vacant Coffin', duration: '02:51' },
+        { title: 'Disembowel', duration: '04:05' },
+        { title: 'Gasping for Air', duration: '03:20' },
+        { title: 'Ridden with Disease', duration: '04:53' },
+        { title: 'Severed Survival', duration: '03:28' }
       ],
       purchaseLinks: [
         { format: 'CD', price: '$12.99' },
@@ -414,11 +402,11 @@ export const mockFeed: FeedItem[] = [
     },
     reactions: [{ type: 'hype', count: 457, active: true }],
     comments: [
-      { id: 'c2', author: 'OldSchoolGore', text: 'The blueprint for all technical death metal. Absolute masterclass.', timeAgo: '50m ago' },
-      { id: 'c2_r1', parent_comment_id: 'c2', author: 'SuffoManiac', text: 'Terrence Hobbs and Frank Mullen created an entire subgenre with Infecting the Crypts.', timeAgo: '35m ago' },
-      { id: 'c2_r2', parent_comment_id: 'c2', author: 'BlastMaster_99', text: 'Still have my original Roadrunner cassette tape copy from 1991!', timeAgo: '20m ago' },
+      { id: 'c2', author: 'OldSchoolGore', text: 'The blueprint for filthy death metal. Absolute masterclass.', timeAgo: '50m ago' },
+      { id: 'c2_r1', parent_comment_id: 'c2', author: 'AutopsyManiac', text: 'Chris Reifert created an entire subgenre with those doom-laden transitions.', timeAgo: '35m ago' },
+      { id: 'c2_r2', parent_comment_id: 'c2', author: 'BlastMaster_99', text: 'Still have my original Peaceville cassette tape copy from 1989!', timeAgo: '20m ago' },
       { id: 'c2_2', author: 'VinylStash', text: 'Just copped the clear red wax! When are these shipping out?', timeAgo: '30m ago' },
-      { id: 'c2_2_r1', parent_comment_id: 'c2_2', author: 'SUFFOCATION', text: 'All vinyl orders ship on Monday via tracked courier! Appreciate the heavy support! 🤘', timeAgo: '15m ago' }
+      { id: 'c2_2_r1', parent_comment_id: 'c2_2', author: 'AUTOPSY', text: 'All vinyl orders ship on Monday via tracked courier! Appreciate the heavy support! 🤘', timeAgo: '15m ago' }
     ]
   },
   {
@@ -484,12 +472,12 @@ export const mockFeed: FeedItem[] = [
     timestamp: new Date(Date.now() - 35 * 60000).toISOString(),
     content: "Uploaded my raw soundboard rip from the Detroit '89 basement show. It's gritty but the bass cuts through perfectly.",
     tag: 'LIVE BOOTLEG',
-    tapeData: { title: 'DETROIT 1989', band: 'MORBID ANGEL', duration: '42:15', date: 'OCT 14, 1989' },
+    tapeData: { title: 'DETROIT 1989', band: 'IMMOLATION', duration: '42:15', date: 'OCT 14, 1989' },
     reactions: [{ type: 'flame', count: 88, active: false }],
     comments: [
-      { id: 'c5_1', author: 'CassetteCollector', text: 'This soundboard recording is amazingly clear for an 89 bootleg! Trey\'s leads sound razor sharp.', timeAgo: '20m ago' },
+      { id: 'c5_1', author: 'CassetteCollector', text: 'This soundboard recording is amazingly clear for an 89 bootleg! The riffs sound razor sharp.', timeAgo: '20m ago' },
       { id: 'c5_1_r1', parent_comment_id: 'c5_1', author: 'TapeTrader99', text: 'Direct line-out straight into a Sony Walkman Pro D6C cassette deck! Glad you dig it.', timeAgo: '10m ago' },
-      { id: 'c5_2', author: 'MorbidFan', text: 'Do you have the 1988 rehearsal session tape as well?', timeAgo: '15m ago' },
+      { id: 'c5_2', author: 'DeathMetalFan', text: 'Do you have the 1988 rehearsal session tape as well?', timeAgo: '15m ago' },
       { id: 'c5_2_r1', parent_comment_id: 'c5_2', author: 'TapeTrader99', text: 'Working on digitizing that reel next week! Keep an eye on my timeline.', timeAgo: '4m ago' }
     ]
   },
@@ -641,16 +629,16 @@ export const ROSTER_CATALOGS: Record<string, any> = {
       { format: "Digital", price: "$9.99" }
     ]
   },
-  Epicardiectomy: {
-    albumName: "Grotesque Monument",
+  Cephalotripsy: {
+    albumName: "Excruciating Unpleasantness",
     releaseYear: "2018",
     coverUrl: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&q=80&w=200",
     tracks: [
-      { id: "lbl_t3_1", title: "Horrific Metamorphosis of Gore", duration: "4:10" },
-      { id: "lbl_t3_2", title: "Phalloplasty by Meatcleaver", duration: "3:30" },
-      { id: "lbl_t3_3", title: "Fleshy Necrotic Compaction", duration: "3:55" },
-      { id: "lbl_t3_4", title: "Grotesque Monument of Degeneracy", duration: "3:45" },
-      { id: "lbl_t3_5", title: "Feasting on Putrid Bowels", duration: "4:02" }
+      { id: "lbl_t3_1", title: "Consummating the Necrophilial Urge", duration: "4:10" },
+      { id: "lbl_t3_2", title: "Excruciating Unpleasantness", duration: "3:30" },
+      { id: "lbl_t3_3", title: "Intrauterine Vivisection", duration: "3:55" },
+      { id: "lbl_t3_4", title: "Ulcerated Mass of Despair", duration: "3:45" },
+      { id: "lbl_t3_5", title: "Uterine Defecation", duration: "4:02" }
     ],
     purchaseLinks: [
       { format: "Vinyl", price: "$31.99" },
@@ -692,16 +680,16 @@ export const ROSTER_CATALOGS: Record<string, any> = {
       { format: "Digital", price: "$9.99" }
     ]
   },
-  Exhumed: {
-    albumName: "Horrorclitica",
+  Malignancy: {
+    albumName: "Intrauterine Cannibalism",
     releaseYear: "2023",
     coverUrl: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200",
     tracks: [
-      { id: "lbl_t10_1", title: "Splatterday Night Fever", duration: "2:50" },
-      { id: "lbl_t10_2", title: "Horrorclitica", duration: "3:15" },
-      { id: "lbl_t10_3", title: "Chainsaw Dismemberment", duration: "3:40" },
-      { id: "lbl_t10_4", title: "Slaughterhouse Jive", duration: "2:55" },
-      { id: "lbl_t10_5", title: "Gorehound Anthem", duration: "3:10" }
+      { id: "lbl_t10_1", title: "Ignorance of Conformity", duration: "2:50" },
+      { id: "lbl_t10_2", title: "Intrauterine Cannibalism", duration: "3:15" },
+      { id: "lbl_t10_3", title: "Profanation of the Host", duration: "3:40" },
+      { id: "lbl_t10_4", title: "Fried Afterbirth", duration: "2:55" },
+      { id: "lbl_t10_5", title: "Cerebral Schism", duration: "3:10" }
     ],
     purchaseLinks: [
       { format: "Vinyl", price: "$28.99" },
@@ -796,13 +784,13 @@ export const RADIO_PLAYLISTS = {
 export const FRONTEND_FALLBACK_PLAYLISTS: Record<string, any[]> = {
   'PLchMzReuuu_8PieB87bPG3rTxWogLuoMB': [ // Brutal Death
     { videoId: '0g863f6H0lE', title: 'Inhumane Harvest', author: 'Cannibal Corpse', thumbnailUrl: 'https://img.youtube.com/vi/0g863f6H0lE/hqdefault.jpg' },
-    { videoId: 'gPn6LpA8Z0A', title: 'Seraphim Enslavement', author: 'Suffocation', thumbnailUrl: 'https://img.youtube.com/vi/gPn6LpA8Z0A/hqdefault.jpg' },
+    { videoId: 'gPn6LpA8Z0A', title: 'Into Everlasting Fire', author: 'Immolation', thumbnailUrl: 'https://img.youtube.com/vi/gPn6LpA8Z0A/hqdefault.jpg' },
     { videoId: 'sFst6n2m6W8', title: 'Compulsion for Cruelty', author: 'Dying Fetus', thumbnailUrl: 'https://img.youtube.com/vi/sFst6n2m6W8/hqdefault.jpg' },
     { videoId: '6qG8NIn761w', title: 'Cognitive Evisceration', author: 'Devourment', thumbnailUrl: 'https://img.youtube.com/vi/6qG8NIn761w/hqdefault.jpg' }
   ],
   'PLchMzReuuu_-fffjCRQpc5Mo50-QYzNMI': [ // Classic Death
     { videoId: 'sE08V8U3oH0', title: 'Lack of Comprehension', author: 'Death', thumbnailUrl: 'https://img.youtube.com/vi/sE08V8U3oH0/hqdefault.jpg' },
-    { videoId: '6X3ZOf3L61c', title: 'Rapture', author: 'Morbid Angel', thumbnailUrl: 'https://img.youtube.com/vi/6X3ZOf3L61c/hqdefault.jpg' },
+    { videoId: '6X3ZOf3L61c', title: 'Charred Remains', author: 'Autopsy', thumbnailUrl: 'https://img.youtube.com/vi/6X3ZOf3L61c/hqdefault.jpg' },
     { videoId: '4qgN-6_K2w8', title: 'Slowly We Rot', author: 'Obituary', thumbnailUrl: 'https://img.youtube.com/vi/4qgN-6_K2w8/hqdefault.jpg' },
     { videoId: 'fB37S_o0Bxs', title: 'Left Hand Path', author: 'Entombed', thumbnailUrl: 'https://img.youtube.com/vi/fB37S_o0Bxs/hqdefault.jpg' }
   ],

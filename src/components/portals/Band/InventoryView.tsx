@@ -1880,7 +1880,7 @@ export default function InventoryView({
                         else if (log.includes('[IMPORT]')) colorClass = 'text-purple-400';
 
                         return (
-                          <div key={i} className={`${colorClass} truncate`}>
+                          <div key={`inv-col-item-${i}`} className={`${colorClass} truncate`}>
                             {log}
                           </div>
                         );
@@ -2711,7 +2711,7 @@ export default function InventoryView({
                               ) : (
                                 <div className="space-y-2.5 max-h-40 overflow-y-auto pr-1 scrollbar-none">
                                   {printer.reviews.map((rev: any, index: number) => (
-                                    <div key={index} className="bg-black/40 border border-zinc-900 p-2.5 rounded-lg space-y-1">
+                                    <div key={`inv-sec-${index}`} className="bg-black/40 border border-zinc-900 p-2.5 rounded-lg space-y-1">
                                       <div className="flex justify-between items-center text-[9px] font-mono text-zinc-400">
                                         <span className="font-bold text-white">{rev.name}</span>
                                         <span>{rev.date}</span>
@@ -2719,7 +2719,7 @@ export default function InventoryView({
                                       <div className="flex items-center gap-1 select-none">
                                         {Array.from({ length: 5 }).map((_, sIdx) => (
                                           <Star 
-                                            key={sIdx} 
+                                            key={`inv-sku-row-${sIdx}`} 
                                             className={`w-2.5 h-2.5 ${sIdx < rev.rating ? 'text-yellow-400 fill-yellow-400' : 'text-zinc-700'}`} 
                                           />
                                         ))}

@@ -12,9 +12,9 @@ export const FloatingReactionOverlay: React.FC<FloatingReactionOverlayProps> = (
   return (
     <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden">
       <AnimatePresence>
-        {particles.map(particle => (
+        {particles.map((particle, pIdx) => (
           <motion.div
-            key={particle.id}
+            key={`reaction-particle-${particle.id}-${pIdx}`}
             initial={{
               opacity: 1,
               scale: (particle.scale || 1) * 0.5,

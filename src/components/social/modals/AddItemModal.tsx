@@ -74,9 +74,9 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                     { id: 'vinyl', label: 'Vinyl / Tapes' },
                     { id: 'apparel', label: 'Apparel' },
                     { id: 'other', label: 'Other' },
-                  ].map((cat) => (
+                  ].map((cat, catIdx) => (
                     <button
-                      key={cat.id}
+                      key={`add-item-cat-${cat.id}-${catIdx}`}
                       type="button"
                       onClick={() => setItemCategory(cat.id)}
                       className={`p-2 rounded-xl border text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
@@ -145,7 +145,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                 <div className="space-y-3">
                   <div className="grid grid-cols-4 gap-2">
                     {itemImages.map((img, idx) => (
-                      <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950 group">
+                      <div key={`item-img-${idx}`} className="relative aspect-square rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950 group">
                         <img src={img} className="w-full h-full object-cover" alt="" />
                         <button
                           onClick={() => setItemImages(prev => prev.filter((_, i) => i !== idx))}

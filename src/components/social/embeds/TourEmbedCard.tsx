@@ -84,7 +84,7 @@ export const TourEmbedCard: React.FC<TourEmbedCardProps> = ({
               .slice(0, isExpanded ? undefined : 3)
               .map((dateObj, idx) => (
                 <div
-                  key={idx}
+                  key={`tour-date-${dateObj.date}-${dateObj.city}-${idx}`}
                   className="flex items-center justify-between py-2 px-3 rounded-lg bg-zinc-950/80 border border-zinc-900 hover:border-purple-500/40 text-xs font-mono transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0">

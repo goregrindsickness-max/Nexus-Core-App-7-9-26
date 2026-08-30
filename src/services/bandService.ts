@@ -225,59 +225,113 @@ export function sanitizeBandPayload(rawPayload: any): Record<string, any> {
   delete clean.profile_id;
 
   // 6. Band Name - guarantee non-empty band_name
+  const KNOWN_SEEDED_NAMES: Record<string, string> = {
+    'cordyceps': 'Cordyceps',
+    'mortician': 'Mortician',
+    'sanguisugabogg': 'Sanguisugabogg',
+    'necrophagist': 'Necrophagist',
+    'dying-fetus': 'Dying Fetus',
+    'devourment': 'Devourment',
+    'origin': 'Origin',
+    'peelingflesh': 'PeelingFlesh',
+    'putrid-pile': 'Putrid Pile',
+    'lividity': 'Lividity'
+  };
+
   let bName = (clean.band_name || clean.name || '').trim();
-  if (bName.toLowerCase() === 'underground label' || !bName) {
-    if (clean.id) {
+  const rawSlugCandidate = (clean.custom_slug || clean.slug || '').trim().toLowerCase();
+
+  // If bName is generic or missing, attempt deep resolution
+  if (!bName || bName.toLowerCase() === 'underground label' || bName.toLowerCase() === 'nexus artist') {
+    // 1. Check known slug map
+    if (rawSlugCandidate && KNOWN_SEEDED_NAMES[rawSlugCandidate]) {
+      bName = KNOWN_SEEDED_NAMES[rawSlugCandidate];
+    }
+
+    // 2. Check local storage archives with dual UUID lookup
+    if ((!bName || bName.toLowerCase() === 'underground label' || bName.toLowerCase() === 'nexus artist') && clean.id) {
+      const cleanId = clean.id;
+      const cleanUUID = ensureUUID(clean.id);
+
+      const findInList = (list: any[]) => {
+        return list.find((b: any) => {
+          if (!b) return false;
+          const bId = b.id ? String(b.id) : '';
+          const bUUID = b.id ? ensureUUID(b.id) : '';
+          const bSlug = (b.custom_slug || b.slug || '').trim().toLowerCase();
+          return bId === cleanId || bUUID === cleanUUID || (rawSlugCandidate && bSlug === rawSlugCandidate);
+        });
+      };
+
       try {
         const archives = JSON.parse(localStorage.getItem('nexus_community_band_archives') || '[]');
-        const found = archives.find((b: any) => b.id === clean.id || b.id === ensureUUID(clean.id));
+        const found = findInList(archives);
         if (found?.name || found?.band_name) {
           const storedName = (found.name || found.band_name).trim();
-          if (storedName && storedName.toLowerCase() !== 'underground label') {
+          if (storedName && storedName.toLowerCase() !== 'underground label' && storedName.toLowerCase() !== 'nexus artist') {
             bName = storedName;
           }
         }
       } catch {}
-      if (!bName || bName.toLowerCase() === 'underground label') {
+
+      if (!bName || bName.toLowerCase() === 'underground label' || bName.toLowerCase() === 'nexus artist') {
         try {
           const allCommunity = JSON.parse(localStorage.getItem('nexus_community_bands_v2') || '[]');
-          const found = allCommunity.find((b: any) => b.id === clean.id || b.id === ensureUUID(clean.id));
+          const found = findInList(allCommunity);
           if (found?.name || found?.band_name) {
             const storedName = (found.name || found.band_name).trim();
-            if (storedName && storedName.toLowerCase() !== 'underground label') {
+            if (storedName && storedName.toLowerCase() !== 'underground label' && storedName.toLowerCase() !== 'nexus artist') {
               bName = storedName;
             }
           }
         } catch {}
       }
-      if (!bName || bName.toLowerCase() === 'underground label') {
+
+      if (!bName || bName.toLowerCase() === 'underground label' || bName.toLowerCase() === 'nexus artist') {
         try {
           const registered = JSON.parse(localStorage.getItem('nexus_registered_bands') || '[]');
-          const found = registered.find((b: any) => b.id === clean.id || b.id === ensureUUID(clean.id));
+          const found = findInList(registered);
           if (found?.name || found?.band_name) {
             const storedName = (found.name || found.band_name).trim();
-            if (storedName && storedName.toLowerCase() !== 'underground label') {
+            if (storedName && storedName.toLowerCase() !== 'underground label' && storedName.toLowerCase() !== 'nexus artist') {
               bName = storedName;
             }
           }
         } catch {}
       }
     }
-    if (!bName || bName.toLowerCase() === 'underground label') {
+
+    // 3. Check active band
+    if (!bName || bName.toLowerCase() === 'underground label' || bName.toLowerCase() === 'nexus artist') {
       try {
         const activeBandRaw = localStorage.getItem('nexus_active_band');
         if (activeBandRaw) {
           const parsed = JSON.parse(activeBandRaw);
           if (parsed?.name || parsed?.band_name) {
             const storedName = (parsed.name || parsed.band_name).trim();
-            if (storedName && storedName.toLowerCase() !== 'underground label') {
+            if (storedName && storedName.toLowerCase() !== 'underground label' && storedName.toLowerCase() !== 'nexus artist') {
               bName = storedName;
             }
           }
         }
       } catch {}
     }
+
+    // 4. Derive from custom_slug if present
+    if ((!bName || bName.toLowerCase() === 'underground label' || bName.toLowerCase() === 'nexus artist') && rawSlugCandidate) {
+      if (KNOWN_SEEDED_NAMES[rawSlugCandidate]) {
+        bName = KNOWN_SEEDED_NAMES[rawSlugCandidate];
+      } else {
+        // Convert slug e.g. "my-cool-band" -> "My Cool Band"
+        bName = rawSlugCandidate
+          .split('-')
+          .filter(Boolean)
+          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' ');
+      }
+    }
   }
+
   if (!bName || bName.toLowerCase() === 'underground label') {
     bName = 'Nexus Artist';
   }
@@ -295,7 +349,7 @@ export function sanitizeBandPayload(rawPayload: any): Record<string, any> {
   delete clean.status;
 
   // 7. Sanitize logo_url and cover_url strictly
-  const rawLogo =
+  let rawLogo =
     clean.logo_url ??
     clean.avatar_url ??
     clean.logo ??
@@ -303,6 +357,30 @@ export function sanitizeBandPayload(rawPayload: any): Record<string, any> {
     clean.image ??
     clean.avatar ??
     null;
+
+  if ((!rawLogo || String(rawLogo).trim() === '') && clean.id) {
+    const cleanId = clean.id;
+    const cleanUUID = ensureUUID(clean.id);
+    try {
+      const allComm = JSON.parse(localStorage.getItem('nexus_community_bands_v2') || '[]');
+      const found = allComm.find((b: any) => b && (b.id === cleanId || ensureUUID(b.id) === cleanUUID));
+      if (found?.logo_url || found?.avatar_url || found?.avatar || found?.image) {
+        rawLogo = found.logo_url || found.avatar_url || found.avatar || found.image;
+      }
+    } catch {}
+  }
+  if ((!rawLogo || String(rawLogo).trim() === '') && clean.id) {
+    const cleanId = clean.id;
+    const cleanUUID = ensureUUID(clean.id);
+    try {
+      const regBands = JSON.parse(localStorage.getItem('nexus_registered_bands') || '[]');
+      const foundReg = regBands.find((b: any) => b && (b.id === cleanId || ensureUUID(b.id) === cleanUUID));
+      if (foundReg?.logo_url || foundReg?.avatar_url || foundReg?.avatar || foundReg?.image) {
+        rawLogo = foundReg.logo_url || foundReg.avatar_url || foundReg.avatar || foundReg.image;
+      }
+    } catch {}
+  }
+
   if (typeof rawLogo === 'string' && rawLogo.trim().length > 0 && !rawLogo.includes('Nexus%20Icon%20Circuits.png')) {
     clean.logo_url = rawLogo.trim();
   } else {
@@ -314,13 +392,26 @@ export function sanitizeBandPayload(rawPayload: any): Record<string, any> {
   delete clean.image;
   delete clean.avatar;
 
-  const rawCover =
+  let rawCover =
     clean.cover_url ??
     clean.banner_url ??
     clean.cover ??
     clean.band_cover ??
     clean.banner ??
     null;
+
+  if ((!rawCover || String(rawCover).trim() === '') && clean.id) {
+    const cleanId = clean.id;
+    const cleanUUID = ensureUUID(clean.id);
+    try {
+      const allComm = JSON.parse(localStorage.getItem('nexus_community_bands_v2') || '[]');
+      const found = allComm.find((b: any) => b && (b.id === cleanId || ensureUUID(b.id) === cleanUUID));
+      if (found?.cover_url || found?.banner_url || found?.cover || found?.banner) {
+        rawCover = found.cover_url || found.banner_url || found.cover || found.banner;
+      }
+    } catch {}
+  }
+
   if (typeof rawCover === 'string' && rawCover.trim().length > 0 && !rawCover.includes('Nexus%20Icon%20Circuits.png')) {
     clean.cover_url = rawCover.trim();
   } else {
@@ -485,10 +576,10 @@ export async function upsertBandToDatabase(
   const cleanBand = sanitizeBandPayload(bandInput);
 
   // Guarantee standards-compliant RFC4122 v4 UUID for database primary key
-  if (!cleanBand.id || options?.isNew) {
+  if (!cleanBand.id && !bandInput.id) {
     cleanBand.id = generateUUID();
   } else {
-    cleanBand.id = ensureUUID(cleanBand.id);
+    cleanBand.id = ensureUUID(cleanBand.id || bandInput.id);
   }
 
   // Sync to local storage immediately for zero-latency UI consistency
@@ -557,48 +648,29 @@ export async function upsertBandToDatabase(
   try {
     const isExplicitNew = Boolean(options?.isNew);
 
-    if (isExplicitNew) {
-      console.log(`[bandService] Performing distinct INSERT for new band record (ID: ${cleanBand.id}, Name: "${cleanBand.band_name}")...`);
-      
-      const insertRes = await executeWithSchemaResilience(
-        async (payload) => await supabase.from('bands').insert([payload]),
-        cleanBand
-      );
-
-      if (!insertRes?.error) {
-        console.log(`[bandService] Successfully inserted new band record: ${cleanBand.id}`);
-        return { success: true, data: insertRes.data || cleanBand };
-      }
-
-      console.warn('[bandService] Resilient insert returned error, attempting direct insert fallback:', insertRes.error);
-      const directInsert = await supabase.from('bands').insert([cleanBand]);
-      if (!directInsert.error) {
-        console.log(`[bandService] Direct insert succeeded for band: ${cleanBand.id}`);
-        return { success: true, data: cleanBand };
-      }
-
-      const errMsg = directInsert.error.message || JSON.stringify(directInsert.error);
-      console.error(`[bandService] Database INSERT failed for band ${cleanBand.id}:`, errMsg);
-      options?.triggerNotification?.(`❌ Database band insert failed: ${errMsg}`);
-      return { success: false, data: cleanBand, error: errMsg };
-    }
-
-    // Existing / un-specified: Check if row exists to perform targeted UPDATE or INSERT
     let existingRowId: string | null = null;
+
+    // 1. Check by ID
     if (cleanBand.id) {
-      const { data: existing, error: checkErr } = await supabase.from('bands').select('id').eq('id', cleanBand.id).maybeSingle();
-      if (checkErr) {
-        console.warn('[bandService] Existing record check notice:', checkErr.message);
-      }
-      if (existing?.id) {
-        existingRowId = existing.id;
+      const { data: byId } = await supabase.from('bands').select('id').eq('id', cleanBand.id).maybeSingle();
+      if (byId?.id) {
+        existingRowId = byId.id;
       }
     }
 
-    if (existingRowId) {
+    // 2. Check by custom_slug if not found by ID
+    if (!existingRowId && cleanBand.custom_slug) {
+      const { data: bySlug } = await supabase.from('bands').select('id').eq('custom_slug', cleanBand.custom_slug).maybeSingle();
+      if (bySlug?.id) {
+        existingRowId = bySlug.id;
+        cleanBand.id = bySlug.id;
+      }
+    }
+
+    if (existingRowId && !isExplicitNew) {
       console.log(`[bandService] Record exists (${existingRowId}). Performing targeted UPDATE...`);
       const updateRes = await executeWithSchemaResilience(
-        async (payload) => await supabase.from('bands').update(payload).eq('id', cleanBand.id),
+        async (payload) => await supabase.from('bands').update(payload).eq('id', existingRowId),
         cleanBand
       );
 
@@ -608,7 +680,7 @@ export async function upsertBandToDatabase(
       }
 
       console.warn('[bandService] Resilient update returned error, attempting direct update:', updateRes.error);
-      const directUpdate = await supabase.from('bands').update(cleanBand).eq('id', cleanBand.id);
+      const directUpdate = await supabase.from('bands').update(cleanBand).eq('id', existingRowId);
       if (!directUpdate.error) {
         return { success: true, data: cleanBand };
       }
@@ -618,7 +690,8 @@ export async function upsertBandToDatabase(
       options?.triggerNotification?.(`❌ Database band update failed: ${errMsg}`);
       return { success: false, data: cleanBand, error: errMsg };
     } else {
-      console.log(`[bandService] No existing record found for ${cleanBand.id}. Performing INSERT...`);
+      console.log(`[bandService] Performing INSERT / UPSERT for band ${cleanBand.id} (Name: "${cleanBand.band_name}")...`);
+      
       const insertRes = await executeWithSchemaResilience(
         async (payload) => await supabase.from('bands').insert([payload]),
         cleanBand
@@ -629,14 +702,19 @@ export async function upsertBandToDatabase(
         return { success: true, data: insertRes.data || cleanBand };
       }
 
-      // Upsert fallback
-      const directUpsert = await supabase.from('bands').upsert([cleanBand], { onConflict: 'id' });
+      const directUpsert = await supabase.from('bands').upsert([cleanBand], { onConflict: 'custom_slug' });
       if (!directUpsert.error) {
+        console.log(`[bandService] Direct upsert succeeded for ${cleanBand.id}`);
         return { success: true, data: cleanBand };
       }
 
-      const errMsg = directUpsert.error.message || JSON.stringify(directUpsert.error);
-      console.error(`[bandService] Database upsert failed for band ${cleanBand.id}:`, errMsg);
+      const fallbackUpsert = await supabase.from('bands').upsert([cleanBand], { onConflict: 'id' });
+      if (!fallbackUpsert.error) {
+        return { success: true, data: cleanBand };
+      }
+
+      const errMsg = directUpsert.error.message || insertRes.error?.message || JSON.stringify(insertRes.error);
+      console.error(`[bandService] Database band save failed for ${cleanBand.id}:`, errMsg);
       options?.triggerNotification?.(`❌ Database band save failed: ${errMsg}`);
       return { success: false, data: cleanBand, error: errMsg };
     }

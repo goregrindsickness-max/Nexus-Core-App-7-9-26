@@ -1865,7 +1865,7 @@ export default function CreativeSettingsTab({
                             <span className="text-[9px] text-zinc-500 uppercase font-bold">({rev.group})</span>
                             <div className="flex gap-0.5">
                               {Array.from({ length: rev.score }).map((_, i) => (
-                                <Star key={i} className="w-3 h-3 fill-fuchsia-400 text-fuchsia-400" />
+                                <Star key={`rev-star-${idx}-${i}`} className="w-3 h-3 fill-fuchsia-400 text-fuchsia-400" />
                               ))}
                             </div>
                             {rev.date && (

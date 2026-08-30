@@ -771,7 +771,7 @@ export default function BluetoothHardwareManager({
                           const isHeading = ln.includes('NEXUS CORE SYSTEM') || ln.includes('PASS');
                           return (
                             <div 
-                              key={idx} 
+                              key={`bt-device-row-${idx}`} 
                               className={`break-words whitespace-pre-wrap ${
                                 isHeading 
                                   ? 'font-black tracking-wider text-black text-[11px]' 

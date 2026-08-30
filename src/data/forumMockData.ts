@@ -3,8 +3,8 @@
 export const initialForumThreads = [
   {
     id: 't1',
-    title: "Effigy of the Forgotten's album art is a masterpiece. Who is the artist?",
-    content: "The surreal mechanical bio-organic aesthetic fits the technical slam death metal sound perfectly. Is it Dan Seagrave?",
+    title: "Close to a World Below's album art is a masterpiece. Who is the artist?",
+    content: "The surreal apocalyptic aesthetic fits the dissonant death metal sound perfectly. Is it Andreas Marschall?",
     category: 'Album Art',
     genre: 'Death Metal',
     author: 'StarGazer',
@@ -16,7 +16,7 @@ export const initialForumThreads = [
       {
         id: 'fc1',
         author: 'CosmicVoid',
-        text: "It's actually painted by the legendary Dan Seagrave! Incredible choice by Suffocation.",
+        text: "It's actually painted by Andreas Marschall! Incredible choice by Immolation.",
         timeAgo: '1h ago',
         replies: [
           { id: 'fr1', author: 'StarGazer', text: "That is awesome! No wonder it felt so familiar." }
@@ -26,8 +26,8 @@ export const initialForumThreads = [
   },
   {
     id: 't2',
-    title: 'Morbid Angel - Altars of Madness: Decades Later',
-    content: 'Can we talk about how well this legendary record has aged? The lightning speed, the chaotic solos, and Trey Azagthoth\'s tone.',
+    title: 'Immolation - Close to a World Below: Decades Later',
+    content: 'Can we talk about how well this legendary record has aged? The crushing riffs, the dark atmospheres, and Ross Dolan\'s tone.',
     category: 'Album Reviews',
     genre: 'Death Metal',
     author: 'OnyxRiff',
@@ -47,7 +47,7 @@ export const initialForumThreads = [
   {
     id: 't3',
     title: 'Maryland Deathfest 2026 predictions and wishlist',
-    content: "Who are we hoping to see on the bill next year? I'm hoping for a Morbid Angel/Suffocation co-headline set!",
+    content: "Who are we hoping to see on the bill next year? I'm hoping for a Cryptopsy/Immolation co-headline set!",
     category: 'Show & Fest',
     genre: 'Death Metal',
     author: 'FestivalGoon',

@@ -237,7 +237,7 @@ export const PTTRadioModal: React.FC<PTTRadioModalProps> = ({ isOpen, onClose, u
 
             <div className="grid grid-cols-12 gap-1 px-3 py-1 bg-zinc-950/60 rounded-xl border border-zinc-900/60 opacity-60 mb-3">
               {Array.from({ length: 24 }).map((_, i) => (
-                <div key={i} className="h-1.5 bg-zinc-800 rounded-full" />
+                <div key={`ptt-bar-${i}`} className="h-1.5 bg-zinc-800 rounded-full" />
               ))}
             </div>
 
@@ -307,7 +307,7 @@ export const PTTRadioModal: React.FC<PTTRadioModalProps> = ({ isOpen, onClose, u
                           <div className="flex items-end gap-0.5 h-3.5 shrink-0 opacity-55 pl-1.5">
                             {Array.from({ length: 6 }).map((_, i) => (
                               <div 
-                                key={i} 
+                                key={`ptt-channel-${i}`} 
                                 className="w-[2.5px] bg-amber-400 rounded-full" 
                                 style={{ height: `${20 + Math.random() * 80}%` }} 
                               />

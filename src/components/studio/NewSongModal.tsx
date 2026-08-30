@@ -143,8 +143,8 @@ export const NewSongModal: React.FC<NewSongModalProps> = ({
               onChange={(e) => setStatus(e.target.value as ProjectStatus)}
               className="w-full bg-zinc-950 border border-violet-900/50 focus:border-violet-400 rounded-xl px-3 py-2.5 text-xs text-white outline-none font-mono"
             >
-              {STATUS_OPTIONS.map((st) => (
-                <option key={st} value={st}>
+              {STATUS_OPTIONS.map((st, stIdx) => (
+                <option key={`status-opt-${st}-${stIdx}`} value={st}>
                   {st}
                 </option>
               ))}

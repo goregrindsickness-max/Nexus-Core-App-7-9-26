@@ -362,7 +362,7 @@ export default function PremiumGate({
                     {terminalLogs.length > 0 && (
                       <div className="bg-black border border-zinc-900 rounded p-2.5 max-h-[140px] overflow-y-auto text-[10px] font-mono space-y-1 scrollbar-thin text-purple-400 bg-zinc-950/60 leading-normal">
                         {terminalLogs.map((log, idx) => (
-                          <div key={idx} className="flex gap-1.5 items-start">
+                          <div key={`prem-feat-${idx}`} className="flex gap-1.5 items-start">
                             <span className="text-[#00ffcc] font-bold">›</span>
                             <span className="whitespace-pre-wrap">{log}</span>
                           </div>

@@ -1291,7 +1291,7 @@ export default function TeamBillingTab({
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-0.5">
                             {Array.from({ length: 5 }).map((_, i) => (
-                              <Star key={i} className={`w-3 h-3 ${rev.rating > i ? 'text-amber-400 fill-amber-400' : 'text-zinc-700'}`} />
+                              <Star key={`label-rev-star-${rev.id || idx}-${i}`} className={`w-3 h-3 ${rev.rating > i ? 'text-amber-400 fill-amber-400' : 'text-zinc-700'}`} />
                             ))}
                           </div>
                           <span className="text-[8.5px] font-mono text-zinc-500">{new Date(rev.created_at).toLocaleDateString()}</span>

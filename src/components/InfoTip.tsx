@@ -140,7 +140,7 @@ export default function InfoTip({
               <ul className="space-y-2 font-mono text-[9.5px] text-zinc-400 leading-relaxed uppercase">
                 {bullets.map((bullet, idx) => (
                   <motion.li
-                    key={idx}
+                    key={`tip-bullet-${idx}`}
                     initial={{ opacity: 0, x: -4 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: idx * 0.03 + 0.05 }}

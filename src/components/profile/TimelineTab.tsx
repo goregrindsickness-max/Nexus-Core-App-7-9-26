@@ -374,7 +374,7 @@ export const TimelineTab: React.FC<TimelineTabProps> = ({
                       {post.eventData.lineup && post.eventData.lineup.length > 0 && (
                         <div className="flex flex-wrap gap-1 pt-1">
                           {post.eventData.lineup.map((band: string, i: number) => (
-                            <span key={i} className="px-2 py-0.5 bg-zinc-900 border border-zinc-800 text-amber-200 text-[9px] rounded font-bold uppercase">
+                            <span key={`lineup-${post.id || 'p'}-${band}-${i}`} className="px-2 py-0.5 bg-zinc-900 border border-zinc-800 text-amber-200 text-[9px] rounded font-bold uppercase">
                               {band}
                             </span>
                           ))}

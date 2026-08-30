@@ -21,16 +21,6 @@ export const PROFILE_REGISTRY: Record<string, any> = {
     favoriteSong: 'Babykiller',
     customBadges: ['👑 Slam Kings', '🔥 Texas Brutality']
   },
-  'epicardiectomy': {
-    bio: '💀 Guttural Slamming BDM from Prague, Czech Republic. Pure, relentless slam sequences and devastating heavy breakdowns.',
-    location: 'Prague, CZ',
-    genres: ['Slamming BDM', 'Blasting BDM'],
-    followersCount: 0,
-    followingCount: 0,
-    sharesCount: 640,
-    favoriteSong: 'Horrific Metamorphosis of Gore',
-    customBadges: ['🇨🇿 European Slam', '🔊 Guttural Kings']
-  },
   'pathology': {
     bio: '💀 Brutal Death Metal surgeons from San Diego, California. Intricate anatomical brutality with extreme high speed and surgical precision.',
     location: 'San Diego, CA',
@@ -50,16 +40,6 @@ export const PROFILE_REGISTRY: Record<string, any> = {
     sharesCount: 710,
     favoriteSong: 'Chaosmos',
     customBadges: ['⚡ Speed Demons', '🛸 Tech Wizards']
-  },
-  'exhumed': {
-    bio: '💀 Pioneers of goregrind and carcass-style death-thrash since 1990. Blood-soaked cinematic horror and savage dual vocal trade-offs.',
-    location: 'San Jose, CA',
-    genres: ['Goregrind', 'Death Metal', 'Death-Thrash'],
-    followersCount: 0,
-    followingCount: 0,
-    sharesCount: 890,
-    favoriteSong: 'Splatterday Night Fever',
-    customBadges: ['🩸 Gore Pioneers', '🪚 Chainsaw Metal']
   },
   'incinerate': {
     bio: '💀 Relentless brutal death metal firestorm with hyper-blasting percussion and intense melodic undertones.',
@@ -81,16 +61,6 @@ export const PROFILE_REGISTRY: Record<string, any> = {
     favoriteSong: 'Extirpated Inimicality',
     customBadges: ['🗡️ TXDM Savage', '⚡ Modern Slam']
   },
-  'morbid angel': {
-    bio: '💀 Legendary Death Metal pioneers from Tampa, Florida. Delivering unmatched speed, intricate riffing, and ancient Sumerian themes.',
-    location: 'Tampa, FL',
-    genres: ['Death Metal', 'Technical Death Metal', 'Classic Metal'],
-    followersCount: 0,
-    followingCount: 0,
-    sharesCount: 880,
-    favoriteSong: 'Immortal Rites',
-    customBadges: ['⚡ Pioneers', '💀 Tampa Scene', '🔥 Blast Beat Kings']
-  },
   'cryptopsy': {
     bio: '💀 Extreme Technical Death Metal from Montreal, Canada. Mind-bending speed, savage vocals, and gravity blasts.',
     location: 'Montreal, QC',
@@ -100,26 +70,6 @@ export const PROFILE_REGISTRY: Record<string, any> = {
     sharesCount: 420,
     favoriteSong: 'Phobophile',
     customBadges: ['⚡ Technical Masters', '🍁 Canadian Extreme', '🔊 Gravity Blast']
-  },
-  'suffocation': {
-    bio: '💀 The architects of Brutal Technical Death Metal from Long Island, New York. Innovators of the deathcore breakdown and guttural vocals.',
-    location: 'Long Island, NY',
-    genres: ['Brutal Death Metal', 'Technical Death Metal', 'Slam'],
-    followersCount: 0,
-    followingCount: 0,
-    sharesCount: 650,
-    favoriteSong: 'Infecting the Crypts',
-    customBadges: ['⚡ Pioneers', '🗽 NYDM', '🔥 Breakdown Creators']
-  },
-  'jungle rot': {
-    bio: '💀 Old-school Death Metal. Brutal, straight-forward, bone-shattering grooves.',
-    location: 'Kenosha, WI',
-    genres: ['Death Metal', 'Groove', 'Thrash'],
-    followersCount: 0,
-    followingCount: 0,
-    sharesCount: 78,
-    favoriteSong: 'A Call to Arms',
-    customBadges: ['💀 Veterans', '🔥 Groove Lords']
   },
   'nexus promoters': {
     bio: '🏟️ Main organizer & live booking alliance for the extreme underground syndicate.',
@@ -188,7 +138,7 @@ export const PROFILE_REGISTRY: Record<string, any> = {
     followersCount: 0,
     followingCount: 0,
     sharesCount: 310,
-    favoriteSong: 'Morbid Angel - Altars of Madness',
+    favoriteSong: 'Immolation - Dawn of Possession',
     customBadges: ['📼 Tape Archivist', '🎚️ Soundboard Master']
   },
   'scene photographer': {

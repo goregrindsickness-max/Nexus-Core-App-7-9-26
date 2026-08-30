@@ -138,7 +138,6 @@ export default function VenueReputationCard({
 
   return (
     <motion.div 
-      key={venue.id}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className={`relative max-w-[620px] mx-auto bg-[#13151a] rounded-xl overflow-hidden shadow-lg border transition-all ${

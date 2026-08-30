@@ -146,31 +146,25 @@ export const enrichTicketData = (gigData: any) => {
   }
 
   // Lineup lookup based on headliner
-  let lineup = `${headliner}, SUFFOCATION, IMMOLATION, MORTICIAN, SKELETAL REMAINS`;
-  if (headliner.includes('SUFFOCATION')) {
-    lineup = 'SUFFOCATION, INCANTATION, DEFEATED SANITY, SANGUISUGABOGG, PHOBOPHILIC';
-  } else if (headliner.includes('CRYPTOPSY')) {
+  let lineup = `${headliner}, IMMOLATION, MORTICIAN, SKELETAL REMAINS, AUTOPSY`;
+  if (headliner.includes('CRYPTOPSY')) {
     lineup = 'CRYPTOPSY, DYING FETUS, ABORTED, DECREPIT BIRTH, ARCHSPIRE';
-  } else if (headliner.includes('TESTAMENT')) {
-    lineup = 'TESTAMENT, EXODUS, DEATH ANGEL, OVERKILL, MUNICIPAL WASTE';
-  } else if (headliner.includes('JUNGLE')) {
-    lineup = 'JUNGLE ROT, INTERNAL BLEEDING, PYREXIA, SKINLESS, CREEPING DEATH';
+  } else if (headliner.includes('MORTICIAN')) {
+    lineup = 'MORTICIAN, INCANTATION, SANGUISUGABOGG, PHOBOPHILIC';
+  } else if (headliner.includes('DYING FETUS')) {
+    lineup = 'DYING FETUS, DEVOURMENT, CORDYCEPS, SANGUISUGABOGG';
   } else if (headliner.includes('DARK FUNERAL')) {
     lineup = 'DARK FUNERAL, BELPHEGOR, INCANTATION, ROTTING CHRIST, GHOST BATH';
   }
 
   // Flyer images
   let flyer = 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800&q=80';
-  if (headliner.includes('MORBID')) {
-    flyer = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80';
-  } else if (headliner.includes('SUFFOCATION')) {
-    flyer = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&q=80';
-  } else if (headliner.includes('CRYPTOPSY')) {
+  if (headliner.includes('CRYPTOPSY')) {
     flyer = 'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=800&q=80';
-  } else if (headliner.includes('TESTAMENT')) {
-    flyer = 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800&q=80';
-  } else if (headliner.includes('JUNGLE')) {
-    flyer = 'https://images.unsplash.com/photo-1484755560693-a4074577af3a?w=800&q=80';
+  } else if (headliner.includes('MORTICIAN')) {
+    flyer = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&q=80';
+  } else if (headliner.includes('DYING FETUS')) {
+    flyer = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80';
   }
 
   return {

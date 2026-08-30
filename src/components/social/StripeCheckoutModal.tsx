@@ -536,7 +536,7 @@ export function StripeCheckoutModal({
 
                 <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                   {attendeeDetails.map((att, idx) => (
-                    <div key={idx} className="p-2.5 bg-zinc-900/70 border border-zinc-800/80 rounded-xl space-y-2">
+                    <div key={`cart-item-${idx}`} className="p-2.5 bg-zinc-900/70 border border-zinc-800/80 rounded-xl space-y-2">
                       <div className="flex items-center gap-2">
                         <span className="w-5 h-5 rounded-full bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-[10px] font-mono font-bold text-rose-400 shrink-0">
                           {idx + 1}
@@ -1184,7 +1184,7 @@ export function StripeCheckoutModal({
                 <div className="pt-2 border-t border-zinc-900 space-y-1">
                   <span className="text-[10px] text-zinc-500 uppercase font-bold block">Registered Attendees:</span>
                   {confirmedOrder.data.attendees.map((att: any, idx: number) => (
-                    <div key={idx} className="flex justify-between text-[11px] text-zinc-300">
+                    <div key={`order-summary-${idx}`} className="flex justify-between text-[11px] text-zinc-300">
                       <span>• {att.name}</span>
                       <span className="text-zinc-500 font-mono">{att.size ? `Size: ${att.size}` : 'Pass Confirmed'}</span>
                     </div>

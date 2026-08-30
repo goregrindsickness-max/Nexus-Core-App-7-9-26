@@ -1,7 +1,12 @@
-import { supabase } from '../lib/supabaseClient';
+import { supabase as singletonSupabase } from '../lib/supabaseClient';
+import { getSupabase } from './clientService';
 import { labelCatalogStore } from '../utils/indexedDB';
 import { uploadBase64ToStorage } from './storageService';
-import { ensureUUID } from './schemaResilienceService';
+import { ensureUUID, executeWithSchemaResilience } from './schemaResilienceService';
+
+const getActiveSupabase = (portalType?: 'band' | 'promoter' | 'creative') => {
+  return getSupabase(portalType) || singletonSupabase;
+};
 
 export interface ReleaseTrack {
   id: string;
@@ -128,9 +133,10 @@ export function sanitizeReleaseForDb(release: any): any {
 /**
  * Fetch all releases from Supabase database 'releases' table
  */
-export async function fetchReleasesFromDatabase(): Promise<CatalogRelease[]> {
+export async function fetchReleasesFromDatabase(portalType?: 'band' | 'promoter' | 'creative'): Promise<CatalogRelease[]> {
   try {
-    const { data, error } = await supabase
+    const client = getActiveSupabase(portalType);
+    const { data, error } = await client
       .from('releases')
       .select('*')
       .order('created_at', { ascending: false });
@@ -174,10 +180,12 @@ export async function fetchReleasesFromDatabase(): Promise<CatalogRelease[]> {
  */
 export async function upsertReleaseToDatabase(
   release: CatalogRelease,
-  bandId: string
+  bandId: string,
+  portalType?: 'band' | 'promoter' | 'creative'
 ): Promise<{ success: boolean; error?: string; data?: any }> {
   try {
-    const targetBandId = String(bandId || release.band_id || 'b1').trim();
+    const client = getActiveSupabase(portalType);
+    const targetBandId = ensureUUID(String(bandId || release.band_id || 'b1').trim());
     const isValidUUID = (str?: string | null) => 
       str ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str) : false;
 
@@ -200,7 +208,7 @@ export async function upsertReleaseToDatabase(
     }
 
     const rawPayload: Record<string, any> = {
-      id: release.id,
+      id: release.id ? ensureUUID(release.id) : ensureUUID(`rel-${targetBandId}-${Date.now()}`),
       band_id: targetBandId,
       label_id: isValidUUID(release.label_id) ? release.label_id : null,
       title: release.title,
@@ -221,60 +229,74 @@ export async function upsertReleaseToDatabase(
 
     const payload = sanitizeReleaseForDb(rawPayload);
 
-    let { data, error } = await supabase
-      .from('releases')
-      .upsert(payload, { onConflict: 'id' })
-      .select()
-      .maybeSingle();
+    // 1. Resilient upsert
+    let res = await executeWithSchemaResilience(
+      async (cleanPayload) => await client.from('releases').upsert(cleanPayload, { onConflict: 'id' }).select().maybeSingle(),
+      payload
+    );
+
+    let error = res?.error;
+    let data = res?.data;
 
     // Auto-heal: If foreign key constraint failed on 'bands', insert placeholder band and retry
-    if (error && (error.message.includes('foreign key') || error.code === '23503')) {
+    if (error && (error.message?.includes('foreign key') || error.code === '23503' || String(error).includes('foreign key'))) {
       console.warn('[releasesService] Foreign key constraint on bands detected. Auto-provisioning band row:', targetBandId);
       try {
-        const { data: existingBand } = await supabase
+        const { data: existingBand } = await client
           .from('bands')
           .select('id, band_name')
           .eq('id', targetBandId)
           .maybeSingle();
 
         if (!existingBand) {
-          await supabase
-            .from('bands')
-            .upsert({
+          let resolvedName = '';
+          try {
+            const archives = JSON.parse(localStorage.getItem('nexus_community_band_archives') || '[]');
+            const found = archives.find((b: any) => b && (b.id === targetBandId || ensureUUID(b.id) === targetBandId));
+            if (found?.name || found?.band_name) resolvedName = (found.name || found.band_name).trim();
+          } catch {}
+          if (!resolvedName) {
+            resolvedName = payload.artist || 'Artist';
+          }
+          const slug = resolvedName.toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+
+          await executeWithSchemaResilience(
+            async (p) => await client.from('bands').upsert(p, { onConflict: 'id' }),
+            {
               id: targetBandId,
-              band_name: 'Nexus Artist',
-              custom_slug: targetBandId,
+              band_name: resolvedName,
+              custom_slug: slug,
               updated_at: new Date().toISOString()
-            }, { onConflict: 'id' });
+            }
+          );
         }
 
-        // Retry release upsert with select() for optimistic reconciliation
-        const retryResult = await supabase
-          .from('releases')
-          .upsert(payload, { onConflict: 'id' })
-          .select()
-          .maybeSingle();
+        // Retry release upsert with schema resilience
+        const retryResult = await executeWithSchemaResilience(
+          async (cleanPayload) => await client.from('releases').upsert(cleanPayload, { onConflict: 'id' }).select().maybeSingle(),
+          payload
+        );
         
-        error = retryResult.error;
-        data = retryResult.data;
+        error = retryResult?.error;
+        data = retryResult?.data;
       } catch (bandProvisionErr) {
         console.warn('[releasesService] Band auto-provision notice:', bandProvisionErr);
       }
     }
 
     if (error) {
-      console.error('[releasesService] Database upsert error:', error.message, error);
+      console.error('[releasesService] Database upsert error:', error.message || error);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
           new CustomEvent('nexus_core_toast', {
             detail: {
-              message: `Failed to save release "${release.title}": ${error.message}`,
+              message: `Failed to save release "${release.title}": ${error.message || 'Database rejected write'}`,
               type: 'error'
             }
           })
         );
       }
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || String(error) };
     }
 
     console.log('[releasesService] Successfully persisted and reconciled release to Supabase:', release.title);
@@ -301,9 +323,12 @@ export async function upsertReleaseToDatabase(
  */
 export async function upsertReleasesBatchToDatabase(
   releases: CatalogRelease[] | Record<string, any>,
-  bandId: string
+  bandId: string,
+  portalType?: 'band' | 'promoter' | 'creative'
 ): Promise<{ success: boolean; error?: string; data?: any; count?: number }> {
   try {
+    const client = getActiveSupabase(portalType);
+
     // 1. Normalize input: ensure true array even if passed an object with numeric index keys
     let releaseList: any[] = [];
     if (Array.isArray(releases)) {
@@ -325,21 +350,36 @@ export async function upsertReleasesBatchToDatabase(
 
     // Auto-provision band row in Supabase 'bands' table before inserting releases to ensure foreign key integrity
     try {
-      const { data: existingBand } = await supabase
+      const { data: existingBand } = await client
         .from('bands')
         .select('id, band_name')
         .eq('id', targetBandId)
         .maybeSingle();
 
       if (!existingBand) {
-        await supabase
-          .from('bands')
-          .upsert({
+        let resolvedName = '';
+        try {
+          const archives = JSON.parse(localStorage.getItem('nexus_community_band_archives') || '[]');
+          const found = archives.find((b: any) => b && (b.id === targetBandId || ensureUUID(b.id) === targetBandId));
+          if (found?.name || found?.band_name) resolvedName = (found.name || found.band_name).trim();
+        } catch {}
+        if (!resolvedName && releaseList[0]?.artist) {
+          resolvedName = releaseList[0].artist;
+        }
+        if (!resolvedName) {
+          resolvedName = 'Artist';
+        }
+        const slug = resolvedName.toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+
+        await executeWithSchemaResilience(
+          async (p) => await client.from('bands').upsert(p, { onConflict: 'id' }),
+          {
             id: targetBandId,
-            band_name: 'Nexus Artist',
-            custom_slug: targetBandId,
+            band_name: resolvedName,
+            custom_slug: slug,
             updated_at: new Date().toISOString()
-          }, { onConflict: 'id' });
+          }
+        );
       }
     } catch (e) {
       console.warn('[releasesService] Pre-sync band check notice:', e);
@@ -416,31 +456,30 @@ export async function upsertReleasesBatchToDatabase(
     let dataResult: any = null;
     let syncError: any = null;
 
-    const { data: batchData, error: batchError } = await supabase
-      .from('releases')
-      .upsert(finalPayloads, { onConflict: 'id' })
-      .select();
+    const batchRes = await executeWithSchemaResilience(
+      async (payload) => await client.from('releases').upsert(payload, { onConflict: 'id' }).select(),
+      finalPayloads
+    );
 
-    if (!batchError) {
-      dataResult = batchData;
+    if (!batchRes?.error) {
+      dataResult = batchRes?.data;
     } else {
-      console.warn('[releasesService] Bulk array upsert failed, executing sequential individual upserts:', batchError.message);
+      console.warn('[releasesService] Bulk array upsert failed, executing sequential individual upserts:', batchRes.error.message || batchRes.error);
       
       let successfulCount = 0;
       for (const singleItem of finalPayloads) {
-        const { data: singleData, error: singleErr } = await supabase
-          .from('releases')
-          .upsert(singleItem, { onConflict: 'id' })
-          .select()
-          .maybeSingle();
+        const singleRes = await executeWithSchemaResilience(
+          async (payload) => await client.from('releases').upsert(payload, { onConflict: 'id' }).select().maybeSingle(),
+          singleItem
+        );
 
-        if (!singleErr) {
+        if (!singleRes?.error) {
           successfulCount++;
           if (!dataResult) dataResult = [];
-          if (Array.isArray(dataResult)) dataResult.push(singleData);
+          if (Array.isArray(dataResult)) dataResult.push(singleRes.data);
         } else {
-          console.error(`[releasesService] Sequential upsert failed for release "${singleItem.title}":`, singleErr.message);
-          syncError = singleErr;
+          console.error(`[releasesService] Sequential upsert failed for release "${singleItem.title}":`, singleRes.error);
+          syncError = singleRes.error;
         }
       }
 
@@ -450,23 +489,23 @@ export async function upsertReleasesBatchToDatabase(
     }
 
     if (syncError) {
-      console.error('[releasesService] Database batch upsert error:', syncError.message, syncError);
+      console.error('[releasesService] Database batch upsert error:', syncError.message || syncError);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
           new CustomEvent('nexus_core_toast', {
             detail: {
-              message: `❌ Batch release sync rejected by database: ${syncError.message}`,
+              message: `❌ Batch release sync rejected by database: ${syncError.message || 'Database error'}`,
               type: 'error'
             }
           })
         );
       }
-      return { success: false, error: syncError.message };
+      return { success: false, error: syncError.message || String(syncError) };
     }
 
     // 3. Database Persistence Verification: Query Supabase to confirm releases exist in the DB
     try {
-      const { data: verifyData, error: verifyErr } = await supabase
+      const { data: verifyData, error: verifyErr } = await client
         .from('releases')
         .select('id, title')
         .eq('band_id', targetBandId);
@@ -501,9 +540,13 @@ export async function upsertReleasesBatchToDatabase(
 /**
  * Delete a release from the Supabase database
  */
-export async function deleteReleaseFromDatabase(releaseId: string): Promise<boolean> {
+export async function deleteReleaseFromDatabase(
+  releaseId: string,
+  portalType?: 'band' | 'promoter' | 'creative'
+): Promise<boolean> {
   try {
-    const { error } = await supabase
+    const client = getActiveSupabase(portalType);
+    const { error } = await client
       .from('releases')
       .delete()
       .eq('id', releaseId);

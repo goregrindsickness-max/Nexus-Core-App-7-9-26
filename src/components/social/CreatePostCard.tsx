@@ -1114,7 +1114,7 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
                   className={`w-full ${theme.panelBg} text-xs ${theme.badgeText} border ${theme.inputBorder} rounded-lg p-2 font-mono ${theme.inputFocus} cursor-pointer`}
                 >
                   {availableAlbums.map((album, idx) => (
-                    <option key={idx} value={album} className="bg-black text-white">
+                    <option key={`album-${album}-${idx}`} value={album} className="bg-black text-white">
                       📁 Album: {album}
                     </option>
                   ))}
@@ -1178,7 +1178,7 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
             {selectedMediaFiles && selectedMediaFiles.length > 0 && (
               <div className="flex flex-wrap gap-2 pt-1">
                 {selectedMediaFiles.map((file, idx) => (
-                  <div key={idx} className="relative w-16 h-16 rounded-xl overflow-hidden border border-purple-900/40 bg-zinc-950">
+                  <div key={`media-file-${file.file?.name || file.url}-${idx}`} className="relative w-16 h-16 rounded-xl overflow-hidden border border-purple-900/40 bg-zinc-950">
                     {file.type === 'image' ? (
                       <img src={file.url} alt="upload preview" className="w-full h-full object-cover" />
                     ) : (
@@ -1366,7 +1366,7 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Band name (e.g. SUFFOCATION)..."
+                placeholder="Band name (e.g. DYING FETUS)..."
                 value={tagBandInput}
                 onChange={(e) => setTagBandInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTaggedBand(); } }}
@@ -1516,7 +1516,7 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
               type="text"
               placeholder={
                 pollVariant === 'encore_setlist'
-                  ? "e.g. Which song should Suffocation play for the finale?"
+                  ? "e.g. Which song should the headliner play for the finale?"
                   : pollVariant === 'promoter_lineup'
                   ? "e.g. Which support act should open the Minneapolis gig?"
                   : "Poll Question (e.g. WHAT IS YOUR CURRENT TOP BDM BAND?)"
@@ -1528,7 +1528,7 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
 
             <div className="space-y-1.5">
               {pollOptions.map((opt, idx) => (
-                <div key={idx} className="flex gap-1.5">
+                <div key={`poll-option-${idx}`} className="flex gap-1.5">
                   <input
                     type="text"
                     placeholder={`Option ${idx + 1}...`}
@@ -1737,7 +1737,7 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
                 <label className={`text-[9px] font-mono ${theme.accentText} uppercase font-bold block mb-1`}>Band / Artist Name</label>
                 <input
                   type="text"
-                  placeholder="e.g. MORBID ANGEL"
+                  placeholder="e.g. IMMOLATION"
                   value={tapeBand}
                   onChange={(e) => setTapeBand && setTapeBand(e.target.value)}
                   className={`w-full ${theme.innerPanelBg} text-xs text-white placeholder:text-zinc-600 border ${theme.inputBorder} rounded-lg p-2 font-mono ${theme.inputFocus}`}

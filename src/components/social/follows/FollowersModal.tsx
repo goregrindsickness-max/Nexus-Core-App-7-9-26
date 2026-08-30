@@ -278,7 +278,7 @@ export const FollowersModal: React.FC<FollowersModalProps> = ({
 
   const renderUserRow = (user: any, index: number, groupKey: string = 'general') => (
     <div 
-      key={`follower-row-${groupKey}-${user.id || user.handle || 'user'}-${index}`} 
+      key={`follower-row-${groupKey}-${index}-${user.id || ''}-${user.band_id || ''}-${user.raw_id || ''}-${user.handle || ''}-${user.name || ''}`} 
       onClick={() => handleNavigateToProfile(user)}
       className="flex items-center justify-between p-2.5 bg-zinc-900/90 border border-zinc-800/80 rounded-xl hover:border-violet-500/50 hover:bg-zinc-800/60 transition-all text-left cursor-pointer group"
     >

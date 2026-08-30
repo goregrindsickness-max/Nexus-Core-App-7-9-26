@@ -1187,7 +1187,7 @@ export const InboxTerminal: React.FC<InboxTerminalProps> = ({
           {/* Real Profiles Notes / Stories Carousel */}
           {realStories.map((story, sIdx) => (
             <div 
-              key={`story-${story.id || story.profileName || 'user'}-${sIdx}`} 
+              key={`story-${sIdx}-${story.id || ''}-${story.band_id || ''}-${story.raw_id || ''}-${story.handle || ''}-${story.profileName || ''}`} 
               onClick={() => {
                 setExpandedThought({
                   id: story.id,

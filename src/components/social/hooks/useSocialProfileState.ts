@@ -43,8 +43,8 @@ export function useSocialProfileState({
         id: 'col_m1',
         type: 'music',
         data: {
-          title: 'Altars of Madness',
-          band: 'MORBID ANGEL',
+          title: 'Reign Supreme',
+          band: 'DYING FETUS',
           thumbnail: 'https://images.unsplash.com/photo-1614113489855-66422ad300a4?w=400&q=80'
         },
         quantity: 1,
@@ -54,16 +54,16 @@ export function useSocialProfileState({
         id: 'col_t1',
         type: 'ticket',
         data: {
-          headliner: 'MORBID ANGEL',
+          headliner: 'DYING FETUS',
           venue: 'The Underground',
           time: 'Doors 8:00 PM',
           ticketType: 'VIP Ultimate Fan Bundle',
-          lineup: 'MORBID ANGEL, SUFFOCATION, IMMOLATION, MORTICIAN, SKELETAL REMAINS',
+          lineup: 'DYING FETUS, IMMOLATION, MORTICIAN, SKELETAL REMAINS',
           venueAddress: '1433 N Formosa Ave, West Hollywood, CA 90046',
           flyer: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80',
           attendees: [
-            { name: 'Trey Azagthoth', tier: 'vip_merch', size: 'L' },
-            { name: 'Steve Tucker', tier: 'vip_merch', size: 'XL' }
+            { name: 'John Gallagher', tier: 'vip_merch', size: 'L' },
+            { name: 'Sean Beasley', tier: 'vip_merch', size: 'XL' }
           ]
         },
         quantity: 2,
@@ -73,8 +73,8 @@ export function useSocialProfileState({
         id: 'col_m2',
         type: 'merch',
         data: {
-          title: 'Altars of Madness Heavyweight Hoodie',
-          seller: 'Morbid Angel Official Shop',
+          title: 'Destroy the Opposition Heavyweight Hoodie',
+          seller: 'Dying Fetus Official Shop',
           source: 'Official Shop',
           price: 65.00,
           size: 'XL',
@@ -183,7 +183,7 @@ export function useSocialProfileState({
     if (profileIsPlaying && profileActivePlaybackTrackId) {
       // Find matching track in ROSTER_CATALOGS
       let matchedTrack: any = null;
-      let matchedBand = userProfile?.handle || 'Nexus Artist';
+      let matchedBand = userProfile?.band_name || userProfile?.name || userProfile?.handle || 'Artist';
       let matchedAlbum = 'Official Catalog';
       let matchedCover = userProfile?.avatar || undefined;
 

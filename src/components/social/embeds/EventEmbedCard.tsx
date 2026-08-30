@@ -133,7 +133,7 @@ export const EventEmbedCard: React.FC<EventEmbedCardProps> = ({
               <div className="flex flex-wrap gap-1.5">
                 {actualEventData.lineup.map((band, idx) => (
                   <span
-                    key={idx}
+                    key={`event-lineup-${band}-${idx}`}
                     className="text-[10px] font-mono font-bold bg-zinc-950 border border-zinc-800 text-zinc-300 px-2 py-0.5 rounded-md hover:border-red-500/50 hover:text-white transition-colors"
                   >
                     {band}

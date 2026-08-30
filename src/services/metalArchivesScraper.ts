@@ -107,7 +107,7 @@ export async function scrapeMetalArchivesBand(queryOrUrl: string, rawPastedText?
 
   // 1. If user provided raw pasted text directly, parse it first
   if (rawPastedText && rawPastedText.trim().length > 0) {
-    const parsed = parseMetalArchivesRawText(rawPastedText, query || 'Nexus Artist');
+    const parsed = parseMetalArchivesRawText(rawPastedText, query || 'Band');
     if (parsed.releases.length > 0) {
       return parsed;
     }

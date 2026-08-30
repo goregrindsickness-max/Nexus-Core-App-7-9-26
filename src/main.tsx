@@ -4,8 +4,14 @@ import App from './App.tsx';
 import ErrorBoundary from './ErrorBoundary.tsx';
 import { ThemeProvider } from './components/ThemeEngine.tsx';
 import "./utils/resetApp";
+import { purgeDeletedAndZombieBands } from './lib/communityBands.ts';
 import './index.css';
 import './focus-overrides.css';
+
+// Purge any stale mock/deleted bands from previous sessions
+try {
+  purgeDeletedAndZombieBands();
+} catch (e) {}
 
 
 try {

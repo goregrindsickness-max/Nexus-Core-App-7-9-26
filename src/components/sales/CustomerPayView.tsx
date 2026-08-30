@@ -520,7 +520,7 @@ export default function CustomerPayView({ onBackToApp }: CustomerPayViewProps) {
                                         <div className="flex gap-1.5 overflow-x-auto pb-1 max-w-full">
                                           {imagesArray.map((imgUrl, iIdx) => (
                                             <button
-                                              key={iIdx}
+                                              key={`customer-pay-item-${iIdx}`}
                                               type="button"
                                               onClick={() => setFocusImageIdx(prev => ({ ...prev, [item.sku]: iIdx }))}
                                               className={`w-9 h-9 rounded border overflow-hidden shrink-0 transition-all ${

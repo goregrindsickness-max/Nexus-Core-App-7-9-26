@@ -590,7 +590,7 @@ export default function ReleasesCatalogTab({
           {
             id: activeTrack.id,
             title: activeTrack.title || 'Studio Master Recording',
-            artist: activeBand?.name || 'Nexus Artist',
+            artist: activeBand?.name || 'Artist',
             album: activeTrack.releaseTitle || activeBand?.name,
             audioUrl: activeTrack.audioUrl || activeTrack.url,
             duration: activeTrack.duration || '3:30'
@@ -616,7 +616,7 @@ export default function ReleasesCatalogTab({
           {
             id: 'fallback_live_deck',
             title: 'Live Catalog Broadcast Channel',
-            artist: activeBand?.name || 'Nexus Artist',
+            artist: activeBand?.name || 'Artist',
             album: 'Studio Vault Master Feed',
             duration: '3:30'
           },
@@ -1184,7 +1184,7 @@ export default function ReleasesCatalogTab({
                       <div className="h-4 flex items-end justify-center gap-0.5 overflow-hidden border-b border-zinc-900/40 pb-0.5 w-full max-w-sm mx-auto">
                         {Array.from({ length: 32 }).map((_, idx) => (
                           <div
-                            key={idx}
+                            key={`catalog-release-row-${idx}`}
                             className={`flex-1 rounded-t-sm transition-all duration-300 ${isPlaying ? 'bg-[#FF9900]' : 'bg-zinc-800/40'}`}
                             style={{ height: `${isPlaying ? Math.floor(15 + Math.random() * 85) : 10}%` }}
                           />

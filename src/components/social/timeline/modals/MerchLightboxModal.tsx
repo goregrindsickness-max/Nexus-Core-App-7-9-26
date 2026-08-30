@@ -172,7 +172,7 @@ export const MerchLightboxModal: React.FC<MerchLightboxModalProps> = ({
         <div className="flex items-center gap-2 overflow-x-auto max-w-full py-1">
           {activeMerchLightbox.images.map((imgUrl, idx) => (
             <button
-              key={idx}
+              key={`thumb-${idx}-${imgUrl?.slice(-15) || ''}`}
               onClick={() => onSelectIndex(idx)}
               className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
                 activeMerchLightbox.activeIndex === idx

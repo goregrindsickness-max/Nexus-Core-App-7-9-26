@@ -405,7 +405,7 @@ export const DecoupledFinanceCards: React.FC<DecoupledFinanceCardsProps> = ({
 
                 return (
                   <div 
-                    key={idx} 
+                    key={`top-item-${item.name || ''}-${idx}`} 
                     className="flex items-center gap-2.5 bg-black/45 px-3 py-2 rounded-xl border border-zinc-900/80 transition-all hover:bg-black/60 hover:-translate-y-0.5 duration-200"
                   >
                     <div className={`w-5 h-5 rounded-md border text-[10px] flex items-center justify-center font-mono ${medalBorder}`}>

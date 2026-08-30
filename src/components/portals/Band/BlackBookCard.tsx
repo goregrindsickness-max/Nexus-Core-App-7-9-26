@@ -102,7 +102,7 @@ export default function BlackBookCard({
                           {beacons.map((beacon: any, i: number) => {
                             const isExpired = new Date(beacon.end_date) < new Date();
                             return (
-                              <div key={i} className={`p-3 transition-colors ${isExpired ? 'opacity-50' : 'hover:bg-[#0c0e12]'}`}>
+                              <div key={`bb-card-entry-${i}`} className={`p-3 transition-colors ${isExpired ? 'opacity-50' : 'hover:bg-[#0c0e12]'}`}>
                                 <div className="flex justify-between items-start mb-1.5">
                                   <span className="text-xs font-bold text-[#00ffcc] uppercase">{beacon.target_region}</span>
                                   {isExpired ? (
