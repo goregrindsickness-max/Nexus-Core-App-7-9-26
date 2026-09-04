@@ -2823,7 +2823,7 @@ export default function PromoterPortalView({
         <motion.div key="modal-backdrop-promoterportalview-1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[99990] bg-black/60 backdrop-blur-[2px]" onClick={() => setRoleMenuOpen(false)} />
                 
                 {/* Switcher Dropdown popup */}
-                <div className="fixed top-14 right-4 sm:right-6 w-80 bg-[#09090b] border border-zinc-800 rounded-2xl p-4 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.95)] z-[99999] text-left animate-in fade-in slide-in-from-top-3 duration-200">
+                <div className="fixed top-[92px] right-4 sm:right-6 w-80 bg-[#09090b] border border-zinc-800 rounded-2xl p-4 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.95)] z-[99999] text-left animate-in fade-in slide-in-from-top-3 duration-200">
                   <div className="flex items-center gap-3 pb-3 border-b border-zinc-800/80">
                     {userProfile?.promoter_logo || userProfile?.avatar_url ? (
                       <img src={userProfile?.promoter_logo || userProfile?.avatar_url} className="w-10 h-10 rounded-full object-cover border border-yellow-500/40 shrink-0" alt="" referrerPolicy="no-referrer" />

@@ -34,6 +34,7 @@ export {
   isValidStorageOrImageUrl,
   base64ToBlob,
   uploadBase64ToStorage,
+  uploadCommunityBandMedia,
   testPhotoPitStorageConnection,
   ensureImagesUploadedToStorage,
 } from './services/storageService';
@@ -88,6 +89,7 @@ export {
   mapBandData,
   fetchUserBands,
   upsertBandToDatabase,
+  verifyAndResyncBandLogo,
 } from './services/bandService';
 
 // 6b. Creative Domain Service

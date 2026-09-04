@@ -1549,7 +1549,7 @@ export default function PromoterDashboardViewV2({
         </div>
       )}
       {/* STICKY TOP HEADER ROW */}
-      <div className="sticky top-0 z-[10000] bg-[#0c0e12]/95 backdrop-blur-md border-b border-zinc-900 w-full shadow-[0_10px_30px_rgba(0,0,0,0.9)] flex flex-col">
+      <div className="sticky top-0 z-20 bg-[#0c0e12]/95 backdrop-blur-md border-b border-zinc-900 w-full shadow-[0_10px_30px_rgba(0,0,0,0.9)] flex flex-col">
         {/* BRAND NAVIGATION HEADER */}
         <div className="px-5 py-3 flex items-center justify-between bg-black">
           <div className="flex items-center gap-3">
@@ -1638,7 +1638,7 @@ export default function PromoterDashboardViewV2({
                 {v2RoleMenuOpen && (
                   <>
                     <div className="fixed inset-0 z-[99990] bg-black/60 backdrop-blur-[2px]" onClick={() => setV2RoleMenuOpen(false)} />
-                    <div className="fixed top-14 right-4 sm:right-6 w-80 bg-[#09090b] border border-zinc-800 rounded-2xl p-4 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.95)] z-[99999] text-left animate-in fade-in slide-in-from-top-3 duration-200">
+                    <div className="fixed top-[92px] right-4 sm:right-6 w-80 bg-[#09090b] border border-zinc-800 rounded-2xl p-4 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.95)] z-[99999] text-left animate-in fade-in slide-in-from-top-3 duration-200">
                       <button onClick={() => setV2RoleMenuOpen(false)} className="absolute top-4 right-4 w-6 h-6 flex items-center justify-center bg-black/40 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-500 hover:text-zinc-300 rounded-full transition-all cursor-pointer z-10"><X className="w-3.5 h-3.5" /></button>
                       
                       <div className="flex items-center gap-3 pb-3 border-b border-zinc-800/80">

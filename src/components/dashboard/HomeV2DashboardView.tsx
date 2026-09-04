@@ -759,7 +759,7 @@ export function HomeV2DashboardView(props: any & { renderTourNotesCard: any; ren
   return (
           <div id="v2-dashboard-scroll-container" className="flex-grow overflow-y-auto w-full h-full p-0 m-0 scrollbar-thin bg-[#050505] flex flex-col band-portal-theme">
             {/* Top Navigation Menu Bar */}
-            <div className="sticky top-0 z-[10000] bg-[#0c0e12]/95 backdrop-blur-md border-b border-zinc-900 w-full shadow-[0_10px_30px_rgba(0,0,0,0.9)] flex flex-col">
+            <div className="sticky top-0 z-20 bg-[#0c0e12]/95 backdrop-blur-md border-b border-zinc-900 w-full shadow-[0_10px_30px_rgba(0,0,0,0.9)] flex flex-col">
               {/* Glowing Icon Navigation Bar */}
               <div className="flex items-center justify-around px-2 py-[7px] relative w-full bg-[#0c0e12]">
                 {[

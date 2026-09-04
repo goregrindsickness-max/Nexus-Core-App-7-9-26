@@ -84,7 +84,7 @@ export function AppNavigationBar({
   return (
     <React.Fragment>
         {/* RECTANGULAR BOTTOM ACTION BAR (STAND IN NAV DECORATION BAR) */}
-        <div className="fixed bottom-0 w-full sm:max-w-[620px] bg-[#0c0e12]/98 border-t border-[#1b1e25] px-4 py-3 grid grid-cols-3 items-center z-40 shadow-[0_-15px_30px_rgba(0,0,0,0.5)]">
+        <div className="fixed bottom-0 w-full sm:max-w-[620px] bg-[#0c0e12]/98 border-t border-[#1b1e25] px-4 py-3 grid grid-cols-3 items-center z-10 shadow-[0_-15px_30px_rgba(0,0,0,0.5)]">
           <div className="flex justify-start">
             <button
               onClick={() => {

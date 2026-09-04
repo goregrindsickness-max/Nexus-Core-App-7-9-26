@@ -409,13 +409,13 @@ export const PromoterRegistrationSection: React.FC<PromoterRegistrationSectionPr
               
               {isPromoterGenresExpanded && (
                 <div className="mt-3 space-y-3">
-                  {GENRE_CLUSTERS.map((cluster, idx) => (
-                    <div key={`${cluster.name}-${idx}`} className="bg-zinc-950/50 border border-zinc-800/80 rounded-lg p-3">
+                  {GENRE_CLUSTERS.map((cluster, clusterIdx) => (
+                    <div key={`promoter-cluster-${clusterIdx}-${cluster.name}`} className="bg-zinc-950/50 border border-zinc-800/80 rounded-lg p-3">
                       <div className="text-[8px] font-mono font-bold text-zinc-400 mb-2 uppercase tracking-widest">{cluster.name}</div>
                       <div className="flex flex-wrap gap-1.5">
-                        {cluster.genres.map((genre, idx) => (
+                        {cluster.genres.map((genre, gIdx) => (
                           <button
-                            key={`${genre}-${idx}`}
+                            key={`promoter-cluster-${clusterIdx}-genre-${gIdx}-${genre}`}
                             type="button"
                             onClick={(e) => {
                               e.preventDefault();

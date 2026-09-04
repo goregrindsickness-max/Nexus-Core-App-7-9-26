@@ -28,8 +28,6 @@ import {
   ChevronDown,
   ChevronUp,
   ArrowLeft,
-  Lock,
-  Unlock,
   ShieldAlert,
   AlertCircle,
   Database,
@@ -111,12 +109,6 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
   const [metalArchivesUrl, setMetalArchivesUrl] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [curatorHandle, setCuratorHandle] = useState('@community_archivist');
-
-  // Archive Lock & Supabase Protection State
-  const [isLocked, setIsLocked] = useState<boolean>(false);
-  const [lockedAt, setLockedAt] = useState<string>('');
-  const [lockedBy, setLockedBy] = useState<string>('');
-  const [isTogglingLock, setIsTogglingLock] = useState<boolean>(false);
 
   // Lineup Editor State
   const [lineup, setLineup] = useState<LineupMember[]>([]);
@@ -282,9 +274,6 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
     setMetalArchivesUrl(band.metal_archives_url || '');
     setYoutubeUrl(band.youtube_url || band.featured_youtube_url || '');
     setCuratorHandle(band.curated_by || (userProfile?.console_handle || userProfile?.handle || '@community_archivist'));
-    setIsLocked(Boolean(band.is_locked));
-    setLockedAt(band.locked_at || '');
-    setLockedBy(band.locked_by || '');
     setLineup(band.lineup || []);
     setAlbums([...(band.discography || [])].sort((a, b) => parseInt(b.year || '0') - parseInt(a.year || '0')));
     setEditingAlbumIdx(null);
@@ -293,19 +282,13 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
     setActivePage('editor');
   };
 
-  // Delete Community Band Archive with confirmation & unlock bypass
+  // Delete Community Band Archive with confirmation
   const handleDeleteBand = (band: CommunityBandRecord) => {
     const bandTitle = band.name || 'this band';
     const releaseCount = band.discography?.length || 0;
     
-    if (band.is_locked) {
-      if (!window.confirm(`⚠️ Archive "${bandTitle}" is currently LOCKED in Supabase.\n\nAre you sure you want to unlock and permanently delete this community archive?`)) {
-        return;
-      }
-    } else {
-      if (!window.confirm(`🗑️ Are you sure you want to permanently delete "${bandTitle}" (${releaseCount} releases)?\n\nThis will remove it from community archives and Supabase.`)) {
-        return;
-      }
+    if (!window.confirm(`🗑️ Are you sure you want to permanently delete "${bandTitle}" (${releaseCount} releases)?\n\nThis will remove it from community archives and Supabase.`)) {
+      return;
     }
 
     const res = communityBandManager.deleteCommunityBand(band.id, true);
@@ -340,51 +323,12 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
     setMetalArchivesUrl('');
     setYoutubeUrl('');
     setCuratorHandle(userProfile?.console_handle || userProfile?.handle || '@community_archivist');
-    setIsLocked(false);
-    setLockedAt('');
-    setLockedBy('');
     setLineup([]);
     setAlbums([]);
     setEditingAlbumIdx(null);
     setEditingMemberIdx(null);
     resetReleaseInputs();
     setActivePage('editor');
-  };
-
-  // Toggle Lock mechanism: locks/freezes or unlocks archive in Supabase & LocalStorage
-  const handleToggleLock = async (explicitState?: boolean) => {
-    const nextState = explicitState !== undefined ? explicitState : !isLocked;
-    setIsTogglingLock(true);
-    try {
-      const userHandle = userProfile?.console_handle || userProfile?.handle || userProfile?.name || '@fan_archivist';
-      const nowIso = new Date().toISOString();
-
-      setIsLocked(nextState);
-      if (nextState) {
-        setLockedAt(nowIso);
-        setLockedBy(userHandle);
-      }
-
-      if (selectedBand?.id) {
-        const updatedBand = await communityBandManager.toggleLock(selectedBand.id, nextState, userHandle);
-        if (updatedBand) {
-          setSelectedBand(updatedBand);
-          setBandsList(prev => prev.map(b => b.id === updatedBand.id ? updatedBand : b));
-          onSaved?.(updatedBand);
-        }
-      }
-
-      triggerNotification?.(
-        nextState
-          ? `🔒 "${name || selectedBand?.name || 'Band'}" locked in Supabase! Discography & metadata are protected against overwriting.`
-          : `🔓 "${name || selectedBand?.name || 'Band'}" unlocked! You can now edit and sync.`
-      );
-    } catch (err: any) {
-      console.error('Failed to toggle lock:', err);
-      triggerNotification?.(`❌ Lock action failed: ${err?.message || 'Unknown error'}`);
-    } finally {
-      setIsTogglingLock(false);
-    }
   };
 
   const resetReleaseInputs = () => {
@@ -577,10 +521,7 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
         creator_id: resolvedCreatorId,
         curated_by: curatorHandle || userProfile?.console_handle || userProfile?.handle || '@fan_archivist',
         curator_name: userProfile?.full_name || userProfile?.name || 'Community Archivist',
-        verification_status: selectedBand?.verification_status || 'community_archive',
-        is_locked: isLocked,
-        locked_at: isLocked ? (lockedAt || new Date().toISOString()) : undefined,
-        locked_by: isLocked ? (lockedBy || curatorHandle || userProfile?.console_handle || userProfile?.name) : undefined
+        verification_status: selectedBand?.verification_status || 'community_archive'
       };
 
       const savedRecord = communityBandManager.upsertCommunityBand(bandPayload, { isNew: isCreatingNew });
@@ -677,26 +618,7 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
                   </button>
                 )}
 
-                <button
-                  type="button"
-                  onClick={() => handleToggleLock()}
-                  disabled={isTogglingLock}
-                  className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold uppercase flex items-center gap-1.5 border transition-all cursor-pointer ${
-                    isLocked
-                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-md shadow-amber-500/10 hover:bg-amber-500/30'
-                      : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-750'
-                  }`}
-                  title={isLocked ? 'Archive is locked. Click to unlock.' : 'Click to lock data and freeze in Supabase.'}
-                >
-                  {isTogglingLock ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
-                  ) : isLocked ? (
-                    <Lock className="w-3.5 h-3.5 text-amber-400" />
-                  ) : (
-                    <Unlock className="w-3.5 h-3.5 text-zinc-400" />
-                  )}
-                  <span className="hidden sm:inline">{isLocked ? 'LOCKED' : 'LOCK DATA'}</span>
-                </button>
+
 
                 <button
                   onClick={() => setActivePage('list')}
@@ -796,11 +718,7 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
                         {band.name}
                       </span>
                       <div className="flex items-center gap-1 shrink-0">
-                        {band.is_locked && (
-                          <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border bg-amber-500/20 text-amber-300 border-amber-500/50 flex items-center gap-0.5">
-                            <Lock className="w-2.5 h-2.5" /> LOCKED
-                          </span>
-                        )}
+
                         <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border shrink-0 ${
                           band.verification_status === 'verified_official'
                             ? 'bg-emerald-950/80 text-emerald-400 border-emerald-500/40'
@@ -903,69 +821,7 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
               {/* TAB 1: OVERVIEW & MEDIA */}
               {activeTab === 'overview' && (
                 <div className="space-y-3 animate-in fade-in duration-150">
-                  {/* ARCHIVE LOCK & IMMUTABILITY PROTECTION CARD */}
-                  <div className={`p-3.5 rounded-2xl border transition-all ${
-                    isLocked 
-                      ? 'bg-amber-950/20 border-amber-500/50 shadow-inner' 
-                      : 'bg-zinc-950 border-zinc-800/80 hover:border-zinc-700'
-                  }`}>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex items-start gap-3">
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
-                          isLocked 
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm' 
-                            : 'bg-zinc-900 text-zinc-400 border-zinc-800'
-                        }`}>
-                          {isLocked ? <Lock className="w-4 h-4 text-amber-400" /> : <Unlock className="w-4 h-4 text-zinc-500" />}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-mono font-bold uppercase tracking-wider text-white">
-                              Supabase Immutability & Data Lock
-                            </span>
-                            <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-                              isLocked 
-                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse' 
-                                : 'bg-zinc-900 text-zinc-400 border-zinc-800'
-                            }`}>
-                              {isLocked ? 'ARCHIVE LOCKED' : 'UNLOCKED / EDITABLE'}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-zinc-400 mt-0.5 font-sans leading-relaxed">
-                            {isLocked 
-                              ? 'This archive is locked. Its albums, tracks, and lineup are protected from being overwritten by other band updates or empty syncs.' 
-                              : 'Enable this lock to freeze and protect this band’s discography and metadata against accidental overwrite in Supabase.'}
-                          </p>
-                          {isLocked && lockedAt && (
-                            <div className="text-[10px] font-mono text-zinc-500 mt-1 flex items-center gap-2">
-                              <span>Locked on: {new Date(lockedAt).toLocaleDateString()}</span>
-                              {lockedBy && <span>by {lockedBy}</span>}
-                            </div>
-                          )}
-                        </div>
-                      </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleToggleLock()}
-                        disabled={isTogglingLock}
-                        className={`px-4 py-2 rounded-xl font-mono text-xs font-bold uppercase flex items-center justify-center gap-2 shrink-0 transition-all cursor-pointer shadow-md ${
-                          isLocked 
-                            ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 hover:border-amber-400' 
-                            : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700 hover:text-white'
-                        }`}
-                      >
-                        {isTogglingLock ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
-                        ) : isLocked ? (
-                          <Unlock className="w-3.5 h-3.5 text-amber-400" />
-                        ) : (
-                          <Lock className="w-3.5 h-3.5 text-amber-400" />
-                        )}
-                        <span>{isLocked ? 'Unlock Archive' : 'Lock This Archive'}</span>
-                      </button>
-                    </div>
-                  </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div className="space-y-1 sm:col-span-1">
@@ -1342,21 +1198,7 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
               {/* TAB 2: LINEUP */}
               {activeTab === 'lineup' && (
                 <div className="space-y-4 animate-in fade-in duration-150">
-                  {isLocked && (
-                    <div className="p-3 bg-amber-950/20 border border-amber-500/40 rounded-xl flex items-center justify-between gap-3 text-xs font-mono text-amber-300">
-                      <div className="flex items-center gap-2">
-                        <Lock className="w-4 h-4 text-amber-400 shrink-0" />
-                        <span>This band is locked. Lineup changes are protected in Supabase.</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleLock(false)}
-                        className="px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-800 text-amber-400 border border-amber-500/40 font-bold uppercase text-[10px] cursor-pointer"
-                      >
-                        Unlock
-                      </button>
-                    </div>
-                  )}
+
 
                   <div className="p-4 bg-zinc-950 border border-zinc-850 rounded-2xl space-y-3">
                     <div className="flex items-center justify-between">
@@ -1521,21 +1363,7 @@ export const CommunityBandCuratorModal: React.FC<CommunityBandCuratorModalProps>
               {/* TAB 3: DISCOGRAPHY */}
               {activeTab === 'discography' && (
                 <div className="space-y-3.5 animate-in fade-in duration-150">
-                  {isLocked && (
-                    <div className="p-3 bg-amber-950/20 border border-amber-500/40 rounded-xl flex items-center justify-between gap-3 text-xs font-mono text-amber-300">
-                      <div className="flex items-center gap-2">
-                        <Lock className="w-4 h-4 text-amber-400 shrink-0" />
-                        <span>This archive is locked. Discography and tracklists cannot be overwritten by other bands in Supabase.</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleLock(false)}
-                        className="px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-800 text-amber-400 border border-amber-500/40 font-bold uppercase text-[10px] cursor-pointer"
-                      >
-                        Unlock
-                      </button>
-                    </div>
-                  )}
+
 
                   <div className="p-3 bg-zinc-950 border border-zinc-850 rounded-2xl space-y-3">
                     <div className="flex items-center justify-between">

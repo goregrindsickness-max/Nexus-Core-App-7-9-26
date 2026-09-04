@@ -310,6 +310,79 @@ export async function uploadBase64ToStorage(
 }
 
 /**
+ * Standardized single helper utility for uploading community band media (logo or cover)
+ * ensuring consistent storage path ('community-bands' bucket), transcoding, metadata handling, and persistence logic.
+ */
+export async function uploadCommunityBandMedia(
+  imageInput: string | File | null | undefined,
+  bandId: string,
+  mediaType: 'logo' | 'cover' | 'banner' | 'avatar' = 'logo'
+): Promise<string> {
+  if (!imageInput) return '';
+  if (typeof imageInput === 'string' && !imageInput.startsWith('data:')) {
+    return imageInput; // Already a remote storage URL
+  }
+
+  try {
+    const resolvedBandId = bandId || 'band';
+    const token = (mediaType === 'logo' || mediaType === 'avatar') ? 'band-logo' : 'band-cover';
+    
+    // 1. Transcode/compress image to WebP
+    let processedFile: any = imageInput;
+    if (typeof imageInput === 'string' && imageInput.startsWith('data:')) {
+      processedFile = await compressAndTranscodeImageToWebP(imageInput);
+    } else if (typeof imageInput === 'object' && imageInput instanceof File) {
+      processedFile = await compressAndTranscodeImageToWebP(imageInput);
+    }
+
+    // 2. Convert processed file/blob to base64 string
+    let base64String = '';
+    if (typeof processedFile === 'string') {
+      base64String = processedFile;
+    } else if (processedFile instanceof File || processedFile instanceof Blob) {
+      base64String = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => resolve('');
+        reader.readAsDataURL(processedFile);
+      });
+    }
+
+    if (!base64String) {
+      return typeof imageInput === 'string' ? imageInput : '';
+    }
+
+    // 3. Upload to Supabase Storage using standardized 'community-bands' bucket
+    const publicUrl = await uploadBase64ToStorage(
+      base64String,
+      'community-bands',
+      resolvedBandId,
+      token
+    );
+
+    if (publicUrl && !publicUrl.startsWith('data:')) {
+      // Synchronize to localStorage cache for robustness across sessions
+      try {
+        if (resolvedBandId && resolvedBandId !== 'band') {
+          if (token === 'band-logo') {
+            localStorage.setItem(`nexus_core_band_logo_${resolvedBandId}`, publicUrl);
+          } else {
+            localStorage.setItem(`nexus_core_band_cover_${resolvedBandId}`, publicUrl);
+          }
+        }
+      } catch (_) {}
+
+      return publicUrl;
+    }
+
+    return typeof imageInput === 'string' ? imageInput : '';
+  } catch (err) {
+    console.warn(`[uploadCommunityBandMedia] Error uploading ${mediaType}:`, err);
+    return typeof imageInput === 'string' ? imageInput : '';
+  }
+}
+
+/**
  * Diagnostics function to live-test Supabase Storage connectivity to the 'photo-pit' bucket.
  */
 export async function testPhotoPitStorageConnection(): Promise<{

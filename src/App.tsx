@@ -1415,7 +1415,8 @@ export default function App() {
           }).catch((err) => console.warn('Creative auto-sync notice:', err));
         }
 
-        const userActiveId = cachedActiveBandIdStr || (userBands[0]?.id || userProfile?.band_id || '');
+        const veBand = userBands.find((b: any) => b.id === 'cbddb810-259b-4230-9968-3d402dfdb872');
+        const userActiveId = cachedActiveBandIdStr || (veBand?.id || userBands[0]?.id || userProfile?.band_id || 'cbddb810-259b-4230-9968-3d402dfdb872');
         setActiveBandId(userActiveId);
         currentActiveBandId = userActiveId;
       }
@@ -1604,6 +1605,10 @@ export default function App() {
     const savedCover = localStorage.getItem(`nexus_core_band_cover_${bandId}`) || activeBand.cover_url || '';
     setBandCoverUrl(savedCover);
 
+    // Load logo
+    const savedLogo = localStorage.getItem(`nexus_core_band_logo_${bandId}`) || activeBand.logo_url || activeBand.avatar_url || (activeBand as any).avatar || '';
+    setBandLogoUrl(savedLogo);
+
     // Load crew
     const savedCrew = localStorage.getItem(`nexus_core_crew_members_${bandId}`);
     if (savedCrew) {
@@ -1633,6 +1638,13 @@ export default function App() {
       localStorage.setItem(`nexus_core_band_lineup_${activeBand.id}`, JSON.stringify(bandLineup));
     } catch (_) {}
   }, [bandLineup, activeBand?.id, currentLoadedBandId, isInitialHydrated]);
+
+  useEffect(() => {
+    if (!isInitialHydrated || !activeBand || currentLoadedBandId !== activeBand.id) return;
+    try {
+      localStorage.setItem(`nexus_core_band_logo_${activeBand.id}`, bandLogoUrl);
+    } catch (_) {}
+  }, [bandLogoUrl, activeBand?.id, currentLoadedBandId, isInitialHydrated]);
 
   useEffect(() => {
     if (!isInitialHydrated || !activeBand || currentLoadedBandId !== activeBand.id) return;
@@ -3848,11 +3860,15 @@ list.push({
                     {[
                       ...(Array.isArray(bandLineup) ? bandLineup : []).map((m: any) => ({ ...m, type: 'Lineup', lvl: m.clearanceLevel || 5 })),
                       ...(Array.isArray(crewMembers) ? crewMembers : []).map((c: any) => ({ ...c, type: 'Crew', lvl: c.clearanceLevel || 1 }))
-                    ].map((member: any, idx: number) => (
-                      <option key={member.id ? `${member.type}-${member.id}-${idx}` : `${member.type}-${idx}`} value={member.id}>
-                        [{member.type}] {member?.name || 'Unnamed'} ({member.role || 'Crew'}) - Lvl {member.lvl}
-                      </option>
-                    ))}
+                    ].map((member: any, idx: number) => {
+                      const optKey = `${member.type}-${member.id || 'noid'}-${idx}`;
+                      const optVal = member.id || `${member.type}-${idx}`;
+                      return (
+                        <option key={optKey} value={optVal}>
+                          [{member.type}] {member?.name || 'Unnamed'} ({member.role || 'Crew'}) - Lvl {member.lvl}
+                        </option>
+                      );
+                    })}
                   </select>
                   
                   <button

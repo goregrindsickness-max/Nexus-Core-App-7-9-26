@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { uploadBase64ToStorage, getSupabase, executeWithSchemaResilience, sanitizeBandPayload, upsertBandToDatabase } from '../supabase';
+import { uploadBase64ToStorage, uploadCommunityBandMedia, getSupabase, executeWithSchemaResilience, sanitizeBandPayload, upsertBandToDatabase, verifyAndResyncBandLogo } from '../supabase';
 
 interface UseBandManagementParams {
   activeBand: any;
@@ -162,13 +162,22 @@ export function useBandManagement({
       if (dataUrl) {
         compressLogoImage(dataUrl, 400, async (compressedUrl) => {
           try {
-            const userProfileId = userProfile?.id || activeBand?.creator_id || 'profile_anonymous';
             const bandIdToUse = activeBand?.id || 'band';
             triggerNotification?.('⏳ Storing logo in community-bands bucket...');
-            const publicUrl = await uploadBase64ToStorage(compressedUrl, 'community-bands', userProfileId, 'band-logo');
-            if (publicUrl) {
+            const publicUrl = await uploadCommunityBandMedia(compressedUrl, bandIdToUse, 'logo');
+            if (publicUrl && !publicUrl.startsWith('data:')) {
               setBandLogoUrl(publicUrl);
-              const updated = { ...activeBand, logo_url: publicUrl };
+              verifyAndResyncBandLogo(publicUrl, activeBand?.id);
+              if (activeBand?.id) {
+                localStorage.setItem(`nexus_core_band_logo_${activeBand.id}`, publicUrl);
+              }
+              const updated = { 
+                ...activeBand, 
+                logo_url: publicUrl, 
+                avatar_url: publicUrl, 
+                avatar: publicUrl, 
+                image: publicUrl 
+              };
               setBands(prev => prev.map(b => b.id === activeBand?.id ? updated : b));
               
               if (activeBand?.id) {
@@ -199,9 +208,9 @@ export function useBandManagement({
       if (dataUrl) {
         compressLogoImage(dataUrl, 1000, async (compressedUrl) => {
           try {
-            const userProfileId = userProfile?.id || activeBand?.creator_id || 'profile_anonymous';
+            const bandIdToUse = activeBand?.id || 'band';
             triggerNotification?.('⏳ Storing cover banner in community-bands bucket...');
-            const publicUrl = await uploadBase64ToStorage(compressedUrl, 'community-bands', userProfileId, 'band-cover');
+            const publicUrl = await uploadCommunityBandMedia(compressedUrl, bandIdToUse, 'cover');
             if (publicUrl && !publicUrl.startsWith('data:')) {
               setBandCoverUrl(publicUrl);
               const updated = { ...activeBand, cover_url: publicUrl };

@@ -245,7 +245,7 @@ export const NexusTopBar: React.FC<NexusTopBarProps> = ({
               {roleMenuOpen && (
                 <motion.div key="v2-role-menu-wrapper" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   <div className="fixed inset-0 z-[99990] bg-black/60 backdrop-blur-[2px]" onClick={() => setRoleMenuOpen(false)} />
-                  <div className="fixed top-14 right-3 sm:right-6 w-84 max-w-[calc(100vw-24px)] bg-[#09090b] border border-zinc-800 rounded-2xl p-4 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.95)] z-[99999] text-left animate-in fade-in slide-in-from-top-3 duration-200">
+                  <div className="fixed top-[92px] right-3 sm:right-6 w-84 max-w-[calc(100vw-24px)] bg-[#09090b] border border-zinc-800 rounded-2xl p-4 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.95)] z-[99999] text-left animate-in fade-in slide-in-from-top-3 duration-200">
                     <button onClick={() => setRoleMenuOpen(false)} className="absolute top-4 right-4 w-6 h-6 flex items-center justify-center bg-black/40 hover:bg-rose-900/40 border border-zinc-800 hover:border-rose-500/50 text-zinc-500 hover:text-rose-400 rounded-full transition-all cursor-pointer"><X className="w-3.5 h-3.5" /></button>
                     
                     {/* Active Profile Header */}

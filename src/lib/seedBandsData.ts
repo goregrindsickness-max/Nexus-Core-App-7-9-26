@@ -783,6 +783,72 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
     ]
   },
   {
+    id: 'suff0c41-9b23-41e8-b8d9-123456789abc',
+    name: 'Suffocation',
+    band_name: 'Suffocation',
+    genre: 'Brutal Death Metal',
+    subgenres: ['Brutal Death Metal', 'Technical Death Metal', 'New York Death Metal'],
+    founded_year: '1988',
+    city: 'Centereach, Long Island',
+    state: 'NY',
+    state_province: 'NY',
+    country: 'USA',
+    record_label: 'Nuclear Blast',
+    label: 'Nuclear Blast',
+    bio: 'Pioneers of brutal death metal and New York death metal (NYDM), Suffocation defined extreme metal subgenres with down-tuned brutality, complex time changes, intricate guitar work, and Frank Mullen’s iconic guttural vocal deliveries.',
+    avatar_url: 'https://cdn-images.dzcdn.net/images/artist/99bb44422204ef947c6b54a362a9c394/1000x1000-000000-80-0-0.jpg',
+    logo_url: 'https://cdn-images.dzcdn.net/images/artist/99bb44422204ef947c6b54a362a9c394/1000x1000-000000-80-0-0.jpg',
+    avatar: 'https://cdn-images.dzcdn.net/images/artist/99bb44422204ef947c6b54a362a9c394/1000x1000-000000-80-0-0.jpg',
+    image: 'https://cdn-images.dzcdn.net/images/artist/99bb44422204ef947c6b54a362a9c394/1000x1000-000000-80-0-0.jpg',
+    cover_url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=1200',
+    banner_url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=1200',
+    metal_archives_url: 'https://www.metal-archives.com/bands/Suffocation/384',
+    custom_slug: 'suffocation',
+    verification_status: 'verified_official',
+    curated_by: '@nydm_vault',
+    curator_name: 'NYDM Archivist',
+    created_at: '2026-01-05T12:00:00Z',
+    followers_count: 4890,
+    lineup: [
+      { id: 'suff-1', name: 'Frank Mullen', role: 'Vocals', status: 'past', years: '1988–2018' },
+      { id: 'suff-2', name: 'Terrance Hobbs', role: 'Guitars', status: 'active', years: '1988–present' },
+      { id: 'suff-3', name: 'Guy Marchais', role: 'Guitars', status: 'active', years: '1990–1996, 2003–present' },
+      { id: 'suff-4', name: 'Derek Boyer', role: 'Bass', status: 'active', years: '2004–present' },
+      { id: 'suff-5', name: 'Eric Morotti', role: 'Drums', status: 'active', years: '2016–present' },
+      { id: 'suff-6', name: 'Ricky Myers', role: 'Vocals', status: 'active', years: '2019–present' }
+    ],
+    discography: [
+      {
+        id: 'rel-suff-1',
+        title: 'Effigy of the Forgotten',
+        year: '1991',
+        type: 'album',
+        release_info: 'Roadrunner Records legendary debut.',
+        label: 'Roadrunner Records',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/b404d80a324395e54d37c95e1e5b19c2/1000x1000-000000-80-0-0.jpg',
+        tracks: [
+          { number: 1, title: 'Infecting the Crypts', duration: '4:46' },
+          { number: 2, title: 'Mass Obliteration', duration: '4:31' },
+          { number: 3, title: 'Effigy of the Forgotten', duration: '3:48' }
+        ]
+      },
+      {
+        id: 'rel-suff-2',
+        title: 'Pierced from Within',
+        year: '1995',
+        type: 'album',
+        release_info: 'Roadrunner Records sophomore masterpiece.',
+        label: 'Roadrunner Records',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/90a2b8e39f37c34d40218b0f492b4500/1000x1000-000000-80-0-0.jpg',
+        tracks: [
+          { number: 1, title: 'Pierced from Within', duration: '4:23' },
+          { number: 2, title: 'Thrones of Blood', duration: '5:13' },
+          { number: 3, title: 'Depths of Depravity', duration: '5:02' }
+        ]
+      }
+    ]
+  },
+  {
     id: 'cbddb810-259b-4230-9968-3d402dfdb872',
     name: 'Virulent Excision',
     band_name: 'Virulent Excision',

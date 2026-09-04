@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Band, BandJoinRequest } from '../types';
+import { verifyAndResyncBandLogo } from '../supabase';
 
 interface BandState {
   bands: any[];
@@ -50,7 +51,14 @@ export const useBandState = create<BandState>((set) => ({
   crewMembers: [],
   setCrewMembers: (crew) => set((state) => ({ crewMembers: typeof crew === 'function' ? crew(state.crewMembers) : crew })),
   bandLogoUrl: '',
-  setBandLogoUrl: (url) => set({ bandLogoUrl: url }),
+  setBandLogoUrl: (url) => {
+    set({ bandLogoUrl: url });
+    try {
+      if (url) {
+        verifyAndResyncBandLogo(url);
+      }
+    } catch (_) {}
+  },
   bandCoverUrl: '',
   setBandCoverUrl: (url) => set({ bandCoverUrl: url }),
   selectedMicroGenres: [],

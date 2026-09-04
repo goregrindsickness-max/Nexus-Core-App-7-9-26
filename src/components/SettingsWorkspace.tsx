@@ -7,7 +7,7 @@ import TermsOfServiceView from './TermsOfServiceView';
 import { fetchReleasesFromDatabase, upsertReleaseToDatabase, deleteReleaseFromDatabase } from '../services/releasesService';
 const concertBg = "https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/public-assets/High%20energy%20concert%202.png";
 import { profileStore } from '../utils/indexedDB';
-import { getSupabase, executeWithSchemaResilience, uploadBase64ToStorage, sanitizeBandPayload, sanitizeMicroGenres, parseLocationFields, upsertBandToDatabase, ensureUUID } from '../supabase';
+import { getSupabase, executeWithSchemaResilience, uploadBase64ToStorage, uploadCommunityBandMedia, sanitizeBandPayload, sanitizeMicroGenres, parseLocationFields, upsertBandToDatabase, ensureUUID } from '../supabase';
 
 const GENRE_CLUSTERS = [
   {
@@ -161,9 +161,9 @@ export default function SettingsWorkspace(props: any) {
 
     if (logoUrl.startsWith('data:')) {
       try {
-        const userOrBandId = props.activeBand.creator_id || props.activeBand.id || 'band';
-        const publicUrl = await uploadBase64ToStorage(logoUrl, 'community-bands', userOrBandId, 'band-logo');
-        if (publicUrl) {
+        const userOrBandId = props.activeBand.id || props.activeBand.creator_id || 'band';
+        const publicUrl = await uploadCommunityBandMedia(logoUrl, userOrBandId, 'logo');
+        if (publicUrl && !publicUrl.startsWith('data:')) {
           logoUrl = publicUrl;
         }
       } catch (e) {
@@ -173,9 +173,9 @@ export default function SettingsWorkspace(props: any) {
 
     if (coverUrl.startsWith('data:')) {
       try {
-        const userOrBandId = props.activeBand.creator_id || props.activeBand.id || 'band';
-        const publicUrl = await uploadBase64ToStorage(coverUrl, 'community-bands', userOrBandId, 'band-cover');
-        if (publicUrl) {
+        const userOrBandId = props.activeBand.id || props.activeBand.creator_id || 'band';
+        const publicUrl = await uploadCommunityBandMedia(coverUrl, userOrBandId, 'cover');
+        if (publicUrl && !publicUrl.startsWith('data:')) {
           coverUrl = publicUrl;
         }
       } catch (e) {
@@ -632,7 +632,7 @@ export default function SettingsWorkspace(props: any) {
                     const isSelected = safeSelectedMicroGenres.includes(genre);
                     return (
                       <button
-                        key={`${genre}-${gIdx}`}
+                        key={`settings-genre-cluster-${activeClusterIdx}-${gIdx}-${genre}`}
                         type="button"
                         onClick={() => handleMicroGenreSelect(genre)}
                         className={`px-2 py-1 rounded text-[9px] font-mono font-bold border transition-all ${

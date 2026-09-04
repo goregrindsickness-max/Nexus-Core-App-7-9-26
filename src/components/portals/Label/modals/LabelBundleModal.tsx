@@ -61,7 +61,7 @@ export const LabelBundleModal: React.FC<LabelBundleModalProps> = ({
                     const isSelected = (bundleItems || []).some(bi => bi.id === item.id && bi.variantName === variant);
                     return (
                       <div 
-                        key={`${item.id || ''}-${idx}`}
+                        key={`${item.id || 'item'}-${variant}-${idx}`}
                         onClick={() => {
                           if (navigator.vibrate) navigator.vibrate(50);
                           setBundleItems(prev => {

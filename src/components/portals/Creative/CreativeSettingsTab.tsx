@@ -1187,15 +1187,15 @@ export default function CreativeSettingsTab({
                   <p className="text-[10px] text-zinc-400 font-sans">Select which underground genre clusters fit your creative style best.</p>
 
                   <div className="space-y-3">
-                    {GENRE_CLUSTERS.map((cluster, idx) => (
-                      <div key={`${cluster.name}-${idx}`} className="space-y-1.5">
+                    {GENRE_CLUSTERS.map((cluster, clusterIdx) => (
+                      <div key={`creative-settings-cluster-${clusterIdx}-${cluster.name}`} className="space-y-1.5">
                         <span className="text-[8.5px] font-mono text-zinc-500 font-bold uppercase tracking-wider">{cluster.name}</span>
                         <div className="flex flex-wrap gap-1.5 font-mono">
-                          {cluster.genres.map((genre, idx) => {
+                          {cluster.genres.map((genre, gIdx) => {
                             const selected = genreTags.includes(genre);
                             return (
                               <button
-                                key={`${genre}-${idx}`}
+                                key={`creative-settings-cluster-${clusterIdx}-genre-${gIdx}-${genre}`}
                                 type="button"
                                 onClick={() => toggleGenreTag(genre)}
                                 className={`px-2.5 py-1 border rounded-lg text-[9px] font-black uppercase transition-all flex items-center gap-1 cursor-pointer ${
