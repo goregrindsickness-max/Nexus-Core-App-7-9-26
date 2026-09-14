@@ -910,6 +910,15 @@ export const GalleryTab: React.FC<GalleryTabProps> = ({
         }
 
         // 7. Assemble deduplicated clean folders list
+        let deletedFolders: string[] = [];
+        try {
+          const deletedKey = `nexus_deleted_folders_${primaryId || userId || profileId || 'guest'}`;
+          const parsedDeleted = JSON.parse(localStorage.getItem(deletedKey) || '[]');
+          if (Array.isArray(parsedDeleted)) {
+            deletedFolders = parsedDeleted.map((d: string) => d.toLowerCase());
+          }
+        } catch (_) {}
+
         const rawFolderList = [
           ...DEFAULT_FOLDERS,
           ...storedFolders,
@@ -920,6 +929,16 @@ export const GalleryTab: React.FC<GalleryTabProps> = ({
         rawFolderList.forEach((f) => {
           const norm = normalizeFolderName(f);
           if (!norm || MOCK_FOLDERS_TO_REMOVE.has(norm.toLowerCase())) return;
+          if (deletedFolders.includes(norm.toLowerCase())) return;
+
+          // Prune folders that contain 0 images (except system folders)
+          const isSystemFolder = areFoldersEqual(norm, 'All Photos') || areFoldersEqual(norm, 'Profile Pics') || areFoldersEqual(norm, 'Cover Images');
+          if (!isSystemFolder) {
+            const imageCountInFolder = allImages.filter((img) => areFoldersEqual(img.folder, norm)).length;
+            if (imageCountInFolder === 0) {
+              return; // Omit empty ghost folders with 0 files
+            }
+          }
           
           // In Band workspace: Prune cross-pollinated folders (like "Logos", "Logos & Branding", "Graphic Design Portfolio")
           // if they contain 0 images for this band

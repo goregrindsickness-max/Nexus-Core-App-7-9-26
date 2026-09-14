@@ -15,6 +15,32 @@ try {
 
 
 try {
+  if (typeof window !== 'undefined' && window.performance && typeof window.performance.measure === 'function') {
+    const originalMeasure = window.performance.measure.bind(window.performance);
+    window.performance.measure = function(measureName: string, startMarkOrOptions?: string | PerformanceMeasureOptions, endMark?: string) {
+      try {
+        if (startMarkOrOptions && typeof startMarkOrOptions === 'object') {
+          if ((startMarkOrOptions as any).detail !== undefined) {
+            try {
+              structuredClone((startMarkOrOptions as any).detail);
+            } catch (err) {
+              startMarkOrOptions = { ...startMarkOrOptions, detail: null };
+            }
+          }
+        }
+        return originalMeasure(measureName as any, startMarkOrOptions as any, endMark as any);
+      } catch (err) {
+        try {
+          return originalMeasure(measureName);
+        } catch (e2) {
+          return {} as PerformanceMeasure;
+        }
+      }
+    };
+  }
+} catch (e) {}
+
+try {
   const _ls = window.localStorage;
   const safeLocalStorage = {
     getItem: function(key) { try { return _ls.getItem(key); } catch(e) { return null; } },

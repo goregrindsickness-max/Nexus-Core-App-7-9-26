@@ -214,6 +214,7 @@ export async function uploadBase64ToStorage(
 
     // Target bucket normalization with flexible candidate fallbacks
     const cleanRequested = bucketName ? bucketName.toLowerCase().trim() : '';
+    const cleanToken = String(fileNameToken || 'asset').toLowerCase().replace(/[^a-zA-Z0-9_-]/g, '_');
 
     let primaryBucket = 'community-bands';
     if (cleanRequested.includes('audio') || cleanRequested.includes('track') || cleanRequested.includes('music')) {
@@ -222,8 +223,26 @@ export async function uploadBase64ToStorage(
       primaryBucket = 'photo-pit';
     } else if (
       cleanRequested === 'avatars' ||
+      cleanToken.includes('avatar') ||
+      cleanToken.includes('logo') ||
+      cleanToken.includes('profile-avatar') ||
+      cleanToken.includes('creative-avatar') ||
+      cleanToken.includes('label-avatar') ||
+      cleanToken.includes('promoter-logo')
+    ) {
+      primaryBucket = 'avatars';
+    } else if (
       cleanRequested === 'banners' ||
       cleanRequested === 'bannersv2' ||
+      cleanToken.includes('banner') ||
+      cleanToken.includes('cover') ||
+      cleanToken.includes('profile-banner') ||
+      cleanToken.includes('creative-banner') ||
+      cleanToken.includes('label-banner') ||
+      cleanToken.includes('promoter-cover')
+    ) {
+      primaryBucket = 'bannersv2';
+    } else if (
       cleanRequested === 'releases' ||
       cleanRequested === 'community-bands' ||
       !cleanRequested
@@ -237,6 +256,8 @@ export async function uploadBase64ToStorage(
       new Set(
         [
           primaryBucket,
+          'avatars',
+          'bannersv2',
           'community-bands',
           cleanRequested,
           'photo-pit',
@@ -248,7 +269,6 @@ export async function uploadBase64ToStorage(
     );
 
     const cleanAuthId = String(authUserId || userId || 'user').replace(/[^a-zA-Z0-9_-]/g, '_');
-    const cleanToken = String(fileNameToken || 'asset').replace(/[^a-zA-Z0-9_-]/g, '_');
     const blob = base64ToBlob(base64Str);
     const mimeType = blob.type || 'image/jpeg';
     const fileExt = (mimeType.split('/')[1] || 'webp').toLowerCase().replace('jpeg', 'jpg');
@@ -569,7 +589,7 @@ export async function ensureImagesUploadedToStorage(payload: any): Promise<any> 
         if (typeof val === 'string' && val.trim().length > 0) {
           if (val.startsWith('data:image/') || val.startsWith('data:')) {
             try {
-              const publicUrl = await uploadBase64ToStorage(val, 'community-bands', userId, 'creative-avatar');
+              const publicUrl = await uploadBase64ToStorage(val, 'avatars', userId, 'creative-avatar');
               if (publicUrl && typeof publicUrl === 'string') {
                 item[key] = publicUrl;
                 if (!uploadedAvatarUrl && !publicUrl.startsWith('data:')) {
@@ -597,7 +617,7 @@ export async function ensureImagesUploadedToStorage(payload: any): Promise<any> 
         if (typeof val === 'string' && val.trim().length > 0) {
           if (val.startsWith('data:image/') || val.startsWith('data:')) {
             try {
-              const publicUrl = await uploadBase64ToStorage(val, 'community-bands', userId, 'creative-banner');
+              const publicUrl = await uploadBase64ToStorage(val, 'bannersv2', userId, 'creative-banner');
               if (publicUrl && typeof publicUrl === 'string') {
                 item[key] = publicUrl;
                 if (!uploadedBannerUrl && !publicUrl.startsWith('data:')) {
@@ -711,7 +731,7 @@ export async function ensureImagesUploadedToStorage(payload: any): Promise<any> 
         if (typeof val === 'string' && val.trim().length > 0) {
           if (val.startsWith('data:image/') || val.startsWith('data:')) {
             try {
-              const publicUrl = await uploadBase64ToStorage(val, 'community-bands', userId, 'profile-avatar');
+              const publicUrl = await uploadBase64ToStorage(val, 'avatars', userId, 'profile-avatar');
               if (publicUrl && typeof publicUrl === 'string') {
                 item[key] = publicUrl;
                 if (!uploadedAvatarUrl && !publicUrl.startsWith('data:')) {
@@ -747,7 +767,7 @@ export async function ensureImagesUploadedToStorage(payload: any): Promise<any> 
         if (typeof val === 'string' && val.trim().length > 0) {
           if (val.startsWith('data:image/') || val.startsWith('data:')) {
             try {
-              const publicUrl = await uploadBase64ToStorage(val, 'community-bands', userId, 'profile-banner');
+              const publicUrl = await uploadBase64ToStorage(val, 'bannersv2', userId, 'profile-banner');
               if (publicUrl && typeof publicUrl === 'string') {
                 item[key] = publicUrl;
                 if (!uploadedBannerUrl && !publicUrl.startsWith('data:')) {
@@ -773,13 +793,13 @@ export async function ensureImagesUploadedToStorage(payload: any): Promise<any> 
       // If creative_avatar or creative_banner happen to be in the profile object as raw base64, process them with creative tokens without overwriting personal fields
       if (item.creative_avatar && typeof item.creative_avatar === 'string' && item.creative_avatar.startsWith('data:')) {
         try {
-          const publicUrl = await uploadBase64ToStorage(item.creative_avatar, 'community-bands', userId, 'creative-avatar');
+          const publicUrl = await uploadBase64ToStorage(item.creative_avatar, 'avatars', userId, 'creative-avatar');
           if (publicUrl) item.creative_avatar = publicUrl;
         } catch (_) {}
       }
       if (item.creative_banner && typeof item.creative_banner === 'string' && item.creative_banner.startsWith('data:')) {
         try {
-          const publicUrl = await uploadBase64ToStorage(item.creative_banner, 'community-bands', userId, 'creative-banner');
+          const publicUrl = await uploadBase64ToStorage(item.creative_banner, 'bannersv2', userId, 'creative-banner');
           if (publicUrl) item.creative_banner = publicUrl;
         } catch (_) {}
       }

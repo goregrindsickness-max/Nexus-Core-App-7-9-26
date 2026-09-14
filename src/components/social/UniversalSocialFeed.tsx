@@ -4588,6 +4588,10 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
             onOpenMapModal={() => setShowMapModal(true)}
             onOpenShowCreator={() => { setEditingCommunityShow(null); setIsCommunityShowModalOpen(true); }}
             onEditShow={(gig) => { setEditingCommunityShow(gig); setIsCommunityShowModalOpen(true); }}
+            onDeleteGig={(gig) => {
+              setLiveEvents(prev => prev.filter(g => g.id !== gig.id));
+              triggerNotification?.('Show removed from upcoming tours strip.');
+            }}
           />
         )}
       </div>

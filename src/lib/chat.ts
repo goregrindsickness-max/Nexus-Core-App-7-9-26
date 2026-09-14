@@ -17,24 +17,26 @@ export const isUnread = (chatItem: any, currentUserId: string) => {
 
 export const markChatAsRead = async (chatId?: string, currentUserId?: string) => {
   try {
-    // 1. Resolve Active User ID safely
+    // 1. Resolve Active User ID safely (exclude JWT tokens like sb-access-token)
     const { data: { session } } = await supabase.auth.getSession();
-    let targetUserId = currentUserId || 
+    let resolvedUser = currentUserId || 
                          session?.user?.id || 
                          (typeof localStorage !== 'undefined' ? (
-                           localStorage.getItem('nexus_active_profile_id') || 
-                           localStorage.getItem('sb-access-token')
+                           localStorage.getItem('nexus_active_profile_id')
                          ) : null);
 
-    if (!targetUserId && typeof localStorage !== 'undefined') {
+    if (!resolvedUser && typeof localStorage !== 'undefined') {
       const savedProfile = localStorage.getItem('nexus_core_user_profile') || localStorage.getItem('nexus_user_profile');
       if (savedProfile) {
         try {
           const parsed = JSON.parse(savedProfile);
-          targetUserId = parsed?.id || parsed?.email || null;
+          resolvedUser = parsed?.id || parsed?.email || null;
         } catch (e) {}
       }
     }
+
+    // Ensure resolvedUser is not a JWT token (JWT tokens start with 'ey')
+    const targetUserId = (resolvedUser && String(resolvedUser).startsWith('ey')) ? null : resolvedUser;
 
     const userEmail = session?.user?.email || (typeof localStorage !== 'undefined' ? localStorage.getItem('nexus_user_email') : null);
 
@@ -50,14 +52,30 @@ export const markChatAsRead = async (chatId?: string, currentUserId?: string) =>
       console.error('[MARK READ RPC ERROR]:', error.message);
     } else {
       console.log('[MARK READ SUCCESS]: Database updated via RPC.');
-    if (chatId && targetUserId) {
-      const { error: updErr } = await supabase
+    }
+
+    // Direct fallback update on nexus_chats
+    if (chatId) {
+      let query = supabase
         .from('nexus_chats')
         .update({ is_read: true })
         .eq('sender_id', chatId)
         .eq('is_read', false);
-      if (updErr) console.error('[Direct Update Error]', updErr);
-    }
+
+      if (targetUserId) {
+        query = query.or(`receiver_id.eq.${targetUserId},recipient_id.eq.${targetUserId}`);
+      }
+
+      const { error: updErr } = await query;
+      if (updErr) {
+        console.error('[Direct Update Error]', updErr);
+        // Try simple update without receiver filter
+        await supabase
+          .from('nexus_chats')
+          .update({ is_read: true })
+          .eq('sender_id', chatId)
+          .eq('is_read', false);
+      }
     }
 
     if (targetUserId) {

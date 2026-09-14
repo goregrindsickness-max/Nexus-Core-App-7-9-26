@@ -119,6 +119,15 @@ const loadSavedFolders = (userProfile?: any, portalRole?: string): string[] => {
   const userId = userProfile?.id || userProfile?.uuid || userProfile?.user_id || 'guest';
   let baseFolders: string[] = [];
 
+  let deletedFolders: string[] = [];
+  try {
+    const deletedKey = `nexus_deleted_folders_${userId}`;
+    const parsedDeleted = JSON.parse(localStorage.getItem(deletedKey) || '[]');
+    if (Array.isArray(parsedDeleted)) {
+      deletedFolders = parsedDeleted.map((d: string) => d.toLowerCase());
+    }
+  } catch (_) {}
+
   const role = (portalRole || userProfile?.portalRole || '').toLowerCase();
   const isBand = role.includes('band') || role.includes('artist') || Boolean(userProfile?.band_name);
   const isCreative = !isBand && (role.includes('creative') || role.includes('industry') || Boolean(userProfile?.creative_id));
@@ -169,7 +178,13 @@ const loadSavedFolders = (userProfile?: any, portalRole?: string): string[] => {
 
   const filtered = baseFolders
     .map((f) => normalizeFolderName(f))
-    .filter((f) => f && !MOCK_FOLDERS_TO_REMOVE.has(f.toLowerCase()));
+    .filter((f) => {
+      if (!f) return false;
+      const lower = f.toLowerCase();
+      if (MOCK_FOLDERS_TO_REMOVE.has(lower)) return false;
+      if (deletedFolders.includes(lower)) return false;
+      return true;
+    });
 
   // Deduplicate folders case-insensitively to prevent duplicates like "My Folder" and "my folder"
   const cleanedFolders: string[] = [];
@@ -563,9 +578,24 @@ export const PhotoPitView: React.FC<PhotoPitViewProps> = ({
   // Sync folders dynamically from user's own items
   useEffect(() => {
     if (allUserPosts && allUserPosts.length > 0) {
+      let deletedFolders: string[] = [];
+      try {
+        const deletedKey = `nexus_deleted_folders_${currentUserId || 'guest'}`;
+        const parsedDeleted = JSON.parse(localStorage.getItem(deletedKey) || '[]');
+        if (Array.isArray(parsedDeleted)) {
+          deletedFolders = parsedDeleted.map((d: string) => d.toLowerCase());
+        }
+      } catch (_) {}
+
       const feedFolders = allUserPosts
         .map((item: any) => normalizeFolderName(item.gallery_folder || item.folder))
-        .filter((f): f is string => typeof f === 'string' && f.trim().length > 0 && !MOCK_FOLDERS_TO_REMOVE.has(f.toLowerCase()));
+        .filter((f): f is string => {
+          if (!f || typeof f !== 'string' || !f.trim()) return false;
+          const lower = f.toLowerCase();
+          if (MOCK_FOLDERS_TO_REMOVE.has(lower)) return false;
+          if (deletedFolders.includes(lower)) return false;
+          return true;
+        });
 
       if (feedFolders.length > 0) {
         const updated = [...foldersList];
@@ -581,7 +611,7 @@ export const PhotoPitView: React.FC<PhotoPitViewProps> = ({
         }
       }
     }
-  }, [allUserPosts]);
+  }, [allUserPosts, foldersList, currentUserId]);
 
   // Upload drawer state (supports single and batch uploads)
   const [pendingPhotos, setPendingPhotos] = useState<string[]>([]);
@@ -1088,6 +1118,15 @@ export const PhotoPitView: React.FC<PhotoPitViewProps> = ({
 
     const updated = foldersList.filter((f) => f !== folderName);
     saveFolders(updated);
+
+    try {
+      const deletedKey = `nexus_deleted_folders_${currentUserId || 'guest'}`;
+      const existingDeleted = JSON.parse(localStorage.getItem(deletedKey) || '[]');
+      if (!existingDeleted.includes(folderName)) {
+        existingDeleted.push(folderName);
+        localStorage.setItem(deletedKey, JSON.stringify(existingDeleted));
+      }
+    } catch (_) {}
 
     if (selectedFolder === folderName) {
       setSelectedFolder('All Photos');

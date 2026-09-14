@@ -669,7 +669,8 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
   const creativeHandleVal = baseTarget?.creative_handle || fetchedCreativeData?.handle || fetchedCreativeData?.creative_handle || fetchedProfileData?.creative_handle || (baseTarget?.isYou ? userProfile?.creative_handle : null);
 
   const personalName = baseTarget?.full_name || baseTarget?.name || fetchedProfileData?.full_name || fetchedProfileData?.name || (baseTarget?.isYou ? (userProfile?.full_name || userProfile?.name) : null) || 'Miguel Goregrinder Medina';
-  const personalHandle = baseTarget?.console_handle || baseTarget?.handle || fetchedProfileData?.console_handle || fetchedProfileData?.handle || (baseTarget?.isYou ? (userProfile?.console_handle || userProfile?.handle) : null) || '@bdmCEO';
+  const rawPersonalHandle = baseTarget?.console_handle || baseTarget?.handle || fetchedProfileData?.console_handle || fetchedProfileData?.handle || (baseTarget?.isYou ? (userProfile?.console_handle || userProfile?.handle) : null);
+  const personalHandle = (!rawPersonalHandle || rawPersonalHandle.toLowerCase().includes('virulent') || rawPersonalHandle.toLowerCase() === '@virulentexcision') ? '@bdmCEO' : (rawPersonalHandle.startsWith('@') ? rawPersonalHandle : `@${rawPersonalHandle}`);
 
   const effTarget = {
     ...baseTarget,
@@ -1370,7 +1371,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                   if (!matchingBandProfile && typeof bandWsRef === 'object' && bandWsRef?.name) {
                      matchingBandProfile = allProfiles.find((p: any) => (p.type === 'band' || p.isBandProfile || p.category === 'bands' || p.role === 'Band') && p.name?.toLowerCase() === bandWsRef.name.toLowerCase());
                   }
-                  if (!matchingBandProfile) {
+                   if (!matchingBandProfile) {
                      matchingBandProfile = allProfiles.find((p: any) => {
                        const isBandType = p.type === 'band' || p.isBandProfile || p.category === 'bands' || (p.role && p.role.toLowerCase() === 'band') || (p.portalRole && p.portalRole.toLowerCase() === 'band');
                        if (!isBandType) return false;
@@ -1378,6 +1379,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                        if (effTarget.id && (p.user_id === effTarget.id || p.owner_id === effTarget.id || p.creator_id === effTarget.id || p.id === effTarget.id)) return true;
                        if (userProfile?.id && (p.user_id === userProfile.id || p.owner_id === userProfile.id || p.creator_id === userProfile.id || p.id === userProfile.id)) return true;
                        if (effTarget.band_name && (p.name?.toLowerCase() === effTarget.band_name.toLowerCase() || p.band_name?.toLowerCase() === effTarget.band_name.toLowerCase())) return true;
+                       if (p.name?.toLowerCase() === 'virulent excision' || p.band_name?.toLowerCase() === 'virulent excision') return true;
                        return false;
                      });
                   }
@@ -1399,12 +1401,9 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                    if (hasBand) {
                     const name = String(rawBandName).trim();
                     const isVirulentExcision = name.toLowerCase() === 'virulent excision';
-                    const logo = isVirulentExcision
-                      ? 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=300'
-                      : (lbd?.logo_url || lbd?.avatar_url || lbd?.avatar || userProfile?.band_logo || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=300');
-                    const subtitle = isVirulentExcision
-                      ? 'Deathgrind • Technical Death Metal'
-                      : (lbd?.genre || (lbd?.micro_genres && Array.isArray(lbd.micro_genres) && lbd.micro_genres.length > 0 ? lbd.micro_genres.join(' • ') : 'Metal / Hardcore'));
+                    const defaultVeLogo = 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/avatars/5403162d-1947-43aa-b5f6-38a1bd2a1b80/band-logo_1786739491396.jpg?t=1786739491396';
+                    const logo = lbd?.logo_url || lbd?.avatar_url || lbd?.avatar || matchingBandProfile?.logo_url || matchingBandProfile?.avatar_url || matchingBandProfile?.avatar || (isVirulentExcision ? defaultVeLogo : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=300');
+                    const subtitle = lbd?.genre || matchingBandProfile?.genre || (lbd?.micro_genres && Array.isArray(lbd.micro_genres) && lbd.micro_genres.length > 0 ? lbd.micro_genres.join(' • ') : (isVirulentExcision ? 'Brutal Death Metal' : 'Metal / Hardcore'));
 
                     entities.push({
                       key: 'band',
@@ -1420,7 +1419,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                         const targetBandProfile = isRealBandProfile ? matchingBandProfile : null;
 
                         const bandProfileObj = {
-                          ...(isVirulentExcision ? {} : (targetBandProfile || lbd || {})),
+                          ...(targetBandProfile || lbd || {}),
                           id: targetBandProfile?.id || lbd?.id || targetBandId || `band_${effTarget?.id || Date.now()}`,
                           name,
                           band_name: name,
@@ -1433,14 +1432,14 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                           isPersonal: false,
                           avatar: logo,
                           avatar_url: logo,
-                          banner: isVirulentExcision ? effTarget.banner_url : (lbd?.cover_url || lbd?.banner_url || targetBandProfile?.banner_url || effTarget.banner_url),
-                          banner_url: isVirulentExcision ? effTarget.banner_url : (lbd?.cover_url || lbd?.banner_url || targetBandProfile?.banner_url || effTarget.banner_url),
-                          cover_url: isVirulentExcision ? undefined : (lbd?.cover_url || targetBandProfile?.cover_url),
+                          banner: lbd?.cover_url || lbd?.banner_url || targetBandProfile?.banner_url || (isVirulentExcision ? 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/bannersv2/5403162d-1947-43aa-b5f6-38a1bd2a1b80/band-cover_1787467851123.jpg?t=1787467851123' : effTarget.banner_url),
+                          banner_url: lbd?.cover_url || lbd?.banner_url || targetBandProfile?.banner_url || (isVirulentExcision ? 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/bannersv2/5403162d-1947-43aa-b5f6-38a1bd2a1b80/band-cover_1787467851123.jpg?t=1787467851123' : effTarget.banner_url),
+                          cover_url: lbd?.cover_url || targetBandProfile?.cover_url,
                           logo_url: logo,
                           genre: subtitle,
-                          micro_genres: isVirulentExcision ? ['Deathgrind', 'Technical Death Metal'] : (lbd?.micro_genres || targetBandProfile?.micro_genres || []),
-                          homebase: isVirulentExcision ? 'Chicago, IL' : (lbd?.homebase || targetBandProfile?.homebase || effTarget.homebase || 'Global Scene'),
-                          bio: isVirulentExcision ? 'Official Nexus Artist Profile for Virulent Excision.' : (lbd?.bio || lbd?.description || targetBandProfile?.bio || `Official Nexus Artist Profile for ${name}.`)
+                          micro_genres: lbd?.micro_genres || targetBandProfile?.micro_genres || (isVirulentExcision ? ['Brutal Death Metal', 'Death Metal', 'Slamming BDM'] : []),
+                          homebase: lbd?.homebase || targetBandProfile?.homebase || effTarget.homebase || (isVirulentExcision ? 'Denison, TX' : 'Global Scene'),
+                          bio: lbd?.bio || lbd?.description || targetBandProfile?.bio || (isVirulentExcision ? 'V.E. is brutal death metal, fusing old-school NYDM weight with modern technical slam.' : `Official Nexus Artist Profile for ${name}.`)
                         };
                         setSelectedUserProfile(bandProfileObj);
                         triggerNotification?.(`🎸 Opening Public Band Profile for ${name}...`);

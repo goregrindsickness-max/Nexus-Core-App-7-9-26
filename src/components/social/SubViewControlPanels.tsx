@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ChevronDown, MapPin, Ticket, Filter, Map as MapIcon, SlidersHorizontal, Calendar, Star, Clock } from 'lucide-react';
+import { ChevronDown, MapPin, Ticket, Filter, Map as MapIcon, SlidersHorizontal, Calendar, Star, Clock, Trash2 } from 'lucide-react';
 import { formatTimeTo12h, hasGigTickets } from '../../utils/socialFeedUtils';
 
 export interface LiveTonightGig {
@@ -37,6 +37,7 @@ export interface SubViewControlPanelsProps {
   onOpenMapModal?: () => void;
   onOpenShowCreator?: () => void;
   onEditShow?: (gig: LiveTonightGig) => void;
+  onDeleteGig?: (gig: LiveTonightGig) => void;
 }
 
 export const SubViewControlPanels: React.FC<SubViewControlPanelsProps> = ({
@@ -54,6 +55,7 @@ export const SubViewControlPanels: React.FC<SubViewControlPanelsProps> = ({
   onOpenMapModal,
   onOpenShowCreator,
   onEditShow,
+  onDeleteGig,
 }) => {
   const uniqueLiveEvents = useMemo(() => {
     if (!liveEvents || !Array.isArray(liveEvents)) return [];
@@ -220,6 +222,19 @@ export const SubViewControlPanels: React.FC<SubViewControlPanelsProps> = ({
                       }}
                     >
                       <Ticket className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      className="p-1.5 rounded-lg transition-colors bg-zinc-900 hover:bg-rose-950/60 border border-zinc-800 hover:border-rose-500/50 text-zinc-400 hover:text-rose-400 cursor-pointer"
+                      title="Delete / Dismiss Show"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onDeleteGig) {
+                          onDeleteGig(gig);
+                        }
+                      }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>

@@ -1986,7 +1986,7 @@ Powered by NEXUS CORE
               try {
                 const userProfileId = userProfile?.id || 'profile_admin';
                 if (croppingTarget === 'profile') {
-                  const uploadRes = await uploadBase64ToStorage(croppedBase64, 'community-bands', userProfileId, 'profile-avatar');
+                  const uploadRes = await uploadBase64ToStorage(croppedBase64, 'avatars', userProfileId, 'profile-avatar');
                   const publicUrl = uploadRes || croppedBase64;
                   setEditUserForm(prev => ({ ...prev, avatar_url: publicUrl }));
                   setUserProfile(prev => ({ ...prev, avatar_url: publicUrl }));

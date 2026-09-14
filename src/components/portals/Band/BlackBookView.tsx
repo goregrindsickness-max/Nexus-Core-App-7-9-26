@@ -651,7 +651,7 @@ Representing ${activeBandName}`;
           filteredVenues.map((venue, idx) => {
             return (
               <VenueReputationCard
-                key={`${venue.id}-${idx}`}
+                key={`bb-venue-${venue.id || 'v'}-${idx}`}
                 venue={venue}
                 userReviews={userReviews}
                 savedVenueIds={savedVenueIds}
@@ -792,7 +792,7 @@ Representing ${activeBandName}`;
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
                   {['all', 'pending', 'accepted', 'renegotiating'].map((filter, idx) => (
                     <button
-                      key={`${filter}-${idx}`}
+                      key={`bb-filter-${filter}-${idx}`}
                       onClick={() => setOfferFilter(filter as any)}
                       className={`px-2.5 py-1 rounded text-[9px] font-mono font-bold tracking-widest uppercase transition-colors whitespace-nowrap ${
                         offerFilter === filter 
@@ -843,7 +843,7 @@ Representing ${activeBandName}`;
 
                     return (
                       <div 
-                        key={`${offer.id}-${idx}`} 
+                        key={`bb-offer-${offer.id || 'off'}-${idx}`} 
                         className={`font-mono rounded-lg transition-all text-xs overflow-hidden ${cardContainerStyle}`}
                       >
                         <div 

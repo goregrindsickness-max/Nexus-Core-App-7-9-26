@@ -1035,7 +1035,7 @@ export default function SetlistsView({
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ duration: 0.2 }}
-                      key={`${song.id}-${idx}`} 
+                      key={`setlist-draggable-${song.id || 's'}-${idx}`} 
                       draggable
                       onDragStart={(e: any) => handleDragStart(e, idx)}
                       onDragOver={(e: any) => handleDragOver(e)}
@@ -1145,7 +1145,7 @@ export default function SetlistsView({
 
                     return (
                       <div 
-                        key={`${song.id}-${idx}`}
+                        key={`setlist-song-${song.id || 's'}-${idx}`}
                         title={`${idx + 1}. ${song.name} (${song.minutes}:${song.seconds.toString().padStart(2, '0')})`}
                         style={{ width: `${pct}%` }}
                         className={`h-full bg-gradient-to-r ${bgGradient} border-r border-zinc-950/40 relative group first:rounded-l-full last:rounded-r-full transition-all duration-300 hover:opacity-95 cursor-help`}

@@ -1164,7 +1164,7 @@ export default function ReleasesCatalogTab({
                               const rating = trackRatings[activeTrackId] || 0;
                               return (
                                 <button
-                                  key={`${star}-${idx}`}
+                                  key={`star-rating-${star}-${idx}`}
                                   type="button"
                                   onClick={() => {
                                     setTrackRatings(prev => ({ ...prev, [activeTrackId]: star }));
@@ -1184,7 +1184,7 @@ export default function ReleasesCatalogTab({
                       <div className="h-4 flex items-end justify-center gap-0.5 overflow-hidden border-b border-zinc-900/40 pb-0.5 w-full max-w-sm mx-auto">
                         {Array.from({ length: 32 }).map((_, idx) => (
                           <div
-                            key={`catalog-release-row-${idx}`}
+                            key={`equalizer-bar-${idx}`}
                             className={`flex-1 rounded-t-sm transition-all duration-300 ${isPlaying ? 'bg-[#FF9900]' : 'bg-zinc-800/40'}`}
                             style={{ height: `${isPlaying ? Math.floor(15 + Math.random() * 85) : 10}%` }}
                           />
@@ -1326,7 +1326,7 @@ export default function ReleasesCatalogTab({
                         const trackDuration = track.duration || getRunningTime(track);
                         return (
                           <div 
-                            key={`${track.id}-${idx}`} 
+                            key={`rel-${release.id || 'r'}-track-${track.id || 't'}-${idx}`} 
                             onClick={() => {
                               setActivePlaybackTrackId(track.id);
                               setIsPlaying(true);
@@ -1393,7 +1393,7 @@ export default function ReleasesCatalogTab({
                       const physicalShelfId = release.formats?.vinyl?.shelf_id || `A${release.id.replace(/\D/g, '').substring(0,2) || '24'}`;
                       return (
                         <div 
-                          key={`${release.id}-${idx}`} 
+                          key={`rel-card-${release.id || 'r'}-${idx}`} 
                           id={`release-${release.id}`}
                           className={`p-4 shadow-xl w-full transition-all space-y-3 rounded-xl border ${
                             props.highlightItemId === release.id 
@@ -1654,7 +1654,7 @@ export default function ReleasesCatalogTab({
                                     </div>
                                     <div className="flex flex-wrap gap-1.5">
                                       {vinylVariants.map((v, vIdx) => (
-                                        <span key={`${v.id}-${vIdx}`} className="bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800 text-[8.5px] font-mono text-zinc-300 uppercase">
+                                        <span key={`variant-${v.id || 'v'}-${vIdx}`} className="bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800 text-[8.5px] font-mono text-zinc-300 uppercase">
                                           {v.name}: <b className="text-[#FF9900] font-black">{v.qty}</b>
                                         </span>
                                       ))}
