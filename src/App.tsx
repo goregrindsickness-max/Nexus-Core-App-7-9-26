@@ -329,6 +329,12 @@ export default function App() {
             parsed.account_type = 'industry_pro';
           }
         }
+        if (!parsed.console_handle || parsed.console_handle === 'user' || parsed.console_handle === '@user' || parsed.console_handle.toLowerCase().includes('virulent')) {
+          parsed.console_handle = '@bdmCEO';
+        }
+        if (!parsed.handle || parsed.handle === 'user' || parsed.handle === '@user' || parsed.handle.toLowerCase().includes('virulent')) {
+          parsed.handle = '@bdmCEO';
+        }
       }
       return parsed;
     } catch (_) {
@@ -1886,10 +1892,17 @@ export default function App() {
   };
 
   const handleOpenMyProfile = () => {
+    const personalHandle = userProfile?.console_handle && !userProfile.console_handle.toLowerCase().includes('virulent') && userProfile.console_handle !== '@user' && userProfile.console_handle !== 'user'
+      ? (userProfile.console_handle.startsWith('@') ? userProfile.console_handle : `@${userProfile.console_handle}`)
+      : '@bdmCEO';
+
     const detailPayload = {
       id: userProfile?.id,
-      name: userProfile?.name || userProfile?.full_name || 'User',
-      legalName: userProfile?.full_name || userProfile?.name,
+      name: userProfile?.name || userProfile?.full_name || 'Miguel Goregrinder Medina',
+      legalName: userProfile?.full_name || userProfile?.name || 'Miguel Goregrinder Medina',
+      handle: personalHandle,
+      console_handle: personalHandle,
+      username: personalHandle,
       avatar: userProfile?.avatar_url || null,
       avatar_url: userProfile?.avatar_url || null,
       banner: userProfile?.banner_url || null,

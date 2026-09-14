@@ -522,6 +522,7 @@ export default function ShowsView({
   const [editingShow, setEditingShow] = useState<Show | null>(null);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isMapLocked, setIsMapLocked] = useState(true);
+  const [mapError, setMapError] = useState(false);
   const [editingFormShow, setEditingFormShow] = useState<Show | null>(null);
   const [formInitialType, setFormInitialType] = useState<'headliner' | 'support' | 'festival' | 'tour date' | 'one-off'>('headliner');
   const [transactionsShowId, setTransactionsShowId] = useState<string | null>(null);
@@ -693,7 +694,7 @@ export default function ShowsView({
 
   // Mapbox initialization logic
   useEffect(() => {
-    if (!mapboxAccessToken || !mapContainerRef.current) return;
+    if (!mapboxAccessToken || !mapContainerRef.current || mapError) return;
 
     try {
       mapboxgl.accessToken = mapboxAccessToken;
@@ -708,13 +709,20 @@ export default function ShowsView({
       });
 
       map.on('style.load', () => {
-        map.setFog({
-          color: 'rgb(11, 13, 20)',
-          'high-color': 'rgb(24, 28, 38)',
-          'horizon-blend': 0.03,
-          'space-color': 'rgb(4, 4, 6)',
-          'star-intensity': 0.7
-        });
+        try {
+          map.setFog({
+            color: 'rgb(11, 13, 20)',
+            'high-color': 'rgb(24, 28, 38)',
+            'horizon-blend': 0.03,
+            'space-color': 'rgb(4, 4, 6)',
+            'star-intensity': 0.7
+          });
+        } catch (_) {}
+      });
+
+      map.on('error', (e) => {
+        console.error('Mapbox error event encountered:', e);
+        setMapError(true);
       });
 
       mapRef.current = map;
@@ -722,13 +730,16 @@ export default function ShowsView({
       addLog('Initialized Mapbox Interactive Tour Hub.');
 
       return () => {
-        map.remove();
+        try {
+          map.remove();
+        } catch (_) {}
         mapRef.current = null;
       };
     } catch (err) {
       console.error('Failed to initialize mapbox canvas:', err);
+      setMapError(true);
     }
-  }, [mapboxAccessToken, mapboxStyleUrl]);
+  }, [mapboxAccessToken, mapboxStyleUrl, mapError]);
 
   // Marker and route updating effect
   useEffect(() => {
@@ -1286,7 +1297,7 @@ export default function ShowsView({
           <div className="absolute inset-0 z-10 bg-transparent" />
         )}
 
-        {mapboxAccessToken ? (
+        {mapboxAccessToken && !mapError ? (
           // Active Mapbox viewport container
           <div ref={mapContainerRef} className="absolute inset-0 w-full h-full z-0" />
         ) : (
@@ -1861,7 +1872,7 @@ export default function ShowsView({
             <div className="absolute inset-0 z-10 bg-transparent" />
           )}
 
-          {mapboxAccessToken ? (
+          {mapboxAccessToken && !mapError ? (
             // Active Mapbox viewport container
             <div ref={mapContainerRef} className="absolute inset-0 w-full h-full z-0" />
           ) : (

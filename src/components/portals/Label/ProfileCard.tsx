@@ -458,8 +458,12 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
     ...(fetchedProfileData ? {
       full_name: fetchedProfileData.full_name || fetchedProfileData.name || baseTarget.full_name || baseTarget.name,
       name: fetchedProfileData.full_name || fetchedProfileData.name || baseTarget.name,
-      console_handle: fetchedProfileData.console_handle || fetchedProfileData.username || fetchedProfileData.handle || baseTarget.console_handle,
-      handle: fetchedProfileData.console_handle || fetchedProfileData.username || fetchedProfileData.handle || baseTarget.handle,
+      console_handle: (baseTarget?.isYou || selectedUserProfile?.isYou)
+        ? '@bdmCEO'
+        : (fetchedProfileData.console_handle || fetchedProfileData.username || fetchedProfileData.handle || baseTarget.console_handle),
+      handle: (baseTarget?.isYou || selectedUserProfile?.isYou)
+        ? '@bdmCEO'
+        : (fetchedProfileData.console_handle || fetchedProfileData.username || fetchedProfileData.handle || baseTarget.handle),
       city: fetchedProfileData.city || baseTarget.city,
       state_province: fetchedProfileData.state_province || baseTarget.state_province,
       country: fetchedProfileData.country || baseTarget.country,
@@ -506,11 +510,13 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
       booking_phone: bData.booking_phone || baseTarget.booking_phone,
     } : {
       name: baseTarget?.name || baseTarget?.legalName || baseTarget?.full_name || 'User',
-      console_handle: baseTarget?.console_handle || baseTarget?.handle || (
-        targetRole === 'industry_pro' 
-          ? (userProfile?.console_handle || userProfile?.handle || 'pro_user')
-          : 'user'
-      )
+      console_handle: (baseTarget?.isYou || selectedUserProfile?.isYou)
+        ? '@bdmCEO'
+        : (baseTarget?.console_handle || baseTarget?.handle || (
+            targetRole === 'industry_pro' 
+              ? (userProfile?.console_handle || userProfile?.handle || 'pro_user')
+              : 'user'
+          ))
     })
   };
 

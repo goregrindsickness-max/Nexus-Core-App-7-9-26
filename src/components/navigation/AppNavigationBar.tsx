@@ -507,8 +507,17 @@ export function AppNavigationBar({
                               creative_metadata: (updated as any)?.creative_metadata || {}
                             } : {
                               id: updated?.id || null,
-                              name: updated?.name || 'User',
-                              legalName: updated?.full_name || updated?.name,
+                              name: updated?.name || updated?.full_name || 'Miguel Goregrinder Medina',
+                              legalName: updated?.full_name || updated?.name || 'Miguel Goregrinder Medina',
+                              handle: (updated?.console_handle && !updated.console_handle.toLowerCase().includes('virulent') && updated.console_handle !== '@user' && updated.console_handle !== 'user') 
+                                ? (updated.console_handle.startsWith('@') ? updated.console_handle : `@${updated.console_handle}`) 
+                                : '@bdmCEO',
+                              console_handle: (updated?.console_handle && !updated.console_handle.toLowerCase().includes('virulent') && updated.console_handle !== '@user' && updated.console_handle !== 'user') 
+                                ? (updated.console_handle.startsWith('@') ? updated.console_handle : `@${updated.console_handle}`) 
+                                : '@bdmCEO',
+                              username: (updated?.console_handle && !updated.console_handle.toLowerCase().includes('virulent') && updated.console_handle !== '@user' && updated.console_handle !== 'user') 
+                                ? (updated.console_handle.startsWith('@') ? updated.console_handle : `@${updated.console_handle}`) 
+                                : '@bdmCEO',
                               avatar: updated?.avatar_url || null,
                               avatar_url: updated?.avatar_url || null,
                               banner: updated?.banner_url || null,

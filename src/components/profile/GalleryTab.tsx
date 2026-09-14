@@ -1103,7 +1103,7 @@ export const GalleryTab: React.FC<GalleryTabProps> = ({
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
           {filteredImages.map((img, idx) => (
             <div
-              key={img.id ? `gal_cell_${img.id}` : `gal_idx_${idx}`}
+              key={img.id ? `gal_cell_${img.id}_${idx}` : `gal_idx_${idx}`}
               onClick={() => {
                 triggerPictureViewer?.({
                   photoId: `gallery_${primaryId}_${idx}`,

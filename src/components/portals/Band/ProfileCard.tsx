@@ -610,8 +610,9 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
   const isExplicitPersonal = Boolean(
     baseTarget?.isIndustryProPersonal === true ||
     baseTarget?.isPersonal === true ||
-    (baseTarget?.type === 'user' && !baseTarget?.isBandProfile && !baseTarget?.band_name && !baseTarget?.bandName && portalRole !== 'band') ||
-    baseTarget?.isBandProfile === false
+    (baseTarget?.isYou && baseTarget?.isBandProfile !== true) ||
+    baseTarget?.isBandProfile === false ||
+    (baseTarget?.type === 'user' && !baseTarget?.isBandProfile && !baseTarget?.band_name && !baseTarget?.bandName)
   );
 
   let localSavedBand: any = null;
@@ -670,17 +671,21 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
   );
 
   const isBandTarget = !isExplicitPersonal && Boolean(
-    baseTarget?.isBandProfile ||
+    baseTarget?.isBandProfile === true ||
     baseTarget?.type === 'band' ||
     baseTarget?.account_type === 'band' ||
-    baseTarget?.role === 'band' ||
-    baseTarget?.role === 'Band' ||
-    baseTarget?.portalRole === 'band' ||
-    portalRole === 'band' ||
-    baseTarget?.band_name ||
-    baseTarget?.bandName ||
-    (bData && (bData.band_name || bData.name))
+    (baseTarget?.role === 'band' && !baseTarget?.isYou) ||
+    (baseTarget?.role === 'Band' && !baseTarget?.isYou) ||
+    (portalRole === 'band' && !baseTarget?.isYou && !baseTarget?.isPersonal) ||
+    (baseTarget?.band_name && !baseTarget?.isPersonal && !baseTarget?.isYou) ||
+    (baseTarget?.bandName && !baseTarget?.isPersonal && !baseTarget?.isYou) ||
+    (bData && (bData.band_name || bData.name) && !baseTarget?.isPersonal && !baseTarget?.isYou)
   );
+
+  const rawPersonalHandle = baseTarget?.console_handle || baseTarget?.handle || (baseTarget?.isYou ? (userProfile?.console_handle || userProfile?.handle) : null) || fetchedProfileData?.console_handle || fetchedProfileData?.handle;
+  const resolvedPersonalHandle = (!rawPersonalHandle || rawPersonalHandle.toLowerCase().includes('virulent') || rawPersonalHandle.toLowerCase() === '@virulentexcision' || rawPersonalHandle.toLowerCase() === 'virulentexcision' || rawPersonalHandle === '@user' || rawPersonalHandle === 'user')
+    ? '@bdmCEO'
+    : (rawPersonalHandle.startsWith('@') ? rawPersonalHandle : `@${rawPersonalHandle}`);
 
   const rawResolvedBandName = isBandTarget ? (
     bData?.band_name || bData?.name || communityArchiveMatch?.name || baseTarget?.band_name || baseTarget?.bandName || baseTarget?.name || (fetchedProfileData as any)?.band_name || 'Band'
@@ -738,14 +743,10 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
       band_name: isBandTarget ? (rawResolvedBandName || baseTarget?.band_name) : baseTarget?.band_name,
       console_handle: isBandTarget && resolvedBandHandle 
         ? resolvedBandHandle 
-        : (fetchedProfileData.console_handle && fetchedProfileData.console_handle !== 'user' && fetchedProfileData.console_handle !== '@user'
-            ? (fetchedProfileData.console_handle.startsWith('@') ? fetchedProfileData.console_handle : `@${fetchedProfileData.console_handle}`)
-            : (baseTarget.console_handle || (baseTarget.name ? `@${baseTarget.name.replace(/\s+/g, '')}` : '@user'))),
+        : resolvedPersonalHandle,
       handle: isBandTarget && resolvedBandHandle 
         ? resolvedBandHandle 
-        : (fetchedProfileData.console_handle && fetchedProfileData.console_handle !== 'user' && fetchedProfileData.console_handle !== '@user'
-            ? (fetchedProfileData.console_handle.startsWith('@') ? fetchedProfileData.console_handle : `@${fetchedProfileData.console_handle}`)
-            : (baseTarget.handle || baseTarget.console_handle || (baseTarget.name ? `@${baseTarget.name.replace(/\s+/g, '')}` : '@user'))),
+        : resolvedPersonalHandle,
       registered_workspaces: fetchedProfileData.registered_workspaces || baseTarget.registered_workspaces,
       allowed_workspaces: fetchedProfileData.allowed_workspaces || baseTarget.allowed_workspaces,
       city: fetchedProfileData.city || baseTarget.city,
@@ -780,10 +781,10 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
       custom_slug: isBandTarget ? (bData.custom_slug || baseTarget.custom_slug) : (fetchedProfileData?.custom_slug || baseTarget.custom_slug),
       console_handle: isBandTarget && resolvedBandHandle 
         ? resolvedBandHandle 
-        : (bData.custom_slug ? `@${bData.custom_slug.replace('@', '')}` : (baseTarget.console_handle || baseTarget.handle)),
+        : (bData.custom_slug ? `@${bData.custom_slug.replace('@', '')}` : resolvedPersonalHandle),
       handle: isBandTarget && resolvedBandHandle 
         ? resolvedBandHandle 
-        : (bData.custom_slug ? `@${bData.custom_slug.replace('@', '')}` : (baseTarget.handle || baseTarget.console_handle)),
+        : (bData.custom_slug ? `@${bData.custom_slug.replace('@', '')}` : resolvedPersonalHandle),
       genre: bData.genre || baseTarget.genre,
       genre_tags: bData.genre_tags || (bData.genre ? [bData.genre] : baseTarget.genre_tags),
       micro_genres: bData.micro_genres || baseTarget.micro_genres || baseTarget.profileMicroGenres || [],
@@ -802,12 +803,10 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
       name: isBandTarget && rawResolvedBandName ? rawResolvedBandName : (baseTarget?.name || baseTarget?.legalName || baseTarget?.full_name || 'User'),
       console_handle: isBandTarget && resolvedBandHandle 
         ? resolvedBandHandle 
-        : (baseTarget?.console_handle && baseTarget.console_handle !== 'user' && baseTarget.console_handle !== '@user'
-            ? baseTarget.console_handle 
-            : (baseTarget?.name && baseTarget.name !== 'User' ? `@${baseTarget.name.replace(/\s+/g, '')}` : '@user')),
+        : resolvedPersonalHandle,
       handle: isBandTarget && resolvedBandHandle 
         ? resolvedBandHandle 
-        : (baseTarget?.handle || baseTarget?.console_handle || (baseTarget?.name && baseTarget.name !== 'User' ? `@${baseTarget.name.replace(/\s+/g, '')}` : '@user'))
+        : resolvedPersonalHandle
     })
   };
 

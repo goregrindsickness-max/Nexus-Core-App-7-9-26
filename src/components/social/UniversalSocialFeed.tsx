@@ -3117,7 +3117,8 @@ const getProfileForUser = (userParam: any) => {
 
     if (activeRole === 'industry_pro' || userProfile?.account_type === 'industry_pro') {
       const pName = profileFullLegalName || userProfile?.full_name || userProfile?.name || 'Industry Pro';
-      const pHandle = profileHandle || userProfile?.console_handle || userProfile?.handle || 'pro_user';
+      const rawHandle = profileHandle || userProfile?.console_handle || userProfile?.handle;
+      const pHandle = (!rawHandle || rawHandle.toLowerCase().includes('virulent') || rawHandle === 'pro_user' || rawHandle === 'user') ? '@bdmCEO' : (rawHandle.startsWith('@') ? rawHandle : `@${rawHandle}`);
       return {
         id: userProfile?.id || null,
         name: pName,
@@ -3147,7 +3148,8 @@ const getProfileForUser = (userParam: any) => {
     }
 
     const fName = profileFullLegalName || userProfile?.full_name || userProfile?.name || 'Fan Listener';
-    const fHandle = profileHandle || userProfile?.fan_handle || userProfile?.console_handle || userProfile?.handle || 'listener';
+    const rawFHandle = profileHandle || userProfile?.fan_handle || userProfile?.console_handle || userProfile?.handle;
+    const fHandle = (!rawFHandle || rawFHandle.toLowerCase().includes('virulent') || rawFHandle === 'listener' || rawFHandle === 'user') ? '@bdmCEO' : (rawFHandle.startsWith('@') ? rawFHandle : `@${rawFHandle}`);
     return {
       id: userProfile?.id || null,
       name: fName,

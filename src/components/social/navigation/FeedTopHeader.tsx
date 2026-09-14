@@ -241,7 +241,7 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                         : (userProfile?.avatar_url || userProfile?.avatar || userProfile?.image)
                       ) || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100';
                       const rawHandle = userProfile?.console_handle || userProfile?.username || userProfile?.handle || userProfile?.display_name?.toLowerCase().replace(/\s+/g, '_') || profileFullLegalName?.toLowerCase().replace(/\s+/g, '_') || 'user';
-                      const userHandle = rawHandle.startsWith('@') ? rawHandle : `@${rawHandle}`;
+                      const userHandle = (!rawHandle || rawHandle.toLowerCase().includes('virulent') || rawHandle === 'user' || rawHandle === '@user') ? '@bdmCEO' : (rawHandle.startsWith('@') ? rawHandle : `@${rawHandle}`);
                       return (
                         <div className="flex items-center justify-between mb-2 pb-2 border-b border-zinc-900/80">
                           <div className="flex items-center gap-2.5 min-w-0">
@@ -268,146 +268,36 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                     <button
                       onClick={() => {
                         setRoleMenuOpen(false);
-                        let detailPayload: any;
+                        const personalHandle = userProfile?.console_handle && !userProfile.console_handle.toLowerCase().includes('virulent') && userProfile.console_handle !== '@user' && userProfile.console_handle !== 'user'
+                          ? (userProfile.console_handle.startsWith('@') ? userProfile.console_handle : `@${userProfile.console_handle}`)
+                          : '@bdmCEO';
 
-                        if (portalRole === 'band') {
-                          detailPayload = {
-                            id: activeBand?.id || userProfile?.id || null,
-                            name: activeBand?.name || userProfile?.bandName || 'Artist',
-                            band_name: activeBand?.name || userProfile?.bandName || 'Artist',
-                            avatar: activeBand?.logo_url || activeBand?.logo || activeBand?.avatar_url || userProfile?.avatar_url || null,
-                            avatar_url: activeBand?.logo_url || activeBand?.logo || activeBand?.avatar_url || userProfile?.avatar_url || null,
-                            logo_url: activeBand?.logo_url || activeBand?.logo || null,
-                            banner: activeBand?.cover_url || activeBand?.banner || userProfile?.banner_url || null,
-                            banner_url: activeBand?.cover_url || activeBand?.banner || userProfile?.banner_url || null,
-                            cover_url: activeBand?.cover_url || activeBand?.banner || null,
-                            location: activeBand?.location || activeBand?.homebase || userProfile?.location || 'USA / Global',
-                            role: 'Artist',
-                            account_type: 'band',
-                            type: 'band',
-                            isBandProfile: true,
-                            isPersonal: false,
-                            isYou: true,
-                            badges: activeBand?.badges || ['🎸 Artist'],
-                            customBadges: activeBand?.badges || ['🎸 Artist'],
-                            bio: activeBand?.bio || activeBand?.description || userProfile?.bio || `${activeBand?.name || 'Artist'} profile on Nexus.`,
-                            genres: activeBand?.genres || (activeBand?.genre ? [activeBand?.genre] : ['Metal']),
-                            genre: activeBand?.genre || 'Metal',
-                            lineup: activeBand?.lineup || activeBand?.members || [],
-                            musicCatalog: activeBand?.catalog || []
-                          };
-                        } else if (portalRole === 'label') {
-                          detailPayload = {
-                            id: userProfile?.id || null,
-                            name: userProfile?.label_company_name || 'Record Label',
-                            label_company_name: userProfile?.label_company_name || 'Record Label',
-                            avatar: userProfile?.label_logo || userProfile?.avatar_url || null,
-                            avatar_url: userProfile?.label_logo || userProfile?.avatar_url || null,
-                            banner: userProfile?.label_banner || userProfile?.banner_url || null,
-                            banner_url: userProfile?.label_banner || userProfile?.banner_url || null,
-                            cover_url: userProfile?.label_banner || userProfile?.banner_url || null,
-                            location: userProfile?.label_headquarters || userProfile?.location || 'USA / Global',
-                            role: 'Label',
-                            account_type: 'label',
-                            type: 'label',
-                            isPersonal: false,
-                            isBandProfile: false,
-                            isYou: true,
-                            badges: ['💿 Record Label'],
-                            bio: userProfile?.label_description || userProfile?.bio || 'Official record label account on Nexus.'
-                          };
-                        } else if (portalRole === 'promoter') {
-                          detailPayload = {
-                            id: userProfile?.id || null,
-                            name: userProfile?.promoter_metadata?.brand_name || (userProfile as any)?.promoter_name || 'Promoter',
-                            avatar: userProfile?.promoter_metadata?.logo || (userProfile as any)?.promoter_logo || userProfile?.avatar_url || null,
-                            avatar_url: userProfile?.promoter_metadata?.logo || (userProfile as any)?.promoter_logo || userProfile?.avatar_url || null,
-                            banner: (userProfile as any)?.promoter_cover_image || userProfile?.banner_url || null,
-                            banner_url: (userProfile as any)?.promoter_cover_image || userProfile?.banner_url || null,
-                            cover_url: (userProfile as any)?.promoter_cover_image || userProfile?.banner_url || null,
-                            location: (userProfile as any)?.promoter_city ? `${(userProfile as any).promoter_city}, ${(userProfile as any).promoter_state}` : (userProfile?.location || 'USA / Global'),
-                            role: 'Promoter',
-                            account_type: 'promoter',
-                            type: 'promoter',
-                            isPersonal: false,
-                            isBandProfile: false,
-                            isYou: true,
-                            badges: ['🎫 Promoter'],
-                            bio: userProfile?.bio || 'Concert promoter and event organizer on Nexus.'
-                          };
-                        } else if (portalRole === 'creative') {
-                          detailPayload = {
-                            id: userProfile?.id || null,
-                            name: userProfile?.creative_metadata?.business_name || userProfile?.creative_business_name || userProfile?.creative_name || 'Creative Pro',
-                            legalName: profileFullLegalName || userProfile?.full_name || userProfile?.name,
-                            handle: userProfile?.creative_handle || 'creative_pro',
-                            console_handle: userProfile?.creative_handle || 'creative_pro',
-                            avatar: userProfile?.creative_avatar || userProfile?.avatar_url || null,
-                            avatar_url: userProfile?.creative_avatar || userProfile?.avatar_url || null,
-                            banner: userProfile?.creative_banner || userProfile?.banner_url || null,
-                            banner_url: userProfile?.creative_banner || userProfile?.banner_url || null,
-                            cover_url: userProfile?.creative_banner || userProfile?.banner_url || null,
-                            location: userProfile?.creative_metadata?.base_location || userProfile?.location || 'USA / Global',
-                            role: 'Creative',
-                            account_type: 'creative',
-                            type: 'creative',
-                            isPersonal: true,
-                            isBandProfile: false,
-                            isYou: true,
-                            badges: ['🛠️ Creative Pro', '🎨 Designer'],
-                            bio: userProfile?.bio || 'Professional creative specialist on the Nexus network.'
-                          };
-                        } else if (portalRole === 'fan_only') {
-                          detailPayload = {
-                            id: userProfile?.id || null,
-                            name: profileFullLegalName || userProfile?.full_name || userProfile?.screen_name || userProfile?.name || 'Fan Listener',
-                            legalName: userProfile?.full_name || profileFullLegalName || userProfile?.name,
-                            handle: userProfile?.screen_name?.toLowerCase().replace(/\s+/g, '') || 'fan_core',
-                            console_handle: userProfile?.screen_name?.toLowerCase().replace(/\s+/g, '') || 'fan_core',
-                            avatar: userProfile?.avatar_url || null,
-                            avatar_url: userProfile?.avatar_url || null,
-                            banner: userProfile?.banner_url || null,
-                            banner_url: userProfile?.banner_url || null,
-                            cover_url: userProfile?.banner_url || null,
-                            location: userProfile?.location || 'USA / Global',
-                            role: 'Fan Listener',
-                            account_type: 'fan_only',
-                            type: 'user',
-                            isPersonal: true,
-                            isBandProfile: false,
-                            isYou: true,
-                            badges: ['🤘 Fan'],
-                            bio: userProfile?.bio || 'Fan profile on the Nexus network.'
-                          };
-                        } else {
-                          const handleVal = userProfile?.console_handle || userProfile?.username || userProfile?.handle || 'pro_user';
-                          detailPayload = {
-                            id: userProfile?.id || null,
-                            name: profileFullLegalName || userProfile?.name || userProfile?.display_name || 'Industry Pro',
-                            legalName: userProfile?.full_name || profileFullLegalName || userProfile?.name,
-                            console_handle: handleVal,
-                            handle: handleVal,
-                            username: handleVal,
-                            avatar: userProfile?.avatar_url || null,
-                            avatar_url: userProfile?.avatar_url || null,
-                            banner: userProfile?.banner_url || null,
-                            banner_url: userProfile?.banner_url || null,
-                            cover_url: userProfile?.banner_url || null,
-                            location: userProfile?.location || 'USA / Global',
-                            role: 'Industry Pro',
-                            account_type: 'industry_pro',
-                            type: 'user',
-                            isPersonal: true,
-                            isBandProfile: false,
-                            isYou: true,
-                            badges: userProfile?.badges || ['💼 Industry Pro'],
-                            customBadges: userProfile?.customBadges || userProfile?.badges || [],
-                            bio: userProfile?.bio || userProfile?.blurb || 'User profile on the Nexus network.'
-                          };
-                        }
+                        const detailPayload = {
+                          id: userProfile?.id || null,
+                          name: profileFullLegalName || userProfile?.name || userProfile?.full_name || 'Miguel Goregrinder Medina',
+                          legalName: profileFullLegalName || userProfile?.full_name || userProfile?.name || 'Miguel Goregrinder Medina',
+                          handle: personalHandle,
+                          console_handle: personalHandle,
+                          username: personalHandle,
+                          avatar: userProfile?.avatar_url || null,
+                          avatar_url: userProfile?.avatar_url || null,
+                          banner: userProfile?.banner_url || null,
+                          banner_url: userProfile?.banner_url || null,
+                          cover_url: userProfile?.banner_url || null,
+                          location: userProfile?.location || 'USA / Global',
+                          role: userProfile?.account_type === 'fan_only' ? 'Fan Listener' : 'Industry Pro',
+                          account_type: userProfile?.account_type || 'industry_pro',
+                          type: 'user',
+                          isPersonal: true,
+                          isBandProfile: false,
+                          isYou: true,
+                          badges: userProfile?.badges || (userProfile?.account_type === 'fan_only' ? ['🤘 Fan'] : ['💼 Industry Pro']),
+                          customBadges: userProfile?.customBadges || userProfile?.badges || [],
+                          bio: userProfile?.bio || userProfile?.blurb || 'User profile on the Nexus network.'
+                        };
 
                         window.dispatchEvent(new CustomEvent('openPublicProfile', { detail: detailPayload }));
-                        triggerNotification?.("⚡ Opening public profile card...");
+                        triggerNotification?.("⚡ Opening your public profile card...");
                       }}
                       className="w-full flex items-center justify-center gap-1.5 bg-[#3b0b6c] hover:bg-[#4c0d8a] text-white py-1.5 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-colors mb-2 shadow-md shadow-purple-900/20 cursor-pointer"
                     >
@@ -753,143 +643,33 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                       <button 
                         onClick={() => {
                           setRoleMenuOpen(false);
-                          let detailPayload: any;
+                          const personalHandle = userProfile?.console_handle && !userProfile.console_handle.toLowerCase().includes('virulent') && userProfile.console_handle !== '@user' && userProfile.console_handle !== 'user'
+                            ? (userProfile.console_handle.startsWith('@') ? userProfile.console_handle : `@${userProfile.console_handle}`)
+                            : '@bdmCEO';
 
-                          if (portalRole === 'band') {
-                            detailPayload = {
-                              id: activeBand?.id || userProfile?.id || null,
-                              name: activeBand?.name || userProfile?.bandName || 'Artist',
-                              band_name: activeBand?.name || userProfile?.bandName || 'Artist',
-                              avatar: activeBand?.logo_url || activeBand?.logo || activeBand?.avatar_url || userProfile?.avatar_url || null,
-                              avatar_url: activeBand?.logo_url || activeBand?.logo || activeBand?.avatar_url || userProfile?.avatar_url || null,
-                              logo_url: activeBand?.logo_url || activeBand?.logo || null,
-                              banner: activeBand?.cover_url || activeBand?.banner || userProfile?.banner_url || null,
-                              banner_url: activeBand?.cover_url || activeBand?.banner || userProfile?.banner_url || null,
-                              cover_url: activeBand?.cover_url || activeBand?.banner || null,
-                              location: activeBand?.location || activeBand?.homebase || userProfile?.location || 'USA / Global',
-                              role: 'Artist',
-                              account_type: 'band',
-                              type: 'band',
-                              isBandProfile: true,
-                              isPersonal: false,
-                              isYou: true,
-                              badges: activeBand?.badges || ['🎸 Artist'],
-                              customBadges: activeBand?.badges || ['🎸 Artist'],
-                              bio: activeBand?.bio || activeBand?.description || userProfile?.bio || `${activeBand?.name || 'Artist'} profile on Nexus.`,
-                              genres: activeBand?.genres || (activeBand?.genre ? [activeBand?.genre] : ['Metal']),
-                              genre: activeBand?.genre || 'Metal',
-                              lineup: activeBand?.lineup || activeBand?.members || [],
-                              musicCatalog: activeBand?.catalog || []
-                            };
-                          } else if (portalRole === 'label') {
-                            detailPayload = {
-                              id: userProfile?.id || null,
-                              name: userProfile?.label_company_name || 'Record Label',
-                              label_company_name: userProfile?.label_company_name || 'Record Label',
-                              avatar: userProfile?.label_logo || userProfile?.avatar_url || null,
-                              avatar_url: userProfile?.label_logo || userProfile?.avatar_url || null,
-                              banner: userProfile?.label_banner || userProfile?.banner_url || null,
-                              banner_url: userProfile?.label_banner || userProfile?.banner_url || null,
-                              cover_url: userProfile?.label_banner || userProfile?.banner_url || null,
-                              location: userProfile?.label_headquarters || userProfile?.location || 'USA / Global',
-                              role: 'Label',
-                              account_type: 'label',
-                              type: 'label',
-                              isPersonal: false,
-                              isBandProfile: false,
-                              isYou: true,
-                              badges: ['💿 Record Label'],
-                              bio: userProfile?.label_description || userProfile?.bio || 'Official record label account on Nexus.'
-                            };
-                          } else if (portalRole === 'promoter') {
-                            detailPayload = {
-                              id: userProfile?.id || null,
-                              name: userProfile?.promoter_metadata?.brand_name || (userProfile as any)?.promoter_name || 'Promoter',
-                              avatar: userProfile?.promoter_metadata?.logo || (userProfile as any)?.promoter_logo || userProfile?.avatar_url || null,
-                              avatar_url: userProfile?.promoter_metadata?.logo || (userProfile as any)?.promoter_logo || userProfile?.avatar_url || null,
-                              banner: (userProfile as any)?.promoter_cover_image || userProfile?.banner_url || null,
-                              banner_url: (userProfile as any)?.promoter_cover_image || userProfile?.banner_url || null,
-                              cover_url: (userProfile as any)?.promoter_cover_image || userProfile?.banner_url || null,
-                              location: (userProfile as any)?.promoter_city ? `${(userProfile as any).promoter_city}, ${(userProfile as any).promoter_state}` : (userProfile?.location || 'USA / Global'),
-                              role: 'Promoter',
-                              account_type: 'promoter',
-                              type: 'promoter',
-                              isPersonal: false,
-                              isBandProfile: false,
-                              isYou: true,
-                              badges: ['🎫 Promoter'],
-                              bio: userProfile?.bio || 'Concert promoter and event organizer on Nexus.'
-                            };
-                          } else if (portalRole === 'creative') {
-                            detailPayload = {
-                              id: userProfile?.id || null,
-                              name: userProfile?.creative_metadata?.business_name || userProfile?.creative_business_name || userProfile?.creative_name || 'Creative Pro',
-                              legalName: profileFullLegalName || userProfile?.full_name || userProfile?.name,
-                              handle: userProfile?.creative_handle || 'creative_pro',
-                              console_handle: userProfile?.creative_handle || 'creative_pro',
-                              avatar: userProfile?.creative_avatar || userProfile?.avatar_url || null,
-                              avatar_url: userProfile?.creative_avatar || userProfile?.avatar_url || null,
-                              banner: userProfile?.creative_banner || userProfile?.banner_url || null,
-                              banner_url: userProfile?.creative_banner || userProfile?.banner_url || null,
-                              cover_url: userProfile?.creative_banner || userProfile?.banner_url || null,
-                              location: userProfile?.creative_metadata?.base_location || userProfile?.location || 'USA / Global',
-                              role: 'Creative',
-                              account_type: 'creative',
-                              type: 'creative',
-                              isPersonal: true,
-                              isBandProfile: false,
-                              isYou: true,
-                              badges: ['🛠️ Creative Pro', '🎨 Designer'],
-                              bio: userProfile?.bio || 'Professional creative specialist on the Nexus network.'
-                            };
-                          } else if (portalRole === 'fan_only') {
-                            detailPayload = {
-                              id: userProfile?.id || null,
-                              name: profileFullLegalName || userProfile?.full_name || userProfile?.screen_name || userProfile?.name || 'Fan Listener',
-                              legalName: userProfile?.full_name || profileFullLegalName || userProfile?.name,
-                              handle: userProfile?.screen_name?.toLowerCase().replace(/\s+/g, '') || 'fan_core',
-                              console_handle: userProfile?.screen_name?.toLowerCase().replace(/\s+/g, '') || 'fan_core',
-                              avatar: userProfile?.avatar_url || null,
-                              avatar_url: userProfile?.avatar_url || null,
-                              banner: userProfile?.banner_url || null,
-                              banner_url: userProfile?.banner_url || null,
-                              cover_url: userProfile?.banner_url || null,
-                              location: userProfile?.location || 'USA / Global',
-                              role: 'Fan Listener',
-                              account_type: 'fan_only',
-                              type: 'user',
-                              isPersonal: true,
-                              isBandProfile: false,
-                              isYou: true,
-                              badges: ['🤘 Fan'],
-                              bio: userProfile?.bio || 'Fan profile on the Nexus network.'
-                            };
-                          } else {
-                            const handleVal = userProfile?.console_handle || userProfile?.username || userProfile?.handle || 'pro_user';
-                            detailPayload = {
-                              id: userProfile?.id || null,
-                              name: profileFullLegalName || userProfile?.name || userProfile?.display_name || 'Industry Pro',
-                              legalName: userProfile?.full_name || profileFullLegalName || userProfile?.name,
-                              console_handle: handleVal,
-                              handle: handleVal,
-                              username: handleVal,
-                              avatar: userProfile?.avatar_url || null,
-                              avatar_url: userProfile?.avatar_url || null,
-                              banner: userProfile?.banner_url || null,
-                              banner_url: userProfile?.banner_url || null,
-                              cover_url: userProfile?.banner_url || null,
-                              location: userProfile?.location || 'USA / Global',
-                              role: 'Industry Pro',
-                              account_type: 'industry_pro',
-                              type: 'user',
-                              isPersonal: true,
-                              isBandProfile: false,
-                              isYou: true,
-                              badges: userProfile?.badges || ['💼 Industry Pro'],
-                              customBadges: userProfile?.customBadges || userProfile?.badges || [],
-                              bio: userProfile?.bio || userProfile?.blurb || 'User profile on the Nexus network.'
-                            };
-                          }
+                          const detailPayload = {
+                            id: userProfile?.id || null,
+                            name: profileFullLegalName || userProfile?.name || userProfile?.full_name || 'Miguel Goregrinder Medina',
+                            legalName: profileFullLegalName || userProfile?.full_name || userProfile?.name || 'Miguel Goregrinder Medina',
+                            handle: personalHandle,
+                            console_handle: personalHandle,
+                            username: personalHandle,
+                            avatar: userProfile?.avatar_url || null,
+                            avatar_url: userProfile?.avatar_url || null,
+                            banner: userProfile?.banner_url || null,
+                            banner_url: userProfile?.banner_url || null,
+                            cover_url: userProfile?.banner_url || null,
+                            location: userProfile?.location || 'USA / Global',
+                            role: userProfile?.account_type === 'fan_only' ? 'Fan Listener' : 'Industry Pro',
+                            account_type: userProfile?.account_type || 'industry_pro',
+                            type: 'user',
+                            isPersonal: true,
+                            isBandProfile: false,
+                            isYou: true,
+                            badges: userProfile?.badges || (userProfile?.account_type === 'fan_only' ? ['🤘 Fan'] : ['💼 Industry Pro']),
+                            customBadges: userProfile?.customBadges || userProfile?.badges || [],
+                            bio: userProfile?.bio || userProfile?.blurb || 'User profile on the Nexus network.'
+                          };
 
                           window.dispatchEvent(new CustomEvent('openPublicProfile', { detail: detailPayload }));
                           triggerNotification?.("⚡ Opening your public profile...");
