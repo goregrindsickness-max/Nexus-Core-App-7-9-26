@@ -97,6 +97,18 @@ export function useGlobalDataSync({
               const { error } = await supabase.from('shows').update(prunedDbShow).eq('id', payload.id);
               if (!error) successCount++;
             }
+          } else if (type === 'inventory') {
+            const cleanDbItem = sanitizeInventoryItemForDb(payload);
+            if (operation === 'insert') {
+              const { error } = await supabase.from('inventory').insert([cleanDbItem]);
+              if (!error) successCount++;
+            } else if (operation === 'update') {
+              const { error } = await supabase.from('inventory').update(cleanDbItem).eq('id', payload.id);
+              if (!error) successCount++;
+            } else if (operation === 'delete') {
+              const { error } = await supabase.from('inventory').delete().eq('id', payload.id);
+              if (!error) successCount++;
+            }
           } else if (type === 'note') {
             if (operation === 'insert') {
               const dbNote = { ...payload };

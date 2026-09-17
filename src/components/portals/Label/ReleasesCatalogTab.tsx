@@ -1321,12 +1321,12 @@ export default function ReleasesCatalogTab({
                   {/* FULLY DETAILED TRACK LIST DIRECTLY UNDER CONTROLS */}
                   <div className="border-t border-zinc-900 pt-3">
                     <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
-                      {releases.flatMap(release => (release.digital || []).map((track: any, idx) => {
+                      {releases.flatMap((release, relIdx) => (release.digital || []).map((track: any, idx) => {
                         const isCurrent = track.id === activePlaybackTrackId;
                         const trackDuration = track.duration || getRunningTime(track);
                         return (
                           <div 
-                            key={`rel-${release.id || 'r'}-track-${track.id || 't'}-${idx}`} 
+                            key={`rel-${release.id || relIdx}-track-${track.id || idx}-${relIdx}-${idx}`} 
                             onClick={() => {
                               setActivePlaybackTrackId(track.id);
                               setIsPlaying(true);
@@ -1654,7 +1654,7 @@ export default function ReleasesCatalogTab({
                                     </div>
                                     <div className="flex flex-wrap gap-1.5">
                                       {vinylVariants.map((v, vIdx) => (
-                                        <span key={`variant-${v.id || 'v'}-${vIdx}`} className="bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800 text-[8.5px] font-mono text-zinc-300 uppercase">
+                                        <span key={`variant-${release.id}-${v.id || 'v'}-${vIdx}`} className="bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800 text-[8.5px] font-mono text-zinc-300 uppercase">
                                           {v.name}: <b className="text-[#FF9900] font-black">{v.qty}</b>
                                         </span>
                                       ))}

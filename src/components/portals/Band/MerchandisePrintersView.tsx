@@ -1669,7 +1669,7 @@ export default function MerchandisePrintersView({
                         >
                           <option value="">[ SELECT ALLIANCE PROJECT ]</option>
                           {alliances.map((a, aIdx) => (
-                            <option key={`${a.id}-${aIdx}`} value={a.id}>{a.project_name || a.id}</option>
+                            <option key={`alliance-${printer.id}-${a.id}-${aIdx}`} value={a.id}>{a.project_name || a.id}</option>
                           ))}
                           {alliances.length === 0 && <option value="mock" disabled>No active alliances found locally</option>}
                         </select>

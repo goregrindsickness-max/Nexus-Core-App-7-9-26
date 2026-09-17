@@ -24,7 +24,21 @@ export function useSocialClipsState({ triggerNotification }: UseSocialClipsState
     thumbnailUrl?: string;
     created_at?: string;
     user_id?: string;
-  }[]>([]);
+    bandName?: string;
+    songTitle?: string;
+    tags?: string[];
+  }[]>(() => {
+    try {
+      const saved = localStorage.getItem('nexus_saved_clips');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (_) {}
+    return [];
+  });
 
   const [showUploadClipModal, setShowUploadClipModal] = useState(false);
   const [newClipCaption, setNewClipCaption] = useState('');
@@ -57,42 +71,60 @@ export function useSocialClipsState({ triggerNotification }: UseSocialClipsState
   };
 
   const deleteClip = async (clipId: string | number) => {
-    setClips(prev => prev.filter(c => c.id !== clipId));
+    setClips(prev => {
+      const updated = prev.filter(c => c.id !== clipId);
+      try {
+        localStorage.setItem('nexus_saved_clips', JSON.stringify(updated));
+      } catch (_) {}
+      return updated;
+    });
     triggerNotification?.("Clip deleted successfully!");
     const supabaseClient = getSupabase();
     if (supabaseClient && typeof clipId === 'string') {
       try {
-        const { error } = await supabaseClient
-          .from('clips')
-          .delete()
-          .eq('id', clipId);
-        if (error) {
-          console.error("Failed to delete clip from database:", error);
-        }
+        await supabaseClient.from('clips').delete().eq('id', clipId);
+        await supabaseClient.from('nexus_clips').delete().eq('id', clipId);
       } catch (err) {
-        console.error("Failed to delete clip:", err);
+        console.error("Failed to delete clip from database:", err);
       }
     }
   };
 
-  // Load clips from Supabase database table on mount
+  // Load clips from Supabase database tables on mount
   useEffect(() => {
     const fetchClips = async () => {
       const supabaseClient = getSupabase();
       if (!supabaseClient) return;
-      try {
-        const { data: dbClips, error } = await supabaseClient
-          .from('clips')
-          .select('*')
-          .order('created_at', { ascending: false });
 
-        if (error) {
-          console.warn("Supabase fetch clips returned error (using local cached fallback):", error);
-          return;
-        }
+      try {
+        let dbClips: any[] = [];
+        
+        // 1. Fetch from 'clips' table
+        try {
+          const { data: cData, error: cErr } = await supabaseClient
+            .from('clips')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (!cErr && cData && cData.length > 0) {
+            dbClips = cData;
+          }
+        } catch (_) {}
+
+        // 2. Fallback or merge with 'nexus_clips' table
+        try {
+          const { data: ncData, error: ncErr } = await supabaseClient
+            .from('nexus_clips')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (!ncErr && ncData && ncData.length > 0) {
+            const existingIds = new Set(dbClips.map((c: any) => c.id));
+            const uniqueNc = ncData.filter((c: any) => !existingIds.has(c.id));
+            dbClips = [...dbClips, ...uniqueNc];
+          }
+        } catch (_) {}
 
         if (dbClips && dbClips.length > 0) {
-          const userIds = Array.from(new Set(dbClips.map((c: any) => c.user_id).filter(Boolean)));
+          const userIds = Array.from(new Set(dbClips.map((c: any) => c.user_id || c.profile_id).filter(Boolean)));
           const profilesMap: { [key: string]: any } = {};
 
           if (userIds.length > 0) {
@@ -113,45 +145,57 @@ export function useSocialClipsState({ triggerNotification }: UseSocialClipsState
           }
 
           const mappedClips = dbClips.map((clip: any) => {
-            const creatorProfile = profilesMap[clip.user_id];
+            const userId = clip.user_id || clip.profile_id;
+            const creatorProfile = profilesMap[userId];
             
-            const creatorName = creatorProfile 
+            const creatorName = clip.username || clip.creator || clip.band_name || (creatorProfile 
               ? (creatorProfile.name || creatorProfile.full_name || 'Anonymous Creator') 
-              : 'Anonymous Creator';
+              : 'Anonymous Creator');
 
-            const creatorAvatar = creatorProfile 
+            const creatorAvatar = clip.avatar || clip.avatar_url || (creatorProfile 
               ? (creatorProfile.avatar_url || creatorProfile.label_avatar || creatorProfile.creative_avatar || creatorProfile.promoter_logo || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&h=80&q=80') 
-              : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&h=80&q=80';
+              : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&h=80&q=80');
 
             const role = creatorProfile 
               ? (creatorProfile.role_badge || creatorProfile.account_type || 'Operator') 
-              : 'Operator';
+              : (clip.band_name ? '💀 Band' : 'Operator');
+
+            const videoUrl = clip.video_url || clip.videoUrl || clip.url || '';
+            const caption = clip.caption || clip.description || clip.title || '';
+            const songTitle = clip.song_title || clip.songTitle || clip.audio || 'Original Audio';
+            const bandName = clip.band_name || clip.bandName || creatorName;
 
             return {
               id: clip.id,
               creator: creatorName,
               role: role,
               avatar: creatorAvatar,
-              caption: clip.description || clip.title || '',
-              title: clip.title || '',
-              videoUrl: clip.video_url,
-              thumbnailUrl: clip.thumbnail_url || '',
-              likes: clip.likes_count || 0,
-              comments: clip.comments_count || 0,
-              shares: clip.shares_count || 0,
+              caption: caption,
+              title: clip.title || caption || 'Live Clip',
+              videoUrl: videoUrl,
+              thumbnailUrl: clip.thumbnail_url || clip.thumbnailUrl || '',
+              likes: clip.likes_count || clip.likes || 0,
+              comments: clip.comments_count || clip.comments || 0,
+              shares: clip.shares_count || clip.shares || 0,
               reposts: 0,
-              views: 100,
-              audio: `Original Audio - ${creatorName}`,
+              views: clip.views_count || clip.views || 100,
+              audio: songTitle ? `${bandName} - ${songTitle}` : `Original Audio - ${creatorName}`,
+              songTitle: songTitle,
+              bandName: bandName,
               hasLiked: false,
               created_at: clip.created_at,
-              user_id: clip.user_id
+              user_id: userId
             };
           });
 
           setClips(prev => {
             const dbIds = new Set(mappedClips.map(c => c.id));
             const localOnly = prev.filter(c => !dbIds.has(c.id));
-            return [...mappedClips, ...localOnly];
+            const merged = [...mappedClips, ...localOnly];
+            try {
+              localStorage.setItem('nexus_saved_clips', JSON.stringify(merged));
+            } catch (_) {}
+            return merged;
           });
         }
       } catch (err) {

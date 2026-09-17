@@ -808,11 +808,11 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
                       playlistVideos
                         .map((video, idx) => ({ ...video, originalIndex: idx }))
                         .filter(v => v.title.toLowerCase().includes(searchPlaylistQuery.toLowerCase()))
-                        .map((video) => {
+                        .map((video, vIdx) => {
                           const isCurrent = video.originalIndex === currentVideoIndex;
                           return (
                             <div
-                              key={`video-item-${video.videoId || ''}-${video.originalIndex}`}
+                              key={`video-item-${video.videoId || ''}-${video.originalIndex}-${vIdx}`}
                               role="button"
                               tabIndex={0}
                               onKeyDown={(e) => {

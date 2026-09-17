@@ -561,7 +561,7 @@ export function StripeCheckoutModal({
                           <div className="flex items-center gap-1 flex-wrap">
                             {availableSizes.map((sz, szIdx) => (
                               <button
-                                key={`size-${sz}-${szIdx}`}
+                                key={`size-att-${idx}-${sz}-${szIdx}`}
                                 type="button"
                                 onClick={() => handleUpdateAttendeeSize(idx, sz)}
                                 className={`px-2 py-0.5 rounded text-[9px] font-mono font-black transition-all cursor-pointer ${

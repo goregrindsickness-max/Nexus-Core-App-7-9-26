@@ -143,6 +143,7 @@ export function AppNavigationBar({
             <motion.div key="nav-menu-wrapper" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-50 flex overflow-hidden pointer-events-none">
               {/* Backdrop */}
               <motion.div 
+                key="nav-menu-backdrop"
                 initial={{ opacity: 1 }}
                 animate={{ opacity: 0.5 }}
                 exit={{ opacity: 1 }}
@@ -152,6 +153,7 @@ export function AppNavigationBar({
 
               {/* Dropdown Body */}
               <motion.div 
+                key="nav-menu-body"
                 initial={{ opacity: 1, y: -10, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 1, y: -10, scale: 0.95 }}

@@ -802,7 +802,7 @@ export const EventCompanionModal: React.FC<EventCompanionModalProps> = ({
                               {tracks && tracks.length > 0 ? (
                                 tracks.map((song, songIdx) => (
                                   <div
-                                    key={`companion-song-${song}-${songIdx}`}
+                                    key={`companion-song-${band}-${song}-${songIdx}`}
                                     className="flex items-center justify-between py-2.5 px-2 hover:bg-zinc-900/30 transition-all rounded-lg"
                                   >
                                     <div className="flex items-center gap-2.5 min-w-0">

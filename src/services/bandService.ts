@@ -782,33 +782,16 @@ export const fetchUserBands = async (userId: string) => {
     const { data, error } = await supabase
       .from('bands')
       .select('*')
-      .or(`creator_id.eq.${userId},owner_id.eq.${userId},id.eq.cbddb810-259b-4230-9968-3d402dfdb872`)
+      .or(`creator_id.eq.${userId},owner_id.eq.${userId}`)
       .neq('verification_status', 'community_archive')
       .order('created_at', { ascending: false });
 
     if (error) {
       console.warn('Notice fetching bands:', error.message);
-      const { data: fallbackData } = await supabase
-        .from('bands')
-        .select('*')
-        .eq('id', 'cbddb810-259b-4230-9968-3d402dfdb872')
-        .maybeSingle();
-      return fallbackData ? mapBandData([fallbackData]) : [];
+      return [];
     }
 
-    let mapped = mapBandData(data || []);
-    const hasVE = mapped.some((b: any) => b.id === 'cbddb810-259b-4230-9968-3d402dfdb872');
-    if (!hasVE) {
-      const { data: veData } = await supabase
-        .from('bands')
-        .select('*')
-        .eq('id', 'cbddb810-259b-4230-9968-3d402dfdb872')
-        .maybeSingle();
-      if (veData) {
-        mapped = [mapBandData([veData])[0], ...mapped];
-      }
-    }
-    return mapped;
+    return mapBandData(data || []);
   } catch (err: any) {
     console.warn('Notice fetching bands exception:', err?.message || err);
     return [];

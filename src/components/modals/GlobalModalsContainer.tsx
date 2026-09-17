@@ -12,190 +12,253 @@ import LiveTeamActivityWorkspace from '../portals/Band/LiveTeamActivityWorkspace
 import WorkspaceRegistrationWizard from '../WorkspaceRegistrationWizard';
 import WillCallIsolationModal from '../portals/Promoter/WillCallIsolationModal';
 import { MetalArchivesImportModal } from '../social/modals/MetalArchivesImportModal';
+import { SettingsDrawer } from './SettingsDrawer';
+import { useModalStore } from '../../store/useModalStore';
 import { Show, Sale, Band, UserProfile, InventoryItem } from '../../types';
 
 export interface GlobalModalsContainerProps {
-  // Will Call
+  // Will Call & Global Context
   userProfile: UserProfile | null;
+  setUserProfile?: React.Dispatch<React.SetStateAction<UserProfile | null>>;
   activeTab: string;
   shows: Show[];
 
   // Brutalist Modal
-  isModalOpen: boolean;
-  setIsModalOpen: (open: boolean) => void;
-  modalType: 'sale' | 'show' | 'note' | null;
-  setModalType: (type: 'sale' | 'show' | 'note' | null) => void;
+  isModalOpen?: boolean;
+  setIsModalOpen?: (open: boolean) => void;
+  modalType?: 'sale' | 'show' | 'note' | null;
+  setModalType?: (type: 'sale' | 'show' | 'note' | null) => void;
   handleDataSubmit: (type: "sale" | "show" | "note", payload: any) => void;
   inventory: InventoryItem[];
 
   // Digital Receipt
-  selectedSaleReceipt: Sale | null;
-  setSelectedSaleReceipt: (sale: Sale | null) => void;
+  selectedSaleReceipt?: Sale | null;
+  setSelectedSaleReceipt?: (sale: Sale | null) => void;
   triggerNotification: (msg: string) => void;
 
   // Artist Management
-  isBandModalOpen: boolean;
-  setIsBandModalOpen: (open: boolean) => void;
-  editingBand: Band | null;
-  setEditingBand: (band: Band | null) => void;
-  editName: string;
-  setEditName: (val: string) => void;
-  editGenre: string;
-  setEditGenre: (val: string) => void;
-  editLogoUrl: string;
-  setEditLogoUrl: (val: string) => void;
-  editLogoPresetIdx: number;
-  setEditLogoPresetIdx: (val: number) => void;
-  handleUpdateBand: (e: React.FormEvent) => void;
-  dragActive: boolean;
-  setDragActive: (val: boolean) => void;
-  handleLogoUpload: (file: File, isEdit: boolean) => void;
-  editRosterFileInputRef: React.RefObject<HTMLInputElement | null>;
-  rosterFileInputRef: React.RefObject<HTMLInputElement | null>;
-  logoPresets: string[];
-  bandLogoUrl: string;
+  isBandModalOpen?: boolean;
+  setIsBandModalOpen?: (open: boolean) => void;
+  bandManagement?: any;
+  editingBand?: Band | null;
+  setEditingBand?: (band: Band | null) => void;
+  editName?: string;
+  setEditName?: (val: string) => void;
+  editGenre?: string;
+  setEditGenre?: (val: string) => void;
+  editLogoUrl?: string;
+  setEditLogoUrl?: (val: string) => void;
+  editLogoPresetIdx?: number;
+  setEditLogoPresetIdx?: (val: number) => void;
+  handleUpdateBand?: (e: React.FormEvent) => void;
+  dragActive?: boolean;
+  setDragActive?: (val: boolean) => void;
+  handleLogoUpload?: (file: File, isEdit: boolean) => void;
+  editRosterFileInputRef?: React.RefObject<HTMLInputElement | null>;
+  rosterFileInputRef?: React.RefObject<HTMLInputElement | null>;
+  logoPresets?: string[];
+  bandLogoUrl?: string;
   activeBand: Band | null;
   bands: Band[];
   activeBandId: string;
   setActiveBandId: (id: string) => void;
-  addLog: (msg: string) => void;
-  deletingBandId: string | null;
-  setDeletingBandId: (id: string | null) => void;
-  handleDeleteBand: (id: string, name: string) => void;
-  newBandForm: { name: string; genre: string; logo_url: string };
-  setNewBandForm: React.Dispatch<React.SetStateAction<{ name: string; genre: string; logo_url: string }>>;
-  handleCreateBand: (e: React.FormEvent) => void;
-  customLogoPreset: number;
-  setCustomLogoPreset: (val: number) => void;
+  addLog?: (msg: string) => void;
+  deletingBandId?: string | null;
+  setDeletingBandId?: (id: string | null) => void;
+  handleDeleteBand?: (id: string, name: string) => void;
+  newBandForm?: { name: string; genre: string; logo_url: string };
+  setNewBandForm?: React.Dispatch<React.SetStateAction<{ name: string; genre: string; logo_url: string }>>;
+  handleCreateBand?: (e: React.FormEvent) => void;
+  customLogoPreset?: number;
+  setCustomLogoPreset?: (val: number) => void;
 
   // Cash Drawer
-  isCashDrawerOpen: boolean;
-  setIsCashDrawerOpen: (open: boolean) => void;
-  cashTransactions: any[];
-  setCashTransactions: React.Dispatch<React.SetStateAction<any[]>>;
+  isCashDrawerOpen?: boolean;
+  setIsCashDrawerOpen?: (open: boolean) => void;
+  cashTransactions?: any[];
+  setCashTransactions?: React.Dispatch<React.SetStateAction<any[]>>;
 
   // Checklist
-  isChecklistModalOpen: boolean;
-  setIsChecklistModalOpen: (open: boolean) => void;
-  checklistItems: any[];
-  setChecklistItems: React.Dispatch<React.SetStateAction<any[]>>;
-  checklistBank: any[];
-  setChecklistBank: React.Dispatch<React.SetStateAction<any[]>>;
+  isChecklistModalOpen?: boolean;
+  setIsChecklistModalOpen?: (open: boolean) => void;
+  checklistItems?: any[];
+  setChecklistItems?: React.Dispatch<React.SetStateAction<any[]>>;
+  checklistBank?: any[];
+  setChecklistBank?: React.Dispatch<React.SetStateAction<any[]>>;
 
   // Quick Shortcuts
-  isQuickActionPanelOpen: boolean;
-  setIsQuickActionPanelOpen: (open: boolean) => void;
-  setActiveTab: (tab: string) => void;
-  setEditingItem: (item: any) => void;
-  setPendingOpenShowsForm: (val: boolean) => void;
-  setPendingFlightIsAdding: (val: boolean) => void;
+  isQuickActionPanelOpen?: boolean;
+  setIsQuickActionPanelOpen?: (open: boolean) => void;
+  setActiveTab?: (tab: string) => void;
+  setEditingItem?: (item: any) => void;
+  setPendingOpenShowsForm?: (val: boolean) => void;
+  setPendingFlightIsAdding?: (val: boolean) => void;
 
   // PTT Radio
-  isPttOpen: boolean;
-  setIsPttOpen: (open: boolean) => void;
-  playPttSound: (type: "beep-on" | "beep-off" | "static") => void;
+  isPttOpen?: boolean;
+  setIsPttOpen?: (open: boolean) => void;
+  playPttSound?: (type: "beep-on" | "beep-off" | "static") => void;
 
   // Van to Table Transfer
-  isTransferModalOpen: boolean;
-  setIsTransferModalOpen: (open: boolean) => void;
-  transferPreselectedId: string | null;
-  setTransferPreselectedId: (id: string | null) => void;
-  setInventory: React.Dispatch<React.SetStateAction<InventoryItem[]>>;
-  commitInventoryMutation: (items: InventoryItem[]) => void;
+  isTransferModalOpen?: boolean;
+  setIsTransferModalOpen?: (open: boolean) => void;
+  transferPreselectedId?: string | null;
+  setTransferPreselectedId?: (id: string | null) => void;
+  setInventory?: React.Dispatch<React.SetStateAction<InventoryItem[]>>;
+  commitInventoryMutation?: (items: InventoryItem[]) => void;
 
   // Live Team Activity
-  isLiveTeamActivityOpen: boolean;
-  setIsLiveTeamActivityOpen: (open: boolean) => void;
-  teamActivities: any[];
+  isLiveTeamActivityOpen?: boolean;
+  setIsLiveTeamActivityOpen?: (open: boolean) => void;
+  teamActivities?: any[];
 
   // Workspace Registration Wizard
-  showWorkspaceRegistration: boolean;
-  setShowWorkspaceRegistration: (val: boolean) => void;
-  setIsUpgradeMode: (val: boolean) => void;
-  setLoginInitialTab: (tab: any) => void;
-  setIsLoggedOut: (val: boolean) => void;
+  showWorkspaceRegistration?: boolean;
+  setShowWorkspaceRegistration?: (val: boolean) => void;
+  setIsUpgradeMode?: (val: boolean) => void;
+  setLoginInitialTab?: (tab: any) => void;
+  setIsLoggedOut?: (val: boolean) => void;
+
+  // Settings Drawer
+  isSettingsDrawerOpen?: boolean;
+  setIsSettingsDrawerOpen?: (open: boolean) => void;
 }
 
-export const GlobalModalsContainer: React.FC<GlobalModalsContainerProps> = ({
-  userProfile,
-  activeTab,
-  shows,
-  isModalOpen,
-  setIsModalOpen,
-  modalType,
-  setModalType,
-  handleDataSubmit,
-  inventory,
-  selectedSaleReceipt,
-  setSelectedSaleReceipt,
-  triggerNotification,
-  isBandModalOpen,
-  setIsBandModalOpen,
-  editingBand,
-  setEditingBand,
-  editName,
-  setEditName,
-  editGenre,
-  setEditGenre,
-  editLogoUrl,
-  setEditLogoUrl,
-  editLogoPresetIdx,
-  setEditLogoPresetIdx,
-  handleUpdateBand,
-  dragActive,
-  setDragActive,
-  handleLogoUpload,
-  editRosterFileInputRef,
-  rosterFileInputRef,
-  logoPresets,
-  bandLogoUrl,
-  activeBand,
-  bands,
-  activeBandId,
-  setActiveBandId,
-  addLog,
-  deletingBandId,
-  setDeletingBandId,
-  handleDeleteBand,
-  newBandForm,
-  setNewBandForm,
-  handleCreateBand,
-  customLogoPreset,
-  setCustomLogoPreset,
-  isCashDrawerOpen,
-  setIsCashDrawerOpen,
-  cashTransactions,
-  setCashTransactions,
-  isChecklistModalOpen,
-  setIsChecklistModalOpen,
-  checklistItems,
-  setChecklistItems,
-  checklistBank,
-  setChecklistBank,
-  isQuickActionPanelOpen,
-  setIsQuickActionPanelOpen,
-  setActiveTab,
-  setEditingItem,
-  setPendingOpenShowsForm,
-  setPendingFlightIsAdding,
-  isPttOpen,
-  setIsPttOpen,
-  playPttSound,
-  isTransferModalOpen,
-  setIsTransferModalOpen,
-  transferPreselectedId,
-  setTransferPreselectedId,
-  setInventory,
-  commitInventoryMutation,
-  isLiveTeamActivityOpen,
-  setIsLiveTeamActivityOpen,
-  teamActivities,
-  showWorkspaceRegistration,
-  setShowWorkspaceRegistration,
-  setIsUpgradeMode,
-  setLoginInitialTab,
-  setIsLoggedOut
-}) => {
+const GlobalMetalArchivesImportModalListener: React.FC = () => {
+  const [maModalOpen, setMaModalOpen] = useState(false);
+  const [maBandId, setMaBandId] = useState('band-1');
+  const [maBandName, setMaBandName] = useState('');
+
+  useEffect(() => {
+    const handleOpenMA = (e: any) => {
+      if (e.detail?.bandId) setMaBandId(e.detail.bandId);
+      if (e.detail?.bandName) setMaBandName(e.detail.bandName);
+      setMaModalOpen(true);
+    };
+    window.addEventListener('open_metal_archives_import', handleOpenMA as EventListener);
+    return () => {
+      window.removeEventListener('open_metal_archives_import', handleOpenMA as EventListener);
+    };
+  }, []);
+
+  return (
+    <MetalArchivesImportModal
+      key="global-metal-archives-import-modal"
+      isOpen={maModalOpen}
+      onClose={() => setMaModalOpen(false)}
+      bandId={maBandId}
+      bandName={maBandName}
+      onImportSuccess={(count) => {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('nexus_community_bands_updated'));
+        }
+      }}
+    />
+  );
+};
+
+export const GlobalModalsContainer: React.FC<GlobalModalsContainerProps> = (props) => {
+  const modalStore = useModalStore();
+
+  const {
+    userProfile,
+    setUserProfile,
+    activeTab,
+    shows = [],
+    handleDataSubmit,
+    inventory = [],
+    setInventory = () => {},
+    triggerNotification = () => {},
+    editingBand,
+    setEditingBand,
+    bandLogoUrl,
+    activeBand,
+    bands = [],
+    activeBandId,
+    setActiveBandId,
+    deletingBandId,
+    setDeletingBandId,
+    handleDeleteBand,
+    cashTransactions = [],
+    setCashTransactions = () => {},
+    checklistItems = [],
+    setChecklistItems = () => {},
+    checklistBank = [],
+    setChecklistBank = () => {},
+    setActiveTab = () => {},
+    setEditingItem = () => {},
+    setPendingOpenShowsForm = () => {},
+    setPendingFlightIsAdding = () => {},
+    playPttSound = () => {},
+    commitInventoryMutation = () => {},
+    teamActivities = [],
+    setIsUpgradeMode = () => {},
+    setLoginInitialTab = () => {},
+    setIsLoggedOut = () => {},
+  } = props;
+
+  // Resolve modal states from props or modalStore fallback
+  const isModalOpen = props.isModalOpen !== undefined ? props.isModalOpen : modalStore.isModalOpen;
+  const setIsModalOpen = props.setIsModalOpen || modalStore.setIsModalOpen;
+  const modalType = props.modalType !== undefined ? props.modalType : modalStore.modalType;
+  const setModalType = props.setModalType || modalStore.setModalType;
+
+  const selectedSaleReceipt = props.selectedSaleReceipt !== undefined ? props.selectedSaleReceipt : modalStore.selectedSaleReceipt;
+  const setSelectedSaleReceipt = props.setSelectedSaleReceipt || modalStore.setSelectedSaleReceipt;
+
+  const isBandModalOpen = props.isBandModalOpen !== undefined ? props.isBandModalOpen : modalStore.isBandModalOpen;
+  const setIsBandModalOpen = props.setIsBandModalOpen || modalStore.setIsBandModalOpen;
+
+  const isCashDrawerOpen = props.isCashDrawerOpen !== undefined ? props.isCashDrawerOpen : modalStore.isCashDrawerOpen;
+  const setIsCashDrawerOpen = props.setIsCashDrawerOpen || modalStore.setIsCashDrawerOpen;
+
+  const isChecklistModalOpen = props.isChecklistModalOpen !== undefined ? props.isChecklistModalOpen : modalStore.isChecklistModalOpen;
+  const setIsChecklistModalOpen = props.setIsChecklistModalOpen || modalStore.setIsChecklistModalOpen;
+
+  const isQuickActionPanelOpen = props.isQuickActionPanelOpen !== undefined ? props.isQuickActionPanelOpen : modalStore.isQuickActionPanelOpen;
+  const setIsQuickActionPanelOpen = props.setIsQuickActionPanelOpen || modalStore.setIsQuickActionPanelOpen;
+
+  const isPttOpen = props.isPttOpen !== undefined ? props.isPttOpen : modalStore.isPttOpen;
+  const setIsPttOpen = props.setIsPttOpen || modalStore.setIsPttOpen;
+
+  const isTransferModalOpen = props.isTransferModalOpen !== undefined ? props.isTransferModalOpen : modalStore.isTransferModalOpen;
+  const setIsTransferModalOpen = props.setIsTransferModalOpen || modalStore.setIsTransferModalOpen;
+  const transferPreselectedId = props.transferPreselectedId !== undefined ? props.transferPreselectedId : modalStore.transferPreselectedId;
+  const setTransferPreselectedId = props.setTransferPreselectedId || modalStore.setTransferPreselectedId;
+
+  const isLiveTeamActivityOpen = props.isLiveTeamActivityOpen !== undefined ? props.isLiveTeamActivityOpen : modalStore.isLiveTeamActivityOpen;
+  const setIsLiveTeamActivityOpen = props.setIsLiveTeamActivityOpen || modalStore.setIsLiveTeamActivityOpen;
+
+  const showWorkspaceRegistration = props.showWorkspaceRegistration !== undefined ? props.showWorkspaceRegistration : modalStore.showWorkspaceRegistration;
+  const setShowWorkspaceRegistration = props.setShowWorkspaceRegistration || modalStore.setShowWorkspaceRegistration;
+
+  const isSettingsDrawerOpen = props.isSettingsDrawerOpen !== undefined ? props.isSettingsDrawerOpen : modalStore.isSettingsDrawerOpen;
+  const setIsSettingsDrawerOpen = props.setIsSettingsDrawerOpen || modalStore.setIsSettingsDrawerOpen;
+
+  // Resolve Band Management attributes
+  const bm = props.bandManagement || {};
+  const editName = props.editName ?? bm.editName ?? '';
+  const setEditName = props.setEditName ?? bm.setEditName ?? (() => {});
+  const editGenre = props.editGenre ?? bm.editGenre ?? '';
+  const setEditGenre = props.setEditGenre ?? bm.setEditGenre ?? (() => {});
+  const editLogoUrl = props.editLogoUrl ?? bm.editLogoUrl ?? '';
+  const setEditLogoUrl = props.setEditLogoUrl ?? bm.setEditLogoUrl ?? (() => {});
+  const editLogoPresetIdx = props.editLogoPresetIdx ?? bm.editLogoPresetIdx ?? 0;
+  const setEditLogoPresetIdx = props.setEditLogoPresetIdx ?? bm.setEditLogoPresetIdx ?? (() => {});
+  const handleUpdateBand = props.handleUpdateBand ?? bm.handleUpdateBand ?? (() => {});
+  const dragActive = props.dragActive ?? bm.dragActive ?? false;
+  const setDragActive = props.setDragActive ?? bm.setDragActive ?? (() => {});
+  const handleLogoUpload = props.handleLogoUpload ?? bm.handleLogoUpload ?? (() => {});
+  const editRosterFileInputRef = props.editRosterFileInputRef ?? bm.editRosterFileInputRef;
+  const rosterFileInputRef = props.rosterFileInputRef ?? bm.rosterFileInputRef;
+  const logoPresets = props.logoPresets ?? bm.logoPresets ?? [];
+  const newBandForm = props.newBandForm ?? bm.newBandForm ?? { name: '', genre: '', logo_url: '' };
+  const setNewBandForm = props.setNewBandForm ?? bm.setNewBandForm ?? (() => {});
+  const handleCreateBand = props.handleCreateBand ?? bm.handleCreateBand ?? (() => {});
+  const customLogoPreset = props.customLogoPreset ?? bm.customLogoPreset ?? 0;
+  const setCustomLogoPreset = props.setCustomLogoPreset ?? bm.setCustomLogoPreset ?? (() => {});
+  const addLog = props.addLog ?? (() => {});
+
   return (
     <>
       {/* Will Call Isolation Modal */}
@@ -365,37 +428,18 @@ export const GlobalModalsContainer: React.FC<GlobalModalsContainerProps> = ({
       )}
 
       {/* Metal-Archives Import Modal Event Listener */}
-      {(() => {
-        const [maModalOpen, setMaModalOpen] = useState(false);
-        const [maBandId, setMaBandId] = useState('band-1');
-        const [maBandName, setMaBandName] = useState('');
+      <GlobalMetalArchivesImportModalListener />
 
-        useEffect(() => {
-          const handleOpenMA = (e: any) => {
-            if (e.detail?.bandId) setMaBandId(e.detail.bandId);
-            if (e.detail?.bandName) setMaBandName(e.detail.bandName);
-            setMaModalOpen(true);
-          };
-          window.addEventListener('open_metal_archives_import', handleOpenMA as EventListener);
-          return () => {
-            window.removeEventListener('open_metal_archives_import', handleOpenMA as EventListener);
-          };
-        }, []);
-
-        return (
-          <MetalArchivesImportModal
-            isOpen={maModalOpen}
-            onClose={() => setMaModalOpen(false)}
-            bandId={maBandId}
-            bandName={maBandName}
-            onImportSuccess={(count) => {
-              if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('nexus_community_bands_updated'));
-              }
-            }}
-          />
-        );
-      })()}
+      {/* Global Settings & Gateway Infrastructure Drawer */}
+      <SettingsDrawer
+        isOpen={isSettingsDrawerOpen}
+        onClose={() => setIsSettingsDrawerOpen(false)}
+        userProfile={props.userProfile}
+        setUserProfile={props.setUserProfile || (() => {})}
+        triggerNotification={props.triggerNotification}
+        activeTab={props.activeTab}
+        setActiveTab={props.setActiveTab as any}
+      />
     </>
   );
 };

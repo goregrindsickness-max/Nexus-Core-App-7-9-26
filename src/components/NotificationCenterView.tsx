@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getSupabase } from '../supabase';
 import { DbNotification, UserProfile } from '../types';
+import { pushManager } from '../lib/pushNotifications';
 import { 
   Bell, 
   X, 
@@ -153,6 +154,19 @@ export default function NotificationCenterView({
 
           // Play incoming notification chime sound
           playBeep(880, 'triangle', 0.15);
+
+          // Dispatch OS / Browser Push Notification
+          pushManager.notify({
+            title: `⚡ Nexus Alert [${newNotif.category}]`,
+            body: newNotif.message,
+            category: newNotif.category?.toLowerCase() || 'system',
+            priority: newNotif.requires_push ? 'P0' : 'P1',
+            targetTab: 'social',
+            data: {
+              notificationId: newNotif.id,
+              category: newNotif.category,
+            },
+          });
 
           if (newNotif.requires_push) {
             setLiveBanner(newNotif);

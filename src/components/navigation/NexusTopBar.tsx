@@ -318,58 +318,60 @@ export const NexusTopBar: React.FC<NexusTopBarProps> = ({
                       View My Profile
                     </button>
 
-                    {/* Default Band/Artist Tab Section */}
-                    <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-3 mb-3">
-                      <div className="flex items-center gap-2.5 pb-2 border-b border-zinc-800/60">
-                        <div className="w-8 h-8 rounded-full overflow-hidden border border-[#00ffcc]/30 bg-zinc-950 shrink-0">
-                          {activeBand?.logo_url ? (
-                            <img src={activeBand.logo_url} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[#00ffcc] font-mono text-xs font-bold">
-                              {activeBand?.name?.charAt(0).toUpperCase() || 'B'}
-                            </div>
-                          )}
+                    {/* Default Band/Artist Tab Section - Only if band is registered */}
+                    {hasRegisteredWorkspace(userProfile, 'band') && activeBand && (
+                      <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-3 mb-3">
+                        <div className="flex items-center gap-2.5 pb-2 border-b border-zinc-800/60">
+                          <div className="w-8 h-8 rounded-full overflow-hidden border border-[#00ffcc]/30 bg-zinc-950 shrink-0">
+                            {activeBand?.logo_url ? (
+                              <img src={activeBand.logo_url} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-[#00ffcc] font-mono text-xs font-bold">
+                                {activeBand?.name?.charAt(0).toUpperCase() || 'B'}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-grow min-w-0">
+                            <span className="block text-[7px] font-mono font-bold text-zinc-500 uppercase tracking-widest leading-none mb-0.5">ACTIVE BAND / ARTIST</span>
+                            <h4 className="text-[11px] font-bold text-white truncate uppercase tracking-tight leading-tight">
+                              {activeBand?.name || 'No Band Name'}
+                            </h4>
+                            <p className="text-[8px] font-mono text-[#00ffcc] leading-none mt-0.5 truncate">
+                              {activeBand
+                                ? (Array.isArray(activeBand.micro_genres) && activeBand.micro_genres.length > 0
+                                    ? activeBand.micro_genres.slice(0, 3).join(' • ')
+                                    : Array.isArray((activeBand as any).genre_tags) && (activeBand as any).genre_tags.length > 0
+                                    ? (activeBand as any).genre_tags.slice(0, 3).join(' • ')
+                                    : activeBand.genre || 'Genre unspecified')
+                                : 'Genre unspecified'}
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex-grow min-w-0">
-                          <span className="block text-[7px] font-mono font-bold text-zinc-500 uppercase tracking-widest leading-none mb-0.5">ACTIVE BAND / ARTIST</span>
-                          <h4 className="text-[11px] font-bold text-white truncate uppercase tracking-tight leading-tight">
-                            {activeBand?.name || 'No Band Name'}
-                          </h4>
-                          <p className="text-[8px] font-mono text-[#00ffcc] leading-none mt-0.5 truncate">
-                            {activeBand
-                              ? (Array.isArray(activeBand.micro_genres) && activeBand.micro_genres.length > 0
-                                  ? activeBand.micro_genres.slice(0, 3).join(' • ')
-                                  : Array.isArray((activeBand as any).genre_tags) && (activeBand as any).genre_tags.length > 0
-                                  ? (activeBand as any).genre_tags.slice(0, 3).join(' • ')
-                                  : activeBand.genre || 'Genre unspecified')
-                              : 'Genre unspecified'}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      {/* Add Another Band/Artist Button */}
-                      {(() => {
-                        const currentLimit = 
-                          userProfile?.sub_tier === 'touring_pro_plus' || activePlan === 'touring-pro-plus' ? 5 :
-                          userProfile?.sub_tier === 'touring_pro' || activePlan === 'touring-pro' ? 2 :
-                          userProfile?.sub_tier === 'enterprise_circuit' ? 999 :
-                          userProfile?.sub_tier === 'power_user_pro' ? 2 : 1;
                         
-                        return (
-                          <button
-                            onClick={() => {
-                              setRoleMenuOpen(false);
-                              setActiveTab('plans');
-                              triggerNotification?.('Opening band roster manager. Register another band/artist here.');
-                            }}
-                            className="w-full mt-2.5 flex items-center justify-center gap-1.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-500/50 text-[#00ffcc] hover:text-white rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider transition-all cursor-pointer"
-                          >
-                            <Plus className="w-3 h-3 text-[#00ffcc]" />
-                            <span>Add Another Band/Artist ({bands.length}/{currentLimit})</span>
-                          </button>
-                        );
-                      })()}
-                    </div>
+                        {/* Add Another Band/Artist Button */}
+                        {(() => {
+                          const currentLimit = 
+                            userProfile?.sub_tier === 'touring_pro_plus' || activePlan === 'touring-pro-plus' ? 5 :
+                            userProfile?.sub_tier === 'touring_pro' || activePlan === 'touring-pro' ? 2 :
+                            userProfile?.sub_tier === 'enterprise_circuit' ? 999 :
+                            userProfile?.sub_tier === 'power_user_pro' ? 2 : 1;
+                          
+                          return (
+                            <button
+                              onClick={() => {
+                                setRoleMenuOpen(false);
+                                setActiveTab('plans');
+                                triggerNotification?.('Opening band roster manager. Register another band/artist here.');
+                              }}
+                              className="w-full mt-2.5 flex items-center justify-center gap-1.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-500/50 text-[#00ffcc] hover:text-white rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider transition-all cursor-pointer"
+                            >
+                              <Plus className="w-3 h-3 text-[#00ffcc]" />
+                              <span>Add Another Band/Artist ({bands.length}/{currentLimit})</span>
+                            </button>
+                          );
+                        })()}
+                      </div>
+                    )}
 
                     {/* Switch Portal Roster */}
                     <div className="space-y-2">
@@ -428,8 +430,7 @@ export const NexusTopBar: React.FC<NexusTopBarProps> = ({
                                 onClick={() => {
                                   setRoleMenuOpen(false);
                                   const targetAcc = (portal.key === 'fan' || portal.key === 'fan_only') ? 'fan_only' : (portal.key === 'industry_pro') ? 'industry_pro' : portal.key;
-                                  const registered = normalizeRegisteredWorkspaces(userProfile?.registered_workspaces, [portal.key]);
-                                  const updated = { ...userProfile, active_workspace: portal.key, account_type: targetAcc, registered_workspaces: registered };
+                                  const updated = { ...userProfile, active_workspace: portal.key, account_type: targetAcc };
                                   if (setUserProfile) setUserProfile(updated as any);
                                   try {
                                     localStorage.setItem('nexus_core_user_profile', JSON.stringify(updated));

@@ -73,21 +73,6 @@ interface SimulatedFollow {
   followedAt: string;
 }
 
-interface BandAnnouncementPost {
-  id: string;
-  timestamp: string;
-  message: string;
-  image_url?: string;
-  likes_count: number;
-  user_liked?: boolean;
-  comments: Array<{
-    id: string;
-    username: string;
-    text: string;
-    time: string;
-  }>;
-}
-
 export default function DevBandDistroDeck({
   inventory = [],
   triggerNotification,
@@ -208,13 +193,13 @@ export default function DevBandDistroDeck({
   // --- Sub tabs for client navigation ---
   const [activeSubTab, setActiveSubTab] = useState<'feed' | 'merch' | 'fans' | 'customizer' | 'alliances' | 'music'>(() => {
     if (subTabMode === 'decoupled_merch') return initialSubTab === 'music' ? 'music' : 'merch';
-    return initialSubTab || 'feed';
+    return (initialSubTab && initialSubTab !== 'feed') ? initialSubTab : 'music';
   });
 
   useEffect(() => {
     if (subTabMode === 'decoupled_merch') {
       setActiveSubTab(initialSubTab === 'music' ? 'music' : 'merch');
-    } else if (initialSubTab) {
+    } else if (initialSubTab && initialSubTab !== 'feed') {
       setActiveSubTab(initialSubTab);
     }
   }, [initialSubTab, subTabMode]);
@@ -336,7 +321,6 @@ export default function DevBandDistroDeck({
   // Input file triggers
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
-  const statusImgInputRef = useRef<HTMLInputElement>(null);
 
   // --- Mock Databases in Local Storage State ---
   const [otherBands, setOtherBands] = useState<any[]>(() => {
@@ -539,45 +523,6 @@ export default function DevBandDistroDeck({
     }).catch(() => {});
   };
 
-  const [announcements, setAnnouncements] = useState<BandAnnouncementPost[]>(() => {
-    const cached = localStorage.getItem('distro_db_announcements');
-    if (cached) {
-      try { return JSON.parse(cached); } catch (e) {}
-    }
-    return [
-      {
-        id: 'post_1',
-        timestamp: 'June 18, 2026 at 4:32 PM',
-        message: '🔴 NEW VINYL DROP! The Ritual Sewer Gates Double Splatter LP is now staged on our physical distribution desk. Strictly limited to 300 heavy wax pieces worldwide. Pin this direct checkout node in the digital storefront below to secure yours right from this custom timeline feed!',
-        image_url: 'https://images.unsplash.com/photo-1542208998-f6dbbb27a72f?q=80&w=650&auto=format&fit=crop',
-        likes_count: 42,
-        user_liked: false,
-        comments: [
-          { id: 'c_1', username: 'analog_fiend', text: 'Stunning double wax colorway! Just triggered simulated order checkout.', time: '1 hour ago' },
-          { id: 'c_2', username: 'synth_cultist', text: 'Will these be loaded into the tour van stash for the Detroit gig?', time: '30 mins ago' }
-        ]
-      },
-      {
-        id: 'post_2',
-        timestamp: 'June 15, 2026 at 11:12 AM',
-        message: '⚡ ANNOUNCEMENT: Independent Midwest Circuit complete. All shows were packed out and warehouse table stocks underwent full depletion logs. Sincere appreciation to all who followed the network and queued direct cash transactions! More tour updates being compiled soon.',
-        likes_count: 28,
-        user_liked: true,
-        comments: []
-      }
-    ];
-  });
-
-  // --- Composer Forms states ---
-  const [newStatusText, setNewStatusText] = useState('');
-  const [newStatusImageUrl, setNewStatusImageUrl] = useState('');
-  
-  const PRESET_POST_IMAGES = [
-    { name: 'Live Stage', url: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=350&auto=format&fit=crop' },
-    { name: 'Tape Retro Synth', url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?q=80&w=350&auto=format&fit=crop' },
-    { name: 'Giga Vinyl Record', url: 'https://images.unsplash.com/photo-1539628390156-b84a0a2ba7e3?q=80&w=350&auto=format&fit=crop' }
-  ];
-
   const PRESET_LOGO_IMAGES = [
     { name: 'Crimson Skull Motif', url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=150&auto=format&fit=crop' },
     { name: 'Void Black Wave', url: 'https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?q=80&w=150&auto=format&fit=crop' },
@@ -634,19 +579,11 @@ export default function DevBandDistroDeck({
   const [newStorePrice, setNewStorePrice] = useState<string>('39.99');
   const [newStoreDesc, setNewStoreDesc] = useState<string>('');
 
-  // --- Dynamic comments composer state ---
-  const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
-  const [newCommentText, setNewCommentText] = useState('');
-
   // Save changes to localStorage on states write
 
   useEffect(() => {
     localStorage.setItem('distro_db_follows', JSON.stringify(simFollows));
   }, [simFollows]);
-
-  useEffect(() => {
-    localStorage.setItem('distro_db_announcements', JSON.stringify(announcements));
-  }, [announcements]);
 
   const logUpdate = (msg: string) => {
     console.log('[DISTRO_PROD_UPGRADE_ACT]', msg);
@@ -847,15 +784,6 @@ export default function DevBandDistroDeck({
     });
   };
 
-  const handleStatusImgUploadSim = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const url = URL.createObjectURL(file);
-      setNewStatusImageUrl(url);
-      logUpdate(`Announcement photo queued.`);
-    }
-  };
-
   const handleItemImgFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -892,82 +820,6 @@ export default function DevBandDistroDeck({
     localStorage.setItem('distro_db_featured_id', nextFeatured);
     logUpdate(nextFeatured ? `Featured store pinned ID ${nextFeatured}` : 'Featured pin unpinned');
     if (triggerNotification) triggerNotification(nextFeatured ? '📌 Spotlight pinned to banner!' : '📌 Pinned showcase cleared');
-  };
-
-  const handlePublishAnnouncement = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newStatusText.trim()) return;
-
-    const newPost: BandAnnouncementPost = {
-      id: `post_${Date.now()}`,
-      timestamp: new Date().toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric'
-      }) + ' at ' + new Date().toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: 'numeric',
-        hour12: true
-      }),
-      message: newStatusText.trim(),
-      image_url: newStatusImageUrl || undefined,
-      likes_count: 0,
-      user_liked: false,
-      comments: []
-    };
-
-    setAnnouncements(prev => [newPost, ...prev]);
-    setNewStatusText('');
-    setNewStatusImageUrl('');
-    logUpdate(`Published new public-facing band timeline status announcement.`);
-    if (triggerNotification) triggerNotification('⚡ Announcement posted to your follower feed!');
-  };
-
-  const handleDeleteAnnouncement = (id: string) => {
-    setAnnouncements(prev => prev.filter(p => p.id !== id));
-    logUpdate(`Removed announcement post index index.`);
-    if (triggerNotification) triggerNotification('🗑️ Removed post from timeline');
-  };
-
-  const handleLikeAnnouncement = (postId: string) => {
-    setAnnouncements(prev => prev.map(p => {
-      if (p.id === postId) {
-        const liked = !p.user_liked;
-        return {
-          ...p,
-          user_liked: liked,
-          likes_count: liked ? p.likes_count + 1 : Math.max(0, p.likes_count - 1)
-        };
-      }
-      return p;
-    }));
-  };
-
-  const handleAddAnnouncementComment = (postId: string) => {
-    if (!newCommentText.trim()) return;
-
-    setAnnouncements(prev => prev.map(p => {
-      if (p.id === postId) {
-        return {
-          ...p,
-          comments: [
-            ...p.comments,
-            {
-              id: `c_${Date.now()}`,
-              username: 'band_nexus_fan',
-              text: newCommentText.trim(),
-              time: 'Just now'
-            }
-          ]
-        };
-      }
-      return p;
-    }));
-
-    setNewCommentText('');
-    setActiveCommentPostId(null);
-    logUpdate(`Simulated comment successfully appended to public feed.`);
-    if (triggerNotification) triggerNotification('💬 Appended status comment!');
   };
 
   const handleAddNewFollower = () => {
@@ -1220,15 +1072,18 @@ export default function DevBandDistroDeck({
         {subTabMode === 'all' && (
           <button
             type="button"
-            onClick={() => setActiveSubTab('feed')}
-            className={`py-3 px-3.5 font-mono text-[10.5px] uppercase font-black tracking-wider border-2 rounded-xl transition-all duration-200 cursor-pointer text-center flex items-center justify-center gap-2 ${
-              activeSubTab === 'feed'
-                ? 'text-white bg-zinc-900/40'
-                : 'text-zinc-450 border-transparent bg-transparent hover:text-white hover:bg-zinc-900/10'
-            }`}
-            style={{ borderColor: activeSubTab === 'feed' ? profileAccentColor : 'transparent' }}
+            onClick={() => {
+              if (onNavigateToTab) {
+                onNavigateToTab('social');
+              } else {
+                try {
+                  window.dispatchEvent(new CustomEvent('nexus:navigate-tab', { detail: 'social' }));
+                } catch (e) {}
+              }
+            }}
+            className="py-3 px-3.5 font-mono text-[10.5px] uppercase font-black tracking-wider border-2 rounded-xl transition-all duration-200 cursor-pointer text-center flex items-center justify-center gap-2 text-zinc-450 border-transparent bg-transparent hover:text-white hover:bg-zinc-900/10"
           >
-            <span>📰</span> Our Feed
+            <span>📰</span> Global Feed
           </button>
         )}
 
@@ -1310,280 +1165,6 @@ export default function DevBandDistroDeck({
         
         {/* TAB CONTENTS PANELS CONTAINER */}
         <div className="w-full space-y-6">
-          
-          {/* PAGE FEED ANNOUNCEMENTS TIMELINE LOGIC */}
-          {activeSubTab === 'feed' && (
-            <div className="space-y-6">
-              
-              {/* FACEBOOK STYLE STATUS COMPOSE CARD */}
-              <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-5 shadow-2xl text-left space-y-4 neon-green-card-glowing">
-                <div className="flex items-center gap-2 border-b border-zinc-900/60 pb-3">
-                  <Send className="w-4 h-4 text-[#39ff14]" />
-                  <span className="text-xs font-mono font-black text-white uppercase tracking-wider">
-                    Make a new post or announcement
-                  </span>
-                </div>
-
-                <form onSubmit={handlePublishAnnouncement} className="space-y-4">
-                  
-                  <textarea
-                    rows={3}
-                    placeholder="Compose an update to push instantly to follower cellphones & fan portals..."
-                    value={newStatusText}
-                    onChange={(e) => setNewStatusText(e.target.value)}
-                    className="w-full bg-zinc-900/40 border border-zinc-850 hover:border-zinc-800 rounded-2xl p-4 text-xs font-mono text-white leading-relaxed focus:outline-none focus:border-[#39ff14] text-left resize-none"
-                    required
-                  />
-
-                  {/* IMAGE PREVIEW CORNER IF QUEUED */}
-                  {newStatusImageUrl && (
-                    <div className="relative w-36 h-28 rounded-xl border border-zinc-800 overflow-hidden bg-black flex items-center justify-center">
-                      <img src={newStatusImageUrl} className="w-full h-full object-cover" alt="Attachment" />
-                      <button
-                        type="button"
-                        onClick={() => setNewStatusImageUrl('')}
-                        className="absolute top-1.5 right-1.5 p-1 bg-black/80 rounded-full text-zinc-400 hover:text-white cursor-pointer"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Options below the text window: Add Photo, Add Show Date, Add Merch Drop */}
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-3 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => statusImgInputRef.current?.click()}
-                        className="py-2.5 px-2 bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-[#39ff14] rounded-xl font-mono text-[9px] uppercase font-bold flex flex-col sm:flex-row items-center justify-center gap-2 transition cursor-pointer text-center"
-                        title="Upload post photo"
-                      >
-                        <ImageIcon className="w-3.5 h-3.5 text-[#39ff14]" />
-                        <span>Add Photo</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const dateTemplates = [
-                            "⚡ SHOW DATE ADDED: July 20, 2026 @ Crypt Sinks Underground, Detroit MI. Doors at 7 PM. 🎫",
-                            "💀 CONCERT ANNOUNCEMENT: Live in Berlin, DE on August 05, 2026 @ Astra Kulturhaus. 🦾",
-                            "🔊 CATACOMB TOUR: August 18, 2026 @ Oakland Iron Quarry, CA. FFO: Modular static filth. ⚙️"
-                          ];
-                          const randomTemplate = dateTemplates[Math.floor(Math.random() * dateTemplates.length)];
-                          setNewStatusText(prev => (prev ? `${prev}\n\n${randomTemplate}` : randomTemplate));
-                          triggerNotification?.("Injected tour date boilerplate into post! 🎫");
-                        }}
-                        className="py-2.5 px-2 bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-[#39ff14] rounded-xl font-mono text-[9px] uppercase font-bold flex flex-col sm:flex-row items-center justify-center gap-2 transition cursor-pointer text-center"
-                        title="Add tour show announcement"
-                      >
-                        <Calendar className="w-3.5 h-3.5 text-blue-400" />
-                        <span>Add Show Date</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const merchTemplates = [
-                            "🛍️ NEW MERCH DROP: Exclusive heavy wash tour tee. Strictly limited inventory. Staged in shop catalog! 👕",
-                            "🔮 EXCLUSIVE RELEASE: Analog Decay cassettes in custom Purple Shell back in stock! 🔮",
-                            "💿 TRIPLE VINYL GATES: Heavy wax splatter restock staged at the physical distribution center! Buy in-app. 🎧"
-                          ];
-                          const randomTemplate = merchTemplates[Math.floor(Math.random() * merchTemplates.length)];
-                          setNewStatusText(prev => (prev ? `${prev}\n\n${randomTemplate}` : randomTemplate));
-                          if (!newStatusImageUrl) {
-                            setNewStatusImageUrl(PRESET_POST_IMAGES[2]?.url || 'https://images.unsplash.com/photo-1542208998-f6dbbb27a72f?q=80&w=200');
-                          }
-                          triggerNotification?.("Prepared merch announcement showcase! 🛍️");
-                        }}
-                        className="py-2.5 px-2 bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-[#39ff14] rounded-xl font-mono text-[9px] uppercase font-bold flex flex-col sm:flex-row items-center justify-center gap-2 transition cursor-pointer text-center"
-                        title="Announce merch restock/drop"
-                      >
-                        <ShoppingBag className="w-3.5 h-3.5 text-indigo-400" />
-                        <span>Add Merch Drop</span>
-                      </button>
-                    </div>
-
-                    {/* Quick Preset Image Selectors */}
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-barely-visible">
-                      <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-wider shrink-0">Attach Photo:</span>
-                      {PRESET_POST_IMAGES.map((img, idx) => (
-                        <button
-                          key={`${img.name}-${idx}`}
-                          type="button"
-                          onClick={() => setNewStatusImageUrl(img.url)}
-                          className={`py-1 px-2.5 rounded-lg border font-mono text-[7.5px] uppercase transition cursor-pointer shrink-0 ${
-                            newStatusImageUrl === img.url
-                              ? 'bg-[#39ff14]/10 border-[#39ff14] text-[#39ff14]'
-                              : 'bg-zinc-950 border-zinc-900 text-zinc-450 hover:text-zinc-300'
-                          }`}
-                        >
-                          {img.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Post button is Full Width */}
-                  <button
-                    type="submit"
-                    disabled={!newStatusText.trim()}
-                    className="w-full py-3 bg-[#39ff14] hover:bg-[#32dd10] disabled:opacity-45 disabled:pointer-events-none text-black font-mono text-xs font-black uppercase rounded-2xl transition flex items-center gap-2 justify-center cursor-pointer shadow-[0_0_15px_rgba(57,255,20,0.2)] select-none"
-                  >
-                    <Send className="w-3.5 h-3.5" /> [ PUBLISH POST TO TIMELINE ]
-                  </button>
-
-                  <input
-                    type="file"
-                    accept="image/*"
-                    ref={statusImgInputRef}
-                    className="hidden"
-                    onChange={handleStatusImgUploadSim}
-                  />
-
-                </form>
-
-              </div>
-
-              {/* TIMELINE LIST */}
-              <div className="space-y-4 text-left">
-                {announcements.length === 0 ? (
-                  <div className="p-12 border border-dashed border-zinc-905 rounded-3xl text-center bg-black/10">
-                    <span className="text-zinc-600 font-mono text-[10px] uppercase block">
-                      [ NO INSTANT SHIELD ANNOUNCEMENTS COMPILED ]
-                    </span>
-                  </div>
-                ) : (
-                  announcements.map((post, idx) => (
-                    <div
-                      key={`${post.id}-${idx}`}
-                      className="bg-zinc-950 border border-zinc-900 rounded-3xl p-5 sm:p-6 shadow-xl relative overflow-hidden transition-all text-left space-y-4"
-                    >
-                      {/* Post Header Card */}
-                      <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
-                        <div className="flex items-center gap-3">
-                          
-                          <div
-                            className="w-10 h-10 rounded-full border bg-zinc-900 overflow-hidden flex items-center justify-center shrink-0"
-                            style={{ borderColor: profileAccentColor }}
-                          >
-                            <img src={bandLogoUrl} className="w-full h-full object-cover" alt="Author Logo" referrerPolicy="no-referrer" />
-                          </div>
-
-                          <div className="text-left">
-                            <span className="text-xs font-mono font-black text-white hover:text-zinc-200 block uppercase tracking-wide">
-                              {bandName}
-                            </span>
-                            <span className="text-[9px] font-mono text-zinc-550 block">
-                              🕒 {post.timestamp}
-                            </span>
-                          </div>
-
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteAnnouncement(post.id)}
-                          className="p-1.5 rounded-lg bg-zinc-900/10 hover:bg-red-950/20 text-zinc-550 hover:text-red-400 border border-transparent hover:border-red-900/10 transition cursor-pointer"
-                          title="Delete Feed status"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
-                      {/* Announcement Body */}
-                      <p className="text-xs font-sans text-zinc-200 leading-relaxed font-normal whitespace-pre-wrap">
-                        {post.message}
-                      </p>
-
-                      {/* Display attachment element photo */}
-                      {post.image_url && (
-                        <div className="rounded-2xl border border-zinc-900 overflow-hidden max-h-[380px] bg-black">
-                          <img
-                            src={post.image_url}
-                            className="w-full h-full object-cover object-center hover:scale-101 transition-transform"
-                            alt="Attachment Media"
-                            referrerPolicy="no-referrer"
-                          />
-                        </div>
-                      )}
-
-                      {/* Interaction Actions */}
-                      <div className="flex items-center gap-3 pt-2 text-[9.5px] font-mono border-t border-zinc-900">
-                        
-                        <button
-                          type="button"
-                          onClick={() => handleLikeAnnouncement(post.id)}
-                          className={`py-1 px-3 rounded-lg border flex items-center gap-1.5 transition-colors cursor-pointer select-none ${
-                            post.user_liked
-                              ? 'bg-red-950/10 border-red-500/40 text-red-400'
-                              : 'bg-zinc-900/40 border-zinc-900 text-zinc-400 hover:text-zinc-200'
-                          }`}
-                        >
-                          <ThumbsUp className="w-3.5 h-3.5" />
-                          <span>{post.likes_count} Reactions</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveCommentPostId(activeCommentPostId === post.id ? null : post.id);
-                          }}
-                          className="py-1 px-3 bg-zinc-900/40 border border-zinc-900 text-zinc-400 hover:text-zinc-200 rounded-lg flex items-center gap-1.5 transition cursor-pointer select-none"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5 text-indigo-400" />
-                          <span>{post.comments?.length || 0} Comments</span>
-                        </button>
-
-                      </div>
-
-                      {/* Inner comments cascade list */}
-                      {post.comments?.length > 0 && (
-                        <div className="p-3 bg-[#050608] border border-zinc-900 rounded-2xl space-y-2 mt-2">
-                          {post.comments.map((comment, idx) => (
-                            <div key={`${comment.id}-${idx}`} className="text-[10px] leading-relaxed text-left">
-                              <span className="font-mono text-zinc-300 font-extrabold mr-1.5 uppercase hover:underline cursor-pointer">
-                                @{comment.username}:
-                              </span>
-                              <span className="font-sans text-zinc-400">{comment.text}</span>
-                              <span className="font-mono text-zinc-650 text-[8px] float-right mt-0.5">
-                                {comment.time}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Draft custom comments inputs box */}
-                      {activeCommentPostId === post.id && (
-                        <div className="flex items-center gap-2 pt-2 text-left">
-                          <input
-                            type="text"
-                            placeholder="Draft public reply..."
-                            value={newCommentText}
-                            onChange={(e) => setNewCommentText(e.target.value)}
-                            className="bg-zinc-900 border border-zinc-850 rounded-xl px-3 py-1.5 text-[10.5px] font-mono text-white flex-grow focus:outline-none focus:border-indigo-500"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleAddAnnouncementComment(post.id);
-                            }}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleAddAnnouncementComment(post.id)}
-                            className="p-1.5 px-3 bg-indigo-650 hover:bg-indigo-550 text-white font-mono text-[9px] uppercase font-black rounded-lg transition"
-                          >
-                            Reply
-                          </button>
-                        </div>
-                      )}
-
-                    </div>
-                  ))
-                )}
-              </div>
-
-            </div>
-          )}
 
           {/* BAND TO BAND ALLIANCES & MUSIC NETWORK */}
           {activeSubTab === 'alliances' && (

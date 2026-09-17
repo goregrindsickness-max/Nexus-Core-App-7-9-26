@@ -787,7 +787,7 @@ export default function TourNotesView({
                     {isEditing ? (
                       /* EDITING COMPONENT MODE */
                       <motion.div 
-                        key="edit-pane"
+                        key={`edit-pane-${note.id || idx}`}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -883,7 +883,7 @@ export default function TourNotesView({
                     ) : (
                       /* STANDARD SHOW NOTE CARD */
                       <motion.div 
-                        key="view-pane"
+                        key={`view-pane-${note.id || idx}`}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         className="space-y-3"

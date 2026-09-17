@@ -856,9 +856,9 @@ export const DiscoveryZone: React.FC<DiscoveryZoneProps> = ({
         {isLoading && filteredProfiles.length === 0 ? (
           // Loading Skeletons
           <div className="flex gap-3 w-full py-4">
-            {[1, 2, 3, 4].map((n) => (
+            {[1, 2, 3, 4].map((n, nIdx) => (
               <div 
-                key={`skel-${n}`} 
+                key={`skel-${n}-${nIdx}`} 
                 className="w-[168px] min-w-[168px] h-[220px] bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3 flex flex-col items-center justify-between animate-pulse"
               >
                 <div className="w-13 h-13 rounded-full bg-zinc-800 mt-2" />

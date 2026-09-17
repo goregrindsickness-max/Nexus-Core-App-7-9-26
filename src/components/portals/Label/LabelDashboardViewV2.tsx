@@ -3,7 +3,6 @@ import TeamBillingTab from './TeamBillingTab';
 import AddItemView from '../Band/AddItemView';
 import React, { useState, useEffect } from 'react';
 import { UserProfile, hasRegisteredWorkspace } from '../../../types';
-import { UniversalSocialFeed } from '../../social/UniversalSocialFeed';
 import { Power, Globe, Users, User, DollarSign, Database, Activity, RefreshCw, Settings, X, Home, Lock, Sparkles, Layers, LogOut, Bell, Building, MapPin, MessageSquare, ArrowLeft, Send, CheckSquare, Check, Plus, AlertTriangle, TrendingUp, Shield, BarChart3, Radio, Heart, MessageCircle, Play, Pause, Square, SkipBack, SkipForward, Disc, Volume2, Truck, Tag, Edit, Trash2, Upload, ShoppingBag, ShoppingCart, CreditCard, Calendar, ArrowRightLeft, Package, Box, Banknote, ChevronDown, Calculator, Palette, Info, Search, Pin, Flame, Rocket, ThumbsUp, Menu } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ErrorBoundary } from '../../ErrorBoundary';
@@ -76,6 +75,7 @@ interface LabelDashboardViewV2Props {
   notifications?: any[];
   onOpenNotifications?: () => void;
   triggerNotification?: (message: string) => void;
+  setActiveTab?: (tab: string) => void;
 }
 
 const telemetryTrendData: Record<string, { hour: string; streams: number; index: number }[]> = {
@@ -127,7 +127,8 @@ export default function LabelDashboardViewV2({
   onLogout,
   notifications,
   onOpenNotifications,
-  triggerNotification
+  triggerNotification,
+  setActiveTab: setPortalActiveTab
 }: LabelDashboardViewV2Props) {
   const [activeClearanceLevel, setActiveClearanceLevel] = useState<number>(() => {
     const saved = localStorage.getItem('activeClearanceLevel');
@@ -913,9 +914,6 @@ export default function LabelDashboardViewV2({
   const [isPublicStorefrontOpen, setIsPublicStorefrontOpen] = useState(false);
 
 
-  const [newPostTaggedItem, setNewPostTaggedItem] = useState('');
-  const [postSearchText, setPostSearchText] = useState('');
-  const [newPostCategory, setNewPostCategory] = useState('general');
 
   // Digital Cassette / Audio Deck Simulation State
   const [activePlaybackTrackId, setActivePlaybackTrackId] = useState<string | null>("d1");
@@ -1595,68 +1593,6 @@ export default function LabelDashboardViewV2({
     profileStore.setItem('label_followed_bands', followedBandIds).catch((e) => console.error(e));
   }, [followedBandIds]);
 
-  const [labelPosts, setLabelPosts] = useState<any[]>(() => {
-    const cached = localStorage.getItem('distro_db_announcements');
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch (e) {}
-    }
-    return [
-      {
-        id: 'post_1',
-        timestamp: 'June 18, 2026 at 4:32 PM',
-        authorId: 'b1',
-        authorName: 'TOMB MOLD',
-        message: '🔴 NEW VINYL DROP! The Ritual Sewer Gates Double Splatter LP is now staged on our physical distribution desk. Strictly limited to 300 heavy wax pieces worldwide. Pin this direct checkout node in the digital storefront below to secure yours right from this custom timeline feed!',
-        image_url: 'https://images.unsplash.com/photo-1542208998-f6dbbb27a72f?q=80&w=650&auto=format&fit=crop',
-        likes_count: 42,
-        user_liked: false,
-        comments: [
-          { id: 'c_1', username: 'analog_fiend', text: 'Stunning double wax colorway! Just triggered simulated order checkout.', time: '1 hour ago' },
-          { id: 'c_1_r1', parent_comment_id: 'c_1', username: 'TOMB MOLD', text: 'Appreciate the heavy support! Yours is packed and ready to ship.', time: '45 mins ago' },
-          { id: 'c_2', username: 'synth_cultist', text: 'Will these be loaded into the tour van stash for the Detroit gig?', time: '30 mins ago' },
-          { id: 'c_2_r1', parent_comment_id: 'c_2', username: 'TOMB MOLD', text: 'Yes! Stashing 50 copies for the merch table at the Sanctuary.', time: '15 mins ago' }
-        ]
-      },
-      {
-        id: 'post_2',
-        timestamp: 'June 15, 2026 at 11:12 AM',
-        authorId: 'b2',
-        authorName: 'BLOOD INCANTATION',
-        message: '⚡ ANNOUNCEMENT: Independent Midwest Circuit complete. All shows were packed out and warehouse table stocks underwent full depletion logs. Sincere appreciation to all who followed the network and queued direct cash transactions! More tour updates being compiled soon.',
-        likes_count: 28,
-        user_liked: false,
-        comments: [
-          { id: 'c_3', username: 'midwest_shredder', text: 'The Oak Park show was legendary! Absolute sonic wall.', time: '1 day ago' },
-          { id: 'c_3_r1', parent_comment_id: 'c_3', username: 'BLOOD INCANTATION', text: 'Oak Park brought unreal energy! Thanks for coming out.', time: '18 hours ago' },
-          { id: 'c_4', username: 'cosmic_drift', text: 'Any chances of west coast dates on the next leg?', time: '12 hours ago' }
-        ]
-      },
-      {
-        id: 'post_3',
-        timestamp: 'June 12, 2026 at 9:05 AM',
-        authorId: 'b3',
-        authorName: 'UNDEATH',
-        message: '⚡ SECURED BAND TO BAND ALLIANCE: We are officially following heavy noise masters "Goregrind Overlords" and "Necrosynth Cult". Support the local scene and get their merch directly on the new band-to-band network feed!',
-        likes_count: 19,
-        user_liked: false,
-        comments: [
-          { id: 'c_5', username: 'goregrind_overlords', text: 'Honored to link up with UNDEATH! Heavy alliance locked in.', time: '2 hours ago' },
-          { id: 'c_5_r1', parent_comment_id: 'c_5', username: 'UNDEATH', text: 'Let\'s set up a co-headline gig soon! 👊', time: '1 hour ago' }
-        ]
-      }
-    ];
-  });
-
-  const [newPostText, setNewPostText] = useState('');
-  const [newPostImageUrl, setNewPostImageUrl] = useState('');
-  const [postIdentity, setPostIdentity] = useState('label');
-  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
-  const [feedFilter, setFeedFilter] = useState<'all' | 'followed'>('all');
-  const [socialSearchQuery, setSocialSearchQuery] = useState('');
-
   // Label Public Profile Info State
   const [labelPublicProfile, setLabelPublicProfile] = useState(() => {
     const cached = localStorage.getItem('label_public_profile');
@@ -1791,144 +1727,6 @@ export default function LabelDashboardViewV2({
   const handleSaveLabelProfile = (updatedProfile: any) => {
     setLabelPublicProfile(updatedProfile);
     showLocalToast("LABEL PUBLIC PROFILE CACHE FLUSHED SUCCESSFULLY! 🌐");
-  };
-
-  const handleCreatePost = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPostText.trim()) return;
-    
-    const authorName = postIdentity === 'label'
-      ? (userProfile.label_company_name || 'NEXUS LABEL HQ').toUpperCase()
-      : ALL_BANDS.find(b => b.id === postIdentity)?.name || 'UNKNOWN BAND';
-      
-    const newPost = {
-      id: 'post_' + Date.now(),
-      timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
-      authorId: postIdentity,
-      authorName: authorName,
-      message: newPostText.trim(),
-      image_url: newPostImageUrl.trim() || undefined,
-      tagged_item: newPostTaggedItem || undefined,
-      category: newPostCategory,
-      is_pinned: false,
-      likes_count: 0,
-      user_liked: false,
-      reactions: { heart: 0, flame: 0, rocket: 0, thumbs: 0 },
-      user_reactions: {},
-      comments: []
-    };
-    
-    const updated = [newPost, ...labelPosts];
-    setLabelPosts(updated);
-    localStorage.setItem('distro_db_announcements', JSON.stringify(updated));
-    labelCatalogStore.setItem('distro_db_announcements', updated).catch((e) => console.error(e));
-    setNewPostText('');
-    setNewPostImageUrl('');
-    setNewPostTaggedItem('');
-    setNewPostCategory('general');
-    showLocalToast("BROADCAST SIGNAL SUCCESSFULLY STAGED TO TIMELINE! 🚀");
-  };
-
-  const handleTogglePin = (postId: string) => {
-    const updated = labelPosts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          is_pinned: !post.is_pinned
-        };
-      }
-      return post;
-    });
-    setLabelPosts(updated);
-    localStorage.setItem('distro_db_announcements', JSON.stringify(updated));
-    labelCatalogStore.setItem('distro_db_announcements', updated).catch((e) => console.error(e));
-    showLocalToast("PINNED POST PREFERENCE INSTANTLY UPDATED! 📌");
-  };
-
-  const handleEmojiReact = (postId: string, reactionType: string) => {
-    const updated = labelPosts.map(post => {
-      if (post.id === postId) {
-        const userReactions = post.user_reactions || {};
-        const reactions = post.reactions || { heart: 0, flame: 0, rocket: 0, thumbs: 0 };
-        const hasReacted = !!userReactions[reactionType];
-        
-        const newUserReactions = {
-          ...userReactions,
-          [reactionType]: !hasReacted
-        };
-        
-        const newReactions = {
-          ...reactions,
-          [reactionType]: hasReacted
-            ? Math.max(0, (reactions[reactionType] || 0) - 1)
-            : (reactions[reactionType] || 0) + 1
-        };
-        
-        // Synchronize legacy likes count for Heart reaction
-        let newLikesCount = post.likes_count;
-        let newUserLiked = post.user_liked;
-        if (reactionType === 'heart') {
-          newUserLiked = !hasReacted;
-          newLikesCount = newUserLiked 
-            ? (post.likes_count || 0) + 1 
-            : Math.max(0, (post.likes_count || 0) - 1);
-        }
-
-        return {
-          ...post,
-          reactions: newReactions,
-          user_reactions: newUserReactions,
-          likes_count: newLikesCount,
-          user_liked: newUserLiked
-        };
-      }
-      return post;
-    });
-    setLabelPosts(updated);
-    localStorage.setItem('distro_db_announcements', JSON.stringify(updated));
-    labelCatalogStore.setItem('distro_db_announcements', updated).catch((e) => console.error(e));
-  };
-
-  const handleAddComment = (postId: string, text: string) => {
-    if (!text.trim()) return;
-    const updated = labelPosts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          comments: [
-            ...(post.comments || []),
-            {
-              id: 'comment_' + Date.now(),
-              username: (userProfile.label_company_name || 'NEXUS LABEL HQ').toUpperCase() + ' (Label)',
-              text: text.trim(),
-              time: 'Just now'
-            }
-          ]
-        };
-      }
-      return post;
-    });
-    setLabelPosts(updated);
-    localStorage.setItem('distro_db_announcements', JSON.stringify(updated));
-    labelCatalogStore.setItem('distro_db_announcements', updated).catch((e) => console.error(e));
-    showLocalToast("COMMUNITY COMMENT ENCRYPTED AND SIGNALED 💬");
-  };
-
-  const handleToggleLike = (postId: string) => {
-    const updated = labelPosts.map(post => {
-      if (post.id === postId) {
-        const liked = !post.user_liked;
-        return {
-          ...post,
-          user_liked: liked,
-          likes_count: liked ? post.likes_count + 1 : Math.max(0, post.likes_count - 1)
-        };
-      }
-      return post;
-    });
-    setLabelPosts(updated);
-    localStorage.setItem('distro_db_announcements', JSON.stringify(updated));
-    labelCatalogStore.setItem('distro_db_announcements', updated).catch((e) => console.error(e));
   };
 
   const [INBOX_CHANNELS, setInboxChannels] = useState([
@@ -2274,7 +2072,11 @@ export default function LabelDashboardViewV2({
                           <button
                             type="button"
                             onClick={() => {
-                              setActiveTab('SOCIAL');
+                              if (setPortalActiveTab) {
+                                setPortalActiveTab('social');
+                              } else {
+                                setActiveTab('SOCIAL');
+                              }
                               if (typeof setSubTab === 'function') {
                                 setSubTab('social');
                               }
@@ -2441,6 +2243,12 @@ export default function LabelDashboardViewV2({
                 key={`${item.id}-${idx}`}
                 type="button"
                 onClick={() => {
+                  if (item.id === 'SOCIAL') {
+                    if (setPortalActiveTab) {
+                      setPortalActiveTab('social');
+                      return;
+                    }
+                  }
                   setActiveTab(item.id as any);
                   setSubTab('');
                 }}
@@ -3039,9 +2847,15 @@ export default function LabelDashboardViewV2({
                               </button>
                               <button 
                                 onClick={() => {
-                                  setActiveTab('SOCIAL');
-                                  setSubTab('social');
-                                  setSocialSearchQuery(band.name);
+                                  if (setPortalActiveTab) {
+                                    setPortalActiveTab('social');
+                                  } else {
+                                    setActiveTab('ROSTER');
+                                  }
+                                  try {
+                                    localStorage.setItem('social_feed_search', band.name);
+                                    window.dispatchEvent(new CustomEvent('nexus:navigate-social', { detail: { search: band.name } }));
+                                  } catch (e) {}
                                 }}
                                 className="flex-1 px-3 py-3 text-[10px] font-mono font-black tracking-widest text-[#f472b6] hover:text-white hover:bg-zinc-900 transition-colors uppercase cursor-pointer flex items-center justify-center text-center w-full"
                               >
@@ -4427,30 +4241,6 @@ export default function LabelDashboardViewV2({
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {activeTab === 'SOCIAL' && (!subTab || subTab === 'social') && (
-            <div className="w-full flex flex-col">
-              <UniversalSocialFeed 
-                userProfile={userProfile} 
-                setUserProfile={setUserProfile} 
-                onLogout={onLogout} 
-                portalRole="label" 
-                onBack={() => {
-                  setActiveTab('ROSTER');
-                  setSubTab('roster');
-                }}
-                onNavigateToWarehouse={() => {
-                  setActiveTab('SALES');
-                  setSubTab('warehouse');
-                }}
-                activeClearanceLevel={activeClearanceLevel}
-                setActiveClearanceLevel={(lvl: number) => {
-                  setActiveClearanceLevel(lvl);
-                  localStorage.setItem('activeClearanceLevel', lvl.toString());
-                }}
-              />
             </div>
           )}
 

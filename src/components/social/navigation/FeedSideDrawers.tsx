@@ -28,6 +28,7 @@ export interface FeedSideDrawersProps {
   setViewingReceipt: (val: any) => void;
   isMiguelNameOrProfile: any;
   userProfile?: any;
+  activeBand?: any;
   portalRole: string;
   isEmbedded?: boolean;
   profileAvatarUrl: string | null;
@@ -130,6 +131,7 @@ export const FeedSideDrawers: React.FC<FeedSideDrawersProps> = ({
   setViewingReceipt,
   isMiguelNameOrProfile,
   userProfile,
+  activeBand,
   portalRole,
   isEmbedded,
   profileAvatarUrl,
@@ -232,6 +234,7 @@ export const FeedSideDrawers: React.FC<FeedSideDrawersProps> = ({
         isMiguelNameOrProfile={typeof isMiguelNameOrProfile === "function" ? isMiguelNameOrProfile : () => Boolean(isMiguelNameOrProfile)}
         setLeftDrawerOpen={setLeftDrawerOpen}
         userProfile={userProfile}
+        activeBand={activeBand}
         portalRole={portalRole}
         isEmbedded={isEmbedded}
         profileAvatarUrl={profileAvatarUrl}

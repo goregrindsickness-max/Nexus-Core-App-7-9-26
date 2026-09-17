@@ -57,7 +57,6 @@ import PacingTracker from '../../sales/PacingTracker';
 import BandAffiliateMetrics from '../../sales/BandAffiliateMetrics';
 import BreakevenIntelligence from '../../sales/BreakevenIntelligence';
 import PublicStorefront from '../../sales/PublicStorefront';
-import { UniversalSocialFeed } from '../../social/UniversalSocialFeed';
 import { MASTER_GENRES, MICRO_GENRES_MAP } from '../../../constants/genres';
 
 export const genreClusters = MASTER_GENRES.map(g => {
@@ -93,6 +92,7 @@ interface PromoterPortalViewProps { isolatedTab?: string;
   showOnlyCalendar?: boolean;
   showOnlyRoutingAndAvailability?: boolean;
   onUpgradeToPro?: () => void;
+  setActiveTab?: (tab: string) => void;
 }
 
 export interface RoutingBeacon {
@@ -253,7 +253,8 @@ export default function PromoterPortalView({
   setIsOfflineSimActive,
   isOnline,
   showOnlyCalendar,
-  showOnlyRoutingAndAvailability
+  showOnlyRoutingAndAvailability,
+  setActiveTab: setPortalActiveTab
 }: PromoterPortalViewProps) {
   const isBandAllowed = hasRegisteredWorkspace(userProfile, 'band');
   const isCreativeAllowed = hasRegisteredWorkspace(userProfile, 'creative');
@@ -300,207 +301,7 @@ export default function PromoterPortalView({
 
   // Tab control in Promoter View: 'routing' (Routing Dock) | 'workspace' (Immersive Event Builder Workspace) | 'offers' (In-App offers Hub) | 'sales' (Live Ticket Sales Tracker) | 'social' (Alliance Social Network)
   const [currentStep, setCurrentStep] = useState(1);
-  const [activePortalTab, setActivePortalTab] = useState<'routing' | 'workspace' | 'offers' | 'sales' | 'social'>(isolatedTab as any || 'routing');
-
-  // Shared Alliance / Social Feed States
-  const [labelPosts, setLabelPosts] = useState<any[]>(() => {
-    const cached = localStorage.getItem('distro_db_announcements');
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch (e) {}
-    }
-    return [
-      {
-        id: 'post_1',
-        timestamp: 'June 18, 2026 at 4:32 PM',
-        authorId: 'b1',
-        authorName: 'TOMB MOLD',
-        message: '🔴 NEW VINYL DROP! The Ritual Sewer Gates Double Splatter LP is now staged on our physical distribution desk. Strictly limited to 300 heavy wax pieces worldwide. Pin this direct checkout node in the digital storefront below to secure yours right from this custom timeline feed!',
-        image_url: 'https://images.unsplash.com/photo-1542208998-f6dbbb27a72f?q=80&w=650&auto=format&fit=crop',
-        likes_count: 42,
-        user_liked: false,
-        comments: [
-          { id: 'c_1', username: 'analog_fiend', text: 'Stunning double wax colorway! Just triggered simulated order checkout.', time: '1 hour ago' },
-          { id: 'c_1_r1', parent_comment_id: 'c_1', username: 'TOMB MOLD', text: 'Appreciate the heavy support! Yours is packed and ready to ship.', time: '45 mins ago' },
-          { id: 'c_2', username: 'synth_cultist', text: 'Will these be loaded into the tour van stash for the Detroit gig?', time: '30 mins ago' },
-          { id: 'c_2_r1', parent_comment_id: 'c_2', username: 'TOMB MOLD', text: 'Yes! Stashing 50 copies for the merch table at the Sanctuary.', time: '15 mins ago' }
-        ]
-      },
-      {
-        id: 'post_2',
-        timestamp: 'June 15, 2026 at 11:12 AM',
-        authorId: 'b2',
-        authorName: 'BLOOD INCANTATION',
-        message: '⚡ ANNOUNCEMENT: Independent Midwest Circuit complete. All shows were packed out and warehouse table stocks underwent full depletion logs. Sincere appreciation to all who followed the network and queued direct cash transactions! More tour updates being compiled soon.',
-        likes_count: 28,
-        user_liked: false,
-        comments: [
-          { id: 'c_3', username: 'midwest_shredder', text: 'The Oak Park show was legendary! Absolute sonic wall.', time: '1 day ago' },
-          { id: 'c_3_r1', parent_comment_id: 'c_3', username: 'BLOOD INCANTATION', text: 'Oak Park brought unreal energy! Thanks for coming out.', time: '18 hours ago' },
-          { id: 'c_4', username: 'cosmic_drift', text: 'Any chances of west coast dates on the next leg?', time: '12 hours ago' }
-        ]
-      },
-      {
-        id: 'post_3',
-        timestamp: 'June 12, 2026 at 9:05 AM',
-        authorId: 'b3',
-        authorName: 'UNDEATH',
-        message: '⚡ SECURED BAND TO BAND ALLIANCE: We are officially following heavy noise masters "Goregrind Overlords" and "Necrosynth Cult". Support the local scene and get their merch directly on the new band-to-band network feed!',
-        likes_count: 19,
-        user_liked: false,
-        comments: [
-          { id: 'c_5', username: 'goregrind_overlords', text: 'Honored to link up with UNDEATH! Heavy alliance locked in.', time: '2 hours ago' },
-          { id: 'c_5_r1', parent_comment_id: 'c_5', username: 'UNDEATH', text: 'Let\'s set up a co-headline gig soon! 👊', time: '1 hour ago' }
-        ]
-      }
-    ];
-  });
-
-  const [newPostText, setNewPostText] = useState('');
-  const [newPostImageUrl, setNewPostImageUrl] = useState('');
-  const [postIdentity, setPostIdentity] = useState('promoter');
-  const [newPostCategory, setNewPostCategory] = useState('general');
-  const [newPostTaggedItem, setNewPostTaggedItem] = useState('');
-  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
-  const [feedFilter, setFeedFilter] = useState<'all' | 'followed'>('all');
-  const [socialSearchQuery, setSocialSearchQuery] = useState('');
-  const [socialSubTab, setSocialSubTab] = useState<'timeline' | 'inbox' | 'creatives_directory'>('timeline');
-  const [postSearchText, setPostSearchText] = useState('');
-  const [followedAlliancesCollapsed, setFollowedAlliancesCollapsed] = useState<boolean>(true);
-  const postFileInputRef = React.useRef<HTMLInputElement>(null);
-
-  const [followedBandIds, setFollowedBandIds] = useState<string[]>(() => {
-    const saved = localStorage.getItem('promoter_followed_bands');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return Array.from(new Set([...parsed]));
-        }
-      } catch (e) {}
-    }
-    return [];
-  });
-
-  useEffect(() => {
-    localStorage.setItem('promoter_followed_bands', JSON.stringify(followedBandIds));
-  }, [followedBandIds]);
-
-  const handleCreatePost = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPostText.trim()) return;
-    
-    const authorName = (userProfile?.promoter_metadata?.brand_name || userProfile?.name || 'PROMOTER').toUpperCase();
-      
-    const newPost = {
-      id: 'post_' + Date.now(),
-      timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
-      authorId: 'promoter',
-      authorName: authorName,
-      message: newPostText.trim(),
-      image_url: newPostImageUrl.trim() || undefined,
-      tagged_item: newPostTaggedItem || undefined,
-      category: newPostCategory,
-      is_pinned: false,
-      likes_count: 0,
-      user_liked: false,
-      reactions: { heart: 0, flame: 0, rocket: 0, thumbs: 0 },
-      user_reactions: {},
-      comments: []
-    };
-    
-    const updated = [newPost, ...labelPosts];
-    setLabelPosts(updated);
-    localStorage.setItem('distro_db_announcements', JSON.stringify(updated));
-    setNewPostText('');
-    setNewPostImageUrl('');
-    setNewPostTaggedItem('');
-    setNewPostCategory('general');
-    triggerNotification?.("Broadcast signal successfully staged to community timeline! 🚀");
-  };
-
-  const handleTogglePin = (postId: string) => {
-    const updated = labelPosts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          is_pinned: !post.is_pinned
-        };
-      }
-      return post;
-    });
-    setLabelPosts(updated);
-    localStorage.setItem('distro_db_announcements', JSON.stringify(updated));
-    triggerNotification?.("Pinned post preference updated! 📌");
-  };
-
-  const handleEmojiReact = (postId: string, reactionType: string) => {
-    const updated = labelPosts.map(post => {
-      if (post.id === postId) {
-        const userReactions = post.user_reactions || {};
-        const reactions = post.reactions || { heart: 0, flame: 0, rocket: 0, thumbs: 0 };
-        const hasReacted = !!userReactions[reactionType];
-        
-        const newUserReactions = {
-          ...userReactions,
-          [reactionType]: !hasReacted
-        };
-        
-        const newReactions = {
-          ...reactions,
-          [reactionType]: hasReacted
-            ? Math.max(0, (reactions[reactionType] || 0) - 1)
-            : (reactions[reactionType] || 0) + 1
-        };
-        
-        let newLikesCount = post.likes_count;
-        let newUserLiked = post.user_liked;
-        if (reactionType === 'heart') {
-          newUserLiked = !hasReacted;
-          newLikesCount = newUserLiked 
-            ? (post.likes_count || 0) + 1 
-            : Math.max(0, (post.likes_count || 0) - 1);
-        }
-
-        return {
-          ...post,
-          reactions: newReactions,
-          user_reactions: newUserReactions,
-          likes_count: newLikesCount,
-          user_liked: newUserLiked
-        };
-      }
-      return post;
-    });
-    setLabelPosts(updated);
-    localStorage.setItem('distro_db_announcements', JSON.stringify(updated));
-  };
-
-  const handleAddComment = (postId: string, text: string) => {
-    if (!text.trim()) return;
-    const updated = labelPosts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          comments: [
-            ...(post.comments || []),
-            {
-              id: 'comment_' + Date.now(),
-              username: (userProfile?.promoter_metadata?.brand_name || userProfile?.name || 'Promoter').toUpperCase() + ' (Promoter)',
-              text: text.trim(),
-              time: 'Just now'
-            }
-          ]
-        };
-      }
-      return post;
-    });
-    setLabelPosts(updated);
-    localStorage.setItem('distro_db_announcements', JSON.stringify(updated));
-    triggerNotification?.("Community comment encrypted and signaled 💬");
-  };
+  const [activePortalTab, setActivePortalTab] = useState<'routing' | 'workspace' | 'offers' | 'sales'>(isolatedTab as any || 'routing');
 
   // Memoized list of promoter-specific offers
   const promoterOffers = React.useMemo(() => {
@@ -3122,7 +2923,7 @@ export default function PromoterPortalView({
 
   return (
     <div className={(isolatedTab || showOnlyCalendar || showOnlyRoutingAndAvailability) ? "w-full flex flex-col" : "w-full min-h-screen bg-[#0c0e12] flex flex-col"}>
-      {!isolatedTab && !showOnlyCalendar && !showOnlyRoutingAndAvailability && activePortalTab !== "social" && portalHeader}
+      {!isolatedTab && !showOnlyCalendar && !showOnlyRoutingAndAvailability && portalHeader}
       <div 
         id="promoter-portal" 
         className={`w-full min-w-0 text-[#fef08a] font-mono pb-1 flex flex-col space-y-2 relative overflow-x-hidden flex-1 ${
@@ -3865,14 +3666,19 @@ export default function PromoterPortalView({
 
               <button
                 type="button"
-                onClick={() => { setActivePortalTab('social'); playLocalBeep(740, 'sine', 0.015); }}
-                className={`px-4 py-3 rounded-lg text-[11.5px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer border ${
-                  activePortalTab === 'social'
-                    ? 'bg-gradient-to-r from-zinc-950 via-yellow-950/35 to-zinc-950 border-yellow-500/60 text-yellow-400 shadow-[0_0_15px_rgba(234,179,8,0.2)] font-bold'
-                    : 'border-transparent text-zinc-400 hover:text-yellow-400 hover:bg-yellow-950/10'
-                }`}
+                onClick={() => {
+                  if (setPortalActiveTab) {
+                    setPortalActiveTab('social');
+                  } else {
+                    try {
+                      window.dispatchEvent(new CustomEvent('nexus:navigate-tab', { detail: 'social' }));
+                    } catch (e) {}
+                  }
+                  playLocalBeep(740, 'sine', 0.015);
+                }}
+                className="px-4 py-3 rounded-lg text-[11.5px] uppercase font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer border border-transparent text-zinc-400 hover:text-yellow-400 hover:bg-yellow-950/10"
               >
-                <span className={activePortalTab === 'social' ? 'animate-pulse text-yellow-400' : 'text-zinc-650'}>💬</span>
+                <span className="text-zinc-500 hover:text-yellow-400">💬</span>
                 Alliance Network
               </button>
             </div>
@@ -6302,7 +6108,7 @@ export default function PromoterPortalView({
                               </thead>
                               <tbody>
                                 {lineupOffers.map((o, oIdx) => (
-                                  <tr key={`${o.id}-${oIdx}`} className="border-b border-zinc-900/50 hover:bg-zinc-950/50 transition-colors">
+                                  <tr key={`lineup-offer-${lineup.id}-${o.id}-${oIdx}`} className="border-b border-zinc-900/50 hover:bg-zinc-950/50 transition-colors">
                                     <td className="py-3 text-xs text-zinc-300 font-bold">{o.band_name}</td>
                                     <td className="py-3">
                                       <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-black uppercase tracking-widest ${
@@ -7129,17 +6935,6 @@ export default function PromoterPortalView({
             playLocalBeep={playLocalBeep}
           />
         </motion.div>
-      ) : (activePortalTab === 'social' && !showOnlyCalendar && !showOnlyRoutingAndAvailability) ? (
-        <div className="fixed inset-0 z-50 bg-[#030303] overflow-y-auto w-full h-full flex flex-col">
-          <UniversalSocialFeed 
-            userProfile={userProfile} 
-            setUserProfile={setUserProfile} 
-            onLogout={onLogout} 
-            triggerNotification={triggerNotification} 
-            portalRole="promoter" 
-            onBack={() => setActivePortalTab('routing')}
-          />
-        </div>
       ) : null}
 
       {/* Snuggled Footer Stack for Subscription Tier & Disconnect Block */}

@@ -228,6 +228,17 @@ export function playPushChime(type: 'critical' | 'normal' | 'fan' = 'normal') {
   }
 }
 
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
 // Push Manager Singleton
 class DevicePushManager {
   private preferences: PushNotificationPreferences = getDefaultPushPreferences();
@@ -332,10 +343,101 @@ class DevicePushManager {
           window.dispatchEvent(new CustomEvent('nexus_navigate_tab', { detail: targetTab }));
         }
       }
+      if (event.data?.type === 'NEXUS_OPEN_CHAT') {
+        window.dispatchEvent(
+          new CustomEvent('nexus_open_chat', {
+            detail: {
+              profile_id: event.data.senderId,
+              name: event.data.name,
+              username: event.data.name,
+            },
+          })
+        );
+      }
     });
   }
 
-  public async requestPermission(): Promise<PushPermissionStatus> {
+  public async subscribeToPushServer(userInfo?: { id?: string; email?: string }): Promise<PushSubscription | null> {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      return null;
+    }
+
+    try {
+      let reg = this.registration;
+      if (!reg) {
+        reg = await navigator.serviceWorker.ready;
+        this.registration = reg;
+      }
+
+      // 1. Obtain VAPID Public Key from backend API or fallback
+      let publicKey = 'BFtYUwYxD4nggBN6jldwPmQ-rM209n3Cqom0TYLxoksAambfhk5PzDZ-0-FppflHkjW4P6tlvTsOnnl1kVlitiQ';
+      try {
+        const res = await fetch('/api/push/vapid-public-key');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.publicKey) publicKey = data.publicKey;
+        }
+      } catch (err) {
+        console.warn('[PushManager] VAPID fetch error, using default:', err);
+      }
+
+      // 2. Subscribe browser to Push Service
+      const convertedKey = urlBase64ToUint8Array(publicKey);
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: convertedKey,
+        });
+      }
+
+      // 3. Register subscription with Nexus server
+      const payload = {
+        subscription: sub.toJSON ? sub.toJSON() : sub,
+        userId: userInfo?.id,
+        userEmail: userInfo?.email,
+      };
+
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      console.log('[PushManager] Device successfully subscribed to real-time Web Push.');
+      localStorage.setItem('nexus_push_synced', 'true');
+      return sub;
+    } catch (err) {
+      console.warn('[PushManager] subscribeToPushServer warning:', err);
+      return null;
+    }
+  }
+
+  public async sendPushToServer(options: {
+    userId?: string;
+    userEmail?: string;
+    title: string;
+    body: string;
+    icon?: string;
+    targetTab?: string;
+    category?: string;
+    priority?: 'P0' | 'P1';
+    data?: any;
+  }): Promise<boolean> {
+    try {
+      const res = await fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(options),
+      });
+      return res.ok;
+    } catch (err) {
+      console.warn('[PushManager] sendPushToServer error:', err);
+      return false;
+    }
+  }
+
+  public async requestPermission(userInfo?: { id?: string; email?: string }): Promise<PushPermissionStatus> {
     if (typeof window === 'undefined' || !('Notification' in window)) {
       return 'unsupported';
     }
@@ -344,13 +446,32 @@ class DevicePushManager {
       const result = await Notification.requestPermission();
       if (result === 'granted') {
         await this.registerServiceWorker();
-        await this.updatePreferences({ enabled: true });
+        await this.updatePreferences({ enabled: true }, userInfo?.id);
+        await this.subscribeToPushServer(userInfo);
       }
       return result as PushPermissionStatus;
     } catch (e) {
       console.error('[PushManager] Error requesting notification permission:', e);
       return 'denied';
     }
+  }
+
+  public async notify(payload: {
+    title: string;
+    body: string;
+    category?: string;
+    workspace?: 'industry_pro' | 'fan_only' | 'all';
+    targetTab?: string;
+    icon?: string;
+    data?: any;
+    priority?: 'P0' | 'P1';
+    sound?: boolean;
+    renotify?: boolean;
+  }): Promise<boolean> {
+    return this.sendPushNotification({
+      ...payload,
+      category: payload.category || 'general'
+    });
   }
 
   public async sendPushNotification(payload: {
@@ -449,10 +570,21 @@ class DevicePushManager {
             tag: 'nexus-' + payload.category + '-' + Date.now(),
             data: {
               targetTab: payload.targetTab,
+              ...payload.data,
             },
           });
           notif.onclick = () => {
             window.focus();
+            if (payload.data?.senderId) {
+              window.dispatchEvent(
+                new CustomEvent('nexus_open_chat', {
+                  detail: {
+                    profile_id: payload.data.senderId,
+                    name: payload.title,
+                  },
+                })
+              );
+            }
             if (payload.targetTab) {
               window.dispatchEvent(new CustomEvent('nexus_navigate_tab', { detail: payload.targetTab }));
             }

@@ -146,6 +146,7 @@ export interface InventoryItem {
   item_type: string; // e.g. 'CD', 'Multiple', 'One Size', 'Sticker', 'Wall Flag'
   price: number;
   image_url?: string;
+  image_path?: string; // Object key/path inside Supabase 'inventory-items' storage bucket
   border_color?: string; // e.g. '#a855f7'
   band_id?: string;
   is_exclusive?: boolean;
@@ -167,6 +168,7 @@ export interface StagedDistroItem {
   storefront_price: number;
   public_description: string;
   product_image_url: string;
+  image_path?: string;
   visibility_status: boolean;
   owner_type?: 'ARTIST' | 'LABEL';
   owner_id?: string;
@@ -225,10 +227,10 @@ export function hasRegisteredWorkspace(
       if (typeof w === 'object') {
         const itemType = (w.type || w.workspace_type || w.key || '').toLowerCase();
         if (itemType === targetType) return true;
-        if (targetType === 'band' && (w.band_id || w.id)) return true;
-        if (targetType === 'creative' && (w.creative_id || w.id)) return true;
-        if (targetType === 'label' && (w.label_id || w.id)) return true;
-        if (targetType === 'promoter' && (w.promoter_id || w.id)) return true;
+        if (targetType === 'band' && (w.band_id || (itemType === 'band' && w.id))) return true;
+        if (targetType === 'creative' && (w.creative_id || (itemType === 'creative' && w.id))) return true;
+        if (targetType === 'label' && (w.label_id || (itemType === 'label' && w.id))) return true;
+        if (targetType === 'promoter' && (w.promoter_id || (itemType === 'promoter' && w.id))) return true;
       }
       return false;
     });
@@ -248,10 +250,14 @@ export function hasRegisteredWorkspace(
     }
 
     const accType = (target.account_type || '').toLowerCase();
-    if (accType === targetType || (accType === 'artist' && targetType === 'band')) return true;
-
-    const activeWs = (target.active_workspace || '').toLowerCase();
-    if (activeWs === targetType || (activeWs === 'artist' && targetType === 'band')) return true;
+    if (accType === targetType || (accType === 'artist' && targetType === 'band')) {
+      // If account_type is 'band', also verify they have a registered band or band_id
+      if (targetType === 'band') {
+        if (target.band_id || checkList(target.registered_workspaces)) return true;
+      } else {
+        return true;
+      }
+    }
 
     if (checkList(target.registered_workspaces)) return true;
 

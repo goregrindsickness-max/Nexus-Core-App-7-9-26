@@ -11,7 +11,6 @@ import { useInventoryState } from "../../hooks/useInventoryState";
 import { useOffersManagement } from "../../hooks/useOffersManagement";
 import { LegacyMetricsCarousel } from "./LegacyMetricsCarousel";
 import { Calendar, ShoppingCart, Tag, TrendingUp, Globe, Settings, Sparkles, ChevronUp, ChevronDown, Lock, Mic } from "lucide-react";
-import { UniversalSocialFeed } from "../social/UniversalSocialFeed";
 import PromoHubView from "../portals/Band/PromoHubView";
 import EventsWorkspace from "../portals/Band/EventsWorkspace";
 import SalesWorkspace from "../portals/Band/SalesWorkspace";
@@ -777,7 +776,15 @@ export function HomeV2DashboardView(props: any & { renderTourNotesCard: any; ren
                     <button
                       key={`${item.id}-${idx}`}
                       type="button"
-                      onClick={() => item.id === 'STUDIO' ? setActiveTab('studio') : setDashboardV2ActiveNav(item.id as any)}
+                      onClick={() => {
+                        if (item.id === 'STUDIO') {
+                          setActiveTab('studio');
+                        } else if (item.id === 'SOCIAL') {
+                          setActiveTab('social');
+                        } else {
+                          setDashboardV2ActiveNav(item.id as any);
+                        }
+                      }}
                       className="flex flex-col items-center justify-center w-full pt-0.5 pb-1 group relative transition-colors cursor-pointer"
                     >
                       {isActive && (
@@ -857,23 +864,6 @@ export function HomeV2DashboardView(props: any & { renderTourNotesCard: any; ren
               </div>
             )}
 
-            {/* Full Width Social Feed (Outside the Main Padded Container) */}
-            {dashboardV2ActiveNav === 'SOCIAL' && (activeTab as any) !== 'social' && (
-              <div className="w-full relative bg-[#050505]">
-                <UniversalSocialFeed 
-                  userProfile={userProfile}
-                  setUserProfile={setUserProfile} 
-                  activeBand={activeBand}
-                  bands={bands}
-                  setBands={setBands}
-                  triggerNotification={triggerNotification}
-                  portalRole="band"
-                  bandJoinRequests={bandJoinRequests}
-                  setBandJoinRequests={setBandJoinRequests}
-                />
-              </div>
-            )}
-
             {/* V2 Viewport / Workspace */}
             <div className={`${dashboardV2ActiveNav === 'EVENTS' ? 'pb-2' : dashboardV2ActiveNav === 'MERCH' ? 'pb-20' : dashboardV2ActiveNav === 'FINANCE' ? 'pb-8' : 'pb-32'} flex-grow w-full`}>
                {isSubNavRestricted(dashboardV2ActiveNav, activeClearanceLevel) ? (
@@ -944,6 +934,25 @@ export function HomeV2DashboardView(props: any & { renderTourNotesCard: any; ren
   encodeURIComponent={encodeURIComponent}
   fetchLocalWeather={fetchLocalWeather}
   filteredNotes={filteredNotes}
+  isNoteExpanded={isNoteExpanded}
+  setIsNoteExpanded={setIsNoteExpanded}
+  inlineNoteEditingId={inlineNoteEditingId}
+  setInlineNoteEditingId={setInlineNoteEditingId}
+  inlineNoteText={inlineNoteText}
+  setInlineNoteText={setInlineNoteText}
+  inlineNoteCategory={inlineNoteCategory}
+  setInlineNoteCategory={setInlineNoteCategory}
+  inlineNoteTag={inlineNoteTag}
+  setInlineNoteTag={setInlineNoteTag}
+  activeNoteIndex={activeNoteIndex}
+  setActiveNoteIndex={setActiveNoteIndex}
+  isTourNotesCardCollapsed={isTourNotesCardCollapsed}
+  setIsTourNotesCardCollapsed={setIsTourNotesCardCollapsed}
+  handleNoteTouchStart={handleNoteTouchStart}
+  handleNoteTouchMove={handleNoteTouchMove}
+  handleNoteTouchEnd={handleNoteTouchEnd}
+  setIsGlobalHoverPaused={setIsGlobalHoverPaused}
+  handleDataSubmit={handleDataSubmit}
   filteredSales={filteredSales}
   filteredShows={filteredShows}
   flights={flights}

@@ -7,6 +7,16 @@ import { InteractiveCropperModal } from "../../InteractiveCropperModal";
 import { uploadBase64ToStorage, resolveZipCode, autoArchiveProfileAssets, getSupabase, extractGlobalProfilePayload, executeSanitizedProfileUpsert, sanitizeBandPayload, executeWithSchemaResilience } from "../../../supabase";
 import { getRoleBorderAndGlowClass } from "../utils/socialUtils";
 import {
+  resolveBandLogo,
+  resolveBandCover,
+  resolveBandHandle,
+  resolveBandName,
+  resolveBandBio,
+  resolveBandLocation,
+  resolveEffectiveAvatar,
+  resolveEffectiveCover
+} from "../../../utils/bandProfileUtils";
+import {
   getStoredWallets,
   saveStoredWallets,
   connectWalletWithOAuth,
@@ -34,6 +44,7 @@ interface LeftProfileDrawerProps {
   leftDrawerOpen: boolean;
   setLeftDrawerOpen: (val: boolean) => void;
   userProfile?: any;
+  activeBand?: any;
   portalRole?: string;
   isEmbedded?: boolean;
   profileAvatarUrl?: string | null;
@@ -378,27 +389,38 @@ if (!leftDrawerOpen) return null;
               <button onClick={() => setLeftDrawerOpen(false)} className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center bg-black/40 hover:bg-rose-900/40 border border-zinc-800 hover:border-rose-500/50 text-zinc-400 hover:text-rose-400 rounded-full transition-all z-50 cursor-pointer"><X className="w-4 h-4" /></button>
               {/* Optional Cover Image backdrop */}
               <div className="absolute inset-0 w-full h-full pointer-events-none z-0">
-                {profileCoverUrl ? (
-                  <img src={profileCoverUrl} className="w-full h-full object-cover opacity-20 blur-[1px]" alt="" />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-b from-rose-950/15 via-transparent to-transparent" />
-                )}
+                {(() => {
+                  const effectiveCover = resolveEffectiveCover(portalRole || 'industry_pro', activeBand, userProfile, profileCoverUrl);
+                  return effectiveCover ? (
+                    <img src={effectiveCover} className="w-full h-full object-cover opacity-20 blur-[1px]" alt="" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-b from-rose-950/15 via-transparent to-transparent" />
+                  );
+                })()}
               </div>
               
               <div className="flex items-center gap-4 relative z-10">
-                {profileAvatarUrl ? (
-                  <img src={profileAvatarUrl} className="w-14 h-14 rounded-full object-cover border border-rose-500/40 shrink-0 shadow-lg" alt="" />
-                ) : (
-                  <div className="w-14 h-14 rounded-full bg-rose-950/40 border border-rose-500/50 flex items-center justify-center font-black text-rose-400 text-xl shrink-0">
-                    {(isEmbedded ? ((portalRole as any) === 'label' ? (userProfile?.label_company_name || 'Pro Label') : profileFullLegalName) : (profileHandle || 'Guest')).charAt(0).toUpperCase()}
-                  </div>
-                )}
+                {(() => {
+                  const effectiveAvatar = resolveEffectiveAvatar(portalRole || 'industry_pro', activeBand, userProfile, profileAvatarUrl);
+                  const effectiveName = portalRole === 'band' ? resolveBandName(activeBand, userProfile) : ((portalRole as any) === 'label' ? (userProfile?.label_company_name || 'Pro Label') : (profileFullLegalName || 'User'));
+                  return effectiveAvatar ? (
+                    <img src={effectiveAvatar} className="w-14 h-14 rounded-full object-cover border border-rose-500/40 shrink-0 shadow-lg" alt="Profile" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-full bg-rose-950/40 border border-rose-500/50 flex items-center justify-center font-black text-rose-400 text-xl shrink-0">
+                      {effectiveName.replace(/^@+/, '').charAt(0).toUpperCase()}
+                    </div>
+                  );
+                })()}
                 <div className="overflow-hidden flex-1">
                   <div className="flex items-center gap-1.5">
                     <h2 className="text-sm font-black text-white truncate font-display">
                       {(portalRole as any) === 'label' 
                         ? (userProfile?.label_company_name || 'Pro Label') 
-                        : (isEmbedded ? profileFullLegalName : `@${profileHandle || 'Guest'}`)
+                        : (portalRole === 'band'
+                            ? resolveBandName(activeBand, userProfile)
+                            : (['creative', 'promoter'].includes(portalRole) || isEmbedded
+                                ? (profileFullLegalName || (profileHandle ? `@${profileHandle.replace(/^@+/, '')}` : 'Workspace'))
+                                : (profileHandle ? `@${profileHandle.replace(/^@+/, '')}` : (profileFullLegalName || 'Guest'))))
                       }
                     </h2>
                     {isEmbedded && (
@@ -410,7 +432,11 @@ if (!leftDrawerOpen) return null;
                   <p className="text-[9px] text-zinc-400 font-mono truncate mt-0.5">
                     {(portalRole as any) === 'label'
                       ? `Active User: ${userProfile?.name || 'Active Operator'}`
-                      : (isEmbedded ? `@${profileHandle} • ${portalRole.toUpperCase()} ACCOUNT` : profileFullLegalName)
+                      : (portalRole === 'band'
+                          ? `@${resolveBandHandle(activeBand, userProfile)} • BAND ACCOUNT`
+                          : (['creative', 'promoter'].includes(portalRole) || isEmbedded
+                              ? `@${(profileHandle || 'pro').replace(/^@+/, '')} • ${portalRole.toUpperCase()} ACCOUNT`
+                              : (profileFullLegalName || `@${(profileHandle || 'user').replace(/^@+/, '')}`)))
                     }
                   </p>
                 </div>
@@ -568,14 +594,17 @@ if (!leftDrawerOpen) return null;
                               <div className="grid grid-cols-2 gap-3">
                                 {/* Readonly Avatar */}
                                 <div className="space-y-1">
-                                  <label className="text-[10px] uppercase font-bold text-zinc-500">Profile Avatar</label>
+                                  <label className="text-[10px] uppercase font-bold text-zinc-500">{portalRole === 'band' ? 'Band Logo' : ((portalRole as any) === 'label' ? 'Label Avatar' : 'Profile Avatar')}</label>
                                   <div className="flex items-center gap-2 mt-1">
                                     <div className="w-12 h-12 rounded-full border border-zinc-800 bg-zinc-950 flex items-center justify-center overflow-hidden">
-                                      {profileAvatarUrl ? (
-                                        <img src={profileAvatarUrl} className="w-full h-full object-cover opacity-80" alt="Avatar" />
-                                      ) : (
-                                        <span className="font-black text-zinc-600 text-sm">{profileHandle?.charAt(0).toUpperCase() || 'U'}</span>
-                                      )}
+                                      {(() => {
+                                        const logo = portalRole === 'band' ? resolveBandLogo(activeBand, userProfile) : (profileAvatarUrl || activeBand?.logo_url);
+                                        return logo ? (
+                                          <img src={logo} className="w-full h-full object-cover opacity-90" alt="Avatar" />
+                                        ) : (
+                                          <span className="font-black text-zinc-600 text-sm">{(profileHandle || 'U').replace(/^@+/, '').charAt(0).toUpperCase()}</span>
+                                        );
+                                      })()}
                                     </div>
                                     <span className="text-[8px] font-mono text-zinc-600">Locked to Portal</span>
                                   </div>
@@ -583,14 +612,17 @@ if (!leftDrawerOpen) return null;
 
                                 {/* Readonly Cover */}
                                 <div className="space-y-1">
-                                  <label className="text-[10px] uppercase font-bold text-zinc-500">Cover Banner</label>
+                                  <label className="text-[10px] uppercase font-bold text-zinc-500">{portalRole === 'band' ? 'Band Cover Banner' : ((portalRole as any) === 'label' ? 'Label Banner' : 'Cover Banner')}</label>
                                   <div className="flex items-center gap-2 mt-1">
                                     <div className="w-16 h-12 rounded border border-zinc-800 bg-zinc-950 flex items-center justify-center overflow-hidden">
-                                      {profileCoverUrl ? (
-                                        <img src={profileCoverUrl} className="w-full h-full object-cover opacity-80" alt="Cover" />
-                                      ) : (
-                                        <span className="text-[8px] text-zinc-600 font-mono">None</span>
-                                      )}
+                                      {(() => {
+                                        const cover = portalRole === 'band' ? resolveBandCover(activeBand, userProfile) : (profileCoverUrl || activeBand?.cover_url);
+                                        return cover ? (
+                                          <img src={cover} className="w-full h-full object-cover opacity-90" alt="Cover" />
+                                        ) : (
+                                          <span className="text-[8px] text-zinc-600 font-mono">None</span>
+                                        );
+                                      })()}
                                     </div>
                                     <span className="text-[8px] font-mono text-zinc-600">Locked to Portal</span>
                                   </div>
@@ -598,45 +630,45 @@ if (!leftDrawerOpen) return null;
                               </div>
 
                               <div>
-                                <label className="text-[10px] uppercase font-bold text-zinc-400">{(portalRole as any) === 'label' ? 'Record Label Entity Name' : 'Corporate Entity Name'}</label>
+                                <label className="text-[10px] uppercase font-bold text-zinc-400">{portalRole === 'band' ? 'Band / Artist Entity Name' : ((portalRole as any) === 'label' ? 'Record Label Entity Name' : 'Corporate Entity Name')}</label>
                                 <input 
                                   type="text" 
-                                  value={profileFullLegalName} 
+                                  value={portalRole === 'band' ? resolveBandName(activeBand, userProfile) : (profileFullLegalName || '')} 
                                   disabled
-                                  className="w-full mt-1 bg-zinc-950/50 border border-zinc-850/50 rounded-xl px-3 py-2.5 text-xs text-zinc-500 disabled:cursor-not-allowed font-medium" 
+                                  className="w-full mt-1 bg-zinc-950/50 border border-zinc-850/50 rounded-xl px-3 py-2.5 text-xs text-zinc-400 disabled:cursor-not-allowed font-medium" 
                                 />
                               </div>
 
                               <div>
-                                <label className="text-[10px] uppercase font-bold text-zinc-400">{(portalRole as any) === 'label' ? 'Label Handle / Screen Name' : 'Brand Handle / Screen Name'}</label>
+                                <label className="text-[10px] uppercase font-bold text-zinc-400">{portalRole === 'band' ? 'Band Handle / Screen Name' : ((portalRole as any) === 'label' ? 'Label Handle / Screen Name' : 'Brand Handle / Screen Name')}</label>
                                 <div className="relative mt-1">
                                   <span className="absolute left-3.5 top-2.5 text-zinc-600 text-xs font-mono">@</span>
                                   <input 
                                     type="text" 
-                                    value={profileHandle} 
+                                    value={portalRole === 'band' ? resolveBandHandle(activeBand, userProfile).replace(/^@+/, '') : (profileHandle || '').replace(/^@+/, '')} 
                                     disabled
-                                    className="w-full bg-zinc-950/50 border border-zinc-850/50 rounded-xl py-2.5 pl-7 pr-3 text-xs text-zinc-500 disabled:cursor-not-allowed font-medium" 
+                                    className="w-full bg-zinc-950/50 border border-zinc-850/50 rounded-xl py-2.5 pl-7 pr-3 text-xs text-zinc-400 disabled:cursor-not-allowed font-medium" 
                                   />
                                 </div>
                               </div>
 
                               <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                  <label className="text-[10px] uppercase font-bold text-zinc-400">{(portalRole as any) === 'label' ? 'Distribution HQ' : 'Headquarters'}</label>
+                                  <label className="text-[10px] uppercase font-bold text-zinc-400">{portalRole === 'band' ? 'Homebase / Location' : ((portalRole as any) === 'label' ? 'Distribution HQ' : 'Headquarters')}</label>
                                   <input 
                                     type="text" 
-                                    value={labelHeadquarters} 
+                                    value={portalRole === 'band' ? (activeBand?.homebase || activeBand?.city || profileLocation || 'Denison, TX, USA') : labelHeadquarters} 
                                     disabled
-                                    className="w-full mt-1 bg-zinc-950/50 border border-zinc-850/50 rounded-xl px-3 py-2.5 text-xs text-zinc-500 disabled:cursor-not-allowed font-medium" 
+                                    className="w-full mt-1 bg-zinc-950/50 border border-zinc-850/50 rounded-xl px-3 py-2.5 text-xs text-zinc-400 disabled:cursor-not-allowed font-medium" 
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-[10px] uppercase font-bold text-zinc-400">Founded Year</label>
+                                  <label className="text-[10px] uppercase font-bold text-zinc-400">{portalRole === 'band' ? 'Formed Year' : 'Founded Year'}</label>
                                   <input 
                                     type="text" 
-                                    value={labelFoundedYear} 
+                                    value={portalRole === 'band' ? (activeBand?.formed_year || activeBand?.year_formed || '2023') : labelFoundedYear} 
                                     disabled
-                                    className="w-full mt-1 bg-zinc-950/50 border border-zinc-850/50 rounded-xl px-3 py-2.5 text-xs text-zinc-500 disabled:cursor-not-allowed font-medium" 
+                                    className="w-full mt-1 bg-zinc-950/50 border border-zinc-850/50 rounded-xl px-3 py-2.5 text-xs text-zinc-400 disabled:cursor-not-allowed font-medium" 
                                   />
                                 </div>
                               </div>
@@ -2429,11 +2461,11 @@ if (!leftDrawerOpen) return null;
                                               
                                               {/* Star Rating */}
                                               <div className="flex items-center gap-0.5 bg-black/40 border border-zinc-900 px-1.5 py-0.5 rounded-lg">
-                                                {[1, 2, 3, 4, 5].map((star) => {
+                                                {[1, 2, 3, 4, 5].map((star, sIdx) => {
                                                   const rating = collPlayerRatings[activeMusicItem.id] || 0;
                                                   return (
                                                     <button
-                                                      key={`music-star-${activeMusicItem.id}-${star}`}
+                                                      key={`music-star-${activeMusicItem.id}-${star}-${sIdx}`}
                                                       type="button"
                                                       onClick={() => {
                                                         setCollPlayerRatings(prev => ({ ...prev, [activeMusicItem.id]: star }));

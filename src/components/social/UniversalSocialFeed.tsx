@@ -19,6 +19,16 @@ import { useFeedLocalCache } from './hooks/useFeedLocalCache';
 import { useSocialFeedState, getYouTubeId } from './hooks/useSocialFeedState';
 import { useSocialFeedActions } from './hooks/useSocialFeedActions';
 import {
+  resolveBandLogo,
+  resolveBandCover,
+  resolveBandHandle,
+  resolveBandName,
+  resolveBandBio,
+  resolveBandLocation,
+  resolveEffectiveAvatar,
+  resolveEffectiveCover
+} from '../../utils/bandProfileUtils';
+import {
   loadDiscoverProfilesCache,
   saveDiscoverProfilesCache,
   loadProfileLocalStorageCache,
@@ -122,6 +132,7 @@ export function UniversalSocialFeed({
   userProfile, 
   setUserProfile,
   activeBand,
+  activeBandId,
   onLogout, 
   onUpgradeToPro, 
   triggerNotification, 
@@ -134,7 +145,11 @@ export function UniversalSocialFeed({
   setBands,
   bandJoinRequests,
   setBandJoinRequests,
-  isEmbedded: isPropEmbedded
+  isEmbedded: isPropEmbedded,
+  onNavigateToTab,
+  setActiveTab: propSetActiveTab,
+  setDashboardV2ActiveNav,
+  dashboardV2ActiveNav
 }: any) {
   const portalRoleState = useSocialPortalRole({
     initialRole: propPortalRole,
@@ -152,12 +167,14 @@ export function UniversalSocialFeed({
     switchRole
   } = portalRoleState;
 
-  const isEmbedded = isPropEmbedded !== undefined ? isPropEmbedded : (portalRole !== 'industry_pro' && portalRole !== 'fan_only');
+  const isEmbedded = isPropEmbedded === true;
 
   const handleLogout = () => {};
   const { feed, setFeed, _setFeed } = useFeedLocalCache({
     portalRole,
     userProfile,
+    activeBand,
+    activeBandId,
     defaultFeed: mockFeed
   });
   const [labelPosts, setLabelPosts] = useState<any[]>(DEFAULT_LABEL_POSTS);
@@ -169,6 +186,58 @@ export function UniversalSocialFeed({
   const [regWorkspaceName, setRegWorkspaceName] = useState('');
   const [regWorkspaceHandle, setRegWorkspaceHandle] = useState('');
   const [regWorkspaceLogo, setRegWorkspaceLogo] = useState('');
+
+  const resolvedActiveBand = useMemo(() => {
+    if (activeBand && (activeBand.name || activeBand.id)) {
+      return {
+        ...activeBand,
+        name: resolveBandName(activeBand, userProfile),
+        logo_url: resolveBandLogo(activeBand, userProfile),
+        cover_url: resolveBandCover(activeBand, userProfile),
+        custom_slug: resolveBandHandle(activeBand, userProfile)
+      };
+    }
+    if (Array.isArray(bands) && bands.length > 0) {
+      const found = bands.find((b: any) => b.id === activeBandId) || bands[0];
+      return {
+        ...found,
+        name: resolveBandName(found, userProfile),
+        logo_url: resolveBandLogo(found, userProfile),
+        cover_url: resolveBandCover(found, userProfile),
+        custom_slug: resolveBandHandle(found, userProfile)
+      };
+    }
+    try {
+      const cached = localStorage.getItem('nexus_active_band');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && (parsed.name || parsed.id)) {
+          return {
+            ...parsed,
+            name: resolveBandName(parsed, userProfile),
+            logo_url: resolveBandLogo(parsed, userProfile),
+            cover_url: resolveBandCover(parsed, userProfile),
+            custom_slug: resolveBandHandle(parsed, userProfile)
+          };
+        }
+      }
+    } catch (_) {}
+    return {
+      id: userProfile?.band_id || 'band:active',
+      name: resolveBandName(null, userProfile),
+      logo_url: resolveBandLogo(null, userProfile),
+      cover_url: resolveBandCover(null, userProfile),
+      custom_slug: resolveBandHandle(null, userProfile),
+      owner_id: userProfile?.id
+    };
+  }, [activeBand, bands, activeBandId, userProfile]);
+
+  const effectiveBands = useMemo(() => {
+    if (Array.isArray(bands) && bands.length > 0) return bands;
+    if (resolvedActiveBand) return [resolvedActiveBand];
+    if (activeBand) return [activeBand];
+    return [];
+  }, [bands, resolvedActiveBand, activeBand]);
 
   const [expandedTours, setExpandedTours] = useState<Record<string, boolean>>({});
   const [playingVideos, setPlayingVideos] = useState<Record<string, boolean>>({});
@@ -261,6 +330,7 @@ export function UniversalSocialFeed({
       price: payload.price,
       ticket_price: payload.ticket_price,
       is_community_submitted: true,
+      band_id: payload.band_id || 'community_hub',
       external_ticket_url: payload.external_ticket_url,
       ticket_url: payload.ticket_url || payload.external_ticket_url,
       flyer_url: payload.flyer_url,
@@ -1297,7 +1367,7 @@ export function UniversalSocialFeed({
     setProfileAudioVolume,
     rotationIsPlaying,
     setRotationIsPlaying
-  } = useSocialProfileState({ portalRole, userProfile, activeBand, quantity });
+  } = useSocialProfileState({ portalRole, userProfile, activeBand: resolvedActiveBand || activeBand, quantity });
 
   const [hypeAnimations, setHypeAnimations] = useState<Record<string, boolean>>({});
   const [reactionMenuOpenFor, setReactionMenuOpenFor] = useState<string | null>(null);
@@ -1460,7 +1530,7 @@ export function UniversalSocialFeed({
     setFeed,
     userProfile,
     portalRole,
-    activeBand,
+    activeBand: resolvedActiveBand || activeBand,
     isEmbedded,
     profileHandle,
     profileAvatarUrl,
@@ -1475,6 +1545,7 @@ export function UniversalSocialFeed({
     setReactionMenuOpenFor,
     longPressTimerRef: longPressTimer,
     setNotifications,
+    bands: effectiveBands,
   });
 
   // Listen for Scene Radio track sharing events to load track into Post Creator
@@ -1656,32 +1727,32 @@ export function UniversalSocialFeed({
         defaultFavoriteSong = '';
       } else {
         // Professional portals
-        defaultName = portalRole === 'band' ? (activeBand?.name || userProfile?.bandName || 'Artist')
+        defaultName = portalRole === 'band' ? resolveBandName(resolvedActiveBand || activeBand, userProfile)
           : portalRole === 'creative' ? (userProfile?.creative_metadata?.business_name || 'Pro Creative')
           : portalRole === 'promoter' ? (userProfile?.promoter_metadata?.brand_name || 'Pro Promoter')
           : portalRole === 'label' ? (userProfile?.label_company_name || 'Pro Label')
           : (userProfile?.full_name || userProfile?.legal_name || userProfile?.name || 'Pro Account');
 
-        defaultHandle = portalRole === 'band' ? (activeBand?.name || userProfile?.bandName || 'band_core').toLowerCase().replace(/\s+/g, '')
+        defaultHandle = portalRole === 'band' ? resolveBandHandle(resolvedActiveBand || activeBand, userProfile)
           : portalRole === 'creative' ? (userProfile?.creative_metadata?.business_name?.toLowerCase().replace(/\s+/g, '') || 'creative_pro')
           : portalRole === 'promoter' ? (userProfile?.promoter_metadata?.brand_name?.toLowerCase().replace(/\s+/g, '') || 'promoter_pro')
           : portalRole === 'label' ? (userProfile?.label_url_slug || 'label_pro')
           : (userProfile?.console_handle || userProfile?.handle || 'pro_account');
 
-        defaultAvatar = portalRole === 'label' ? (userProfile?.label_avatar || null)
+        defaultAvatar = portalRole === 'band' ? resolveBandLogo(resolvedActiveBand || activeBand, userProfile)
+          : portalRole === 'label' ? (userProfile?.label_avatar || null)
           : portalRole === 'creative' ? (userProfile?.creative_avatar || null)
           : portalRole === 'promoter' ? ((userProfile as any)?.promoter_logo || null)
-          : portalRole === 'band' ? (activeBand?.logo_url || null)
           : (userProfile?.avatar_url || null);
 
-        defaultCover = portalRole === 'label' ? (userProfile?.label_banner || null)
+        defaultCover = portalRole === 'band' ? resolveBandCover(resolvedActiveBand || activeBand, userProfile)
+          : portalRole === 'label' ? (userProfile?.label_banner || null)
           : portalRole === 'creative' ? (userProfile?.creative_banner || null)
           : portalRole === 'promoter' ? ((userProfile as any)?.promoter_cover_image || null)
-          : portalRole === 'band' ? (activeBand ? localStorage.getItem(`nexus_core_band_cover_${activeBand.id}`) : null) || activeBand?.cover_url || null
           : (userProfile?.banner_url || null);
 
-        defaultLocation = portalRole === 'label' && userProfile?.label_headquarters ? userProfile.label_headquarters 
-          : portalRole === 'band' && activeBand?.homebase ? activeBand.homebase
+        defaultLocation = portalRole === 'band' ? resolveBandLocation(resolvedActiveBand || activeBand, userProfile)
+          : portalRole === 'label' && userProfile?.label_headquarters ? userProfile.label_headquarters 
           : portalRole === 'creative' && userProfile?.creative_metadata?.base_location ? userProfile.creative_metadata.base_location
           : portalRole === 'promoter' && (userProfile as any)?.promoter_city ? `${(userProfile as any).promoter_city}, ${(userProfile as any).promoter_state}`
           : (signupLocation || userProfile?.location_code || userProfile?.city_state || 'Detroit, MI');
@@ -1709,18 +1780,23 @@ let loadedFromLocalStorage = false;
 try {
   const parsed = loadProfileLocalStorageCache(portalRole, userProfile?.id);
   if (parsed) {
-    if (portalRole !== 'industry_pro' && portalRole !== 'fan_only') {
+    if (portalRole === 'band') {
+      setProfileFullLegalName(resolveBandName(resolvedActiveBand || activeBand, userProfile));
+      setProfileHandle(resolveBandHandle(resolvedActiveBand || activeBand, userProfile));
+      setProfileAvatarUrl(resolveBandLogo(resolvedActiveBand || activeBand, userProfile));
+      setProfileCoverUrl(resolveBandCover(resolvedActiveBand || activeBand, userProfile));
+      setProfileLocation(resolveBandLocation(resolvedActiveBand || activeBand, userProfile));
+      setProfileBlurb(resolveBandBio(resolvedActiveBand || activeBand, userProfile));
+    } else if (portalRole !== 'industry_pro' && portalRole !== 'fan_only') {
       // Keep live parent values instead of overriding with stale localStorage cache
-      const parentName = portalRole === 'band' ? userProfile?.bandName || userProfile?.band_name
-        : portalRole === 'creative' ? userProfile?.creative_metadata?.business_name || userProfile?.business_name || userProfile?.full_name
+      const parentName = portalRole === 'creative' ? userProfile?.creative_metadata?.business_name || userProfile?.business_name || userProfile?.full_name
         : portalRole === 'promoter' ? userProfile?.promoter_metadata?.brand_name 
         : portalRole === 'label' ? userProfile?.label_company_name 
         : userProfile?.name || userProfile?.full_name;
       
       setProfileFullLegalName(parentName || parsed.profileFullLegalName || 'Pro Account');
 
-      const parentHandle = portalRole === 'band' ? (userProfile?.bandName || userProfile?.band_name)?.toLowerCase().replace(/\s+/g, '')
-        : portalRole === 'creative' ? (userProfile?.creative_metadata?.business_name || userProfile?.business_name)?.toLowerCase().replace(/\s+/g, '')
+      const parentHandle = portalRole === 'creative' ? (userProfile?.creative_metadata?.business_name || userProfile?.business_name)?.toLowerCase().replace(/\s+/g, '')
         : portalRole === 'promoter' ? userProfile?.promoter_metadata?.brand_name?.toLowerCase().replace(/\s+/g, '')
         : portalRole === 'label' ? userProfile?.label_url_slug
         : null;
@@ -1842,11 +1918,17 @@ loadProfileIndexedDBCache(portalRole, userProfile?.id).then((data: any) => {
     };
 
     // Always restore avatar and cover urls from IndexedDB since they are excluded from localStorage
-    if (portalRole !== 'industry_pro' && portalRole !== 'fan_only') {
+    if (portalRole === 'band') {
+      setProfileAvatarUrl(resolveBandLogo(resolvedActiveBand || activeBand, userProfile));
+      setProfileCoverUrl(resolveBandCover(resolvedActiveBand || activeBand, userProfile));
+      setProfileFullLegalName(resolveBandName(resolvedActiveBand || activeBand, userProfile));
+      setProfileHandle(resolveBandHandle(resolvedActiveBand || activeBand, userProfile));
+      setProfileLocation(resolveBandLocation(resolvedActiveBand || activeBand, userProfile));
+      setProfileBlurb(resolveBandBio(resolvedActiveBand || activeBand, userProfile));
+    } else if (portalRole !== 'industry_pro' && portalRole !== 'fan_only') {
       const parentAvatar = portalRole === 'label' ? userProfile?.label_avatar 
         : portalRole === 'creative' ? userProfile?.creative_avatar || userProfile?.avatar_url
         : portalRole === 'promoter' ? (userProfile as any)?.promoter_logo 
-        : portalRole === 'band' ? activeBand?.logo_url
         : userProfile?.avatar_url;
       
       setProfileAvatarUrl(getCleanUrl(parentAvatar) || getCleanUrl(data.profileAvatarUrl) || null);
@@ -1854,7 +1936,6 @@ loadProfileIndexedDBCache(portalRole, userProfile?.id).then((data: any) => {
       const parentCover = portalRole === 'label' ? userProfile?.label_banner 
         : portalRole === 'creative' ? userProfile?.creative_banner || userProfile?.banner_url
         : portalRole === 'promoter' ? (userProfile as any)?.promoter_cover_image 
-        : portalRole === 'band' ? activeBand?.cover_url || userProfile?.banner_url
         : userProfile?.banner_url;
       
       setProfileCoverUrl(getCleanUrl(parentCover) || getCleanUrl(data.profileCoverUrl) || null);
@@ -1868,17 +1949,18 @@ loadProfileIndexedDBCache(portalRole, userProfile?.id).then((data: any) => {
     }
 
     if (!loadedFromLocalStorage) {
-      if (portalRole !== 'industry_pro' && portalRole !== 'fan_only') {
-        const parentName = portalRole === 'band' ? userProfile?.bandName || userProfile?.band_name
-          : portalRole === 'creative' ? userProfile?.creative_metadata?.business_name || userProfile?.business_name 
+      if (portalRole === 'band') {
+        setProfileFullLegalName(resolveBandName(resolvedActiveBand || activeBand, userProfile));
+        setProfileHandle(resolveBandHandle(resolvedActiveBand || activeBand, userProfile));
+      } else if (portalRole !== 'industry_pro' && portalRole !== 'fan_only') {
+        const parentName = portalRole === 'creative' ? userProfile?.creative_metadata?.business_name || userProfile?.business_name 
           : portalRole === 'promoter' ? userProfile?.promoter_metadata?.brand_name 
           : portalRole === 'label' ? userProfile?.label_company_name 
           : userProfile?.name || userProfile?.full_name;
         
         setProfileFullLegalName(parentName || data.profileFullLegalName || 'Pro Account');
 
-        const parentHandle = portalRole === 'band' ? (userProfile?.bandName || userProfile?.band_name)?.toLowerCase().replace(/\s+/g, '')
-          : portalRole === 'creative' ? (userProfile?.creative_metadata?.business_name || userProfile?.business_name)?.toLowerCase().replace(/\s+/g, '')
+        const parentHandle = portalRole === 'creative' ? (userProfile?.creative_metadata?.business_name || userProfile?.business_name)?.toLowerCase().replace(/\s+/g, '')
           : portalRole === 'promoter' ? userProfile?.promoter_metadata?.brand_name?.toLowerCase().replace(/\s+/g, '')
           : portalRole === 'label' ? userProfile?.label_url_slug
           : null;
@@ -4527,12 +4609,16 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
         setIsCartOpen={setIsCartOpen}
         cartItems={cartItems}
         profileFullLegalName={profileFullLegalName}
+        profileAvatarUrl={profileAvatarUrl}
+        profileCoverUrl={profileCoverUrl}
         roleMenuOpen={roleMenuOpen}
         setRoleMenuOpen={setRoleMenuOpen}
         portalRole={portalRole}
+        setPortalRole={setPortalRole}
+        switchRole={switchRole}
         userProfile={userProfile}
         setUserProfile={setUserProfile}
-        activeBand={activeBand}
+        activeBand={resolvedActiveBand || activeBand}
         getRoleBorderAndGlowClass={getRoleBorderAndGlowClass}
         unreadNotifsCount={unreadNotifsCount}
         setRightDrawerOpen={setRightDrawerOpen}
@@ -4550,7 +4636,11 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
         getSupabase={getSupabase}
         triggerNotification={triggerNotification}
         onLogout={onLogout}
+        onNavigateToTab={onNavigateToTab}
+        setDashboardV2ActiveNav={setDashboardV2ActiveNav}
+        dashboardV2ActiveNav={dashboardV2ActiveNav}
       />
+
         {/* Profile Hub Card */}
         <ProfileHubCard
           activeTab={activeTab}
@@ -4568,6 +4658,8 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
           profileSceneRoles={profileSceneRoles}
           profileLocation={profileLocation}
           getRoleBorderAndGlowClass={getRoleBorderAndGlowClass}
+          activeBand={resolvedActiveBand || activeBand}
+          userProfile={userProfile}
         />
 
         {/* Sub-view control panels & Live Tonight Header inside unified sticky header */}
@@ -4747,7 +4839,8 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
   shopBrandFilter={shopBrandFilter}
   setShopBrandFilter={setShopBrandFilter}
   portalRole={portalRole}
-  activeBand={activeBand}
+  activeBand={resolvedActiveBand || activeBand}
+  bands={effectiveBands}
   roleTheme={activeRoleTheme}
   profileHandle={profileHandle}
   shopSearchQuery={shopSearchQuery}
@@ -4816,6 +4909,7 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
         setViewingReceipt={setViewingReceipt}
         isMiguelNameOrProfile={isMiguelNameOrProfile}
         userProfile={userProfile}
+        activeBand={resolvedActiveBand || activeBand}
         portalRole={portalRole}
         isEmbedded={isEmbedded}
         profileAvatarUrl={profileAvatarUrl}

@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 import fs from "fs";
+import webpush from "web-push";
 
 // Load environment variables (mostly for local testing, platform handles deployment env vars)
 dotenv.config();
@@ -495,7 +496,202 @@ async function startServer() {
 
   // API ROUTE: Health check
   app.get("/api/health", async (req, res) => {
-    res.json({ status: "ok", stripe_enabled: !!(await getStripeAsync()), resend_enabled: !!getResend() });
+    res.json({ status: "ok", stripe_enabled: !!(await getStripeAsync()), resend_enabled: !!getResend(), push_enabled: true });
+  });
+
+  // ==========================================
+  // WEB PUSH & NOTIFICATION DISPATCH ENGINE
+  // ==========================================
+  const VAPID_FILE = path.join(process.cwd(), "data", "vapid_keys.json");
+  let vapidKeys = {
+    publicKey: process.env.VAPID_PUBLIC_KEY || "BFtYUwYxD4nggBN6jldwPmQ-rM209n3Cqom0TYLxoksAambfhk5PzDZ-0-FppflHkjW4P6tlvTsOnnl1kVlitiQ",
+    privateKey: process.env.VAPID_PRIVATE_KEY || "QmoK7UnZEhW2DexICe_qShvNjURZj4V7NKya_0EtN3Q"
+  };
+
+  try {
+    if (fs.existsSync(VAPID_FILE)) {
+      const parsed = JSON.parse(fs.readFileSync(VAPID_FILE, "utf-8"));
+      if (parsed.publicKey && parsed.privateKey) {
+        vapidKeys = parsed;
+      }
+    }
+  } catch (e) {
+    console.warn("[VAPID INIT] Using fallback keys:", e);
+  }
+
+  try {
+    webpush.setVapidDetails(
+      process.env.VAPID_SUBJECT || "mailto:admin@thenexuscoreapp.com",
+      vapidKeys.publicKey,
+      vapidKeys.privateKey
+    );
+    console.log("[VAPID INIT] Web Push VAPID keys loaded successfully.");
+  } catch (e) {
+    console.error("[VAPID INIT ERROR]", e);
+  }
+
+  const PUSH_SUBS_FILE = path.join(process.cwd(), "data", "push_subscriptions.json");
+
+  interface StoredPushSubscription {
+    id: string;
+    subscription: webpush.PushSubscription;
+    userId?: string;
+    userEmail?: string;
+    created_at: string;
+    last_used_at?: string;
+  }
+
+  function readPushSubscriptions(): StoredPushSubscription[] {
+    try {
+      if (fs.existsSync(PUSH_SUBS_FILE)) {
+        return JSON.parse(fs.readFileSync(PUSH_SUBS_FILE, "utf-8")) || [];
+      }
+    } catch (e) {
+      console.warn("[PUSH SUBS] Could not read file:", e);
+    }
+    return [];
+  }
+
+  function writePushSubscriptions(subs: StoredPushSubscription[]) {
+    try {
+      const dir = path.dirname(PUSH_SUBS_FILE);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(PUSH_SUBS_FILE, JSON.stringify(subs, null, 2), "utf-8");
+    } catch (e) {
+      console.warn("[PUSH SUBS] Could not write file:", e);
+    }
+  }
+
+  app.get("/api/push/vapid-public-key", (req, res) => {
+    res.json({ publicKey: vapidKeys.publicKey });
+  });
+
+  app.get("/api/push/status", (req, res) => {
+    const subs = readPushSubscriptions();
+    res.json({
+      active: true,
+      publicKey: vapidKeys.publicKey,
+      totalSubscriptions: subs.length,
+      sampleEndpoints: subs.slice(0, 3).map(s => s.subscription.endpoint.substring(0, 40) + '...')
+    });
+  });
+
+  app.post("/api/push/subscribe", express.json(), async (req, res) => {
+    try {
+      const { subscription, userId, userEmail } = req.body;
+      if (!subscription || !subscription.endpoint) {
+        return res.status(400).json({ error: "Missing subscription endpoint" });
+      }
+
+      const subs = readPushSubscriptions();
+      const existingIdx = subs.findIndex(s => s.subscription.endpoint === subscription.endpoint);
+      const entry: StoredPushSubscription = {
+        id: existingIdx >= 0 ? subs[existingIdx].id : `sub_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        subscription,
+        userId: userId || (existingIdx >= 0 ? subs[existingIdx].userId : undefined),
+        userEmail: userEmail || (existingIdx >= 0 ? subs[existingIdx].userEmail : undefined),
+        created_at: existingIdx >= 0 ? subs[existingIdx].created_at : new Date().toISOString(),
+        last_used_at: new Date().toISOString()
+      };
+
+      if (existingIdx >= 0) {
+        subs[existingIdx] = entry;
+      } else {
+        subs.push(entry);
+      }
+
+      writePushSubscriptions(subs);
+      console.log(`[PUSH SUBSCRIBE] Registered endpoint for ${userEmail || userId || 'device'} (total: ${subs.length})`);
+
+      // Send welcome test confirmation push
+      try {
+        await webpush.sendNotification(subscription, JSON.stringify({
+          title: "⚡ Nexus Real-Time Push Active",
+          body: "Push alerts activated! You will receive instant notifications for messages, booking offers, and tour alerts.",
+          icon: "/icon-192.png",
+          badge: "/icon-192.png",
+          tag: "nexus-welcome-" + Date.now(),
+          targetTab: "social"
+        }));
+      } catch (pushErr) {
+        console.warn("[PUSH SUBSCRIBE WELCOME] Welcome push skipped or failed:", pushErr);
+      }
+
+      res.json({ success: true, count: subs.length });
+    } catch (err: any) {
+      console.error("[PUSH SUBSCRIBE ERROR]", err);
+      res.status(500).json({ error: err.message || "Failed to register subscription" });
+    }
+  });
+
+  app.post("/api/push/unsubscribe", express.json(), async (req, res) => {
+    try {
+      const { endpoint } = req.body;
+      if (!endpoint) return res.status(400).json({ error: "Missing endpoint" });
+      let subs = readPushSubscriptions();
+      subs = subs.filter(s => s.subscription.endpoint !== endpoint);
+      writePushSubscriptions(subs);
+      res.json({ success: true, count: subs.length });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/push/send", express.json(), async (req, res) => {
+    try {
+      const { userId, userEmail, title, body, icon, targetTab, category, priority, data } = req.body;
+      if (!title || !body) {
+        return res.status(400).json({ error: "Missing title or body" });
+      }
+
+      const allSubs = readPushSubscriptions();
+      const targetSubs = allSubs.filter(s => {
+        if (userId && (s.userId === userId || s.userEmail === userId)) return true;
+        if (userEmail && (s.userEmail?.toLowerCase() === userEmail.toLowerCase() || s.userId === userEmail)) return true;
+        if (!userId && !userEmail) return true; // broadcast
+        return false;
+      });
+
+      if (targetSubs.length === 0) {
+        return res.json({ success: true, sent: 0, message: "No active push subscriptions matched" });
+      }
+
+      const payload = JSON.stringify({
+        title,
+        body,
+        icon: icon || "/icon-192.png",
+        badge: "/icon-192.png",
+        targetTab: targetTab || "social",
+        category: category || "general",
+        priority: priority || "P1",
+        data: data || {},
+        timestamp: Date.now()
+      });
+
+      let sentCount = 0;
+      const expiredEndpoints = new Set<string>();
+
+      await Promise.allSettled(targetSubs.map(async (entry) => {
+        try {
+          await webpush.sendNotification(entry.subscription, payload);
+          sentCount++;
+        } catch (pushErr: any) {
+          if (pushErr.statusCode === 410 || pushErr.statusCode === 404) {
+            expiredEndpoints.add(entry.subscription.endpoint);
+          }
+        }
+      }));
+
+      if (expiredEndpoints.size > 0) {
+        const cleaned = allSubs.filter(s => !expiredEndpoints.has(s.subscription.endpoint));
+        writePushSubscriptions(cleaned);
+      }
+
+      res.json({ success: true, sent: sentCount, targetCount: targetSubs.length });
+    } catch (err: any) {
+      console.error("[PUSH SEND ERROR]", err);
+      res.status(500).json({ error: err.message || "Failed to send push" });
+    }
   });
 
   // Global in-memory & file-based storage bucket for playlists to accumulate and persist metadata globally

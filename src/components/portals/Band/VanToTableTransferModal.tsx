@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, ChevronLeft, ChevronRight, Search, Plus, Minus, Check, ArrowRight, Package } from 'lucide-react';
 import { InventoryItem } from '../../../types';
+import { resolveInventoryImageUrl } from '../../../supabase';
 
 interface VanToTableTransferModalProps {
   isOpen: boolean;
@@ -291,8 +292,8 @@ export default function VanToTableTransferModal({
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-3 bg-zinc-950/50 rounded-xl border border-zinc-900">
                 <div className="w-12 h-12 rounded-lg overflow-hidden border border-zinc-800 bg-zinc-900 flex-none">
-                  {selectedItem.image_url ? (
-                    <img src={selectedItem.image_url} alt={selectedItem.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  {resolveInventoryImageUrl(selectedItem) ? (
+                    <img src={resolveInventoryImageUrl(selectedItem)} alt={selectedItem.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-zinc-600"><Package className="w-6 h-6" /></div>
                   )}
@@ -418,8 +419,8 @@ export default function VanToTableTransferModal({
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-2 bg-zinc-950/30 rounded-xl border border-zinc-900/40 mb-3">
                 <div className="w-10 h-10 rounded-lg overflow-hidden border border-zinc-850 bg-zinc-900 flex-none">
-                  {selectedItem.image_url ? (
-                    <img src={selectedItem.image_url} alt={selectedItem.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  {resolveInventoryImageUrl(selectedItem) ? (
+                    <img src={resolveInventoryImageUrl(selectedItem)} alt={selectedItem.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-zinc-650"><Package className="w-5 h-5" /></div>
                   )}
@@ -470,8 +471,8 @@ export default function VanToTableTransferModal({
                       className="bg-[#181a21]/90 hover:bg-[#1d212b]/80 border border-zinc-850 hover:border-zinc-700 rounded-xl p-3 flex items-center gap-3 cursor-pointer transition-all group relative select-none"
                     >
                       <div className="w-11 h-11 bg-zinc-950 rounded-lg overflow-hidden border border-zinc-800 flex-none group-hover:border-zinc-650 transition-colors">
-                        {item.image_url ? (
-                          <img src={item.image_url} alt={item?.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        {resolveInventoryImageUrl(item) ? (
+                          <img src={resolveInventoryImageUrl(item)} alt={item?.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-zinc-750"><Package className="w-5 h-5" /></div>
                         )}

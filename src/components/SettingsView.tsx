@@ -62,6 +62,7 @@ import RoutingBeaconForm from './portals/Promoter/RoutingBeaconForm';
 import { ReceiptByteBuilder, serializeSaleToReceiptBytes } from '../ReceiptByteBuilder';
 import DevSandboxFanDeck from './DevSandboxFanDeck';
 import StripeConnectPayoutSection from './StripeConnectPayoutSection';
+import { pushManager } from '../lib/pushNotifications';
 
 interface SettingsViewProps {
   userProfile: UserProfile;
@@ -1173,30 +1174,19 @@ export default function SettingsView({
       return newToken;
     };
 
-    // Simulate standard register network handshake
+    // Execute standard push registration & VAPID Web Push subscription
     setTimeout(async () => {
       if (typeof window !== 'undefined' && 'Notification' in window) {
         try {
-          const permission = await Notification.requestPermission();
-          setPushPermission(permission);
-          if (permission === 'granted') {
-            // Also try to register the service worker for showNotification
-            if ('serviceWorker' in navigator) {
-              try {
-                const reg = await navigator.serviceWorker.register('/sw.js');
-                addLog('FCM Service Worker registered successfully for background push messages.');
-                console.log('SW Registered', reg);
-              } catch (swErr) {
-                console.warn('FCM SW registration declined or errored:', swErr);
-                addLog('FCM Service Worker registration fallback activated.');
-              }
-            }
+          const perm = await pushManager.requestPermission({ id: userProfile?.id, email: userProfile?.email });
+          setPushPermission(perm === 'unsupported' ? 'denied' : perm);
+          if (perm === 'granted') {
+            await pushManager.subscribeToPushServer({ id: userProfile?.id, email: userProfile?.email });
             const token = generateToken();
             triggerNotification(`🔔 Device push registration active! Token synchronized.`);
-            addLog(`FCM handshake success. Secured persistent token: ${token}`);
+            addLog(`Push service active. Web Push subscription synced with Nexus gateway.`);
           } else {
-            // Permission denied or dismissed
-            triggerNotification(`⚠️ Permission ${permission}. Simulated fallback token generated.`);
+            triggerNotification(`⚠️ Permission ${perm}. Simulated fallback token generated.`);
             generateToken();
           }
         } catch (err) {
@@ -1209,7 +1199,7 @@ export default function SettingsView({
         triggerNotification(`🔔 Handshake complete. Secured local device push simulation.`);
       }
       setIsSyncingPush(false);
-    }, 1200);
+    }, 600);
   };
 
   const handleTestPush = (category: 'lowStock' | 'nightlySummaries' | 'teamActivity' | 'paymentUpdates') => {
@@ -1246,45 +1236,24 @@ export default function SettingsView({
       }
     }
 
-    // Trigger true system notification if allowed - fall back to Service Worker if running container sandbox
-    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-      const dispatchNotification = async () => {
-        let sentViaSW = false;
-        if ('serviceWorker' in navigator) {
-          try {
-            const reg = await navigator.serviceWorker.getRegistration();
-            if (reg) {
-              await reg.showNotification(title, {
-                body: body,
-                icon: '/favicon.ico',
-                badge: '/favicon.ico',
-                tag: 'nexus-core-alert'
-              });
-              sentViaSW = true;
-              addLog(`Dispatched system-level push alert via ServiceWorker [${category.toUpperCase()}]`);
-            }
-          } catch (swErr) {
-            console.warn("Could not dispatch via Service Worker, calling constructor fallback", swErr);
-          }
-        }
+    // Dispatch true system notification & background Web Push via pushManager
+    pushManager.notify({
+      title,
+      body,
+      category: category === 'lowStock' ? 'inventory' : category === 'nightlySummaries' ? 'shows' : 'system',
+      priority: 'P1',
+      targetTab: 'social'
+    });
 
-        if (!sentViaSW) {
-          try {
-            new Notification(title, {
-              body: body,
-              icon: '/favicon.ico'
-            });
-            addLog(`Dispatched system-level push alert via legacy Constructor [${category.toUpperCase()}]`);
-          } catch (err) {
-            console.warn("Could not dispatch legacy Notification due to browser or iframe sandbox restrictions.", err);
-          }
-        }
-      };
-
-      dispatchNotification();
-    } else {
-      addLog(`Notification permission state is currently: ${Notification.permission || 'unsupported'}`);
-    }
+    pushManager.sendPushToServer({
+      userId: userProfile?.id,
+      userEmail: userProfile?.email,
+      title,
+      body,
+      category,
+      priority: 'P1',
+      targetTab: 'social'
+    });
 
     // Generate in-app beautiful mock push HUD slide-down banner
     const id = Math.random().toString(36).substring(2, 9);

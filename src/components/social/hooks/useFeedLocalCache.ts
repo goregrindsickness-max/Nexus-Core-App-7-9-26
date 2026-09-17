@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { FeedItem } from '../../../data/socialFeedMockData';
-import { loadFeedCache, saveFeedCache, getDeletedPostIdsLocal } from '../utils/feedCacheUtils';
+import { loadFeedCache, saveFeedCache, getDeletedPostIdsLocal, resolveWorkspaceEntityId } from '../utils/feedCacheUtils';
 import { getSupabase, subscribeToTable } from '../../../supabase';
 import { extractYouTubeId } from '../utils/postSyncUtils';
 
@@ -8,14 +8,24 @@ interface UseFeedLocalCacheOptions {
   portalRole: string;
   userProfile?: any;
   defaultFeed?: FeedItem[];
+  activeBand?: any;
+  activeBandId?: string;
+  workspaceEntityId?: string;
 }
 
 export function useFeedLocalCache({
   portalRole,
   userProfile,
-  defaultFeed = []
+  defaultFeed = [],
+  activeBand,
+  activeBandId,
+  workspaceEntityId
 }: UseFeedLocalCacheOptions) {
   const [feed, _setFeed] = useState<FeedItem[]>([]);
+
+  const resolvedEntityId = useMemo(() => {
+    return workspaceEntityId || resolveWorkspaceEntityId(portalRole, activeBand, activeBandId, userProfile);
+  }, [workspaceEntityId, portalRole, activeBand, activeBandId, userProfile]);
 
   const setFeed = useCallback((action: React.SetStateAction<FeedItem[]>) => {
     _setFeed(prev => {
@@ -28,7 +38,7 @@ export function useFeedLocalCache({
     let active = true;
     const loadFeed = async () => {
       try {
-        const storedFeed = await loadFeedCache(portalRole, userProfile?.id);
+        const storedFeed = await loadFeedCache(portalRole, userProfile?.id, resolvedEntityId);
         if (!active) return;
         let finalFeed = storedFeed || [];
 
@@ -53,27 +63,79 @@ export function useFeedLocalCache({
 
                     const isSelf = userProfile?.id && (userProfile.id === item.profiles?.id || userProfile.id === item.profile_id);
                     const liveSelfAvatar = isSelf ? (userProfile?.avatar || userProfile?.avatar_url || userProfile?.profile_avatar) : null;
-                    const resolvedAvatar = liveSelfAvatar ||
-                      item.profiles?.avatar_url ||
-                      item.profiles?.avatar ||
-                      item.profiles?.profile_avatar ||
-                      item.profiles?.profile_image ||
-                      postObj.author?.avatar ||
-                      postObj.authorAvatar ||
-                      (postObj.author?.isYou ? (userProfile?.avatar || userProfile?.avatar_url) : null);
 
-                    const author = item.profiles ? {
-                      name: item.profiles.console_handle || item.profiles.full_name || 'Anonymous',
-                      avatar: resolvedAvatar || undefined,
-                      role: (item.profiles.account_type === 'industry pro' || item.profiles.account_type === 'industry_pro' || item.profiles.console_handle?.toLowerCase().includes('ceo') || item.profiles.full_name?.toLowerCase().includes('goregrinder'))
-                        ? 'Industry Pro'
-                        : (item.profiles.role || item.profiles.account_type?.toUpperCase() || 'FAN'),
+                    const isCreativePost = postObj.workspace_type === 'creative' ||
+                      postObj.workspaceType === 'creative' ||
+                      postObj.authorRole === 'Creative Pro' ||
+                      postObj.author?.role === 'Creative Pro' ||
+                      postObj.persona_id?.includes('creative') ||
+                      (item.profiles?.account_type === 'creative');
+
+                    const isBandPost = !isCreativePost && (
+                      postObj.workspace_type === 'band' ||
+                      postObj.workspaceType === 'band' ||
+                      postObj.authorRole === 'Band / Artist' ||
+                      postObj.author?.isBand ||
+                      postObj.persona_id?.includes('band') ||
+                      (item.profiles?.account_type === 'band')
+                    );
+
+                    const isLabelPost = !isCreativePost && !isBandPost && (
+                      postObj.workspace_type === 'label' ||
+                      postObj.workspaceType === 'label' ||
+                      postObj.authorRole === 'Record Label' ||
+                      postObj.persona_id?.includes('label') ||
+                      (item.profiles?.account_type === 'label')
+                    );
+
+                    const isPromoterPost = !isCreativePost && !isBandPost && !isLabelPost && (
+                      postObj.workspace_type === 'promoter' ||
+                      postObj.workspaceType === 'promoter' ||
+                      postObj.authorRole === 'Promoter / Venue' ||
+                      postObj.authorRole === 'Promoter' ||
+                      postObj.persona_id?.includes('promoter') ||
+                      (item.profiles?.account_type === 'promoter')
+                    );
+
+                    const resolvedWorkspaceType = isCreativePost ? 'creative' :
+                      isBandPost ? 'band' :
+                      isLabelPost ? 'label' :
+                      isPromoterPost ? 'promoter' :
+                      (postObj.workspace_type || (item.profiles?.account_type === 'fan' ? 'fan_only' : 'industry_pro'));
+
+                    const resolvedRole = isCreativePost ? 'Creative Pro' :
+                      isBandPost ? 'Band / Artist' :
+                      isLabelPost ? 'Record Label' :
+                      isPromoterPost ? 'Promoter / Venue' :
+                      (postObj.authorRole || postObj.author?.role || (item.profiles?.account_type === 'fan' ? 'FAN' : 'Industry Pro'));
+
+                    const resolvedName = (isBandPost && (postObj.author?.name || postObj.authorName))
+                      ? (postObj.author?.name || postObj.authorName)
+                      : (isLabelPost && (postObj.author?.name || postObj.authorName))
+                      ? (postObj.author?.name || postObj.authorName)
+                      : (isCreativePost && (postObj.author?.name || postObj.authorName))
+                      ? (postObj.author?.name || postObj.authorName)
+                      : (postObj.authorName || postObj.author?.name || item.profiles?.console_handle || item.profiles?.full_name || 'Anonymous');
+
+                    const dedicatedAvatar = postObj.authorAvatar || postObj.author?.avatar;
+                    const resolvedAvatar = (dedicatedAvatar && !dedicatedAvatar.includes('ui-avatars.com'))
+                      ? dedicatedAvatar
+                      : (liveSelfAvatar ||
+                        item.profiles?.avatar_url ||
+                        item.profiles?.avatar ||
+                        item.profiles?.profile_avatar ||
+                        item.profiles?.profile_image ||
+                        dedicatedAvatar ||
+                        undefined);
+
+                    const author = {
+                      id: postObj.author?.id || item.profiles?.id || item.profile_id,
+                      name: resolvedName,
+                      avatar: resolvedAvatar,
+                      role: resolvedRole,
+                      workspace_type: resolvedWorkspaceType,
+                      workspaceType: resolvedWorkspaceType,
                       isYou: isSelf
-                    } : {
-                      name: postObj.author?.name || 'Anonymous',
-                      avatar: resolvedAvatar || undefined,
-                      role: postObj.author?.role || 'FAN',
-                      isYou: postObj.author?.isYou || false
                     };
 
                     const rxObj = typeof item.reactions === 'object' && item.reactions !== null && !Array.isArray(item.reactions)
@@ -246,7 +308,7 @@ export function useFeedLocalCache({
     return () => {
       active = false;
     };
-  }, [portalRole, userProfile?.id, defaultFeed]);
+  }, [portalRole, resolvedEntityId, userProfile?.id, defaultFeed]);
 
   // Real-time syncing for posts and comments
   useEffect(() => {
@@ -269,27 +331,79 @@ export function useFeedLocalCache({
 
           const isSelf = userProfile?.id && (userProfile.id === profile?.id || userProfile.id === newItem.profile_id);
           const liveSelfAvatar = isSelf ? (userProfile?.avatar || userProfile?.avatar_url || userProfile?.profile_avatar) : null;
-          const resolvedAvatar = liveSelfAvatar ||
-            profile?.avatar_url ||
-            profile?.avatar ||
-            profile?.profile_avatar ||
-            profile?.profile_image ||
-            parsedPost.author?.avatar ||
-            parsedPost.authorAvatar ||
-            (parsedPost.author?.isYou ? (userProfile?.avatar || userProfile?.avatar_url) : null);
 
-          const author = profile ? {
-            name: profile.console_handle || profile.full_name || 'Anonymous',
-            avatar: resolvedAvatar || undefined,
-            role: (profile.account_type === 'industry pro' || profile.account_type === 'industry_pro' || profile.console_handle?.toLowerCase().includes('ceo') || profile.full_name?.toLowerCase().includes('goregrinder'))
-              ? 'Industry Pro'
-              : (profile.role || profile.account_type?.toUpperCase() || 'FAN'),
+          const isCreativePost = parsedPost.workspace_type === 'creative' ||
+            parsedPost.workspaceType === 'creative' ||
+            parsedPost.authorRole === 'Creative Pro' ||
+            parsedPost.author?.role === 'Creative Pro' ||
+            parsedPost.persona_id?.includes('creative') ||
+            (profile?.account_type === 'creative');
+
+          const isBandPost = !isCreativePost && (
+            parsedPost.workspace_type === 'band' ||
+            parsedPost.workspaceType === 'band' ||
+            parsedPost.authorRole === 'Band / Artist' ||
+            parsedPost.author?.isBand ||
+            parsedPost.persona_id?.includes('band') ||
+            (profile?.account_type === 'band')
+          );
+
+          const isLabelPost = !isCreativePost && !isBandPost && (
+            parsedPost.workspace_type === 'label' ||
+            parsedPost.workspaceType === 'label' ||
+            parsedPost.authorRole === 'Record Label' ||
+            parsedPost.persona_id?.includes('label') ||
+            (profile?.account_type === 'label')
+          );
+
+          const isPromoterPost = !isCreativePost && !isBandPost && !isLabelPost && (
+            parsedPost.workspace_type === 'promoter' ||
+            parsedPost.workspaceType === 'promoter' ||
+            parsedPost.authorRole === 'Promoter / Venue' ||
+            parsedPost.authorRole === 'Promoter' ||
+            parsedPost.persona_id?.includes('promoter') ||
+            (profile?.account_type === 'promoter')
+          );
+
+          const resolvedWorkspaceType = isCreativePost ? 'creative' :
+            isBandPost ? 'band' :
+            isLabelPost ? 'label' :
+            isPromoterPost ? 'promoter' :
+            (parsedPost.workspace_type || (profile?.account_type === 'fan' ? 'fan_only' : 'industry_pro'));
+
+          const resolvedRole = isCreativePost ? 'Creative Pro' :
+            isBandPost ? 'Band / Artist' :
+            isLabelPost ? 'Record Label' :
+            isPromoterPost ? 'Promoter / Venue' :
+            (parsedPost.authorRole || parsedPost.author?.role || (profile?.account_type === 'fan' ? 'FAN' : 'Industry Pro'));
+
+          const resolvedName = (isBandPost && (parsedPost.author?.name || parsedPost.authorName))
+            ? (parsedPost.author?.name || parsedPost.authorName)
+            : (isLabelPost && (parsedPost.author?.name || parsedPost.authorName))
+            ? (parsedPost.author?.name || parsedPost.authorName)
+            : (isCreativePost && (parsedPost.author?.name || parsedPost.authorName))
+            ? (parsedPost.author?.name || parsedPost.authorName)
+            : (parsedPost.authorName || parsedPost.author?.name || profile?.console_handle || profile?.full_name || 'Anonymous');
+
+          const dedicatedAvatar = parsedPost.authorAvatar || parsedPost.author?.avatar;
+          const resolvedAvatar = (dedicatedAvatar && !dedicatedAvatar.includes('ui-avatars.com'))
+            ? dedicatedAvatar
+            : (liveSelfAvatar ||
+              profile?.avatar_url ||
+              profile?.avatar ||
+              profile?.profile_avatar ||
+              profile?.profile_image ||
+              dedicatedAvatar ||
+              undefined);
+
+          const author = {
+            id: parsedPost.author?.id || profile?.id || newItem.profile_id,
+            name: resolvedName,
+            avatar: resolvedAvatar,
+            role: resolvedRole,
+            workspace_type: resolvedWorkspaceType,
+            workspaceType: resolvedWorkspaceType,
             isYou: isSelf
-          } : {
-            name: parsedPost.author?.name || 'Anonymous',
-            avatar: resolvedAvatar || undefined,
-            role: parsedPost.author?.role || 'FAN',
-            isYou: parsedPost.author?.isYou || false
           };
 
           const contentText = newItem.content || parsedPost.content || parsedPost.text || '';
@@ -426,9 +540,9 @@ export function useFeedLocalCache({
   // Save feed posts to IndexedDB whenever feed state updates
   useEffect(() => {
     if (feed && feed.length > 0) {
-      saveFeedCache(portalRole, feed, userProfile?.id);
+      saveFeedCache(portalRole, feed, userProfile?.id, resolvedEntityId);
     }
-  }, [feed, portalRole, userProfile?.id]);
+  }, [feed, portalRole, resolvedEntityId, userProfile?.id]);
 
   return {
     feed,

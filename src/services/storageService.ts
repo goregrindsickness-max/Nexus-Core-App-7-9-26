@@ -108,7 +108,7 @@ export function compressAndTranscodeImageToWebP(file: any): Promise<any> {
  */
 export function isValidStorageOrImageUrl(
   url?: string | null,
-  bucketType?: 'community-bands' | 'avatars' | 'bannersv2' | 'any'
+  bucketType?: 'community-bands' | 'avatars' | 'bannersv2' | 'inventory-items' | 'any'
 ): boolean {
   if (!url || typeof url !== 'string') return false;
   const trimmed = url.trim();
@@ -116,13 +116,17 @@ export function isValidStorageOrImageUrl(
 
   // Rule 1: Allow Valid Supabase Storage URLs
   if (
+    trimmed.includes('/storage/v1/object/public/inventory-items/') ||
     trimmed.includes('/storage/v1/object/public/community-bands/') ||
     trimmed.includes('/storage/v1/object/public/avatars/') ||
     trimmed.includes('/storage/v1/object/public/bannersv2/') ||
+    trimmed.includes('/storage/v1/object/public/clips/') ||
     trimmed.includes('/storage/v1/object/public/') ||
+    trimmed.includes('/inventory-items/') ||
     trimmed.includes('/community-bands/') ||
     trimmed.includes('/avatars/') ||
-    trimmed.includes('/bannersv2/')
+    trimmed.includes('/bannersv2/') ||
+    trimmed.includes('/clips/')
   ) {
     if (!trimmed.includes('Nexus%20Icon%20Circuits.png') && !trimmed.includes('Nexus Icon Circuits.png')) {
       return true;
@@ -217,7 +221,11 @@ export async function uploadBase64ToStorage(
     const cleanToken = String(fileNameToken || 'asset').toLowerCase().replace(/[^a-zA-Z0-9_-]/g, '_');
 
     let primaryBucket = 'community-bands';
-    if (cleanRequested.includes('audio') || cleanRequested.includes('track') || cleanRequested.includes('music')) {
+    if (cleanRequested === 'clips' || cleanRequested.includes('clip') || cleanToken.includes('clip')) {
+      primaryBucket = 'clips';
+    } else if (cleanRequested === 'inventory-items' || cleanRequested.includes('inventory') || cleanRequested.includes('merch') || cleanToken.includes('inventory') || cleanToken.includes('merch')) {
+      primaryBucket = 'inventory-items';
+    } else if (cleanRequested.includes('audio') || cleanRequested.includes('track') || cleanRequested.includes('music')) {
       primaryBucket = 'audio-vault';
     } else if (cleanRequested.includes('photo') || cleanRequested.includes('gallery') || cleanRequested.includes('pit')) {
       primaryBucket = 'photo-pit';
@@ -256,6 +264,8 @@ export async function uploadBase64ToStorage(
       new Set(
         [
           primaryBucket,
+          'clips',
+          'inventory-items',
           'avatars',
           'bannersv2',
           'community-bands',
@@ -808,3 +818,75 @@ export async function ensureImagesUploadedToStorage(payload: any): Promise<any> 
 
   return isArray ? items : items[0];
 }
+
+/**
+ * Uploads a clip video file directly to the 'clips' Supabase storage bucket,
+ * with fallbacks to other public media buckets if needed, and returns the accessible public URL.
+ */
+export async function uploadClipVideoFile(
+  file: File | Blob,
+  userId: string = 'user',
+  fileNameToken: string = 'clip'
+): Promise<string> {
+  if (!file) return '';
+
+  const client = getRawSupabase() || rawClient || getSupabase();
+  if (!client) {
+    console.warn('[STORAGE] Supabase client unavailable for clip upload.');
+    return '';
+  }
+
+  try {
+    const activeSession = await ensureValidSupabaseAuthSession(client);
+    const authUserId = activeSession?.user?.id || userId || 'user';
+    const cleanAuthId = String(authUserId).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const cleanToken = String(fileNameToken || 'clip').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const timestamp = Date.now();
+    
+    let originalName = 'video.mp4';
+    if (file && typeof file === 'object' && 'name' in file && typeof (file as any).name === 'string') {
+      originalName = (file as any).name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    }
+    const contentType = (file && typeof file === 'object' && 'type' in file && typeof (file as any).type === 'string' && (file as any).type) ? (file as any).type : 'video/mp4';
+
+    const bucketCandidates = ['clips', 'media', 'community-bands', 'public-assets'];
+
+    for (const targetBucket of bucketCandidates) {
+      const folderPath = `${cleanAuthId}/${cleanToken}_${timestamp}_${originalName}`;
+      const flatPath = `${cleanToken}_${cleanAuthId}_${timestamp}_${originalName}`;
+
+      for (const currentPath of [folderPath, flatPath]) {
+        try {
+          const { data: uploadData, error: uploadError } = await client.storage
+            .from(targetBucket)
+            .upload(currentPath, file, {
+              upsert: true,
+              cacheControl: '3600',
+              contentType,
+            });
+
+          if (!uploadError && uploadData) {
+            const finalPath = uploadData.path || currentPath;
+            const { data: publicUrlData } = client.storage.from(targetBucket).getPublicUrl(finalPath);
+            if (publicUrlData?.publicUrl) {
+              const finalPublicUrl = publicUrlData.publicUrl;
+              console.log(`[STORAGE UPLOAD SUCCESS] Stored clip in bucket "${targetBucket}" (${finalPath}):`, finalPublicUrl);
+              return finalPublicUrl;
+            }
+          } else if (uploadError) {
+            console.warn(`[STORAGE UPLOAD ATTEMPT] Bucket "${targetBucket}" path "${currentPath}" error:`, uploadError.message);
+          }
+        } catch (attemptErr: any) {
+          console.warn(`[STORAGE UPLOAD ATTEMPT ERROR] ${targetBucket}/${currentPath}:`, attemptErr?.message || attemptErr);
+        }
+      }
+    }
+
+    console.warn('[STORAGE UPLOAD NOTICE] Could not upload clip video to storage buckets.');
+    return '';
+  } catch (err: any) {
+    console.error('[STORAGE HELPER ERROR] Failed uploading clip file:', err);
+    return '';
+  }
+}
+

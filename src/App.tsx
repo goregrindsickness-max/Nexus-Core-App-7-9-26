@@ -18,8 +18,8 @@ import { CashDrawerLedgerCard } from './components/dashboard/CashDrawerLedgerCar
 import { HomeV2DashboardView } from './components/dashboard/HomeV2DashboardView';
 import { BrandNavigationHeader } from './components/navigation/BrandNavigationHeader';
 import { NexusTopBar } from './components/navigation/NexusTopBar';
-import { SettingsDrawer } from './components/modals/SettingsDrawer';
 import { GlobalModalsContainer } from './components/modals/GlobalModalsContainer';
+import { useModalStore } from './store/useModalStore';
 import { MainTabRouter } from './components/views/MainTabRouter';
 import { AnimatedCount, AnimatedText } from "./components/AnimatedElements";
 import { BAND_PORTAL_BILLING } from './config/billingMatrix';
@@ -123,7 +123,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { Sale, Show, InventoryItem, TourNote, Band, UserProfile, ChecklistItem, BankItem, Flight, InventoryAudit, UserReview, LoyaltyMember, Offer, DbNotification, SubscriptionTier, StagedDistroItem, AssetRevenueSplit, CashTransaction, BandJoinRequest, RegisteredWorkspaceRef, hasRegisteredWorkspace, normalizeRegisteredWorkspaces } from './types';
 import { communityBandManager } from './lib/communityBands';
-import { initOfflineQueue, getSupabase, testSupabaseConnection, getSupabaseUrl, getSupabaseAnonKey, subscribeToTable, sanitizeInventoryItemForDb, executeWithSchemaResilience, getOfflineQueue, processOfflineQueue, isBypassRequiredError, handleDatabaseFailover, saveToFailoverCache, generateUUID, uploadBase64ToStorage, fetchUserBands, sanitizeBandPayload, ensureValidSupabaseAuthSession, autoSyncCreativeProfile, fetchUserCreatives } from './supabase';
+import { initOfflineQueue, getSupabase, testSupabaseConnection, getSupabaseUrl, getSupabaseAnonKey, subscribeToTable, sanitizeInventoryItemForDb, executeWithSchemaResilience, getOfflineQueue, processOfflineQueue, isBypassRequiredError, handleDatabaseFailover, saveToFailoverCache, generateUUID, uploadBase64ToStorage, fetchUserBands, sanitizeBandPayload, ensureValidSupabaseAuthSession, autoSyncCreativeProfile, fetchUserCreatives, resolveInventoryImageUrl } from './supabase';
 import AlbumArt from './components/AlbumArt';
 import { useOfflineSync } from './hooks/useOfflineSync';
 import { useSubscriptionTimer } from './hooks/useSubscriptionTimer';
@@ -354,6 +354,23 @@ export default function App() {
     selectedMicroGenres, setSelectedMicroGenres,
     bandJoinRequests, setBandJoinRequests
   } = useBandState();
+
+  // Centralized Modal Registry Store
+  const {
+    isModalOpen, setIsModalOpen,
+    modalType, setModalType,
+    selectedSaleReceipt, setSelectedSaleReceipt,
+    isBandModalOpen, setIsBandModalOpen,
+    isCashDrawerOpen, setIsCashDrawerOpen,
+    isQuickActionPanelOpen, setIsQuickActionPanelOpen,
+    isPttOpen, setIsPttOpen,
+    isTransferModalOpen, setIsTransferModalOpen,
+    transferPreselectedId, setTransferPreselectedId,
+    isLiveTeamActivityOpen, setIsLiveTeamActivityOpen,
+    showWorkspaceRegistration, setShowWorkspaceRegistration,
+    isSettingsDrawerOpen, setIsSettingsDrawerOpen,
+    openTransferModal, openCashDrawer, openBandModal, openWorkspaceRegistration, openSettingsDrawer
+  } = useModalStore();
   
   // Security Clearance and Member simulation state
   const [activeClearanceLevel, setActiveClearanceLevel] = useState<number>(() => {
@@ -367,7 +384,6 @@ export default function App() {
   const [simulatedMemberId, setSimulatedMemberId] = useState<string>(() => {
     return localStorage.getItem('nexus_core_simulated_member_id') || 'l1';
   });
-  const [isSettingsDrawerOpen, setIsSettingsDrawerOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (localStorage.getItem('WIPED_ONCE_JULY_16_11_50') !== 'true') {
@@ -479,14 +495,12 @@ export default function App() {
   const [isOfflineSimActive, setIsOfflineSimActive] = useState<boolean>(false);
   const [isSyncBadgeExpanded, setIsSyncBadgeExpanded] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'home' | 'home-v2' | 'inventory' | 'reports' | 'shows' | 'settings' | 'new-sale' | 'notes' | 'setlists' | 'guestlist' | 'add-item' | 'promo-hub' | 'plans' | 'terms' | 'black-book' | 'flights' | 'merchandise-printers' | 'help-desk' | 'pay-portal' | 'creatives-hub' | 'checklist' | 'landing' | 'on-route-essentials' | 'distro-deck' | 'distro-deck-v2' | 'social' | 'studio' | 'creative' | 'promoter' | 'label'>('social');
-  const [distroDeckSubTab, setDistroDeckSubTab] = useState<'feed' | 'merch' | 'fans' | 'customizer' | 'alliances' | 'music'>('feed');
+  const [distroDeckSubTab, setDistroDeckSubTab] = useState<'feed' | 'merch' | 'fans' | 'customizer' | 'alliances' | 'music'>('music');
   const [settingsExpandedSection, setSettingsExpandedSection] = useState<string>('');
   const [promoHubSubTab, setPromoHubSubTab] = useState<'distro' | 'stories' | 'loyalty'>('distro');
   const [promoHubSelectedItemId, setPromoHubSelectedItemId] = useState<string | undefined>(undefined);
   const [promoCardActiveSlot, setPromoCardActiveSlot] = useState<'distro' | 'stories' | 'loyalty'>('distro');
   const [blackBookCardActiveSlot, setBlackBookCardActiveSlot] = useState<'A' | 'B'>('A');
-  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
-  const [isCashDrawerOpen, setIsCashDrawerOpen] = useState(false);
   const [onRouteVenueAddress, setOnRouteVenueAddress] = useState<string | null>(null);
 
   const [inlineCashDrawerAddingType, setInlineCashDrawerAddingType] = useState<'starting_bank' | 'bank_drop' | 'payout' | 'expense' | 'cash_sale' | null>(null);
@@ -495,15 +509,12 @@ export default function App() {
   const [inlineCashDrawerActiveFilter, setInlineCashDrawerActiveFilter] = useState<'all' | 'starting_bank' | 'bank_drop' | 'payout' | 'expense' | 'cash_sale'>('all');
 
   const [dashboardV2ActiveNav, setDashboardV2ActiveNav] = useState<'EVENTS' | 'SALES' | 'MERCH' | 'FINANCE' | 'SOCIAL' | 'SETTINGS' | 'STUDIO'>('EVENTS');
-  const [isLiveTeamActivityOpen, setIsLiveTeamActivityOpen] = useState<boolean>(false);
 
   const [activeEventsSection, setActiveEventsSection] = useState<string | null>(null);
   const [isV2StoryCreatorExpanded, setIsV2StoryCreatorExpanded] = useState<boolean>(false);
   const [v2RoleMenuOpen, setV2RoleMenuOpen] = useState<boolean>(false);
   const dashboardScrollPos = useRef<number>(0);
   const dashboardRef = useRef<HTMLDivElement>(null);
-
-  const [isPttOpen, setIsPttOpen] = useState<boolean>(false);
         
 
   
@@ -712,11 +723,9 @@ export default function App() {
 
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
   const [isNavMenuOpen, setIsNavMenuOpen] = useState(false);
-  const [isQuickActionPanelOpen, setIsQuickActionPanelOpen] = useState(false);
   const [pendingOpenShowsForm, setPendingOpenShowsForm] = useState(false);
   const [pendingFlightIsAdding, setPendingFlightIsAdding] = useState(false);
   const [autoExpandShowId, setAutoExpandShowId] = useState<string | null>(null);
-  const [transferPreselectedId, setTransferPreselectedId] = useState<string | null>(null);
   const [autoOpenSettlementShowId, setAutoOpenSettlementShowId] = useState<string | null>(null);
   const [isLoggedOut, setIsLoggedOut] = useState(() => {
     try {
@@ -729,7 +738,6 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [loginInitialTab, setLoginInitialTab] = useState<'unlock' | 'signup'>('unlock');
   const [isUpgradeMode, setIsUpgradeMode] = useState<boolean>(false);
-  const [showWorkspaceRegistration, setShowWorkspaceRegistration] = useState<boolean>(false);
 
 
   // Seamless sign-up on page load for team invitations
@@ -809,6 +817,13 @@ export default function App() {
     const handleNavigate = (e: any) => {
       if (e.detail && typeof e.detail === 'string') {
         setActiveTab(e.detail as any);
+      } else if (e.detail && typeof e.detail === 'object') {
+        if (e.detail.subNav) {
+          setDashboardV2ActiveNav(e.detail.subNav);
+        }
+        if (e.detail.tab) {
+          setActiveTab(e.detail.tab);
+        }
       }
     };
     window.addEventListener('nexus_navigate', handleNavigate);
@@ -1074,12 +1089,6 @@ export default function App() {
     }
   };
 
-
-  // Modals state
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalType, setModalType] = useState<'sale' | 'show' | 'note' | null>(null);
-  const [selectedSaleReceipt, setSelectedSaleReceipt] = useState<Sale | null>(null);
-
   // Application database-backed state with realistic seed data
   const [sales, setSales] = useState<Sale[]>([]);
   const [shows, setShows] = useState<Show[]>([]);
@@ -1269,8 +1278,6 @@ export default function App() {
     }
   }, [venues, isHydrated]);
 
-  const [isBandModalOpen, setIsBandModalOpen] = useState(false);
-
   // Sync bands list with localStorage namespaced by profile ID
   useEffect(() => {
     if (!userProfile) return;
@@ -1421,10 +1428,13 @@ export default function App() {
           }).catch((err) => console.warn('Creative auto-sync notice:', err));
         }
 
+        const isOwnerMiguel = (userProfile?.name?.toLowerCase()?.includes('miguel') || userProfile?.email === 'admin@nexus.com' || (userProfile as any)?.console_handle?.toLowerCase()?.includes('miguel'));
         const veBand = userBands.find((b: any) => b.id === 'cbddb810-259b-4230-9968-3d402dfdb872');
-        const userActiveId = cachedActiveBandIdStr || (veBand?.id || userBands[0]?.id || userProfile?.band_id || 'cbddb810-259b-4230-9968-3d402dfdb872');
-        setActiveBandId(userActiveId);
-        currentActiveBandId = userActiveId;
+        const userActiveId = cachedActiveBandIdStr || userProfile?.band_id || userBands[0]?.id || (isOwnerMiguel ? (veBand?.id || 'cbddb810-259b-4230-9968-3d402dfdb872') : null);
+        if (userActiveId) {
+          setActiveBandId(userActiveId);
+          currentActiveBandId = userActiveId;
+        }
       }
 
       // 2. Load context collections namespaced by current active context suffix
@@ -1539,15 +1549,35 @@ export default function App() {
     if (!userProfile) return false;
     return (
       hasRegisteredWorkspace(userProfile, 'band') ||
-      Boolean(userProfile.band_id || userProfile.bandName) ||
+      Boolean(userProfile.band_id || userProfile.bandName || userProfile.band_name) ||
       (bands && bands.length > 0)
     );
   }, [userProfile, bands]);
 
   const activeBand = useMemo(() => {
     if (!isBandRegistered) return null;
-    return bands.find(b => b.id === activeBandId) || bands.find(b => b.owner_id === userProfile?.id) || bands[0] || null;
-  }, [bands, activeBandId, isBandRegistered, userProfile?.id]);
+    const fromBands = bands.find(b => b.id === activeBandId) || bands.find(b => b.owner_id === userProfile?.id) || bands[0];
+    if (fromBands) return fromBands;
+
+    try {
+      const cached = localStorage.getItem('nexus_active_band');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && (parsed.name || parsed.id)) return parsed;
+      }
+    } catch (_) {}
+
+    if (userProfile?.band_name || userProfile?.bandName || userProfile?.band_id) {
+      return {
+        id: userProfile.band_id || 'band:active',
+        name: userProfile.band_name || userProfile.bandName || 'Band Workspace',
+        logo_url: userProfile.band_logo || userProfile.bandLogo || userProfile.avatar_url || null,
+        owner_id: userProfile.id
+      };
+    }
+
+    return null;
+  }, [bands, activeBandId, isBandRegistered, userProfile]);
 
 
   // 1. When activeBand changes, load its specific data into state and set currentLoadedBandId
@@ -1691,7 +1721,20 @@ export default function App() {
 
   // Filtered lists for the active band context
   const filteredShows = useMemo(() => {
-    return shows.filter(show => !show.band_id || show.band_id === activeBandId);
+    return shows.filter(show => {
+      // 1. If marked as community-submitted, or created via community hub (sh_comm_), or band_id is 'community_hub' / starts with 'community':
+      const isCommunityOnly = show.is_community_submitted === true || 
+        (typeof show.id === 'string' && show.id.startsWith('sh_comm_')) || 
+        (show.band_id && (show.band_id === 'community_hub' || show.band_id.startsWith('community')));
+
+      if (isCommunityOnly) {
+        // Only include in band workspace if explicitly assigned to this specific band's ID
+        return Boolean(show.band_id && show.band_id === activeBandId && show.band_id !== 'community_hub');
+      }
+
+      // 2. Regular band shows: belong to this band or legacy show without band_id
+      return !show.band_id || show.band_id === activeBandId;
+    });
   }, [shows, activeBandId]);
 
   const filteredSales = useMemo(() => {
@@ -2465,7 +2508,7 @@ export default function App() {
         try {
           const { data: inventoryDb, error: inventoryErr } = await supabase
             .from('inventory')
-            .select('id, name, table_stock, van_stock, low_threshold, status, item_type, price, image_url, border_color, band_id, is_exclusive, sku, initial_batch_size, cost, barcode, variants');
+            .select('id, name, table_stock, van_stock, low_threshold, status, item_type, price, image_url, image_path, border_color, band_id, is_exclusive, sku, initial_batch_size, cost, barcode, variants');
           if (!inventoryErr && inventoryDb) {
             let cachedVariants: Record<string, any> = {};
             try {
@@ -2475,6 +2518,8 @@ export default function App() {
 
             const formatted = inventoryDb.map((item: any) => ({
               ...item,
+              image_url: resolveInventoryImageUrl(item),
+              image_path: item.image_path || undefined,
               variants: item.variants || cachedVariants[item.id],
               band_id: item.band_id || activeBandIdRef.current
             }));
@@ -3553,6 +3598,7 @@ list.push({
       <AnimatePresence>
         {showNotification && (
           <motion.div 
+            key="dynamic-alert-banner"
             initial={{ opacity: 1, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 1, y: -20 }}
@@ -3719,6 +3765,58 @@ list.push({
               addLog(customProfile ? `New crew profile signed up: ${customProfile.name} (${customProfile.role}) for ${customBand?.name || 'Artist'}` : 'Session restored by authorized administrator.');
             }} 
           />
+        ) : (!showSplash && !isLoggedOut && (activeTab as string) === 'social') ? (
+          <UniversalSocialFeed 
+            userProfile={userProfile}
+            setUserProfile={setUserProfile}
+            portalRole={
+              (userProfile?.account_type === 'fan' || userProfile?.account_type === 'fan_only' || userProfile?.active_workspace === 'fan_only') ? 'fan_only' :
+              userProfile?.active_workspace === 'creative' ? 'creative' :
+              userProfile?.active_workspace === 'label' ? 'label' :
+              userProfile?.active_workspace === 'promoter' ? 'promoter' :
+              userProfile?.active_workspace === 'band' ? 'band' :
+              'industry_pro'
+            }
+            bandJoinRequests={bandJoinRequests}
+            setBandJoinRequests={setBandJoinRequests}
+            bands={bands}
+            setBands={setBands}
+            activeBand={activeBand}
+            activeBandId={activeBandId}
+            onLogout={() => {
+              localStorage.removeItem('nexus_core_user_profile'); setUserProfile(null); window.location.reload();
+              triggerNotification?.("Session closed. Goodbye.");
+            }}
+            onBack={() => {
+              const target = userProfile?.active_workspace;
+              if (target === 'creative') setActiveTab('creative');
+              else if (target === 'label') setActiveTab('label');
+              else if (target === 'promoter') setActiveTab('promoter');
+              else setActiveTab('home-v2');
+            }}
+            onNavigateToTab={(tab: string, subNav?: string) => {
+              if (subNav) {
+                setDashboardV2ActiveNav(subNav as any);
+              }
+              setActiveTab(tab as any);
+            }}
+            setActiveTab={setActiveTab}
+            setDashboardV2ActiveNav={setDashboardV2ActiveNav}
+            dashboardV2ActiveNav={dashboardV2ActiveNav}
+            onUpgradeToPro={() => {
+              setShowWorkspaceRegistration(true);
+            }}
+            triggerNotification={triggerNotification}
+            addLog={addLog}
+            onUpdateBandLogo={(newUrl) => {
+              if (activeBand) {
+                const updatedBand = { ...activeBand, logo_url: newUrl };
+                setBands((prevBands) =>
+                  prevBands.map((b) => (b.id === activeBand.id ? updatedBand : b))
+                );
+              }
+            }}
+          />
         ) : (!showSplash && !isLoggedOut && (userProfile?.account_type === 'creative' || userProfile?.active_workspace === 'creative' || (activeTab as string) === 'creative')) ? (
           <div className="flex-grow overflow-y-auto">
               <CreativeDashboardViewV2
@@ -3727,6 +3825,7 @@ list.push({
                 setUserProfile={setUserProfile}
                 notifications={notifications}
                 onOpenNotifications={() => setIsNotificationDrawerOpen(true)}
+                setActiveTab={setActiveTab as any}
                 onLogout={() => {
                   localStorage.removeItem('nexus_core_user_profile'); setUserProfile(null); window.location.reload();
                   triggerNotification?.("Creative console disconnected.");
@@ -3757,6 +3856,7 @@ list.push({
               notifications={notifications}
               onOpenNotifications={() => setIsNotificationDrawerOpen(true)}
               triggerNotification={triggerNotification}
+              setActiveTab={setActiveTab as any}
               onLogout={() => {
                 localStorage.removeItem('nexus_core_user_profile'); setUserProfile(null); window.location.reload();
                 triggerNotification('Session closed. Goodbye.');
@@ -3779,6 +3879,7 @@ list.push({
                 notifications={notifications}
                 onOpenNotifications={() => setIsNotificationDrawerOpen(true)}
                 triggerNotification={triggerNotification}
+                setActiveTab={setActiveTab as any}
                 addLog={addLog}
                 bands={bands}
                 offers={offers}
@@ -3794,25 +3895,6 @@ list.push({
                 isOnline={isOnline}
               />
             </div>
-
-        ) : (!showSplash && !isLoggedOut && userProfile?.active_workspace !== 'band' && userProfile?.active_workspace !== 'artist' && (userProfile?.account_type === 'industry_pro' || userProfile?.account_type === 'fan_only' || userProfile?.account_type === 'fan' || userProfile?.account_type === 'industry pro') && userProfile?.active_workspace !== 'creative' && userProfile?.active_workspace !== 'label' && userProfile?.active_workspace !== 'promoter' && (activeTab as string) !== 'creative' && (activeTab as string) !== 'label' && (activeTab as string) !== 'promoter' && (activeTab as string) === 'social') ? (
-          <UniversalSocialFeed 
-            userProfile={userProfile}
-            setUserProfile={setUserProfile}
-            portalRole={(userProfile?.account_type === 'fan' || userProfile?.account_type === 'fan_only') ? 'fan_only' : 'industry_pro'}
-             bandJoinRequests={bandJoinRequests}
-             setBandJoinRequests={setBandJoinRequests}
-            bands={bands}
-            setBands={setBands}
-            onLogout={() => {
-              localStorage.removeItem('nexus_core_user_profile'); setUserProfile(null); window.location.reload();
-              triggerNotification?.("Fan terminal disconnected.");
-            }}
-            onUpgradeToPro={() => {
-              setShowWorkspaceRegistration(true);
-            }}
-            triggerNotification={triggerNotification}
-          />
         ) : (
           <>
             {/* TOP STATUS BAR ACCENTS REMOVED */}
@@ -3828,6 +3910,7 @@ list.push({
           simulatedMemberId={simulatedMemberId} setSimulatedMemberId={setSimulatedMemberId} bandLineup={bandLineup} crewMembers={crewMembers}
           handleOpenMyProfile={handleOpenMyProfile} setUserProfile={setUserProfile} isOfflineSimActive={isOfflineSimActive}
           setIsOfflineSimActive={setIsOfflineSimActive} isOnline={isOnline}
+          onUpgradeToPro={() => setShowWorkspaceRegistration(true)}
           onOpenSettingsDrawer={() => setIsSettingsDrawerOpen(true)}
         />
 
@@ -3924,8 +4007,10 @@ list.push({
                   <div className="w-full space-y-3 text-left">
                     <button
                       onClick={() => {
-                        setModalType('register_band' as any);
-                        setIsModalOpen(true);
+                        if (typeof window !== 'undefined') {
+                          localStorage.setItem('nexus_target_register_workspace', 'band');
+                        }
+                        setShowWorkspaceRegistration(true);
                       }}
                       className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-emerald-950/50 cursor-pointer flex items-center justify-center gap-2"
                     >
@@ -3948,9 +4033,9 @@ list.push({
               </div>
             </div>
           ) : activeTab === 'home' ? (
-            <HomeDashboardView dashboardRef={dashboardRef} dashboardScrollPos={dashboardScrollPos} setActiveTab={setActiveTab} triggerNotification={triggerNotification} addLog={addLog} musicTrackCount={musicTrackCount} isRosterOwner={isRosterOwner} setDistroDeckSubTab={setDistroDeckSubTab} userProfile={userProfile} activeBand={activeBand} isSyncBadgeExpanded={isSyncBadgeExpanded} setIsOfflineSimActive={setIsOfflineSimActive} isOfflineSimActive={isOfflineSimActive} isOnline={isOnline} setIsSyncBadgeExpanded={setIsSyncBadgeExpanded} status={status} setIsMetricCarouselPaused={setIsMetricCarouselPaused} setCurrentMetricIndex={setCurrentMetricIndex} metrics={metrics} currentMetricIndex={currentMetricIndex} setIsHoveringTourStatus={setIsHoveringTourStatus} registerTourStatusInteraction={registerTourStatusInteraction} handleStatusTouchStart={handleStatusTouchStart} handleStatusTouchMove={handleStatusTouchMove} handleStatusTouchEnd={handleStatusTouchEnd} hasSettleReminder={hasSettleReminder} firstShowToSettle={firstShowToSettle} setAutoExpandShowId={setAutoExpandShowId} shows={shows} setTourStatusIndex={setTourStatusIndex} tourStatusIndex={tourStatusIndex} activeShowDisplay={activeShowDisplay} currentOrNextShow={currentOrNextShow} countdownString={countdownString} inventory={inventory} isCritical={isCritical} totalTableStock={totalTableStock} totalVanStock={totalVanStock} notes={notes} showSpecificNotes={showSpecificNotes} localWeather={localWeather} weatherLoading={weatherLoading} weatherError={weatherError} currentCoords={currentCoords} customNavDestination={customNavDestination} setCustomNavDestination={setCustomNavDestination} venues={venues} fetchLocalWeather={fetchLocalWeather} setIsWeatherForecastExpanded={setIsWeatherForecastExpanded} isWeatherForecastExpanded={isWeatherForecastExpanded} isEditingBusCall={isEditingBusCall} isTime24Hour={isTime24Hour} setIsTime24Hour={setIsTime24Hour} tempBusCallTime={tempBusCallTime} setTempBusCallTime={setTempBusCallTime} tempLockupTime={tempLockupTime} setTempLockupTime={setTempLockupTime} setIsEditingBusCall={setIsEditingBusCall} setBusCallTime={setBusCallTime} setLockupTime={setLockupTime} renderTime={renderTime} busCallTime={busCallTime} lockupTime={lockupTime} checklistItems={checklistItems} toggleChecklistItem={toggleChecklistItem} flights={flights} tableStockPercent={tableStockPercent} handleRestock={handleRestock} handleNewSaleClick={handleNewSaleClick} handleNewSalePointerDown={handleNewSalePointerDown} handleNewSalePointerUp={handleNewSalePointerUp} setIsGlobalHoverPaused={setIsGlobalHoverPaused} setDashboardCarouselIndex={setDashboardCarouselIndex} dashboardCarouselIndex={dashboardCarouselIndex} getNextShow={getNextShow} getSetlistDetailsForShow={getSetlistDetailsForShow} selectedGuestlistShowId={selectedGuestlistShowId} setSelectedGuestlistShowId={setSelectedGuestlistShowId} sales={sales} setModalType={setModalType} setIsModalOpen={setIsModalOpen} sortedShows={sortedShows} setPromoCardActiveSlot={setPromoCardActiveSlot} promoCardActiveSlot={promoCardActiveSlot} setIsNotificationDrawerOpen={setIsNotificationDrawerOpen} setDashboardV2ActiveNav={setDashboardV2ActiveNav} alliancePosts={alliancePosts} previewReactionMenuOpenFor={previewReactionMenuOpenFor} setPreviewReactionMenuOpenFor={setPreviewReactionMenuOpenFor} handleAlliancePostReaction={handleAlliancePostReaction} setAlliancePosts={setAlliancePosts} previewFollowedActs={previewFollowedActs} setPreviewFollowedActs={setPreviewFollowedActs} filteredInventory={filteredInventory} setPromoHubSelectedItemId={setPromoHubSelectedItemId} setPromoHubSubTab={setPromoHubSubTab} loyaltyMembers={loyaltyMembers} reviewLeft={reviewLeft} userReviews={userReviews} setReviewLeft={setReviewLeft} setReviewText={setReviewText} setReviewScore={setReviewScore} reviewScore={reviewScore} reviewText={reviewText} reviewerName={reviewerName} setReviewerName={setReviewerName} reviewerGroup={reviewerGroup} setReviewerGroup={setReviewerGroup} setUserReviews={setUserReviews}  renderRecentSalesFeed={() => null} />
+            <HomeDashboardView dashboardRef={dashboardRef} dashboardScrollPos={dashboardScrollPos} setActiveTab={setActiveTab} triggerNotification={triggerNotification} addLog={addLog} musicTrackCount={musicTrackCount} isRosterOwner={isRosterOwner} setDistroDeckSubTab={setDistroDeckSubTab} userProfile={userProfile} activeBand={activeBand} isSyncBadgeExpanded={isSyncBadgeExpanded} setIsOfflineSimActive={setIsOfflineSimActive} isOfflineSimActive={isOfflineSimActive} isOnline={isOnline} setIsSyncBadgeExpanded={setIsSyncBadgeExpanded} status={status} setIsMetricCarouselPaused={setIsMetricCarouselPaused} setCurrentMetricIndex={setCurrentMetricIndex} metrics={metrics} currentMetricIndex={currentMetricIndex} setIsHoveringTourStatus={setIsHoveringTourStatus} registerTourStatusInteraction={registerTourStatusInteraction} handleStatusTouchStart={handleStatusTouchStart} handleStatusTouchMove={handleStatusTouchMove} handleStatusTouchEnd={handleStatusTouchEnd} hasSettleReminder={hasSettleReminder} firstShowToSettle={firstShowToSettle} setAutoExpandShowId={setAutoExpandShowId} shows={shows} setTourStatusIndex={setTourStatusIndex} tourStatusIndex={tourStatusIndex} activeShowDisplay={activeShowDisplay} currentOrNextShow={currentOrNextShow} countdownString={countdownString} inventory={inventory} isCritical={isCritical} totalTableStock={totalTableStock} totalVanStock={totalVanStock} notes={notes} filteredNotes={filteredNotes} isNoteExpanded={isNoteExpanded} setIsNoteExpanded={setIsNoteExpanded} inlineNoteEditingId={inlineNoteEditingId} setInlineNoteEditingId={setInlineNoteEditingId} inlineNoteText={inlineNoteText} setInlineNoteText={setInlineNoteText} inlineNoteCategory={inlineNoteCategory} setInlineNoteCategory={setInlineNoteCategory} inlineNoteTag={inlineNoteTag} setInlineNoteTag={setInlineNoteTag} activeNoteIndex={activeNoteIndex} setActiveNoteIndex={setActiveNoteIndex} isTourNotesCardCollapsed={isTourNotesCardCollapsed} setIsTourNotesCardCollapsed={setIsTourNotesCardCollapsed} handleNoteTouchStart={handleNoteTouchStart} handleNoteTouchMove={handleNoteTouchMove} handleNoteTouchEnd={handleNoteTouchEnd} handleDeleteNote={handleDeleteNote} handleUpdateNote={handleUpdateNote} handleDataSubmit={handleDataSubmit} showSpecificNotes={showSpecificNotes} localWeather={localWeather} weatherLoading={weatherLoading} weatherError={weatherError} currentCoords={currentCoords} customNavDestination={customNavDestination} setCustomNavDestination={setCustomNavDestination} venues={venues} fetchLocalWeather={fetchLocalWeather} setIsWeatherForecastExpanded={setIsWeatherForecastExpanded} isWeatherForecastExpanded={isWeatherForecastExpanded} isEditingBusCall={isEditingBusCall} isTime24Hour={isTime24Hour} setIsTime24Hour={setIsTime24Hour} tempBusCallTime={tempBusCallTime} setTempBusCallTime={setTempBusCallTime} tempLockupTime={tempLockupTime} setTempLockupTime={setTempLockupTime} setIsEditingBusCall={setIsEditingBusCall} setBusCallTime={setBusCallTime} setLockupTime={setLockupTime} renderTime={renderTime} busCallTime={busCallTime} lockupTime={lockupTime} checklistItems={checklistItems} toggleChecklistItem={toggleChecklistItem} flights={flights} tableStockPercent={tableStockPercent} handleRestock={handleRestock} handleNewSaleClick={handleNewSaleClick} handleNewSalePointerDown={handleNewSalePointerDown} handleNewSalePointerUp={handleNewSalePointerUp} setIsGlobalHoverPaused={setIsGlobalHoverPaused} setDashboardCarouselIndex={setDashboardCarouselIndex} dashboardCarouselIndex={dashboardCarouselIndex} getNextShow={getNextShow} getSetlistDetailsForShow={getSetlistDetailsForShow} selectedGuestlistShowId={selectedGuestlistShowId} setSelectedGuestlistShowId={setSelectedGuestlistShowId} sales={sales} setModalType={setModalType} setIsModalOpen={setIsModalOpen} sortedShows={sortedShows} setPromoCardActiveSlot={setPromoCardActiveSlot} promoCardActiveSlot={promoCardActiveSlot} setIsNotificationDrawerOpen={setIsNotificationDrawerOpen} setDashboardV2ActiveNav={setDashboardV2ActiveNav} alliancePosts={alliancePosts} previewReactionMenuOpenFor={previewReactionMenuOpenFor} setPreviewReactionMenuOpenFor={setPreviewReactionMenuOpenFor} handleAlliancePostReaction={handleAlliancePostReaction} setAlliancePosts={setAlliancePosts} previewFollowedActs={previewFollowedActs} setPreviewFollowedActs={setPreviewFollowedActs} filteredInventory={filteredInventory} setPromoHubSelectedItemId={setPromoHubSelectedItemId} setPromoHubSubTab={setPromoHubSubTab} loyaltyMembers={loyaltyMembers} reviewLeft={reviewLeft} userReviews={userReviews} setReviewLeft={setReviewLeft} setReviewText={setReviewText} setReviewScore={setReviewScore} reviewScore={reviewScore} reviewText={reviewText} reviewerName={reviewerName} setReviewerName={setReviewerName} reviewerGroup={reviewerGroup} setReviewerGroup={setReviewerGroup} setUserReviews={setUserReviews}  renderRecentSalesFeed={() => null} />
           ) : (
-            <HomeV2DashboardView setIsGlobalHoverPaused={setIsGlobalHoverPaused} dashboardV2ActiveNav={dashboardV2ActiveNav} setActiveTab={setActiveTab} setDashboardV2ActiveNav={setDashboardV2ActiveNav} setIsV2StoryCreatorExpanded={setIsV2StoryCreatorExpanded} isV2StoryCreatorExpanded={isV2StoryCreatorExpanded} inventory={inventory} filteredInventory={filteredInventory} triggerNotification={triggerNotification} addLog={addLog} activeBand={activeBand} stagedDistroItems={stagedDistroItems} setStagedDistroItems={setStagedDistroItems} activeTab={activeTab} userProfile={userProfile} setUserProfile={setUserProfile} bands={bands} setBands={setBands} bandJoinRequests={bandJoinRequests} setBandJoinRequests={setBandJoinRequests} isSubNavRestricted={isSubNavRestricted} activeClearanceLevel={activeClearanceLevel} simulatedMemberId={simulatedMemberId} setSimulatedMemberId={setSimulatedMemberId} bandLineup={bandLineup} crewMembers={crewMembers} activeDriver={activeDriver} activeEventsSection={activeEventsSection} activeShowDisplay={activeShowDisplay} busCallTime={busCallTime} checkedPreDriveItems={checkedPreDriveItems} checklistBank={checklistBank} checklistItems={checklistItems} commitFlightMutation={commitFlightMutation} countdownString={countdownString} currentCoords={currentCoords} currentOrNextShow={currentOrNextShow} customMpg={customMpg} customNavDestination={customNavDestination} driveHoursElapsed={driveHoursElapsed} fetchLocalWeather={fetchLocalWeather} filteredNotes={filteredNotes} filteredSales={filteredSales} filteredShows={filteredShows} flights={flights} fuelPrice={fuelPrice} handleDeleteNote={handleDeleteNote} handleUpdateNote={handleUpdateNote} handleUpdateOffer={handleUpdateOffer} isCritical={isCritical} isDriverRotationExpanded={isDriverRotationExpanded} isEditingBusCall={isEditingBusCall} isFuelCalculatorExpanded={isFuelCalculatorExpanded} isInteractiveMapExpanded={isInteractiveMapExpanded} isOfflineSimActive={isOfflineSimActive} isOnline={isOnline} isPreDriveChecklistExpanded={isPreDriveChecklistExpanded} isTime24Hour={isTime24Hour} isWaypointsExpanded={isWaypointsExpanded} localWeather={localWeather} lockupTime={lockupTime} newWaypointName={newWaypointName} newWaypointType={newWaypointType} offers={offers} onRouteVenueAddress={onRouteVenueAddress} renderTime={renderTime} selectedGuestlistShowId={selectedGuestlistShowId} setActiveDriver={setActiveDriver} setActiveEventsSection={setActiveEventsSection} setAutoExpandShowId={setAutoExpandShowId} setBusCallTime={setBusCallTime} setCheckedPreDriveItems={setCheckedPreDriveItems} setChecklistBank={setChecklistBank} setChecklistItems={setChecklistItems} setCustomMpg={setCustomMpg} setCustomNavDestination={setCustomNavDestination} setDriveHoursElapsed={setDriveHoursElapsed} setFlights={setFlights} setFuelPrice={setFuelPrice} setIsDriverRotationExpanded={setIsDriverRotationExpanded} setIsEditingBusCall={setIsEditingBusCall} setIsFuelCalculatorExpanded={setIsFuelCalculatorExpanded} setIsInteractiveMapExpanded={setIsInteractiveMapExpanded} setIsModalOpen={setIsModalOpen} setIsOfflineSimActive={setIsOfflineSimActive} setIsPreDriveChecklistExpanded={setIsPreDriveChecklistExpanded} setIsTime24Hour={setIsTime24Hour} setIsWaypointsExpanded={setIsWaypointsExpanded} setLockupTime={setLockupTime} setModalType={setModalType} setNewWaypointName={setNewWaypointName} setNewWaypointType={setNewWaypointType} setSelectedGuestlistShowId={setSelectedGuestlistShowId} setShows={setShows} setTempBusCallTime={setTempBusCallTime} setTempLockupTime={setTempLockupTime} setVehicleType={setVehicleType} setVenues={setVenues} setWaypoints={setWaypoints} showSpecificNotes={showSpecificNotes} shows={shows} sortedShows={sortedShows} tempBusCallTime={tempBusCallTime} tempLockupTime={tempLockupTime} totalTableStock={totalTableStock} totalVanStock={totalVanStock} userReviews={userReviews} vehicleType={vehicleType} venues={venues} waypoints={waypoints} weatherError={weatherError} weatherLoading={weatherLoading} bandCoverUrl={bandCoverUrl} handleDataSubmit={handleDataSubmit} loyaltyMembers={loyaltyMembers} setInventory={setInventory} setLoyaltyMembers={setLoyaltyMembers} inventoryAudits={inventoryAudits} setInventoryAudits={setInventoryAudits} activeBandId={activeBandId} setTransferPreselectedId={setTransferPreselectedId} setIsTransferModalOpen={setIsTransferModalOpen} setEditingItem={setEditingItem} expenses={expenses} sales={sales} setExpenses={setExpenses} setEditingBand={setEditingBand} setIsBandModalOpen={setIsBandModalOpen} bandInfoBio={bandInfoBio} setBandInfoBio={setBandInfoBio} bandInfoCustomSlug={bandInfoCustomSlug} setBandInfoCustomSlug={setBandInfoCustomSlug} bandInfoBookingEmail={bandInfoBookingEmail} setBandInfoBookingEmail={setBandInfoBookingEmail} bandInfoBookingPhone={bandInfoBookingPhone} setBandInfoBookingPhone={setBandInfoBookingPhone} bandInfoYoutubeVideo={bandInfoYoutubeVideo} setBandInfoYoutubeVideo={setBandInfoYoutubeVideo} bandInfoStreamingUrl={bandInfoStreamingUrl} setBandInfoStreamingUrl={setBandInfoStreamingUrl} bandInfoTechRider={bandInfoTechRider} setBandInfoTechRider={setBandInfoTechRider} bandInfoTourVehicle={bandInfoTourVehicle} setBandInfoTourVehicle={setBandInfoTourVehicle} bandInfoMetalArchivesUrl={bandInfoMetalArchivesUrl} setBandInfoMetalArchivesUrl={setBandInfoMetalArchivesUrl} bandLogoUrl={bandLogoUrl} setLogoUploaderDragActive={setLogoUploaderDragActive} handleBandInfoLogoUpload={handleBandInfoLogoUpload} logoUploaderDragActive={logoUploaderDragActive} bandInfoLogoFileInputRef={bandInfoLogoFileInputRef} setCoverUploaderDragActive={setCoverUploaderDragActive} handleBandInfoCoverUpload={handleBandInfoCoverUpload} coverUploaderDragActive={coverUploaderDragActive} bandInfoCoverFileInputRef={bandInfoCoverFileInputRef} bandInfoName={bandInfoName} setBandInfoName={setBandInfoName} selectedMicroGenres={selectedMicroGenres} setSelectedMicroGenres={setSelectedMicroGenres} bandInfoHomebase={bandInfoHomebase} setBandInfoHomebase={setBandInfoHomebase} bandInfoFoundedYear={bandInfoFoundedYear} setBandInfoFoundedYear={setBandInfoFoundedYear} setBandLineup={setBandLineup} setCrewMembers={setCrewMembers} setReviewLeft={setReviewLeft} setReviewText={setReviewText} reviewScore={reviewScore} setReviewScore={setReviewScore} reviewText={reviewText} reviewerName={reviewerName} setReviewerName={setReviewerName} reviewerGroup={reviewerGroup} setReviewerGroup={setReviewerGroup} setSales={setSales} logs={logs} handleRestock={handleRestock} dbStatus={dbStatus} />
+            <HomeV2DashboardView setIsGlobalHoverPaused={setIsGlobalHoverPaused} dashboardV2ActiveNav={dashboardV2ActiveNav} setActiveTab={setActiveTab} setDashboardV2ActiveNav={setDashboardV2ActiveNav} setIsV2StoryCreatorExpanded={setIsV2StoryCreatorExpanded} isV2StoryCreatorExpanded={isV2StoryCreatorExpanded} inventory={inventory} filteredInventory={filteredInventory} triggerNotification={triggerNotification} addLog={addLog} activeBand={activeBand} stagedDistroItems={stagedDistroItems} setStagedDistroItems={setStagedDistroItems} activeTab={activeTab} userProfile={userProfile} setUserProfile={setUserProfile} bands={bands} setBands={setBands} bandJoinRequests={bandJoinRequests} setBandJoinRequests={setBandJoinRequests} isSubNavRestricted={isSubNavRestricted} activeClearanceLevel={activeClearanceLevel} simulatedMemberId={simulatedMemberId} setSimulatedMemberId={setSimulatedMemberId} bandLineup={bandLineup} crewMembers={crewMembers} activeDriver={activeDriver} activeEventsSection={activeEventsSection} activeShowDisplay={activeShowDisplay} busCallTime={busCallTime} checkedPreDriveItems={checkedPreDriveItems} checklistBank={checklistBank} checklistItems={checklistItems} commitFlightMutation={commitFlightMutation} countdownString={countdownString} currentCoords={currentCoords} currentOrNextShow={currentOrNextShow} customMpg={customMpg} customNavDestination={customNavDestination} driveHoursElapsed={driveHoursElapsed} fetchLocalWeather={fetchLocalWeather} filteredNotes={filteredNotes} isNoteExpanded={isNoteExpanded} setIsNoteExpanded={setIsNoteExpanded} inlineNoteEditingId={inlineNoteEditingId} setInlineNoteEditingId={setInlineNoteEditingId} inlineNoteText={inlineNoteText} setInlineNoteText={setInlineNoteText} inlineNoteCategory={inlineNoteCategory} setInlineNoteCategory={setInlineNoteCategory} inlineNoteTag={inlineNoteTag} setInlineNoteTag={setInlineNoteTag} activeNoteIndex={activeNoteIndex} setActiveNoteIndex={setActiveNoteIndex} isTourNotesCardCollapsed={isTourNotesCardCollapsed} setIsTourNotesCardCollapsed={setIsTourNotesCardCollapsed} handleNoteTouchStart={handleNoteTouchStart} handleNoteTouchMove={handleNoteTouchMove} handleNoteTouchEnd={handleNoteTouchEnd} filteredSales={filteredSales} filteredShows={filteredShows} flights={flights} fuelPrice={fuelPrice} handleDeleteNote={handleDeleteNote} handleUpdateNote={handleUpdateNote} handleUpdateOffer={handleUpdateOffer} isCritical={isCritical} isDriverRotationExpanded={isDriverRotationExpanded} isEditingBusCall={isEditingBusCall} isFuelCalculatorExpanded={isFuelCalculatorExpanded} isInteractiveMapExpanded={isInteractiveMapExpanded} isOfflineSimActive={isOfflineSimActive} isOnline={isOnline} isPreDriveChecklistExpanded={isPreDriveChecklistExpanded} isTime24Hour={isTime24Hour} isWaypointsExpanded={isWaypointsExpanded} localWeather={localWeather} lockupTime={lockupTime} newWaypointName={newWaypointName} newWaypointType={newWaypointType} offers={offers} onRouteVenueAddress={onRouteVenueAddress} renderTime={renderTime} selectedGuestlistShowId={selectedGuestlistShowId} setActiveDriver={setActiveDriver} setActiveEventsSection={setActiveEventsSection} setAutoExpandShowId={setAutoExpandShowId} setBusCallTime={setBusCallTime} setCheckedPreDriveItems={setCheckedPreDriveItems} setChecklistBank={setChecklistBank} setChecklistItems={setChecklistItems} setCustomMpg={setCustomMpg} setCustomNavDestination={setCustomNavDestination} setDriveHoursElapsed={setDriveHoursElapsed} setFlights={setFlights} setFuelPrice={setFuelPrice} setIsDriverRotationExpanded={setIsDriverRotationExpanded} setIsEditingBusCall={setIsEditingBusCall} setIsFuelCalculatorExpanded={setIsFuelCalculatorExpanded} setIsInteractiveMapExpanded={setIsInteractiveMapExpanded} setIsModalOpen={setIsModalOpen} setIsOfflineSimActive={setIsOfflineSimActive} setIsPreDriveChecklistExpanded={setIsPreDriveChecklistExpanded} setIsTime24Hour={setIsTime24Hour} setIsWaypointsExpanded={setIsWaypointsExpanded} setLockupTime={setLockupTime} setModalType={setModalType} setNewWaypointName={setNewWaypointName} setNewWaypointType={setNewWaypointType} setSelectedGuestlistShowId={setSelectedGuestlistShowId} setShows={setShows} setTempBusCallTime={setTempBusCallTime} setTempLockupTime={setTempLockupTime} setVehicleType={setVehicleType} setVenues={setVenues} setWaypoints={setWaypoints} showSpecificNotes={showSpecificNotes} shows={shows} sortedShows={sortedShows} tempBusCallTime={tempBusCallTime} tempLockupTime={tempLockupTime} totalTableStock={totalTableStock} totalVanStock={totalVanStock} userReviews={userReviews} vehicleType={vehicleType} venues={venues} waypoints={waypoints} weatherError={weatherError} weatherLoading={weatherLoading} bandCoverUrl={bandCoverUrl} handleDataSubmit={handleDataSubmit} loyaltyMembers={loyaltyMembers} setInventory={setInventory} setLoyaltyMembers={setLoyaltyMembers} inventoryAudits={inventoryAudits} setInventoryAudits={setInventoryAudits} activeBandId={activeBandId} setTransferPreselectedId={setTransferPreselectedId} setIsTransferModalOpen={setIsTransferModalOpen} setEditingItem={setEditingItem} expenses={expenses} sales={sales} setExpenses={setExpenses} setEditingBand={setEditingBand} setIsBandModalOpen={setIsBandModalOpen} bandInfoBio={bandInfoBio} setBandInfoBio={setBandInfoBio} bandInfoCustomSlug={bandInfoCustomSlug} setBandInfoCustomSlug={setBandInfoCustomSlug} bandInfoBookingEmail={bandInfoBookingEmail} setBandInfoBookingEmail={setBandInfoBookingEmail} bandInfoBookingPhone={bandInfoBookingPhone} setBandInfoBookingPhone={setBandInfoBookingPhone} bandInfoYoutubeVideo={bandInfoYoutubeVideo} setBandInfoYoutubeVideo={setBandInfoYoutubeVideo} bandInfoStreamingUrl={bandInfoStreamingUrl} setBandInfoStreamingUrl={setBandInfoStreamingUrl} bandInfoTechRider={bandInfoTechRider} setBandInfoTechRider={setBandInfoTechRider} bandInfoTourVehicle={bandInfoTourVehicle} setBandInfoTourVehicle={setBandInfoTourVehicle} bandInfoMetalArchivesUrl={bandInfoMetalArchivesUrl} setBandInfoMetalArchivesUrl={setBandInfoMetalArchivesUrl} bandLogoUrl={bandLogoUrl} setLogoUploaderDragActive={setLogoUploaderDragActive} handleBandInfoLogoUpload={handleBandInfoLogoUpload} logoUploaderDragActive={logoUploaderDragActive} bandInfoLogoFileInputRef={bandInfoLogoFileInputRef} setCoverUploaderDragActive={setCoverUploaderDragActive} handleBandInfoCoverUpload={handleBandInfoCoverUpload} coverUploaderDragActive={coverUploaderDragActive} bandInfoCoverFileInputRef={bandInfoCoverFileInputRef} bandInfoName={bandInfoName} setBandInfoName={setBandInfoName} selectedMicroGenres={selectedMicroGenres} setSelectedMicroGenres={setSelectedMicroGenres} bandInfoHomebase={bandInfoHomebase} setBandInfoHomebase={setBandInfoHomebase} bandInfoFoundedYear={bandInfoFoundedYear} setBandInfoFoundedYear={setBandInfoFoundedYear} setBandLineup={setBandLineup} setCrewMembers={setCrewMembers} setReviewLeft={setReviewLeft} setReviewText={setReviewText} reviewScore={reviewScore} setReviewScore={setReviewScore} reviewText={reviewText} reviewerName={reviewerName} setReviewerName={setReviewerName} reviewerGroup={reviewerGroup} setReviewerGroup={setReviewerGroup} setSales={setSales} logs={logs} handleRestock={handleRestock} dbStatus={dbStatus} />
           )
         ) : (
           <MainTabRouter
@@ -4097,97 +4182,41 @@ list.push({
         )}
 
 
-      {/* GLOBAL MODALS CONTAINER */}
+      {/* GLOBAL MODALS & DRAWERS REGISTRY */}
       <GlobalModalsContainer
         userProfile={userProfile}
+        setUserProfile={setUserProfile}
         activeTab={activeTab as string}
+        setActiveTab={setActiveTab as any}
         shows={shows}
-        isModalOpen={isModalOpen}
-        setIsModalOpen={setIsModalOpen}
-        modalType={modalType}
-        setModalType={setModalType}
-        handleDataSubmit={handleDataSubmit}
         inventory={inventory}
-        selectedSaleReceipt={selectedSaleReceipt}
-        setSelectedSaleReceipt={setSelectedSaleReceipt}
+        setInventory={setInventory}
+        handleDataSubmit={handleDataSubmit}
         triggerNotification={triggerNotification}
-        isBandModalOpen={isBandModalOpen}
-        setIsBandModalOpen={setIsBandModalOpen}
-        editingBand={editingBand}
-        setEditingBand={setEditingBand}
-        editName={editName}
-        setEditName={setEditName}
-        editGenre={editGenre}
-        setEditGenre={setEditGenre}
-        editLogoUrl={editLogoUrl}
-        setEditLogoUrl={setEditLogoUrl}
-        editLogoPresetIdx={editLogoPresetIdx}
-        setEditLogoPresetIdx={setEditLogoPresetIdx}
-        handleUpdateBand={handleUpdateBand}
-        dragActive={dragActive}
-        setDragActive={setDragActive}
-        handleLogoUpload={handleLogoUpload}
-        editRosterFileInputRef={editRosterFileInputRef}
-        rosterFileInputRef={rosterFileInputRef}
-        logoPresets={logoPresets}
-        bandLogoUrl={bandLogoUrl}
-        activeBand={activeBand}
+        bandManagement={bandManagement}
         bands={bands}
+        activeBand={activeBand}
         activeBandId={activeBandId}
         setActiveBandId={setActiveBandId}
         addLog={addLog}
         deletingBandId={deletingBandId}
         setDeletingBandId={setDeletingBandId}
         handleDeleteBand={handleDeleteBand}
-        newBandForm={newBandForm}
-        setNewBandForm={setNewBandForm}
-        handleCreateBand={handleCreateBand}
-        customLogoPreset={customLogoPreset}
-        setCustomLogoPreset={setCustomLogoPreset}
-        isCashDrawerOpen={isCashDrawerOpen}
-        setIsCashDrawerOpen={setIsCashDrawerOpen}
         cashTransactions={cashTransactions}
         setCashTransactions={setCashTransactions}
-        isChecklistModalOpen={isChecklistModalOpen}
-        setIsChecklistModalOpen={setIsChecklistModalOpen}
         checklistItems={checklistItems}
         setChecklistItems={setChecklistItems}
         checklistBank={checklistBank}
         setChecklistBank={setChecklistBank}
-        isQuickActionPanelOpen={isQuickActionPanelOpen}
-        setIsQuickActionPanelOpen={setIsQuickActionPanelOpen}
-        setActiveTab={setActiveTab as any}
         setEditingItem={setEditingItem}
         setPendingOpenShowsForm={setPendingOpenShowsForm}
         setPendingFlightIsAdding={setPendingFlightIsAdding}
-        isPttOpen={isPttOpen}
-        setIsPttOpen={setIsPttOpen}
         playPttSound={playPttSound}
-        isTransferModalOpen={isTransferModalOpen}
-        setIsTransferModalOpen={setIsTransferModalOpen}
-        transferPreselectedId={transferPreselectedId}
-        setTransferPreselectedId={setTransferPreselectedId}
-        setInventory={setInventory}
         commitInventoryMutation={commitInventoryMutation}
-        isLiveTeamActivityOpen={isLiveTeamActivityOpen}
-        setIsLiveTeamActivityOpen={setIsLiveTeamActivityOpen}
         teamActivities={teamActivities}
-        showWorkspaceRegistration={showWorkspaceRegistration}
-        setShowWorkspaceRegistration={setShowWorkspaceRegistration}
         setIsUpgradeMode={setIsUpgradeMode}
         setLoginInitialTab={setLoginInitialTab}
         setIsLoggedOut={setIsLoggedOut}
-      />
-      
-      {/* Global Settings & Gateway Infrastructure Drawer */}
-      <SettingsDrawer
-        isOpen={isSettingsDrawerOpen}
-        onClose={() => setIsSettingsDrawerOpen(false)}
-        userProfile={userProfile}
-        setUserProfile={setUserProfile}
-        triggerNotification={triggerNotification}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab as any}
       />
 
       {/* Real-time overlay portals */}

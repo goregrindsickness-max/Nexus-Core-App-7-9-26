@@ -20,6 +20,17 @@ import {
 } from 'lucide-react';
 import { BAND_PORTAL_BILLING } from '../../../config/billingMatrix';
 import { hasRegisteredWorkspace, normalizeRegisteredWorkspaces } from '../../../types';
+import {
+  resolveBandLogo,
+  resolveBandCover,
+  resolveBandHandle,
+  resolveBandName,
+  resolveBandBio,
+  resolveBandLocation,
+  resolveEffectiveAvatar,
+  resolveEffectiveCover
+} from '../../../utils/bandProfileUtils';
+import { BandWorkspaceNavBanner } from './BandWorkspaceNavBanner';
 
 export interface FeedTopHeaderProps {
   isEmbedded?: boolean;
@@ -31,9 +42,13 @@ export interface FeedTopHeaderProps {
   setIsCartOpen: (val: boolean) => void;
   cartItems: any[];
   profileFullLegalName: string;
+  profileAvatarUrl?: string | null;
+  profileCoverUrl?: string | null;
   roleMenuOpen: boolean;
   setRoleMenuOpen: (val: boolean) => void;
   portalRole: string;
+  setPortalRole?: (val: string) => void;
+  switchRole?: (val: string) => void;
   userProfile?: any;
   setUserProfile?: (val: any) => void;
   activeBand?: any;
@@ -54,6 +69,9 @@ export interface FeedTopHeaderProps {
   getSupabase: () => any;
   triggerNotification?: (msg: string) => void;
   onLogout?: () => void;
+  onNavigateToTab?: (tab: string, subNav?: string) => void;
+  setDashboardV2ActiveNav?: (nav: any) => void;
+  dashboardV2ActiveNav?: string;
 }
 
 export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
@@ -66,9 +84,13 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
   setIsCartOpen,
   cartItems,
   profileFullLegalName,
+  profileAvatarUrl,
+  profileCoverUrl,
   roleMenuOpen,
   setRoleMenuOpen,
   portalRole,
+  setPortalRole,
+  switchRole,
   userProfile,
   setUserProfile,
   activeBand,
@@ -89,6 +111,9 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
   getSupabase,
   triggerNotification,
   onLogout,
+  onNavigateToTab,
+  setDashboardV2ActiveNav,
+  dashboardV2ActiveNav
 }) => {
   const handleLogout = async () => {
     setRoleMenuOpen(false);
@@ -172,7 +197,7 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                 {portalRole === 'fan_only'
                   ? 'FAN ZONE'
                   : portalRole === 'band'
-                  ? activeBand?.name?.toUpperCase() || 'ARTIST WORKSPACE'
+                  ? resolveBandName(activeBand, userProfile)?.toUpperCase() || 'ARTIST WORKSPACE'
                   : portalRole === 'creative'
                   ? 'CREATIVE PRO'
                   : portalRole === 'promoter'
@@ -182,7 +207,7 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                   : 'INDUSTRY PRO'}
               </p>
               <p className="text-sm font-black text-white leading-none">
-                Hi {(profileFullLegalName || userProfile?.display_name || userProfile?.username || 'User').split(' ')[0]},
+                Hi {portalRole === 'band' ? (resolveBandName(activeBand, userProfile).split(' ')[0]) : (profileFullLegalName || userProfile?.display_name || userProfile?.username || 'User').split(' ')[0]},
               </p>
             </div>
           )}
@@ -200,18 +225,12 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
               <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden bg-zinc-900 flex items-center justify-center">
                 {(() => {
                   const activeKey = portalRole || userProfile?.active_workspace || 'industry_pro';
-                  const activeAvatar = (
-                    activeKey === 'creative' ? (userProfile?.creative_avatar || userProfile?.avatar_url)
-                    : activeKey === 'band' ? (activeBand?.logo_url || userProfile?.avatar_url)
-                    : activeKey === 'promoter' ? (userProfile?.promoter_logo || userProfile?.avatar_url)
-                    : activeKey === 'label' ? (userProfile?.label_avatar || userProfile?.avatar_url)
-                    : (userProfile?.avatar_url || userProfile?.avatar || userProfile?.image)
-                  ) || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100';
+                  const activeAvatar = resolveEffectiveAvatar(activeKey, activeBand, userProfile, profileAvatarUrl);
                   return (
                     <img
                       referrerPolicy="no-referrer"
                       src={activeAvatar}
-                      alt={profileFullLegalName || 'User'}
+                      alt={portalRole === 'band' ? resolveBandName(activeBand, userProfile) : (profileFullLegalName || 'User')}
                       className="w-full h-full object-cover"
                     />
                   );
@@ -233,15 +252,15 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                     {/* Header */}
                     {(() => {
                       const activeKey = portalRole || userProfile?.active_workspace || 'industry_pro';
-                      const activeAvatar = (
-                        activeKey === 'creative' ? (userProfile?.creative_avatar || userProfile?.avatar_url)
-                        : activeKey === 'band' ? (activeBand?.logo_url || userProfile?.avatar_url)
-                        : activeKey === 'promoter' ? (userProfile?.promoter_logo || userProfile?.avatar_url)
-                        : activeKey === 'label' ? (userProfile?.label_avatar || userProfile?.avatar_url)
-                        : (userProfile?.avatar_url || userProfile?.avatar || userProfile?.image)
-                      ) || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100';
-                      const rawHandle = userProfile?.console_handle || userProfile?.username || userProfile?.handle || userProfile?.display_name?.toLowerCase().replace(/\s+/g, '_') || profileFullLegalName?.toLowerCase().replace(/\s+/g, '_') || 'user';
-                      const userHandle = (!rawHandle || rawHandle.toLowerCase().includes('virulent') || rawHandle === 'user' || rawHandle === '@user') ? '@bdmCEO' : (rawHandle.startsWith('@') ? rawHandle : `@${rawHandle}`);
+                      const activeAvatar = resolveEffectiveAvatar(activeKey, activeBand, userProfile, profileAvatarUrl);
+                      const isBand = activeKey === 'band';
+                      const rawHandle = isBand 
+                        ? resolveBandHandle(activeBand, userProfile)
+                        : (userProfile?.console_handle || userProfile?.username || userProfile?.handle || userProfile?.display_name?.toLowerCase().replace(/\s+/g, '_') || profileFullLegalName?.toLowerCase().replace(/\s+/g, '_') || 'user');
+                      const userHandle = isBand
+                        ? (rawHandle.startsWith('@') ? rawHandle : `@${rawHandle}`)
+                        : ((!rawHandle || rawHandle.toLowerCase().includes('virulent') || rawHandle === 'user' || rawHandle === '@user') ? '@bdmCEO' : (rawHandle.startsWith('@') ? rawHandle : `@${rawHandle}`));
+                      const displayName = isBand ? resolveBandName(activeBand, userProfile) : (profileFullLegalName || userProfile?.name || 'User Name');
                       return (
                         <div className="flex items-center justify-between mb-2 pb-2 border-b border-zinc-900/80">
                           <div className="flex items-center gap-2.5 min-w-0">
@@ -254,7 +273,7 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="text-xs font-bold text-white tracking-tight truncate">{userHandle}</div>
-                              <div className="text-[9px] text-zinc-500 font-black uppercase tracking-wider truncate">{profileFullLegalName || userProfile?.name || 'User Name'}</div>
+                              <div className="text-[9px] text-zinc-500 font-black uppercase tracking-wider truncate">{displayName}</div>
                             </div>
                           </div>
                           <button onClick={() => setRoleMenuOpen(false)} className="w-6 h-6 flex items-center justify-center rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors shrink-0">
@@ -268,6 +287,45 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                     <button
                       onClick={() => {
                         setRoleMenuOpen(false);
+                        if (portalRole === 'band') {
+                          const bandName = resolveBandName(activeBand, userProfile);
+                          const bandHandle = resolveBandHandle(activeBand, userProfile);
+                          const bandLogo = resolveBandLogo(activeBand, userProfile);
+                          const bandCover = resolveBandCover(activeBand, userProfile);
+                          const bandBio = resolveBandBio(activeBand, userProfile);
+                          const bandLocation = resolveBandLocation(activeBand, userProfile);
+
+                          const detailPayload = {
+                            id: activeBand?.id || userProfile?.band_id || 'band:active',
+                            name: bandName,
+                            legalName: bandName,
+                            handle: bandHandle.startsWith('@') ? bandHandle : `@${bandHandle}`,
+                            console_handle: bandHandle.startsWith('@') ? bandHandle : `@${bandHandle}`,
+                            username: bandHandle.startsWith('@') ? bandHandle : `@${bandHandle}`,
+                            avatar: bandLogo,
+                            avatar_url: bandLogo,
+                            logo: bandLogo,
+                            logo_url: bandLogo,
+                            banner: bandCover,
+                            banner_url: bandCover,
+                            cover: bandCover,
+                            cover_url: bandCover,
+                            location: bandLocation,
+                            role: 'Band / Artist',
+                            account_type: 'band',
+                            type: 'band',
+                            isPersonal: false,
+                            isBandProfile: true,
+                            isYou: true,
+                            badges: ['⚡ Band Core', '🎵 Metal'],
+                            customBadges: ['⚡ Band Core', '🎵 Metal'],
+                            bio: bandBio
+                          };
+                          window.dispatchEvent(new CustomEvent('openPublicProfile', { detail: detailPayload }));
+                          triggerNotification?.("⚡ Opening Band Public Profile...");
+                          return;
+                        }
+
                         const personalHandle = userProfile?.console_handle && !userProfile.console_handle.toLowerCase().includes('virulent') && userProfile.console_handle !== '@user' && userProfile.console_handle !== 'user'
                           ? (userProfile.console_handle.startsWith('@') ? userProfile.console_handle : `@${userProfile.console_handle}`)
                           : '@bdmCEO';
@@ -302,7 +360,7 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                       className="w-full flex items-center justify-center gap-1.5 bg-[#3b0b6c] hover:bg-[#4c0d8a] text-white py-1.5 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-colors mb-2 shadow-md shadow-purple-900/20 cursor-pointer"
                     >
                       <User className="w-3 h-3" strokeWidth={2.5} />
-                      VIEW MY PROFILE
+                      {portalRole === 'band' ? 'VIEW BAND PROFILE' : 'VIEW MY PROFILE'}
                     </button>
 
                     <div className="text-[8px] font-mono font-bold text-zinc-500 uppercase tracking-widest mb-1 px-1">
@@ -317,6 +375,8 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                           <button
                             onClick={async () => {
                               setRoleMenuOpen(false);
+                              if (setPortalRole) setPortalRole('industry_pro');
+                              if (switchRole) switchRole('industry_pro');
                               const updatedProfile = { ...userProfile, active_workspace: 'industry_pro', account_type: 'industry pro' };
                               if (setUserProfile) setUserProfile(updatedProfile);
                               if (typeof window !== 'undefined') {
@@ -369,6 +429,8 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                                 return;
                               }
                               setRoleMenuOpen(false);
+                              if (setPortalRole) setPortalRole('fan_only');
+                              if (switchRole) switchRole('fan_only');
                               const updatedProfile = { ...userProfile, active_workspace: 'fan_only', account_type: 'fan' };
                               if (setUserProfile) setUserProfile(updatedProfile);
                               if (typeof window !== 'undefined') {
@@ -423,6 +485,8 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                                 return;
                               }
                               setRoleMenuOpen(false);
+                              if (setPortalRole) setPortalRole('band');
+                              if (switchRole) switchRole('band');
                               const updatedProfile = { ...userProfile, active_workspace: 'band', account_type: 'industry pro' };
                               if (setUserProfile) setUserProfile(updatedProfile);
                               if (typeof window !== 'undefined') {
@@ -482,6 +546,8 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                                 return;
                               }
                               setRoleMenuOpen(false);
+                              if (setPortalRole) setPortalRole('promoter');
+                              if (switchRole) switchRole('promoter');
                               const updatedProfile = { ...userProfile, active_workspace: 'promoter', account_type: 'industry pro' };
                               if (setUserProfile) setUserProfile(updatedProfile);
                               if (typeof window !== 'undefined') {
@@ -539,6 +605,8 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                                 return;
                               }
                               setRoleMenuOpen(false);
+                              if (setPortalRole) setPortalRole('creative');
+                              if (switchRole) switchRole('creative');
                               const registered = normalizeRegisteredWorkspaces(userProfile?.registered_workspaces, ['creative']);
                               const updatedProfile = { ...userProfile, active_workspace: 'creative', account_type: 'creative', registered_workspaces: registered };
                               if (setUserProfile) setUserProfile(updatedProfile);
@@ -598,6 +666,8 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                                 return;
                               }
                               setRoleMenuOpen(false);
+                              if (setPortalRole) setPortalRole('label');
+                              if (switchRole) switchRole('label');
                               const updatedProfile = { ...userProfile, active_workspace: 'label', account_type: 'industry pro' };
                               if (setUserProfile) setUserProfile(updatedProfile);
                               if (typeof window !== 'undefined') {
@@ -704,6 +774,19 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Band Workspace Navigation Bar - Only for Band/Artist workspace, positioned directly ABOVE the Social sub-nav bar */}
+      {(portalRole === 'band' || portalRole === 'artist') && (
+        <BandWorkspaceNavBanner
+          activeBand={activeBand}
+          userProfile={userProfile}
+          onNavigateToTab={onNavigateToTab}
+          setActiveTab={setActiveTab}
+          setDashboardV2ActiveNav={setDashboardV2ActiveNav}
+          triggerNotification={triggerNotification}
+          portalRole={portalRole}
+        />
+      )}
 
       {/* Primary Global Navigation Bar / Sub-Navigation Bar & Universal Search (Hidden in Clips tab for immersive fullscreen video, and in Messages/Inbox tab) */}
       {activeTab !== 'reels' && activeTab !== 'messages' && (

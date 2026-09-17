@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PlaySquare, X, Upload, Video, RefreshCw, Music2 } from 'lucide-react';
+import { uploadClipVideoFile } from '../../../supabase';
 
 interface UploadClipModalProps {
   showUploadClipModal: boolean;
@@ -60,21 +61,41 @@ export const UploadClipModal: React.FC<UploadClipModalProps> = ({
     setIsUploadingClip(true);
     try {
       let finalVideoUrl = newClipVideoUrl;
-
       const supabaseClient = getSupabase ? getSupabase() : null;
+      const userId = userProfile?.id || userProfile?.user_id || 'anon';
 
-      if (selectedClipFile && supabaseClient) {
-        const fileExt = selectedClipFile.name.split('.').pop();
-        const fileName = `${userProfile?.id || 'anon'}_${Date.now()}.${fileExt}`;
-        const filePath = `clips/${fileName}`;
+      if (selectedClipFile) {
+        // Upload to 'clips' storage bucket in Supabase
+        try {
+          finalVideoUrl = await uploadClipVideoFile(selectedClipFile, userId, 'clip');
+        } catch (storageErr) {
+          console.warn("[UploadClipModal] Error via uploadClipVideoFile:", storageErr);
+        }
 
-        const { data, error } = await supabaseClient.storage.from('media').upload(filePath, selectedClipFile);
-        if (error) {
-          console.warn("Storage upload failed, falling back to local object URL:", error);
+        // Direct fallback to 'clips' bucket if needed
+        if (!finalVideoUrl && supabaseClient) {
+          try {
+            const fileExt = selectedClipFile.name.split('.').pop() || 'mp4';
+            const fileName = `${userId}_${Date.now()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { data, error } = await supabaseClient.storage.from('clips').upload(filePath, selectedClipFile, {
+              upsert: true,
+              contentType: selectedClipFile.type || 'video/mp4'
+            });
+
+            if (!error && data) {
+              const { data: publicData } = supabaseClient.storage.from('clips').getPublicUrl(filePath);
+              finalVideoUrl = publicData?.publicUrl || '';
+            }
+          } catch (directErr) {
+            console.warn("[UploadClipModal] Direct clips storage upload failed:", directErr);
+          }
+        }
+
+        if (!finalVideoUrl) {
+          console.warn("Storage upload failed, fallback to local object URL");
           finalVideoUrl = URL.createObjectURL(selectedClipFile);
-        } else if (data) {
-          const { data: publicData } = supabaseClient.storage.from('media').getPublicUrl(filePath);
-          finalVideoUrl = publicData.publicUrl;
         }
       }
 
@@ -82,47 +103,94 @@ export const UploadClipModal: React.FC<UploadClipModalProps> = ({
         finalVideoUrl = 'https://assets.mixkit.co/videos/preview/mixkit-rock-band-performing-on-stage-41584-large.mp4';
       }
 
+      const clipId = `clip_${Date.now()}`;
       const newClipObj = {
-        id: `clip_${Date.now()}`,
-        user_id: userProfile?.id,
-        username: userProfile?.username || userProfile?.full_name || 'Anonymous',
-        author: userProfile?.username || userProfile?.full_name || 'Anonymous',
-        avatar: userProfile?.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
+        id: clipId,
+        user_id: userProfile?.id || userProfile?.user_id || 'anonymous',
+        profile_id: userProfile?.id || userProfile?.user_id || 'anonymous',
+        username: userProfile?.username || userProfile?.full_name || userProfile?.name || 'Anonymous',
+        creator: userProfile?.username || userProfile?.full_name || userProfile?.name || 'Anonymous',
+        author: userProfile?.username || userProfile?.full_name || userProfile?.name || 'Anonymous',
+        avatar: userProfile?.avatar_url || userProfile?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
         video_url: finalVideoUrl,
         videoUrl: finalVideoUrl,
         caption: newClipCaption,
         title: newClipTitle || newClipCaption || 'Live Clip',
+        song_title: newClipSongTitle || 'Pit Anthem',
         songTitle: newClipSongTitle || 'Pit Anthem',
-        bandName: newClipBandName || userProfile?.full_name || 'Scene Band',
+        band_name: newClipBandName || userProfile?.band_name || userProfile?.full_name || 'Scene Band',
+        bandName: newClipBandName || userProfile?.band_name || userProfile?.full_name || 'Scene Band',
+        audio: (newClipSongTitle || newClipBandName) ? `${newClipBandName || 'Artist'} - ${newClipSongTitle || 'Original'}` : 'Original Sound',
         tags: newClipTags ? newClipTags.split(',').map(t => t.trim()) : ['SLAM', 'LIVE'],
         likes: 1,
+        likes_count: 1,
+        comments: 0,
+        comments_count: 0,
         commentsCount: 0,
         shares: 0,
+        shares_count: 0,
+        views: 1,
+        views_count: 1,
         viewsCount: 1,
+        hasLiked: true,
         created_at: new Date().toISOString()
       };
 
-      if (supabaseClient && userProfile?.id) {
-        await supabaseClient.from('nexus_clips').insert({
-          profile_id: userProfile.id,
-          username: newClipObj.username,
-          avatar: newClipObj.avatar,
-          video_url: newClipObj.video_url,
-          caption: newClipObj.caption,
-          song_title: newClipObj.songTitle,
-          band_name: newClipObj.bandName,
-          created_at: newClipObj.created_at
-        });
+      // Persist to Supabase database ('clips' and 'nexus_clips' tables)
+      if (supabaseClient) {
+        try {
+          const { error: clipsErr } = await supabaseClient.from('clips').insert([{
+            id: clipId,
+            user_id: newClipObj.user_id,
+            profile_id: newClipObj.profile_id,
+            video_url: newClipObj.video_url,
+            caption: newClipObj.caption,
+            title: newClipObj.title,
+            song_title: newClipObj.song_title,
+            band_name: newClipObj.band_name,
+            username: newClipObj.username,
+            avatar: newClipObj.avatar,
+            created_at: newClipObj.created_at,
+            likes_count: 1,
+            comments_count: 0,
+            shares_count: 0
+          }]);
+          if (clipsErr) {
+            console.warn("Saving to 'clips' returned:", clipsErr.message);
+          }
+        } catch (_) {}
+
+        try {
+          await supabaseClient.from('nexus_clips').insert([{
+            id: clipId,
+            profile_id: newClipObj.profile_id,
+            user_id: newClipObj.user_id,
+            username: newClipObj.username,
+            avatar: newClipObj.avatar,
+            video_url: newClipObj.video_url,
+            caption: newClipObj.caption,
+            song_title: newClipObj.song_title,
+            band_name: newClipObj.band_name,
+            created_at: newClipObj.created_at
+          }]);
+        } catch (_) {}
       }
 
-      setClips((prev) => [newClipObj, ...prev]);
+      // Update state and localStorage
+      setClips((prev) => {
+        const updated = [newClipObj, ...prev.filter(c => c.id !== clipId)];
+        try {
+          localStorage.setItem('nexus_saved_clips', JSON.stringify(updated));
+        } catch (_) {}
+        return updated;
+      });
 
       setNewClipCaption('');
       if (setNewClipTitle) setNewClipTitle('');
       setNewClipVideoUrl('');
       setSelectedClipFile(null);
       setShowUploadClipModal(false);
-      triggerNotification?.("Clip published to Reels successfully!");
+      triggerNotification?.("Clip published and saved to clips storage successfully!");
     } catch (err: any) {
       console.error("Failed to upload clip:", err);
       triggerNotification?.(`Error posting clip: ${err.message || err}`);

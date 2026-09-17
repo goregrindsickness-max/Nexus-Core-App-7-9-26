@@ -53,6 +53,13 @@ self.addEventListener('notificationclick', function(event) {
       for (let i = 0; i < clientList.length; i++) {
         const client = clientList[i];
         if ('focus' in client) {
+          if (event.notification.data?.senderId) {
+            client.postMessage({
+              type: 'NEXUS_OPEN_CHAT',
+              senderId: event.notification.data.senderId,
+              name: event.notification.title
+            });
+          }
           if (targetTab) {
             client.postMessage({
               type: 'NEXUS_PUSH_NAVIGATE',

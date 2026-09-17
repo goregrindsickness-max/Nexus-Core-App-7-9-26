@@ -1,8 +1,34 @@
 import { socialFeedStore, profileStore } from '../../../utils/indexedDB';
 import { FeedItem } from '../../../data/socialFeedMockData';
 
-export const getFeedCacheKey = (portalRole: string, userId?: string) =>
-  `feed_posts_${portalRole}_${userId || 'guest'}`;
+export function resolveWorkspaceEntityId(portalRole?: string, activeBand?: any, activeBandId?: string, userProfile?: any): string {
+  const normRole = (portalRole || userProfile?.active_workspace || 'industry_pro').toLowerCase();
+  if (normRole === 'band' || normRole.includes('artist')) {
+    const rawBandId = activeBandId || activeBand?.id || activeBand?.name || (userProfile?.bands?.[0]?.id) || 'band_primary';
+    return `band_${String(rawBandId).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+  }
+  if (normRole === 'label') {
+    const rawLabel = userProfile?.label_id || userProfile?.label_company_name || 'label_primary';
+    return `label_${String(rawLabel).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+  }
+  if (normRole === 'promoter') {
+    const rawPromoter = userProfile?.promoter_metadata?.brand_name || userProfile?.promoter_name || 'promoter_primary';
+    return `promoter_${String(rawPromoter).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+  }
+  if (normRole === 'creative') {
+    const rawCreative = userProfile?.creative_metadata?.business_name || userProfile?.creative_name || 'creative_primary';
+    return `creative_${String(rawCreative).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+  }
+  if (normRole === 'fan_only' || normRole === 'fan') {
+    return 'fan';
+  }
+  return 'industry_pro';
+}
+
+export const getFeedCacheKey = (portalRole: string, userId?: string, workspaceEntityId?: string) => {
+  const entityPart = workspaceEntityId ? `_${workspaceEntityId}` : '';
+  return `feed_posts_${portalRole}${entityPart}_${userId || 'guest'}`;
+};
 
 export const getProfileCacheKey = (portalRole: string, userId?: string) =>
   `nexus_${portalRole}_profile_v1_${userId || 'guest'}`;
@@ -16,9 +42,9 @@ export const getDiscoverProfilesCacheKey = (userId?: string) =>
 /**
  * Load cached feed items from IndexedDB
  */
-export async function loadFeedCache(portalRole: string, userId?: string): Promise<FeedItem[] | null> {
+export async function loadFeedCache(portalRole: string, userId?: string, workspaceEntityId?: string): Promise<FeedItem[] | null> {
   try {
-    const key = getFeedCacheKey(portalRole, userId);
+    const key = getFeedCacheKey(portalRole, userId, workspaceEntityId);
     const stored = await socialFeedStore.getItem<FeedItem[]>(key);
     return stored || null;
   } catch (e) {
@@ -30,10 +56,10 @@ export async function loadFeedCache(portalRole: string, userId?: string): Promis
 /**
  * Save feed items to IndexedDB
  */
-export async function saveFeedCache(portalRole: string, feed: FeedItem[], userId?: string): Promise<void> {
+export async function saveFeedCache(portalRole: string, feed: FeedItem[], userId?: string, workspaceEntityId?: string): Promise<void> {
   if (!feed || feed.length === 0) return;
   try {
-    const key = getFeedCacheKey(portalRole, userId);
+    const key = getFeedCacheKey(portalRole, userId, workspaceEntityId);
     await socialFeedStore.setItem(key, feed);
   } catch (e) {
     console.warn('Failed to save feed to IndexedDB:', e);

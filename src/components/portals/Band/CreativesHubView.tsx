@@ -3038,7 +3038,7 @@ export default function CreativesHubView({
                                   <div className="flex flex-wrap gap-1.5 pt-1">
                                     {talent.skills.map((skill, si) => (
                                       <span
-                                        key={`creative-service-${si}`}
+                                        key={`creative-service-${talent.id || talent.name || 't'}-${si}`}
                                         className={`text-[9.5px] px-2.5 py-0.5 lowercase tracking-tight border backdrop-blur-sm ${
                                           talent.category === "visual"
                                             ? "bg-fuchsia-950/30 border-fuchsia-900/40 text-fuchsia-300"

@@ -22,6 +22,7 @@ export function sanitizeInventoryItemForDb(item: any): any {
     'item_type',
     'price',
     'image_url',
+    'image_path',
     'border_color',
     'is_exclusive',
     'band_id',

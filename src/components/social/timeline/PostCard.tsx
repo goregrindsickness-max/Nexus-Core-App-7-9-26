@@ -243,8 +243,27 @@ export const PostCard: React.FC<PostCardProps> = ({
     ))
   );
 
-  const isArtistOrBand = postRoleUpper === 'ARTIST' || postRoleUpper === 'BAND' || postRoleUpper === 'LABEL';
-  const isCreative = postRoleUpper === 'CREATIVE' || postRoleUpper === 'PHOTOGRAPHER' || authorNameLower.includes('scene photographer');
+  const postWorkspaceType = ((post as any).workspace_type || (post as any).workspaceType || '').toLowerCase();
+  const isCreative = postWorkspaceType === 'creative' || 
+    postRoleUpper.includes('CREATIVE') || 
+    postRoleUpper === 'PHOTOGRAPHER' || 
+    authorNameLower.includes('scene photographer') ||
+    (post as any).author?.role === 'Creative Pro';
+    
+  const isArtistOrBand = postWorkspaceType === 'band' || 
+    postRoleUpper === 'ARTIST' || 
+    postRoleUpper === 'BAND' || 
+    postRoleUpper === 'BAND / ARTIST' ||
+    Boolean((post as any).author?.isBand);
+    
+  const isLabel = postWorkspaceType === 'label' || 
+    postRoleUpper === 'LABEL' || 
+    postRoleUpper === 'RECORD LABEL';
+    
+  const isPromoter = postWorkspaceType === 'promoter' || 
+    postRoleUpper === 'PROMOTER' || 
+    postRoleUpper === 'PROMOTER / VENUE' ||
+    postRoleUpper === 'VENUE PROMOTER';
 
   // Comprehensive Avatar Resolution & Initials Generator
   const liveSelfAvatar = userProfile?.avatar || userProfile?.avatar_url || userProfile?.profile_avatar || (userProfile as any)?.profile_image;
@@ -256,9 +275,9 @@ export const PostCard: React.FC<PostCardProps> = ({
     rawPostAvatar.trim() === ''
   );
 
-  const displayAvatar = isCurrentUser
-    ? (liveSelfAvatar || (!isGenericUiAvatar ? rawPostAvatar : null))
-    : (!isGenericUiAvatar ? rawPostAvatar : null);
+  const displayAvatar = (!isGenericUiAvatar && rawPostAvatar)
+    ? rawPostAvatar
+    : (isCurrentUser ? (liveSelfAvatar || null) : null);
 
   const getInitials = (str?: string) => {
     if (!str) return 'NX';
@@ -510,10 +529,14 @@ export const PostCard: React.FC<PostCardProps> = ({
           <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center font-black font-mono text-xs overflow-hidden shrink-0 bg-zinc-900 ${
             isCreative
               ? 'border-fuchsia-500 text-fuchsia-400 shadow-[0_0_12px_rgba(217,70,239,0.45)]'
-              : isIndustryPro
-              ? 'border-purple-500 text-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.45)]'
               : isArtistOrBand
               ? 'border-emerald-500 text-emerald-400 shadow-md'
+              : isLabel
+              ? 'border-purple-500 text-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.45)]'
+              : isPromoter
+              ? 'border-amber-500 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.45)]'
+              : isIndustryPro
+              ? 'border-purple-500 text-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.45)]'
               : 'border-sky-500 text-sky-400 shadow-md'
           }`}>
             {displayAvatar ? (
@@ -572,10 +595,30 @@ export const PostCard: React.FC<PostCardProps> = ({
 
             {/* Line 4: Role ("Fan Supporter or Industry Pro") under the date */}
             <div className="mt-0.5 flex items-center gap-1">
-              {isIndustryPro ? (
+              {isCreative ? (
+                <span className="text-[10px] font-mono font-bold tracking-wider text-fuchsia-400 uppercase flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-fuchsia-500 inline-block shadow-[0_0_6px_rgba(217,70,239,0.6)]" />
+                  Creative Pro
+                </span>
+              ) : isArtistOrBand ? (
+                <span className="text-[10px] font-mono font-bold tracking-wider text-emerald-400 uppercase flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block shadow-[0_0_6px_rgba(16,185,129,0.6)]" />
+                  {postRoleUpper === 'BAND' || postRoleUpper === 'BAND / ARTIST' ? 'Band / Artist' : (post.authorRole || (post as any).author?.role || 'Band / Artist')}
+                </span>
+              ) : isLabel ? (
                 <span className="text-[10px] font-mono font-bold tracking-wider text-purple-400 uppercase flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-purple-500 inline-block shadow-[0_0_6px_rgba(168,85,247,0.6)]" />
-                  {isCreative ? 'Creative Pro' : (isArtistOrBand ? (postRoleUpper || 'Artist / Band') : 'Industry Pro')}
+                  Record Label
+                </span>
+              ) : isPromoter ? (
+                <span className="text-[10px] font-mono font-bold tracking-wider text-amber-400 uppercase flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block shadow-[0_0_6px_rgba(245,158,11,0.6)]" />
+                  Venue Promoter
+                </span>
+              ) : isIndustryPro ? (
+                <span className="text-[10px] font-mono font-bold tracking-wider text-purple-400 uppercase flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500 inline-block shadow-[0_0_6px_rgba(168,85,247,0.6)]" />
+                  Industry Pro
                 </span>
               ) : (
                 <span className="text-[10px] font-mono font-bold tracking-wider text-blue-400 uppercase flex items-center gap-1">

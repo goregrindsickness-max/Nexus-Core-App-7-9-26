@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { FeedItem } from '../../../data/socialFeedMockData';
 import { mockFeed } from '../../../data/socialFeedMockData';
 import { getSupabase, uploadBase64ToStorage, createShopMerchItem } from '../../../supabase';
 import { isAudioUrl, extractUUID } from '../../../utils/socialFeedUtils';
 import { syncPostToSupabase } from '../utils/postSyncUtils';
+import { resolveActivePersona } from '../utils/personaResolution';
 
 export function getYouTubeId(url: string): string {
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -31,6 +32,7 @@ export interface UseSocialFeedStateParams {
   setReactionMenuOpenFor?: React.Dispatch<React.SetStateAction<string | null>>;
   longPressTimerRef?: React.MutableRefObject<any>;
   setNotifications?: React.Dispatch<React.SetStateAction<any[]>>;
+  bands?: any[];
 }
 
 export function useSocialFeedState({
@@ -53,6 +55,7 @@ export function useSocialFeedState({
   setReactionMenuOpenFor,
   longPressTimerRef,
   setNotifications,
+  bands = [],
 }: UseSocialFeedStateParams) {
   // Pro / Label Dashboard Custom Settings & Identity Clearance
   const [localClearance, setLocalClearance] = useState<number>(() => {
@@ -64,7 +67,11 @@ export function useSocialFeedState({
   const proClearanceLevel = currentClearance === 5 ? 'owner' : 'staff';
 
   // Composer & Post state
-  const [postIdentity, setPostIdentity] = useState('label');
+  const [postIdentity, setPostIdentity] = useState('default');
+
+  useEffect(() => {
+    setPostIdentity('default');
+  }, [portalRole, activeBand?.id, userProfile?.active_workspace]);
   const [newPostText, setNewPostText] = useState('');
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editingPostText, setEditingPostText] = useState('');
@@ -602,46 +609,27 @@ export function useSocialFeedState({
       const finalImage = uploadedUrls.length > 0 ? uploadedUrls[0] : mediaUrl || undefined;
       const finalImages = uploadedUrls.length > 0 ? uploadedUrls : mediaUrl ? [mediaUrl] : undefined;
 
-      const isBandRole = portalRole === 'band';
-      const isCreativeRole = portalRole === 'creative';
-      const isLabelRole = portalRole === 'label';
-      const isPromoterRole = portalRole === 'promoter';
-      const isFanRole = portalRole === 'fan_only';
+      // Deterministically resolve the active publishing persona
+      const resolvedPersona = resolveActivePersona({
+        postIdentity,
+        portalRole,
+        userProfile,
+        activeBand,
+        bands,
+        profileFullLegalName,
+        profileHandle,
+        profileAvatarUrl,
+      });
 
-      const liveUserAvatar = profileAvatarUrl || userProfile?.avatar || userProfile?.avatar_url || userProfile?.profile_avatar || userProfile?.profile_image;
-
-      let authorName = 'Pro Account';
-      let authorAvatar = liveUserAvatar || undefined;
-      let authorRole = 'Industry Pro';
-      let authorRealName = profileFullLegalName || userProfile?.full_name || userProfile?.name;
-
-      if (isBandRole) {
-        authorName = activeBand?.name || userProfile?.bandName || userProfile?.band_name || 'Artist';
-        authorAvatar = activeBand?.logo_url || activeBand?.logo || activeBand?.avatar_url || userProfile?.band_logo || liveUserAvatar || undefined;
-        authorRole = 'Band / Artist';
-        authorRealName = activeBand?.name || userProfile?.bandName || 'Artist';
-      } else if (isCreativeRole) {
-        authorName = userProfile?.creative_metadata?.business_name || userProfile?.creative_business_name || userProfile?.creative_name || profileFullLegalName || userProfile?.name || 'Pro Creative';
-        authorAvatar = userProfile?.creative_avatar || liveUserAvatar || undefined;
-        authorRole = 'Creative';
-      } else if (isLabelRole) {
-        authorName = userProfile?.label_company_name || profileFullLegalName || userProfile?.name || 'Record Label';
-        authorAvatar = userProfile?.label_logo || liveUserAvatar || undefined;
-        authorRole = 'Label';
-      } else if (isPromoterRole) {
-        authorName = userProfile?.promoter_metadata?.brand_name || (userProfile as any)?.promoter_name || profileFullLegalName || userProfile?.name || 'Promoter';
-        authorAvatar = userProfile?.promoter_metadata?.logo || (userProfile as any)?.promoter_logo || liveUserAvatar || undefined;
-        authorRole = 'Promoter';
-      } else if (isFanRole) {
-        authorName = profileHandle || userProfile?.console_handle || userProfile?.screen_name || 'fan_user';
-        authorAvatar = liveUserAvatar || undefined;
-        authorRole = 'Fan';
-      } else {
-        authorName = profileHandle || userProfile?.console_handle || userProfile?.username || userProfile?.name || 'pro_user';
-        authorAvatar = liveUserAvatar || undefined;
-        authorRole = 'Industry Pro';
-      }
-      const postedByValue = isBandRole ? (profileFullLegalName?.split(' ')[0] || userProfile?.name?.split(' ')[0]) : undefined;
+      const authorName = resolvedPersona.name;
+      const authorAvatar = resolvedPersona.avatarUrl;
+      const authorRole = resolvedPersona.roleBadge;
+      const authorRealName = resolvedPersona.realName || authorName;
+      const isBandRole = resolvedPersona.type === 'band';
+      const activeWorkspace = resolvedPersona.type;
+      const postedByValue = isBandRole
+        ? (profileFullLegalName?.split(' ')[0] || userProfile?.name?.split(' ')[0])
+        : undefined;
 
       const totalPollMs = (parseInt(pollTimerDays || '0') * 86400 + parseInt(pollTimerHours || '0') * 3600) * 1000;
       const pollExpiresAtValue = pollIsTimed && totalPollMs > 0 ? new Date(Date.now() + totalPollMs).toISOString() : undefined;
@@ -728,8 +716,6 @@ export function useSocialFeedState({
         ? crypto.randomUUID()
         : 'f' + Date.now().toString(16) + '-4000-8000-8000-' + Math.floor(Math.random() * 1e12).toString(16).padStart(12, '0');
 
-      const activeWorkspace = portalRole || userProfile?.account_type || 'social';
-
       const activeAuthorId = userProfile?.id || (userProfile as any)?.profile_id;
 
       const ytId = youtubeUrl ? getYouTubeId(youtubeUrl) : undefined;
@@ -741,11 +727,13 @@ export function useSocialFeedState({
         type: merchDataValue ? 'merch_drop' : tapeDataValue ? 'tape_share' : pollDataValue ? 'poll' : eventDataValue ? 'event' : 'post',
         workspace_type: activeWorkspace,
         workspaceType: activeWorkspace,
+        persona_id: resolvedPersona.id,
         authorRole: authorRole,
         authorName: authorName,
         authorAvatar: authorAvatar,
         author: {
           id: isBandRole ? (activeBand?.id || activeAuthorId) : activeAuthorId,
+          personaId: resolvedPersona.id,
           name: authorName,
           realName: authorRealName,
           avatar: authorAvatar,

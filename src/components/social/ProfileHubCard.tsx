@@ -1,5 +1,13 @@
 import React from 'react';
 import { Crown } from 'lucide-react';
+import {
+  resolveBandLogo,
+  resolveBandCover,
+  resolveBandHandle,
+  resolveBandName,
+  resolveEffectiveAvatar,
+  resolveEffectiveCover
+} from '../../utils/bandProfileUtils';
 
 interface ProfileHubCardProps {
   activeTab: string;
@@ -17,6 +25,8 @@ interface ProfileHubCardProps {
   profileSceneRoles?: string[];
   profileLocation?: string;
   getRoleBorderAndGlowClass: (role?: string) => string;
+  activeBand?: any;
+  userProfile?: any;
 }
 
 export const ProfileHubCard: React.FC<ProfileHubCardProps> = ({
@@ -35,8 +45,15 @@ export const ProfileHubCard: React.FC<ProfileHubCardProps> = ({
   profileSceneRoles = [],
   profileLocation,
   getRoleBorderAndGlowClass,
+  activeBand,
+  userProfile,
 }) => {
   if (activeTab !== 'feed') return null;
+
+  const effectiveAvatar = resolveEffectiveAvatar(portalRole, activeBand, userProfile, profileAvatarUrl);
+  const effectiveCover = resolveEffectiveCover(portalRole, activeBand, userProfile, profileCoverUrl);
+  const effectiveName = portalRole === 'band' ? resolveBandName(activeBand, userProfile) : (profileFullLegalName || 'User');
+  const effectiveHandle = portalRole === 'band' ? resolveBandHandle(activeBand, userProfile) : (profileHandle || 'user');
 
   return (
     <div className="px-4 sm:px-0 pb-4 flex justify-center shrink-0">
@@ -50,8 +67,8 @@ export const ProfileHubCard: React.FC<ProfileHubCardProps> = ({
       >
         {/* Cover Image Background covering the entire card */}
         <div className="absolute inset-0 w-full h-full z-0 overflow-hidden">
-          {profileCoverUrl ? (
-            <img src={profileCoverUrl} className="w-full h-full object-cover" alt="" />
+          {effectiveCover ? (
+            <img src={effectiveCover} className="w-full h-full object-cover" alt="" />
           ) : (
             <div className="w-full h-full bg-gradient-to-r from-rose-950/40 to-purple-950/40 relative">
               {/* Subtle red grid pattern overlay */}
@@ -80,23 +97,34 @@ export const ProfileHubCard: React.FC<ProfileHubCardProps> = ({
         <div className="relative z-10 p-5 flex flex-col items-center text-center space-y-3">
           {/* Profile Avatar Overlap - Enlarged */}
           <div className={`w-[92px] h-[92px] rounded-full bg-zinc-950 overflow-hidden flex items-center justify-center font-black ${currentTheme.textClass} text-2xl shrink-0 transition-transform duration-300 group-hover:scale-105 ${getRoleBorderAndGlowClass(portalRole)}`}>
-            {profileAvatarUrl ? (
-              <img src={profileAvatarUrl} className="w-full h-full object-cover" alt="Profile" />
+            {effectiveAvatar ? (
+              <img src={effectiveAvatar} className="w-full h-full object-cover" alt="Profile" />
             ) : (
-              profileHandle?.charAt(0).toUpperCase() || 'U'
+              (effectiveHandle || effectiveName || 'U').replace(/^@+/, '').charAt(0).toUpperCase()
             )}
           </div>
 
           {/* Profile Handle & Full Name in a solid black pill style box */}
-          <div className="bg-black/95 border border-zinc-900 rounded-2xl px-5 py-2 shadow-[0_2px_12px_rgba(0,0,0,0.8)] inline-flex flex-col items-center max-w-full">
-            <h3 className="text-sm font-black text-white font-display tracking-tight flex items-center justify-center gap-1.5">
-              {isEmbedded ? profileFullLegalName : `@${profileHandle || 'Guest'}`}
-              <span className={`w-1.5 h-1.5 rounded-full ${isEmbedded ? currentTheme.textClass.replace('text-', 'bg-') : 'bg-rose-500'} animate-pulse`} />
-            </h3>
-            <p className="text-[8px] text-zinc-400 font-mono tracking-wider uppercase leading-none mt-1">
-              {isEmbedded ? `@${profileHandle} • ${portalRole.toUpperCase()} PRO` : profileFullLegalName}
-            </p>
-          </div>
+          {(() => {
+            const cleanHandle = (effectiveHandle || 'user').replace(/^@+/, '');
+            const isProRole = ['band', 'creative', 'promoter', 'label'].includes(portalRole) || isEmbedded;
+            const primaryName = isProRole ? (effectiveName || cleanHandle) : (effectiveName || `@${cleanHandle}`);
+            const secondaryText = isProRole 
+              ? `@${cleanHandle} • ${portalRole.toUpperCase()} PRO`
+              : (portalRole === 'industry_pro' ? `@${cleanHandle} • INDUSTRY PRO` : `@${cleanHandle} • FAN LISTENER`);
+
+            return (
+              <div className="bg-black/95 border border-zinc-900 rounded-2xl px-5 py-2 shadow-[0_2px_12px_rgba(0,0,0,0.8)] inline-flex flex-col items-center max-w-full">
+                <h3 className="text-sm font-black text-white font-display tracking-tight flex items-center justify-center gap-1.5">
+                  {primaryName}
+                  <span className={`w-1.5 h-1.5 rounded-full ${isProRole ? currentTheme.textClass.replace('text-', 'bg-') : 'bg-rose-500'} animate-pulse`} />
+                </h3>
+                <p className="text-[8px] text-zinc-400 font-mono tracking-wider uppercase leading-none mt-1">
+                  {secondaryText}
+                </p>
+              </div>
+            );
+          })()}
 
           {/* Profile Blurb inside a solid black pill style box */}
           {profileBlurb && (

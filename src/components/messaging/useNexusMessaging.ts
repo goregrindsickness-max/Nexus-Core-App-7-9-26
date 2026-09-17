@@ -514,10 +514,22 @@ export function useNexusMessaging({ userProfile, setAllProfiles, setAllFollows }
     markChatAsRead(selectedChatId, userProfile.id);
 
     const supabaseClient = getSupabase();
-    if (!supabaseClient) return;
 
     setChats(prev => {
-      const updated = prev.map(c => c.id === selectedChatId ? { ...c, unread: 0 } : c);
+      const updated = prev.map(c => {
+        if (c.id === selectedChatId || c.name?.toLowerCase() === selectedChatId.toLowerCase()) {
+          return {
+            ...c,
+            unread: 0,
+            isRead: true,
+            is_read: true,
+            messages: Array.isArray(c.messages)
+              ? c.messages.map(m => ({ ...m, status: 'read' as const }))
+              : c.messages
+          };
+        }
+        return c;
+      });
       if (userProfile?.email) {
         const emailKey = userProfile.email.toLowerCase().trim();
         try {
@@ -531,43 +543,62 @@ export function useNexusMessaging({ userProfile, setAllProfiles, setAllFollows }
 
     setTimeout(() => {
       window.dispatchEvent(new CustomEvent('nexus_chats_updated'));
+      window.dispatchEvent(new CustomEvent('nexus_chat_read', { detail: { chatId: selectedChatId } }));
     }, 0);
 
-    supabaseClient
-      .from('profiles')
-      .select('id')
-      .eq('email', selectedChatId)
-      .single()
-      .then(({ data: profData }) => {
-        if (profData?.id) {
-          const senderUuid = extractUUID(profData.id) || profData.id;
-          if (userProfile?.email) {
-            supabaseClient
-              .from('profiles')
-              .select('id')
-              .eq('email', userProfile.email)
-              .single()
-              .then(({ data: myProfData }) => {
-                if (myProfData?.id) {
-                  const receiverUuid = extractUUID(myProfData.id) || myProfData.id;
-                  if (extractUUID(senderUuid) && extractUUID(receiverUuid)) {
-                    supabaseClient
-                      .from('nexus_chats')
-                      .update({ is_read: true })
-                      .eq('sender_id', senderUuid)
-                      .eq('receiver_id', receiverUuid)
-                      .eq('is_read', false)
-                      .then(({ error }) => {
-                        if (error) {
-                          console.error("[useNexusMessaging] Failed to mark messages as read:", error);
-                        }
-                      });
-                  }
-                }
-              });
+    if (!supabaseClient) return;
+
+    const myProfileUuid = extractUUID(userProfile.id) || userProfile.id;
+
+    // Direct RPC call
+    supabaseClient.rpc('mark_all_chats_and_notifications_read', {
+      p_profile_id: myProfileUuid
+    }).then(() => {}, () => {});
+
+    const isUuid = extractUUID(selectedChatId);
+    if (isUuid) {
+      supabaseClient.rpc('mark_thread_as_read', {
+        p_chat_id: selectedChatId,
+        p_profile_id: myProfileUuid
+      }).then(() => {}, () => {});
+
+      // Direct update
+      supabaseClient
+        .from('nexus_chats')
+        .update({ is_read: true })
+        .eq('sender_id', selectedChatId)
+        .or(`receiver_id.eq.${myProfileUuid},recipient_id.eq.${myProfileUuid}`)
+        .eq('is_read', false)
+        .then(({ error }) => {
+          if (error) {
+            console.warn("[useNexusMessaging] Direct update warning:", error);
           }
-        }
-      });
+        });
+    } else {
+      // It's an email or username, resolve from profiles
+      supabaseClient
+        .from('profiles')
+        .select('id')
+        .eq('email', selectedChatId)
+        .maybeSingle()
+        .then(({ data: profData }) => {
+          if (profData?.id) {
+            const senderUuid = extractUUID(profData.id) || profData.id;
+            supabaseClient.rpc('mark_thread_as_read', {
+              p_chat_id: senderUuid,
+              p_profile_id: myProfileUuid
+            }).then(() => {}, () => {});
+
+            supabaseClient
+              .from('nexus_chats')
+              .update({ is_read: true })
+              .eq('sender_id', senderUuid)
+              .or(`receiver_id.eq.${myProfileUuid},recipient_id.eq.${myProfileUuid}`)
+              .eq('is_read', false)
+              .then(() => {});
+          }
+        });
+    }
   }, [selectedChatId, userProfile?.id, userProfile?.email]);
 
   // Save chats to localStorage whenever chats or userProfile?.email changes

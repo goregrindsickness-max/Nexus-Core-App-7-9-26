@@ -35,6 +35,7 @@ export {
   base64ToBlob,
   uploadBase64ToStorage,
   uploadCommunityBandMedia,
+  uploadClipVideoFile,
   testPhotoPitStorageConnection,
   ensureImagesUploadedToStorage,
 } from './services/storageService';
@@ -118,3 +119,16 @@ export {
   sanitizeReleaseForDb,
 } from './services/releasesService';
 export type { CatalogRelease, ReleaseTrack } from './services/releasesService';
+
+// 9. Inventory Service
+export {
+  INVENTORY_STORAGE_BUCKET,
+  DEFAULT_INVENTORY_IMAGE,
+  resolveInventoryImageUrl,
+  uploadInventoryItemImage,
+  fetchInventoryItems,
+  saveInventoryItem,
+  deleteInventoryItem,
+} from './services/inventoryService';
+export type { InventoryImageUploadResult } from './services/inventoryService';
+

@@ -2037,7 +2037,7 @@ export default function CoOpRouteStagingView({ onBack, triggerNotification, addL
                                         <div className="space-y-1.5">
                                           {weatherData.warnings.map((w, wIdx) => (
                                             <div 
-                                              key={`coop-route-warn-${wIdx}`} 
+                                              key={`coop-route-warn-${node.id || node.date || 'node'}-${wIdx}`} 
                                               className={`p-2 border rounded flex items-start gap-2 text-[10.5px] leading-relaxed transition-all ${w.color}`}
                                             >
                                               <span className={`px-1.5 py-0.5 text-[8.5px] font-black uppercase rounded shrink-0 ${w.badgeColor}`}>

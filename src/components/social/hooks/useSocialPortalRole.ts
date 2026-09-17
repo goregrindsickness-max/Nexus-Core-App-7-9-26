@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { getSocialTheme } from '../utils/themeUtils';
 
 export type PortalRoleType = 'industry_pro' | 'fan_only' | 'label' | 'promoter' | 'creative' | 'band' | string;
@@ -16,11 +16,19 @@ export function useSocialPortalRole({ initialRole, userProfile }: UseSocialPorta
     return r;
   };
 
-  const resolvedInitial = initialRole || userProfile?.account_type || 'fan_only';
+  const resolvedInitial = initialRole || userProfile?.active_workspace || userProfile?.account_type || 'fan_only';
   const normInitial = normalizeRole(resolvedInitial);
 
   const [activeRole, setActiveRole] = useState<PortalRoleType>(normInitial);
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (initialRole) {
+      setActiveRole(normalizeRole(initialRole));
+    } else if (userProfile?.active_workspace) {
+      setActiveRole(normalizeRole(userProfile.active_workspace));
+    }
+  }, [initialRole, userProfile?.active_workspace]);
 
   const rawRole = activeRole || normInitial;
   const portalRole = normalizeRole(rawRole);

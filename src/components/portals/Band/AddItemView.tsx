@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { InventoryItem } from '../../../types';
-import { generateUUID } from '../../../supabase';
+import { generateUUID, uploadInventoryItemImage, resolveInventoryImageUrl, INVENTORY_STORAGE_BUCKET } from '../../../supabase';
 
 interface AddItemViewProps {
   onBack: () => void;
@@ -35,8 +35,12 @@ interface AddItemViewProps {
 }
 
 export default function AddItemView({ onBack, onSave, onDelete, triggerNotification, initialItem, isOffline = false }: AddItemViewProps) {
-  const [photoCount, setPhotoCount] = useState(initialItem?.image_url ? 1 : 0);
-  const [itemPhotoUrl, setItemPhotoUrl] = useState<string | null>(initialItem?.image_url || null);
+  const initialResolvedImage = initialItem ? resolveInventoryImageUrl(initialItem) : null;
+  const [photoCount, setPhotoCount] = useState(initialResolvedImage ? 1 : 0);
+  const [itemPhotoUrl, setItemPhotoUrl] = useState<string | null>(initialResolvedImage);
+  const [itemImagePath, setItemImagePath] = useState<string | null>(initialItem?.image_path || null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [itemName, setItemName] = useState(initialItem?.name || '');
   const [category, setCategory] = useState(initialItem?.item_type || 'APPAREL');
   const [retailPrice, setRetailPrice] = useState(initialItem?.price ? String(initialItem.price) : '');
@@ -118,17 +122,26 @@ export default function AddItemView({ onBack, onSave, onDelete, triggerNotificat
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      
-      // Setup immediate local blob for rapid visual preview
-      const previewUrl = URL.createObjectURL(file);
-      setItemPhotoUrl(previewUrl);
-      setPhotoCount(prev => Math.min(3, prev + e.target.files!.length));
-      triggerNotification('Processing and compressing image...');
+  const processAndUploadFile = async (file: File) => {
+    // Setup immediate local blob for rapid visual preview
+    const previewUrl = URL.createObjectURL(file);
+    setItemPhotoUrl(previewUrl);
+    setPhotoCount(prev => Math.min(3, prev + 1));
+    setIsUploadingImage(true);
+    triggerNotification(`Routing upload to '${INVENTORY_STORAGE_BUCKET}' storage bucket...`);
 
-      // Compress using Canvas before Base64 serialization
+    try {
+      const activeBandId = initialItem?.band_id || localStorage.getItem('nexus_core_active_band_id') || '';
+      const result = await uploadInventoryItemImage(file, initialItem?.id || generateUUID(), activeBandId);
+
+      if (result && result.publicUrl) {
+        setItemPhotoUrl(result.publicUrl);
+        setItemImagePath(result.imagePath);
+        triggerNotification(`Photo uploaded to Supabase '${INVENTORY_STORAGE_BUCKET}'!`);
+      }
+    } catch (err: any) {
+      console.warn(`[AddItemView] Storage upload fallback:`, err);
+      // Fallback to local compressed WebP base64
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
@@ -136,7 +149,6 @@ export default function AddItemView({ onBack, onSave, onDelete, triggerNotificat
         const MAX_HEIGHT = 600;
         let width = img.width;
         let height = img.height;
-
         if (width > height) {
           if (width > MAX_WIDTH) {
             height *= MAX_WIDTH / width;
@@ -148,29 +160,39 @@ export default function AddItemView({ onBack, onSave, onDelete, triggerNotificat
             height = MAX_HEIGHT;
           }
         }
-
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/webp', 0.7); // 70% JS WebP quality
+          const dataUrl = canvas.toDataURL('image/webp', 0.7);
           setItemPhotoUrl(dataUrl);
-          triggerNotification('Photo processed & compressed into database URL!');
-        } else {
-          // Fallback if canvas is unsupported
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            if (typeof reader.result === 'string') {
-              setItemPhotoUrl(reader.result);
-            }
-          };
-          reader.readAsDataURL(file);
         }
       };
       img.src = previewUrl;
-      
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      processAndUploadFile(file);
       e.target.value = '';
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      if (file.type.startsWith('image/')) {
+        processAndUploadFile(file);
+      } else {
+        triggerNotification('Please drop a valid image file');
+      }
     }
   };
 
@@ -242,6 +264,7 @@ export default function AddItemView({ onBack, onSave, onDelete, triggerNotificat
       status: totalStartingStock > lowStockAlert ? 'Healthy' : totalStartingStock > criticalStockAlert ? 'Warning' : 'Critical',
       border_color: initialItem?.border_color || '#00ffcc', // Default new item color
       image_url: itemPhotoUrl || initialItem?.image_url || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200&auto=format&fit=crop',
+      image_path: itemImagePath || initialItem?.image_path || undefined,
       cost: parseFloat(unitCost) || undefined,
       sku: sku || undefined,
       unit_weight: unitWeight || undefined,
@@ -295,6 +318,7 @@ export default function AddItemView({ onBack, onSave, onDelete, triggerNotificat
       status: totalStartingStock > lowStockAlert ? 'Healthy' : totalStartingStock > criticalStockAlert ? 'Warning' : 'Critical',
       border_color: initialItem?.border_color || '#00ffcc', // Default new item color
       image_url: itemPhotoUrl || initialItem?.image_url || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200&auto=format&fit=crop',
+      image_path: itemImagePath || initialItem?.image_path || undefined,
       cost: parseFloat(unitCost) || undefined,
       sku: sku || undefined,
       unit_weight: unitWeight || undefined,
@@ -414,8 +438,18 @@ export default function AddItemView({ onBack, onSave, onDelete, triggerNotificat
                       style={{ maxHeight: '240px' }}
                       referrerPolicy="no-referrer"
                     />
+                    <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/75 backdrop-blur-md px-2.5 py-1 rounded-md border border-emerald-500/30 text-[10px] font-mono text-emerald-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>bucket: inventory-items</span>
+                    </div>
+                    {isUploadingImage && (
+                      <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-2 text-white font-mono text-xs z-20">
+                        <RefreshCw className="w-6 h-6 text-[#00ffcc] animate-spin" />
+                        <span>Uploading to 'inventory-items' bucket...</span>
+                      </div>
+                    )}
                     <button 
-                      onClick={(e) => { e.stopPropagation(); setItemPhotoUrl(null); setPhotoCount(0); }}
+                      onClick={(e) => { e.stopPropagation(); setItemPhotoUrl(null); setItemImagePath(null); setPhotoCount(0); }}
                       className="absolute top-2 right-2 bg-black/60 p-2 rounded-full text-white hover:bg-rose-500 transition-colors opacity-0 group-hover:opacity-100"
                       title="Remove Photo"
                     >
@@ -439,8 +473,11 @@ export default function AddItemView({ onBack, onSave, onDelete, triggerNotificat
                   </div>
                 ) : (
                   <div 
-                    className="bg-[#0f1f1d] border border-emerald-900/50 rounded-xl flex flex-col items-center justify-center border-dashed gap-2 cursor-pointer hover:bg-[#132422] transition-colors relative overflow-hidden"
+                    className={`bg-[#0f1f1d] border ${isDragging ? 'border-[#00ffcc] bg-[#142825]' : 'border-emerald-900/50'} rounded-xl flex flex-col items-center justify-center border-dashed gap-2 cursor-pointer hover:bg-[#132422] transition-colors relative overflow-hidden`}
                     onClick={handlePhotoUploadClick}
+                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                    onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+                    onDrop={handleDrop}
                     style={{ minHeight: '160px' }}
                   >
                     <input 
@@ -449,7 +486,6 @@ export default function AddItemView({ onBack, onSave, onDelete, triggerNotificat
                       onChange={handleFileChange} 
                       onClick={(e) => e.stopPropagation()}
                       className="hidden" 
-                      multiple 
                       accept="image/*" 
                     />
                     <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center relative z-10">
@@ -457,7 +493,10 @@ export default function AddItemView({ onBack, onSave, onDelete, triggerNotificat
                     </div>
                     <div className="text-center relative z-10">
                       <span className="text-white font-bold block text-sm font-sans tracking-tight">Upload Photos</span>
-                      <span className="text-zinc-400 font-sans text-xs">Drag & drop or tap to select<br/>{3 - photoCount} remaining</span>
+                      <span className="text-zinc-400 font-sans text-xs">Drag & drop or tap to select</span>
+                      <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono text-emerald-400">
+                        <span>Supabase 'inventory-items' storage bucket</span>
+                      </div>
                     </div>
                   </div>
                 )}

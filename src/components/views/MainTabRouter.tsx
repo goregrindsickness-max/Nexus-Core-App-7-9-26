@@ -169,6 +169,11 @@ export interface MainTabRouterProps {
 
   // Distro Deck
   distroDeckSubTab: string;
+
+  // Navigation V2 Workspace
+  dashboardV2ActiveNav?: string;
+  setDashboardV2ActiveNav?: (nav: any) => void;
+  onNavigateToTab?: (tab: string, subNav?: string) => void;
 }
 
 export const MainTabRouter: React.FC<MainTabRouterProps> = (props) => {
@@ -401,6 +406,7 @@ export const MainTabRouter: React.FC<MainTabRouterProps> = (props) => {
             setIsModalOpen={setIsModalOpen}
             onBack={() => setActiveTab('home-v2')}
             bandName={activeBand?.name}
+            activeBandId={activeBandId}
             initialOpenForm={pendingOpenShowsForm}
             onCloseForm={() => setPendingOpenShowsForm(false)}
             inventory={filteredInventory}
@@ -717,6 +723,14 @@ export const MainTabRouter: React.FC<MainTabRouterProps> = (props) => {
           <UniversalSocialFeed
             userProfile={userProfile}
             setUserProfile={setUserProfile}
+            portalRole={
+              (userProfile?.account_type === 'fan' || userProfile?.account_type === 'fan_only' || userProfile?.active_workspace === 'fan_only') ? 'fan_only' :
+              userProfile?.active_workspace === 'creative' ? 'creative' :
+              userProfile?.active_workspace === 'label' ? 'label' :
+              userProfile?.active_workspace === 'promoter' ? 'promoter' :
+              userProfile?.active_workspace === 'band' ? 'band' :
+              'industry_pro'
+            }
             activeBand={activeBand}
             bands={bands}
             setBands={setBands}
@@ -725,10 +739,25 @@ export const MainTabRouter: React.FC<MainTabRouterProps> = (props) => {
               setUserProfile(null);
               window.location.reload();
             }}
-            onBack={() => setActiveTab('home-v2')}
+            onBack={() => {
+              const target = userProfile?.active_workspace;
+              if (target === 'creative') setActiveTab('creative');
+              else if (target === 'label') setActiveTab('label');
+              else if (target === 'promoter') setActiveTab('promoter');
+              else setActiveTab('home-v2');
+            }}
             triggerNotification={triggerNotification}
             addLog={addLog}
             activeBandId={activeBandId}
+            onNavigateToTab={props.onNavigateToTab || ((tab: string, subNav?: string) => {
+              if (subNav && props.setDashboardV2ActiveNav) {
+                props.setDashboardV2ActiveNav(subNav as any);
+              }
+              setActiveTab(tab);
+            })}
+            setActiveTab={setActiveTab}
+            setDashboardV2ActiveNav={props.setDashboardV2ActiveNav}
+            dashboardV2ActiveNav={props.dashboardV2ActiveNav}
             onUpdateBandLogo={(newUrl) => {
               if (activeBand) {
                 const updatedBand = { ...activeBand, logo_url: newUrl };

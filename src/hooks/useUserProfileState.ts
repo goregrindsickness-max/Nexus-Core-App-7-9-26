@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { profileStore } from '../utils/indexedDB';
 import { getSupabase, executeWithSchemaResilience, executeSanitizedProfileUpsert, sanitizeCreativePayload, formatCreativePayload, extractGlobalProfilePayload, sanitizeBandPayload } from '../supabase';
+import { resolveBandLogo, resolveBandCover, resolveBandHandle, resolveBandName, resolveBandBio, resolveBandLocation } from '../utils/bandProfileUtils';
 
 export interface UseUserProfileStateProps {
   portalRole: string;
@@ -24,18 +25,28 @@ export function useUserProfileState({
 
   // User Profile Custom States
   const [profileFullLegalName, setProfileFullLegalName] = useState(() => {
+    if (portalRole === 'band') {
+      return resolveBandName(activeBand, userProfile);
+    }
+    if (portalRole === 'creative') {
+      return userProfile?.creative_metadata?.business_name || userProfile?.creative_name || 'Pro Creative';
+    }
+    if (portalRole === 'promoter') {
+      return userProfile?.promoter_metadata?.brand_name || userProfile?.promoter_brand || 'Pro Promoter';
+    }
+    if (portalRole === 'label') {
+      return userProfile?.label_company_name || 'Pro Label';
+    }
+
     const savedLegalName = typeof window !== 'undefined' ? (localStorage.getItem('nexus_full_legal_name') || localStorage.getItem('nexus_user_full_name')) : null;
     if (savedLegalName && savedLegalName.trim() !== '') return savedLegalName;
+
     if (portalRole === 'fan_only') {
       return userProfile?.full_name || userProfile?.legal_name || userProfile?.screen_name || userProfile?.name || 'Fan Listener';
     }
     if (portalRole === 'industry_pro') {
       return userProfile?.full_name || userProfile?.legal_name || userProfile?.name || 'Industry Pro';
     }
-    if (portalRole === 'band') return activeBand?.name || userProfile?.bandName || 'Artist';
-    if (portalRole === 'creative') return userProfile?.creative_metadata?.business_name || 'Pro Creative';
-    if (portalRole === 'promoter') return userProfile?.promoter_metadata?.brand_name || 'Pro Promoter';
-    if (portalRole === 'label') return userProfile?.label_company_name || 'Pro Label';
 
     if (userProfile?.full_name || userProfile?.legal_name) {
       return userProfile.full_name || userProfile.legal_name || '';
@@ -47,22 +58,33 @@ export function useUserProfileState({
   });
 
   const [profileHandle, setProfileHandle] = useState(() => {
+    if (portalRole === 'band') {
+      return resolveBandHandle(activeBand, userProfile);
+    }
+    if (portalRole === 'creative') {
+      const rawC = userProfile?.creative_handle || userProfile?.creative_metadata?.business_name || 'creative_pro';
+      return rawC.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '_');
+    }
+    if (portalRole === 'promoter') {
+      const rawP = userProfile?.promoter_handle || userProfile?.promoter_metadata?.brand_name || 'promoter_pro';
+      return rawP.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '_');
+    }
+    if (portalRole === 'label') {
+      const rawL = userProfile?.label_url_slug || userProfile?.label_company_name || 'label_pro';
+      return rawL.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '_');
+    }
+
     if (userProfile?.console_handle && userProfile.console_handle !== '') {
-      return userProfile.console_handle;
+      return userProfile.console_handle.toLowerCase().replace(/^@+/, '');
     }
     if (portalRole === 'fan_only') {
-      return userProfile?.screen_name?.toLowerCase().replace(/\s+/g, '') || 'fan_core';
+      return userProfile?.screen_name?.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '') || 'fan_core';
     }
-    if (portalRole === 'band') return (activeBand?.name || userProfile?.bandName || 'band_core').toLowerCase().replace(/\s+/g, '');
-    if (portalRole === 'creative') return userProfile?.creative_metadata?.business_name?.toLowerCase().replace(/\s+/g, '') || 'creative_pro';
-    if (portalRole === 'promoter') return userProfile?.promoter_metadata?.brand_name?.toLowerCase().replace(/\s+/g, '') || 'promoter_pro';
-    if (portalRole === 'label') return userProfile?.label_url_slug || 'label_pro';
-
     if (userProfile?.screen_name && userProfile.screen_name !== '') {
-      return userProfile.screen_name.toLowerCase().replace(/\s+/g, '');
+      return userProfile.screen_name.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '');
     }
     if (userProfile?.name && userProfile.name !== 'New User' && userProfile.name !== '') {
-      return userProfile.name.toLowerCase().replace(/\s+/g, '');
+      return userProfile.name.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '');
     }
     return 'pro_user';
   });
@@ -71,11 +93,23 @@ export function useUserProfileState({
   const [profilePassword, setProfilePassword] = useState('hardcore123');
   const [profilePin, setProfilePin] = useState(userProfile?.pin || '123456');
   const [profileLocation, setProfileLocation] = useState(() => {
+    if (portalRole === 'band') {
+      if (activeBand?.city && (activeBand?.state || activeBand?.state_province)) {
+        return `${activeBand.city}, ${activeBand.state || activeBand.state_province}, ${activeBand.country || 'USA'}`;
+      }
+      return activeBand?.homebase || activeBand?.city || activeBand?.location || (userProfile?.city && userProfile?.state_province ? `${userProfile.city}, ${userProfile.state_province}` : 'Denison, TX, USA');
+    }
+    if (portalRole === 'label' && (userProfile?.label_headquarters || userProfile?.city)) {
+      return userProfile.label_headquarters || userProfile.city;
+    }
+    if (portalRole === 'creative' && userProfile?.creative_metadata?.city) {
+      return userProfile.creative_metadata.city;
+    }
+    if (portalRole === 'promoter' && userProfile?.promoter_metadata?.city) {
+      return userProfile.promoter_metadata.city;
+    }
     const signupLocation = (userProfile?.city && userProfile?.state_province) ? `${userProfile.city}, ${userProfile.state_province}` : null;
     if (portalRole === 'fan_only') return signupLocation || userProfile?.city_state || userProfile?.location_code || 'Denison, TX';
-    if (portalRole === 'label' && userProfile?.label_headquarters) {
-      return userProfile.label_headquarters;
-    }
     return signupLocation || userProfile?.city_state || userProfile?.location_code || 'Detroit, MI';
   });
 
@@ -136,13 +170,15 @@ export function useUserProfileState({
   }, [digitalTicketsScanned, physicalMerchBought, bandsDiscovered]);
 
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(() => {
+    if (portalRole === 'band') {
+      return resolveBandLogo(activeBand, userProfile);
+    }
+    if (portalRole === 'label') return userProfile?.label_avatar || null;
+    if (portalRole === 'creative') return userProfile?.creative_avatar || userProfile?.creative_metadata?.avatar_url || null;
+    if (portalRole === 'promoter') return (userProfile as any)?.promoter_logo || userProfile?.promoter_metadata?.logo_url || null;
     if (portalRole === 'fan_only') {
       return userProfile?.avatar_url || 'FL';
     }
-    if (portalRole === 'label') return userProfile?.label_avatar || null;
-    if (portalRole === 'creative') return userProfile?.creative_avatar || null;
-    if (portalRole === 'promoter') return (userProfile as any)?.promoter_logo || null;
-    if (portalRole === 'band') return activeBand?.logo_url || null;
 
     if (userProfile?.avatar_url && userProfile.avatar_url !== 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/public-assets/Nexus%20Icon%20Circuits.png') {
       return userProfile.avatar_url;
@@ -151,14 +187,13 @@ export function useUserProfileState({
   });
 
   const [profileCoverUrl, setProfileCoverUrl] = useState<string | null>(() => {
-    if (portalRole === 'fan_only') return userProfile?.banner_url || null;
-    if (portalRole === 'label') return userProfile?.label_banner || null;
-    if (portalRole === 'creative') return userProfile?.creative_banner || null;
-    if (portalRole === 'promoter') return (userProfile as any)?.promoter_cover_image || null;
     if (portalRole === 'band') {
-      const savedCover = activeBand ? localStorage.getItem(`nexus_core_band_cover_${activeBand.id}`) : null;
-      return savedCover || activeBand?.cover_url || null;
+      return resolveBandCover(activeBand, userProfile);
     }
+    if (portalRole === 'label') return userProfile?.label_banner || null;
+    if (portalRole === 'creative') return userProfile?.creative_banner || userProfile?.creative_metadata?.banner_url || null;
+    if (portalRole === 'promoter') return (userProfile as any)?.promoter_cover_image || userProfile?.promoter_metadata?.banner_url || null;
+    if (portalRole === 'fan_only') return userProfile?.banner_url || null;
 
     if (userProfile?.banner_url) {
       return userProfile.banner_url;
@@ -175,57 +210,83 @@ export function useUserProfileState({
   const coverFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isLoadedRef.current) return;
-
     let avatar: string | null = null;
-    if (portalRole === 'fan_only') {
+    if (portalRole === 'band') {
+      avatar = resolveBandLogo(activeBand, userProfile);
+    } else if (portalRole === 'label') {
+      avatar = userProfile?.label_avatar || null;
+    } else if (portalRole === 'creative') {
+      avatar = userProfile?.creative_avatar || userProfile?.creative_metadata?.avatar_url || null;
+    } else if (portalRole === 'promoter') {
+      avatar = (userProfile as any)?.promoter_logo || userProfile?.promoter_metadata?.logo_url || null;
+    } else if (portalRole === 'fan_only') {
       avatar = userProfile?.avatar_url || 'FL';
-    } else if (portalRole === 'label') avatar = userProfile?.label_avatar || null;
-    else if (portalRole === 'creative') avatar = userProfile?.creative_avatar || null;
-    else if (portalRole === 'promoter') avatar = (userProfile as any)?.promoter_logo || null;
-    else if (portalRole === 'band') avatar = activeBand?.logo_url || null;
-    else {
+    } else {
       avatar = userProfile?.avatar_url || null;
     }
 
     setProfileAvatarUrl(avatar);
-  }, [portalRole, userProfile?.avatar_url, userProfile?.label_avatar, userProfile?.creative_avatar, (userProfile as any)?.promoter_logo, userProfile?.email, activeBand?.logo_url]);
+  }, [
+    portalRole, 
+    activeBand?.id, 
+    activeBand?.logo_url, 
+    activeBand?.avatar_url, 
+    activeBand?.avatar, 
+    activeBand?.image, 
+    activeBand?.name,
+    userProfile?.band_logo, 
+    userProfile?.avatar_url, 
+    userProfile?.label_avatar, 
+    userProfile?.creative_avatar, 
+    (userProfile as any)?.promoter_logo, 
+    userProfile?.email
+  ]);
 
   useEffect(() => {
-    if (isLoadedRef.current) return;
-
     let cover: string | null = null;
-    if (portalRole === 'fan_only') {
+    if (portalRole === 'band') {
+      cover = resolveBandCover(activeBand, userProfile);
+    } else if (portalRole === 'label') {
+      cover = userProfile?.label_banner || null;
+    } else if (portalRole === 'creative') {
+      cover = userProfile?.creative_banner || userProfile?.creative_metadata?.banner_url || null;
+    } else if (portalRole === 'promoter') {
+      cover = (userProfile as any)?.promoter_cover_image || userProfile?.promoter_metadata?.banner_url || null;
+    } else if (portalRole === 'fan_only') {
       cover = userProfile?.banner_url || null;
-    } else if (portalRole === 'label') cover = userProfile?.label_banner || null;
-    else if (portalRole === 'creative') cover = userProfile?.creative_banner || null;
-    else if (portalRole === 'promoter') cover = (userProfile as any)?.promoter_cover_image || null;
-    else if (portalRole === 'band') {
-      const savedCover = activeBand ? localStorage.getItem(`nexus_core_band_cover_${activeBand.id}`) : null;
-      cover = savedCover || activeBand?.cover_url || null;
     } else {
       cover = userProfile?.banner_url || null;
     }
 
     setProfileCoverUrl(cover);
-  }, [portalRole, userProfile?.banner_url, userProfile?.label_banner, userProfile?.creative_banner, (userProfile as any)?.promoter_cover_image, userProfile?.email, activeBand?.id, activeBand?.cover_url]);
+  }, [
+    portalRole, 
+    activeBand?.id, 
+    activeBand?.cover_url, 
+    activeBand?.banner_url, 
+    activeBand?.name,
+    userProfile?.band_cover, 
+    userProfile?.banner_url, 
+    userProfile?.label_banner, 
+    userProfile?.creative_banner, 
+    (userProfile as any)?.promoter_cover_image, 
+    userProfile?.email
+  ]);
 
   useEffect(() => {
-    if (isLoadedRef.current) return;
-
     let name = '';
-    if (portalRole === 'fan_only') {
+    if (portalRole === 'band') {
+      name = resolveBandName(activeBand, userProfile);
+    } else if (portalRole === 'creative') {
+      name = userProfile?.creative_metadata?.business_name || userProfile?.creative_name || 'Pro Creative';
+    } else if (portalRole === 'promoter') {
+      name = userProfile?.promoter_metadata?.brand_name || userProfile?.promoter_brand || 'Pro Promoter';
+    } else if (portalRole === 'label') {
+      name = userProfile?.label_company_name || 'Pro Label';
+    } else if (portalRole === 'fan_only') {
       name = userProfile?.full_name || userProfile?.legal_name || userProfile?.screen_name || userProfile?.name || 'Fan Listener';
     } else if (portalRole === 'industry_pro') {
       name = userProfile?.full_name || userProfile?.legal_name || userProfile?.name || 'Industry Pro';
-    } else if (portalRole === 'band') {
-      name = activeBand?.name || userProfile?.bandName || '';
-    } else if (portalRole === 'creative') {
-      name = userProfile?.creative_metadata?.business_name || '';
-    } else if (portalRole === 'promoter') {
-      name = userProfile?.promoter_metadata?.brand_name || '';
-    } else if (portalRole === 'label') {
-      name = userProfile?.label_company_name || '';
     } else if (userProfile?.full_name || userProfile?.legal_name) {
       name = userProfile.full_name || userProfile.legal_name || '';
     } else if (userProfile?.name && userProfile.name !== 'New User' && userProfile.name !== '') {
@@ -234,32 +295,35 @@ export function useUserProfileState({
       name = userProfile?.name || '';
     }
 
-    if (name && name !== profileFullLegalName) {
+    if (name) {
       setProfileFullLegalName(name);
     }
 
     let handle = '';
-    if (userProfile?.console_handle && userProfile.console_handle !== '') {
-      handle = userProfile.console_handle;
-    } else if (portalRole === 'fan_only') {
-      handle = userProfile?.screen_name?.toLowerCase().replace(/\s+/g, '') || 'fan_core';
-    } else if (portalRole === 'band') {
-      handle = (activeBand?.name || userProfile?.bandName || '').toLowerCase().replace(/\s+/g, '') || '';
+    if (portalRole === 'band') {
+      handle = resolveBandHandle(activeBand, userProfile);
     } else if (portalRole === 'creative') {
-      handle = userProfile?.creative_metadata?.business_name?.toLowerCase().replace(/\s+/g, '') || '';
+      const rawC = userProfile?.creative_handle || userProfile?.creative_metadata?.business_name || 'creative_pro';
+      handle = rawC.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '_');
     } else if (portalRole === 'promoter') {
-      handle = userProfile?.promoter_metadata?.brand_name?.toLowerCase().replace(/\s+/g, '') || '';
+      const rawP = userProfile?.promoter_handle || userProfile?.promoter_metadata?.brand_name || 'promoter_pro';
+      handle = rawP.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '_');
     } else if (portalRole === 'label') {
-      handle = userProfile?.label_url_slug || '';
+      const rawL = userProfile?.label_url_slug || userProfile?.label_company_name || 'label_pro';
+      handle = rawL.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '_');
+    } else if (portalRole === 'fan_only') {
+      handle = (userProfile?.screen_name || userProfile?.console_handle || userProfile?.name || 'fan_core').toLowerCase().replace(/^@+/, '').replace(/\s+/g, '');
+    } else if (userProfile?.console_handle && userProfile.console_handle !== '') {
+      handle = userProfile.console_handle.toLowerCase().replace(/^@+/, '');
     } else if (userProfile?.screen_name && userProfile.screen_name !== '') {
-      handle = userProfile.screen_name.toLowerCase().replace(/\s+/g, '');
+      handle = userProfile.screen_name.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '');
     } else if (userProfile?.name && userProfile.name !== 'New User' && userProfile.name !== '') {
-      handle = userProfile.name.toLowerCase().replace(/\s+/g, '');
+      handle = userProfile.name.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '');
     } else {
       handle = 'fan_core';
     }
 
-    if (handle && handle !== profileHandle) {
+    if (handle) {
       setProfileHandle(handle);
     }
   }, [
@@ -268,7 +332,11 @@ export function useUserProfileState({
     userProfile?.screen_name,
     userProfile?.console_handle,
     userProfile?.bandName,
+    userProfile?.band_name,
+    activeBand?.id,
     activeBand?.name,
+    activeBand?.custom_slug,
+    activeBand?.handle,
     userProfile?.creative_metadata?.business_name,
     userProfile?.promoter_metadata?.brand_name,
     userProfile?.label_company_name,
@@ -285,17 +353,41 @@ export function useUserProfileState({
   });
 
   const [profileBlurb, setProfileBlurb] = useState(() => {
+    if (portalRole === 'band') {
+      return resolveBandBio(activeBand, userProfile);
+    }
+    if (portalRole === 'creative') {
+      return userProfile?.creative_metadata?.bio || userProfile?.creative_bio || 'Professional creative specialist on the Nexus network.';
+    }
+    if (portalRole === 'promoter') {
+      return userProfile?.promoter_metadata?.bio || userProfile?.promoter_bio || 'Concert promoter and event organizer on Nexus.';
+    }
+    if (portalRole === 'label') {
+      return userProfile?.label_bio || 'Official record label on Nexus.';
+    }
     if (userProfile?.bio) return userProfile.bio;
     if (userProfile?.profileBlurb) return userProfile.profileBlurb;
     return '';
   });
 
   useEffect(() => {
-    const freshBio = userProfile?.bio || userProfile?.profileBlurb;
+    let freshBio = '';
+    if (portalRole === 'band') {
+      freshBio = resolveBandBio(activeBand, userProfile);
+    } else if (portalRole === 'creative') {
+      freshBio = userProfile?.creative_metadata?.bio || userProfile?.creative_bio || 'Professional creative specialist on the Nexus network.';
+    } else if (portalRole === 'promoter') {
+      freshBio = userProfile?.promoter_metadata?.bio || userProfile?.promoter_bio || 'Concert promoter and event organizer on Nexus.';
+    } else if (portalRole === 'label') {
+      freshBio = userProfile?.label_bio || 'Official record label on Nexus.';
+    } else {
+      freshBio = userProfile?.bio || userProfile?.profileBlurb || '';
+    }
+
     if (freshBio && freshBio !== profileBlurb) {
       setProfileBlurb(freshBio);
     }
-  }, [userProfile?.bio, userProfile?.profileBlurb]);
+  }, [portalRole, activeBand?.id, activeBand?.name, activeBand?.bio, activeBand?.description, userProfile?.band_bio, userProfile?.creative_metadata?.bio, userProfile?.creative_bio, userProfile?.promoter_metadata?.bio, userProfile?.promoter_bio, userProfile?.label_bio, userProfile?.bio, userProfile?.profileBlurb]);
 
   const [profileStealthMode, setProfileStealthMode] = useState(false);
   const [filterHideTicketPresales, setFilterHideTicketPresales] = useState(false);
@@ -342,9 +434,17 @@ export function useUserProfileState({
 
     try {
       localStorage.setItem(profileCacheKey, JSON.stringify(dataToSave));
-      if (profileAvatarUrl) localStorage.setItem('nexus_user_avatar', profileAvatarUrl);
-      if (profileCoverUrl) localStorage.setItem('nexus_user_banner', profileCoverUrl);
-      localStorage.setItem('nexus_user_bio', profileBlurb);
+      if (portalRole === 'band') {
+        if (activeBand?.id) {
+          if (profileAvatarUrl) localStorage.setItem(`nexus_band_logo_${activeBand.id}`, profileAvatarUrl);
+          if (profileCoverUrl) localStorage.setItem(`nexus_core_band_cover_${activeBand.id}`, profileCoverUrl);
+          localStorage.setItem(`nexus_band_bio_${activeBand.id}`, profileBlurb);
+        }
+      } else if (portalRole === 'fan_only' || portalRole === 'industry_pro') {
+        if (profileAvatarUrl) localStorage.setItem('nexus_user_avatar', profileAvatarUrl);
+        if (profileCoverUrl) localStorage.setItem('nexus_user_banner', profileCoverUrl);
+        localStorage.setItem('nexus_user_bio', profileBlurb);
+      }
     } catch (err) {
       console.error("Failed to write to localStorage:", err);
     }

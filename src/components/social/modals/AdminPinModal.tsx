@@ -40,9 +40,9 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
             </div>
 
             <div className="grid grid-cols-3 gap-3 w-full mb-6">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num, nIdx) => (
                 <button 
-                  key={`pin-keypad-${num}`}
+                  key={`pin-keypad-${num}-${nIdx}`}
                   onClick={() => {
                     if (adminPIN.length < 4) {
                       const newPin = adminPIN + num.toString();

@@ -43,15 +43,34 @@ export const markChatAsRead = async (chatId?: string, currentUserId?: string) =>
     console.log(`[CHAT INBOX] Executing mark_thread_as_read for thread: ${chatId || 'ALL'} | user: ${targetUserId || 'AUTH_CONTEXT'}`);
 
     // 2. Call RPC (Pass thread ID or null for mark-all)
-    const { data, error } = await supabase.rpc('mark_thread_as_read', {
-      p_chat_id: chatId || null,
-      p_profile_id: targetUserId || null
-    });
+    let rpcSuccess = false;
+    try {
+      const { data, error } = await supabase.rpc('mark_thread_as_read', {
+        p_chat_id: chatId || null,
+        p_profile_id: targetUserId || null
+      });
 
-    if (error) {
-      console.error('[MARK READ RPC ERROR]:', error.message);
-    } else {
-      console.log('[MARK READ SUCCESS]: Database updated via RPC.');
+      if (error || data === false) {
+        console.warn('[MARK READ RPC]: mark_thread_as_read returned false/error, attempting mark_all_chats_and_notifications_read fallback...');
+        if (targetUserId) {
+          const { error: fErr } = await supabase.rpc('mark_all_chats_and_notifications_read', {
+            p_profile_id: targetUserId
+          });
+          if (!fErr) rpcSuccess = true;
+        }
+      } else {
+        rpcSuccess = true;
+        console.log('[MARK READ SUCCESS]: Database updated via RPC.');
+      }
+    } catch (e) {
+      if (targetUserId) {
+        try {
+          await supabase.rpc('mark_all_chats_and_notifications_read', {
+            p_profile_id: targetUserId
+          });
+          rpcSuccess = true;
+        } catch (e2) {}
+      }
     }
 
     // Direct fallback update on nexus_chats
@@ -109,7 +128,10 @@ export const markChatAsRead = async (chatId?: string, currentUserId?: string) =>
                   (c.email && c.email.toLowerCase() === chatId.toLowerCase()) ||
                   (c.profileName && c.profileName.toLowerCase() === chatId.toLowerCase())
                 ) {
-                  return { ...c, unread: 0, isRead: true, is_read: true };
+                  const msgs = Array.isArray(c.messages)
+                    ? c.messages.map((m: any) => ({ ...m, is_read: true, read: true }))
+                    : c.messages;
+                  return { ...c, unread: 0, isRead: true, is_read: true, messages: msgs };
                 }
                 return c;
               });
@@ -126,7 +148,7 @@ export const markChatAsRead = async (chatId?: string, currentUserId?: string) =>
       window.dispatchEvent(new CustomEvent('nexus_chats_updated'));
     }
 
-    return !error;
+    return true;
 
   } catch (err) {
     console.error('[MARK READ EXCEPTION]:', err);

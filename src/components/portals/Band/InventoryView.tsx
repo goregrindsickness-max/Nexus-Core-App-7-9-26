@@ -39,7 +39,7 @@ import {
   ShoppingBag
 } from 'lucide-react';
 import { InventoryItem, InventoryAudit, StagedDistroItem } from '../../../types';
-import { getSupabase, sanitizeInventoryItemForDb, executeWithSchemaResilience, generateUUID } from '../../../supabase';
+import { getSupabase, sanitizeInventoryItemForDb, executeWithSchemaResilience, generateUUID, resolveInventoryImageUrl } from '../../../supabase';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface InventoryViewProps {
@@ -101,7 +101,8 @@ export default function InventoryView({
         original_item_type: item.item_type || 'Merch',
         storefront_price: item.price || 35.00,
         public_description: `Official tour merch variant: ${item?.name}. Premium tailored grade. Available for public order now!`,
-        product_image_url: item.image_url || 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?q=80&w=300&auto=format&fit=crop',
+        product_image_url: resolveInventoryImageUrl(item),
+        image_path: item.image_path || undefined,
         visibility_status: true
       };
 
@@ -1978,7 +1979,7 @@ export default function InventoryView({
                   {/* Artwork / Image block */}
                   <div className="w-full h-32 relative bg-zinc-900 overflow-hidden select-none">
                     <img 
-                      src={item.image_url} 
+                      src={resolveInventoryImageUrl(item)} 
                       alt={item?.name} 
                       referrerPolicy="no-referrer"
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -2075,7 +2076,7 @@ export default function InventoryView({
                   <div className="flex items-center gap-3.5 min-w-0 flex-1">
                     <div className="w-10 h-10 rounded-lg overflow-hidden bg-zinc-800 shrink-0 border border-zinc-800">
                       <img 
-                        src={item.image_url} 
+                        src={resolveInventoryImageUrl(item)} 
                         alt={item?.name} 
                         referrerPolicy="no-referrer"
                         className="w-full h-full object-cover shrink-0 mix-blend-color-dodge opacity-80"

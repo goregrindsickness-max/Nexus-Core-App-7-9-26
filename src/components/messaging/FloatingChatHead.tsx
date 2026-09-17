@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { getSupabase } from '../../supabase';
 import { openFloatingChat } from '../../store/useChatStore';
-import { markChatAsRead } from '../../lib/chat';
+import { markChatAsRead, handleMarkAllAsRead } from '../../lib/chat';
 import { extractUUID } from '../../utils/socialFeedUtils';
 import { useUserPresence, presenceManager, formatPresenceStatus } from '../../lib/presence';
+import { pushManager } from '../../lib/pushNotifications';
 import { 
   X, 
   Send, 
@@ -15,7 +16,8 @@ import {
   Sparkles, 
   Flame,
   ShieldCheck,
-  User
+  User,
+  CheckCheck
 } from 'lucide-react';
 
 interface ChatMessage {
@@ -104,7 +106,14 @@ const isValidUUID = (str: string | undefined | null): boolean => {
 
 export const FloatingChatHead: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isDismissed, setIsDismissed] = useState(true);
+  const [isDismissed, setIsDismissed] = useState(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('nexus_chat_head_dismissed');
+      if (saved === 'true') return true;
+      if (saved === 'false') return false;
+    }
+    return true;
+  });
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [targetUser, setTargetUser] = useState<{ id: string; name: string; avatar_url?: string | null } | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -113,6 +122,15 @@ export const FloatingChatHead: React.FC = () => {
   const [viewMode, setViewMode] = useState<'chat' | 'list'>('chat');
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
   const [inputText, setInputText] = useState('');
+
+  // Explicitly dismiss chat head and persist preference across reloads
+  const handleDismissChatHead = useCallback(() => {
+    setIsDismissed(true);
+    setIsOpen(false);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('nexus_chat_head_dismissed', 'true');
+    }
+  }, []);
 
   // Live real-time presence for the currently targeted user
   const { presence: targetPresence, formatted: targetFormatted, isOnline: isTargetOnline } = useUserPresence(targetUser);
@@ -251,19 +269,84 @@ export const FloatingChatHead: React.FC = () => {
           .from('nexus_chats')
           .select('*', { count: 'exact', head: true })
           .or(`receiver_id.eq.${currentUserId},recipient_id.eq.${currentUserId}`)
+          .neq('sender_id', currentUserId)
           .eq('is_read', false);
 
-        if (!error && typeof count === 'number' && count > 0) {
+        if (!error && typeof count === 'number') {
           unreadCount = Math.max(unreadCount, count);
         }
       } catch (e) {}
+
+      // If loadedList is empty or missing threads, fetch conversations directly from Supabase
+      if (loadedList.length === 0) {
+        try {
+          const { data: recentMsgs } = await supabase
+            .from('nexus_chats')
+            .select('*')
+            .or(`receiver_id.eq.${currentUserId},recipient_id.eq.${currentUserId},sender_id.eq.${currentUserId}`)
+            .order('created_at', { ascending: false })
+            .limit(30);
+
+          if (recentMsgs && recentMsgs.length > 0) {
+            const partnerIds = new Set<string>();
+            recentMsgs.forEach((m: any) => {
+              const partner = m.sender_id === currentUserId ? (m.receiver_id || m.recipient_id) : m.sender_id;
+              if (partner && partner !== currentUserId) partnerIds.add(partner);
+            });
+
+            if (partnerIds.size > 0) {
+              const { data: partnerProfiles } = await supabase
+                .from('profiles')
+                .select('id, full_name, console_handle, email, avatar_url, account_type')
+                .in('id', Array.from(partnerIds));
+
+              const profileMap = new Map<string, any>();
+              partnerProfiles?.forEach((p: any) => profileMap.set(p.id, p));
+
+              const newItems: ConversationItem[] = [];
+              partnerIds.forEach((pid) => {
+                const prof = profileMap.get(pid);
+                const msgsWithPartner = recentMsgs.filter(
+                  (m: any) =>
+                    (m.sender_id === pid && (m.receiver_id === currentUserId || m.recipient_id === currentUserId)) ||
+                    (m.sender_id === currentUserId && (m.receiver_id === pid || m.recipient_id === pid))
+                );
+                const lastM = msgsWithPartner[0];
+                const unreadInThread = msgsWithPartner.filter(
+                  (m: any) => m.sender_id === pid && (m.is_read === false || m.is_read === null)
+                ).length;
+
+                newItems.push({
+                  id: pid,
+                  name: prof?.full_name || prof?.console_handle || 'Direct Signal',
+                  avatar: prof?.avatar_url || null,
+                  role: prof?.account_type || 'User',
+                  lastMessage: lastM ? (lastM.message || lastM.content || 'No messages yet') : '',
+                  time: lastM ? new Date(lastM.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+                  unread: unreadInThread,
+                });
+              });
+
+              if (newItems.length > 0) {
+                loadedList = newItems;
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('Error hydrating conversations in FloatingChatHead:', err);
+        }
+      }
     }
 
     setConversations(loadedList);
     setTotalUnreadCount(unreadCount);
 
     if (unreadCount > 0) {
-      setIsDismissed(false);
+      // Respect user dismissal: only auto-show if user has NOT explicitly dismissed the chat head
+      const isExplicitlyDismissed = typeof localStorage !== 'undefined' && localStorage.getItem('nexus_chat_head_dismissed') === 'true';
+      if (!isExplicitlyDismissed) {
+        setIsDismissed(false);
+      }
     }
 
     // If no targetUser is selected yet, default targetUser to the most recent conversation if present
@@ -331,7 +414,7 @@ export const FloatingChatHead: React.FC = () => {
       setIsDragging(false);
 
       if (isOverDismiss) {
-        setIsDismissed(true);
+        handleDismissChatHead();
         setIsOverDismiss(false);
       }
     };
@@ -347,6 +430,53 @@ export const FloatingChatHead: React.FC = () => {
     };
   }, [isDragging, isOverDismiss]);
 
+  // Mark all chats & notifications as read
+  const handleMarkAllRead = useCallback(async () => {
+    setTotalUnreadCount(0);
+    setConversations((prev) => prev.map((c) => ({ ...c, unread: 0 })));
+    setMessages((prev) => prev.map((m) => ({ ...m, is_read: true })));
+
+    if (typeof localStorage !== 'undefined') {
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('nexus_chats_')) {
+            const val = localStorage.getItem(key);
+            if (val) {
+              const list = JSON.parse(val);
+              if (Array.isArray(list)) {
+                const updated = list.map((item: any) => ({
+                  ...item,
+                  unread: 0,
+                  isRead: true,
+                  is_read: true,
+                  messages: Array.isArray(item.messages)
+                    ? item.messages.map((m: any) => ({ ...m, is_read: true, read: true }))
+                    : item.messages,
+                }));
+                localStorage.setItem(key, JSON.stringify(updated));
+              }
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    const supabase = getSupabase();
+    if (supabase && currentUserId) {
+      try {
+        await supabase.rpc('mark_all_chats_and_notifications_read', {
+          p_profile_id: currentUserId,
+        });
+      } catch (e) {}
+    }
+
+    await handleMarkAllAsRead(currentUserId || undefined);
+
+    window.dispatchEvent(new CustomEvent('nexus_all_read'));
+    window.dispatchEvent(new CustomEvent('nexus_chats_updated'));
+  }, [currentUserId]);
+
   // Mark chat as read
   const handleMarkThreadRead = useCallback(async (partnerId: string) => {
     if (!partnerId) return;
@@ -359,51 +489,111 @@ export const FloatingChatHead: React.FC = () => {
       )
     );
 
-    // Update local storage unread count
-    let currentUserEmail = '';
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === partnerId || c.name?.toLowerCase() === partnerId.toLowerCase()
+          ? { ...c, unread: 0 }
+          : c
+      )
+    );
+
+    setTotalUnreadCount((prev) => {
+      const remaining = conversations.reduce((acc, c) => {
+        if (c.id === partnerId || c.name?.toLowerCase() === partnerId.toLowerCase()) return acc;
+        return acc + (c.unread || 0);
+      }, 0);
+      return Math.max(0, remaining);
+    });
+
+    // Resolve partner details (UUID and Email) for resilient matching
+    let partnerEmail = partnerId.includes('@') ? partnerId.toLowerCase().trim() : '';
+    let partnerUuid = isValidUUID(partnerId) ? partnerId : '';
+
+    const supabase = getSupabase();
+    if (supabase && (!partnerEmail || !partnerUuid)) {
+      try {
+        const queryCol = partnerEmail ? 'email' : (isValidUUID(partnerId) ? 'id' : 'console_handle');
+        const queryVal = partnerEmail || partnerId;
+        const { data: pData } = await supabase
+          .from('profiles')
+          .select('id, email')
+          .eq(queryCol, queryVal)
+          .maybeSingle();
+
+        if (pData) {
+          if (pData.id) partnerUuid = pData.id;
+          if (pData.email) partnerEmail = pData.email.toLowerCase().trim();
+        }
+      } catch (e) {}
+    }
+
+    // Update local storage unread count across all caches
     if (typeof localStorage !== 'undefined') {
       try {
-        const stored = localStorage.getItem('nexus_core_user_profile') || localStorage.getItem('nexus_user');
-        if (stored) {
-          const p = JSON.parse(stored);
-          if (p?.email) currentUserEmail = p.email.toLowerCase().trim();
-        }
-        if (currentUserEmail) {
-          const saved = localStorage.getItem(`nexus_chats_${currentUserEmail}`);
-          if (saved) {
-            const list = JSON.parse(saved);
-            const updated = list.map((item: any) => {
-              if (item.id === partnerId || item.name?.toLowerCase() === partnerId.toLowerCase()) {
-                return { ...item, unread: 0 };
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('nexus_chats_')) {
+            const saved = localStorage.getItem(key);
+            if (saved) {
+              const list = JSON.parse(saved);
+              if (Array.isArray(list)) {
+                const updated = list.map((item: any) => {
+                  const isMatch =
+                    item.id === partnerId ||
+                    (partnerUuid && item.id === partnerUuid) ||
+                    (partnerEmail && item.id?.toLowerCase() === partnerEmail) ||
+                    (partnerUuid && item.contactId === partnerUuid) ||
+                    (partnerEmail && item.email?.toLowerCase() === partnerEmail) ||
+                    (item.name && item.name.toLowerCase() === partnerId.toLowerCase());
+
+                  if (isMatch) {
+                    return {
+                      ...item,
+                      unread: 0,
+                      isRead: true,
+                      is_read: true,
+                      messages: Array.isArray(item.messages)
+                        ? item.messages.map((m: any) => ({ ...m, is_read: true, read: true }))
+                        : item.messages,
+                    };
+                  }
+                  return item;
+                });
+                localStorage.setItem(key, JSON.stringify(updated));
               }
-              return item;
-            });
-            localStorage.setItem(`nexus_chats_${currentUserEmail}`, JSON.stringify(updated));
+            }
           }
         }
       } catch (e) {}
     }
 
-    const supabase = getSupabase();
     if (supabase && currentUserId) {
       try {
-        await supabase.rpc('mark_thread_as_read', {
-          p_chat_id: partnerId,
+        if (partnerUuid) {
+          await supabase.rpc('mark_thread_as_read', {
+            p_chat_id: partnerUuid,
+            p_profile_id: currentUserId,
+          });
+        }
+        // Always run security-definer mark_all_chats_and_notifications_read to guarantee updates in DB
+        await supabase.rpc('mark_all_chats_and_notifications_read', {
           p_profile_id: currentUserId,
         });
-      } catch (e) {
-        await markChatAsRead(partnerId, currentUserId);
-      }
-    } else {
-      await markChatAsRead(partnerId, currentUserId || undefined);
+      } catch (e) {}
     }
 
+    await markChatAsRead(partnerUuid || partnerId, currentUserId || undefined);
+
+    window.dispatchEvent(new CustomEvent('nexus_chat_read', { detail: { chatId: partnerUuid || partnerId } }));
     window.dispatchEvent(new CustomEvent('nexus_chats_updated'));
-  }, [currentUserId]);
+  }, [currentUserId, conversations]);
 
   // Open Chat Handler
   const handleOpenChat = useCallback((threadId?: string) => {
     const tid = threadId || targetUser?.id;
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('nexus_chat_head_dismissed');
+    }
     setIsOpen(true);
     setIsDismissed(false);
     setViewMode(tid ? 'chat' : 'list');
@@ -420,6 +610,10 @@ export const FloatingChatHead: React.FC = () => {
       const targetName = detail.name || detail.full_name || detail.username || detail.display_name || 'Direct Signal';
       const targetAvatar = detail.avatar_url || detail.avatar || detail.image || detail.thumbnail || null;
       const initialText = detail.message || detail.initialMessage || detail.text || '';
+
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('nexus_chat_head_dismissed');
+      }
 
       if (targetId) {
         setTargetUser({
@@ -485,6 +679,9 @@ export const FloatingChatHead: React.FC = () => {
               }
             } catch (err) {}
 
+            if (typeof localStorage !== 'undefined') {
+              localStorage.removeItem('nexus_chat_head_dismissed');
+            }
             setIsDismissed(false);
 
             setTargetUser((prev) => {
@@ -509,6 +706,19 @@ export const FloatingChatHead: React.FC = () => {
             });
 
             setTotalUnreadCount((c) => c + 1);
+
+            // Trigger OS / Browser real-time notification
+            pushManager.notify({
+              title: `💬 New Message from ${senderName}`,
+              body: newMsg.message || newMsg.content || 'Sent you a direct transmission.',
+              category: 'messages',
+              priority: 'P1',
+              targetTab: 'social',
+              data: {
+                senderId: newMsg.sender_id,
+                name: senderName,
+              },
+            });
           }
         }
       )
@@ -769,7 +979,7 @@ export const FloatingChatHead: React.FC = () => {
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setIsDismissed(true);
+                handleDismissChatHead();
               }}
               className="absolute -top-1.5 -left-1.5 z-30 w-5 h-5 rounded-full bg-zinc-950 border border-zinc-700 text-zinc-400 hover:text-white hover:bg-red-600 hover:border-red-500 flex items-center justify-center transition-all shadow-lg cursor-pointer opacity-0 group-hover:opacity-100"
               title="Dismiss Chat Head"
@@ -928,6 +1138,16 @@ export const FloatingChatHead: React.FC = () => {
 
         {/* Window Controls */}
         <div className="flex items-center gap-1">
+          {totalUnreadCount > 0 && (
+            <button
+              onClick={handleMarkAllRead}
+              className="flex items-center gap-1 px-2 py-1 text-[11px] font-mono font-medium text-zinc-400 hover:text-emerald-400 hover:bg-zinc-900 rounded-lg transition-colors cursor-pointer mr-1"
+              title="Mark All Conversations As Read"
+            >
+              <CheckCheck size={14} />
+              <span className="hidden sm:inline">Mark Read</span>
+            </button>
+          )}
           <button
             onClick={() => setIsOpen(false)}
             className="p-1.5 text-zinc-400 hover:text-orange-400 hover:bg-zinc-900 rounded-lg transition-colors cursor-pointer"
@@ -936,10 +1156,7 @@ export const FloatingChatHead: React.FC = () => {
             <Minimize2 size={16} />
           </button>
           <button
-            onClick={() => {
-              setIsOpen(false);
-              setIsDismissed(true);
-            }}
+            onClick={handleDismissChatHead}
             className="p-1.5 text-zinc-400 hover:text-red-400 hover:bg-zinc-900 rounded-lg transition-colors cursor-pointer"
             title="Close & Dismiss"
           >
@@ -1011,8 +1228,8 @@ export const FloatingChatHead: React.FC = () => {
       ) : (
         /* Conversation Threads List */
         <div className="flex-1 flex flex-col overflow-hidden bg-zinc-950/40">
-          <div className="p-3 border-b border-zinc-800/80">
-            <div className="relative">
+          <div className="p-3 border-b border-zinc-800/80 flex items-center gap-2">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
               <input
                 type="text"
@@ -1022,6 +1239,16 @@ export const FloatingChatHead: React.FC = () => {
                 className="w-full pl-9 pr-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs font-mono text-white placeholder:text-zinc-500 focus:outline-none focus:border-orange-500"
               />
             </div>
+            {totalUnreadCount > 0 && (
+              <button
+                onClick={handleMarkAllRead}
+                className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 bg-zinc-900 hover:bg-emerald-950/50 border border-zinc-800 hover:border-emerald-500/50 text-zinc-300 hover:text-emerald-400 rounded-xl text-[11px] font-mono transition-colors cursor-pointer"
+                title="Mark all as read"
+              >
+                <CheckCheck size={13} />
+                <span>Clear</span>
+              </button>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto divide-y divide-zinc-900 scrollbar-thin scrollbar-thumb-zinc-800">

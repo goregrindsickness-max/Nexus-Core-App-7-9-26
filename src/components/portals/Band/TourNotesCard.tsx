@@ -47,36 +47,36 @@ interface TourNotesCardProps {
 
 export default function TourNotesCard({
   setIsGlobalHoverPaused = () => {},
-  handleNoteTouchStart,
-  handleNoteTouchMove,
-  handleNoteTouchEnd,
-  filteredNotes,
-  isNoteExpanded,
-  setIsNoteExpanded,
-  inlineNoteEditingId,
-  setInlineNoteEditingId,
-  inlineNoteText,
-  setInlineNoteText,
-  inlineNoteCategory,
-  setInlineNoteCategory,
-  inlineNoteTag,
-  setInlineNoteTag,
-  isTourNotesCardCollapsed,
-  setIsTourNotesCardCollapsed,
-  setActiveTab,
-  handleUpdateNote,
-  handleDataSubmit,
-  currentOrNextShow,
-  shows,
-  activeNoteIndex,
-  setActiveNoteIndex,
-  handleDeleteNote
-}: TourNotesCardProps) {
+  handleNoteTouchStart = () => {},
+  handleNoteTouchMove = () => {},
+  handleNoteTouchEnd = () => {},
+  filteredNotes = [],
+  isNoteExpanded = false,
+  setIsNoteExpanded = () => {},
+  inlineNoteEditingId = null,
+  setInlineNoteEditingId = () => {},
+  inlineNoteText = '',
+  setInlineNoteText = () => {},
+  inlineNoteCategory = 'NOTE',
+  setInlineNoteCategory = () => {},
+  inlineNoteTag = 'GENERAL INFO',
+  setInlineNoteTag = () => {},
+  isTourNotesCardCollapsed = false,
+  setIsTourNotesCardCollapsed = () => {},
+  setActiveTab = () => {},
+  handleUpdateNote = () => {},
+  handleDataSubmit = () => {},
+  currentOrNextShow = null,
+  shows = [],
+  activeNoteIndex = 0,
+  setActiveNoteIndex = () => {},
+  handleDeleteNote = () => {}
+}: Partial<TourNotesCardProps>) {
   return (
     <div className="px-5 py-3">
       <div 
-        onMouseEnter={() => setIsGlobalHoverPaused(true)}
-        onMouseLeave={() => setIsGlobalHoverPaused(false)}
+        onMouseEnter={() => setIsGlobalHoverPaused?.(true)}
+        onMouseLeave={() => setIsGlobalHoverPaused?.(false)}
         onTouchStart={handleNoteTouchStart}
         onTouchMove={handleNoteTouchMove}
         onTouchEnd={handleNoteTouchEnd}
@@ -100,7 +100,7 @@ export default function TourNotesCard({
                 </span>
               </div>
               <span className="text-[10px] sm:text-[11px] font-mono text-zinc-400 font-medium mt-0.5 block">
-                {filteredNotes.length} {filteredNotes.length === 1 ? 'Note' : 'Notes'}
+                {(filteredNotes || []).length} {(filteredNotes || []).length === 1 ? 'Note' : 'Notes'}
               </span>
             </div>
           </div>
@@ -110,14 +110,14 @@ export default function TourNotesCard({
             <button 
               onClick={() => { 
                 if (!isNoteExpanded || inlineNoteEditingId) {
-                    setInlineNoteEditingId(null);
-                    setInlineNoteText('');
-                    setInlineNoteCategory('NOTE');
-                    setInlineNoteTag('GENERAL INFO');
-                    setIsNoteExpanded(true);
-                    setIsTourNotesCardCollapsed(false);
+                    setInlineNoteEditingId?.(null);
+                    setInlineNoteText?.('');
+                    setInlineNoteCategory?.('NOTE');
+                    setInlineNoteTag?.('GENERAL INFO');
+                    setIsNoteExpanded?.(true);
+                    setIsTourNotesCardCollapsed?.(false);
                 } else {
-                    setIsNoteExpanded(false);
+                    setIsNoteExpanded?.(false);
                 }
               }}
               className={`${isNoteExpanded && !inlineNoteEditingId ? 'bg-amber-500 rotate-45' : 'bg-[#f9bc15]'} w-8 h-8 sm:w-10 sm:h-10 rounded-full text-black hover:bg-amber-400 flex items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer`}
@@ -127,7 +127,7 @@ export default function TourNotesCard({
             </button>
             {/* Collapse/Expand entire card */}
             <button 
-              onClick={() => setIsTourNotesCardCollapsed(!isTourNotesCardCollapsed)}
+              onClick={() => setIsTourNotesCardCollapsed?.(!isTourNotesCardCollapsed)}
               className="p-1 sm:p-1.5 text-zinc-400 hover:text-white transition-colors cursor-pointer"
               title={isTourNotesCardCollapsed ? "Expand Tour Notes" : "Collapse Tour Notes"}
             >
@@ -139,7 +139,7 @@ export default function TourNotesCard({
             </button>
             {/* Right Chevron Navigation Button */}
             <button 
-              onClick={() => setActiveTab('notes')}
+              onClick={() => setActiveTab?.('notes')}
               className="p-1 sm:p-1.5 text-zinc-400 hover:text-white transition-colors cursor-pointer"
               title="View all notes"
             >
@@ -161,7 +161,7 @@ export default function TourNotesCard({
               <div className="bg-[#0b0c10] border border-zinc-800 rounded-2xl p-3.5 space-y-3 relative z-10">
                 <textarea
                   value={inlineNoteText}
-                  onChange={(e) => setInlineNoteText(e.target.value)}
+                  onChange={(e) => setInlineNoteText?.(e.target.value)}
                   placeholder="Quick note..."
                   className="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none resize-none min-h-[60px]"
                 />
@@ -169,14 +169,14 @@ export default function TourNotesCard({
                 <div className="flex gap-2">
                     <select 
                       value={inlineNoteCategory}
-                      onChange={(e) => setInlineNoteCategory(e.target.value as 'NOTE' | 'TASK' | 'MEETING')}
+                      onChange={(e) => setInlineNoteCategory?.(e.target.value as 'NOTE' | 'TASK' | 'MEETING')}
                       className="bg-[#111319] border border-zinc-800 text-[8.5px] font-mono font-bold tracking-wider text-amber-500 rounded px-2 py-1.5 focus:outline-none focus:border-amber-500/50 flex-1 appearance-none bg-no-repeat bg-[url('data:image/svg+xml;utf8,<svg%20fill=%22%23f59e0b%22%20viewBox=%220%200%2024%2024%22%20xmlns=%22http://www.w3.org/2000/svg%22><path%20d=%22M7%2010l5%205%205-5z%22/></svg>')] bg-[length:14px] bg-[right_8px_center]"
                     >
                         {NOTE_CATEGORIES.map((cat, idx) => <option key={`${cat}-${idx}`} value={cat}>{cat}</option>)}
                     </select>
                     <select 
                       value={inlineNoteTag}
-                      onChange={(e) => setInlineNoteTag(e.target.value)}
+                      onChange={(e) => setInlineNoteTag?.(e.target.value)}
                       className="bg-[#111319] border border-zinc-805 text-[8.5px] font-mono font-bold tracking-wider text-emerald-400 rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500/50 flex-1 appearance-none bg-no-repeat bg-[url('data:image/svg+xml;utf8,<svg%20fill=%22%2310b981%22%20viewBox=%220%200%2024%2024%22%20xmlns=%22http://www.w3.org/2000/svg%22><path%20d=%22M7%2010l5%205%205-5z%22/></svg>')] bg-[length:14px] bg-[right_8px_center]"
                     >
                         {NOTE_STATUSES.map((stat, idx) => <option key={`${stat}-${idx}`} value={stat}>{stat}</option>)}
@@ -185,7 +185,7 @@ export default function TourNotesCard({
 
                 <div className="flex gap-3 pt-1">
                   <button 
-                    onClick={() => setIsNoteExpanded(false)}
+                    onClick={() => setIsNoteExpanded?.(false)}
                     className="flex-1 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 transition-colors border border-zinc-800 text-zinc-300 font-bold text-xs"
                   >
                     Cancel
@@ -194,13 +194,13 @@ export default function TourNotesCard({
                     onClick={() => {
                       if (!inlineNoteText.trim()) return;
                       if (inlineNoteEditingId) {
-                        handleUpdateNote(inlineNoteEditingId, { text: inlineNoteText, category: inlineNoteCategory, tag_name: inlineNoteTag });
+                        handleUpdateNote?.(inlineNoteEditingId, { text: inlineNoteText, category: inlineNoteCategory, tag_name: inlineNoteTag });
                       } else {
-                        handleDataSubmit('note', { text: inlineNoteText, category: inlineNoteCategory, tag_name: inlineNoteTag, show_id: currentOrNextShow?.id || shows[0]?.id });
+                        handleDataSubmit?.('note', { text: inlineNoteText, category: inlineNoteCategory, tag_name: inlineNoteTag, show_id: currentOrNextShow?.id || shows[0]?.id });
                       }
-                      setIsNoteExpanded(false);
-                      setInlineNoteEditingId(null);
-                      setInlineNoteText('');
+                      setIsNoteExpanded?.(false);
+                      setInlineNoteEditingId?.(null);
+                      setInlineNoteText?.('');
                     }}
                     className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 transition-colors border border-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/20"
                   >
@@ -213,7 +213,7 @@ export default function TourNotesCard({
         </AnimatePresence>
 
         {/* Card Note body content with yellow frame aesthetics */}
-        {filteredNotes.length > 0 && activeNoteIndex < filteredNotes.length ? (
+        {filteredNotes && filteredNotes.length > 0 && activeNoteIndex < filteredNotes.length ? (
           <div className="border border-zinc-800/40 bg-[#0f1116] rounded-2xl p-4.5 space-y-3.5 relative shadow-inner">
             <div className="flex justify-between items-start">
               <span className="text-[10px] font-mono uppercase text-amber-400 font-black tracking-widest leading-none">
@@ -255,11 +255,11 @@ export default function TourNotesCard({
               <div className="border-t border-zinc-900 pt-3 flex justify-between items-center">
                 <button 
                   onClick={() => {
-                    setInlineNoteEditingId(filteredNotes[activeNoteIndex].id);
-                    setInlineNoteText(filteredNotes[activeNoteIndex].text || '');
-                    setInlineNoteCategory((filteredNotes[activeNoteIndex].category as 'NOTE' | 'TASK' | 'MEETING') || 'NOTE');
-                    setInlineNoteTag(filteredNotes[activeNoteIndex].tag_name || 'GENERAL INFO');
-                    setIsNoteExpanded(true);
+                    setInlineNoteEditingId?.(filteredNotes[activeNoteIndex].id);
+                    setInlineNoteText?.(filteredNotes[activeNoteIndex].text || '');
+                    setInlineNoteCategory?.((filteredNotes[activeNoteIndex].category as 'NOTE' | 'TASK' | 'MEETING') || 'NOTE');
+                    setInlineNoteTag?.(filteredNotes[activeNoteIndex].tag_name || 'GENERAL INFO');
+                    setIsNoteExpanded?.(true);
                   }}
                   className="py-1.5 px-3 rounded-md bg-zinc-900 font-mono text-amber-500/90 text-[10px] font-bold tracking-wider hover:bg-zinc-800 border border-zinc-800/40 flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
                 >
@@ -268,7 +268,7 @@ export default function TourNotesCard({
                 </button>
 
                 <button 
-                  onClick={() => handleDeleteNote(filteredNotes[activeNoteIndex].id)}
+                  onClick={() => handleDeleteNote?.(filteredNotes[activeNoteIndex].id)}
                   className="py-1.5 px-3 rounded-md bg-red-950/20 text-red-400 hover:bg-red-900/30 font-mono text-[10px] font-bold tracking-wider border border-red-900/10 flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
                   title="Delete Note"
                 >
@@ -284,7 +284,7 @@ export default function TourNotesCard({
                 {filteredNotes.map((_, i) => (
                   <button
                     key={`tour-note-card-item-${i}`}
-                    onClick={() => setActiveNoteIndex(i)}
+                    onClick={() => setActiveNoteIndex?.(i)}
                     className={`h-2 rounded-full transition-all duration-350 cursor-pointer ${
                       activeNoteIndex === i ? 'w-5 bg-amber-500' : 'w-2 bg-zinc-800 hover:bg-zinc-700'
                     }`}
@@ -303,10 +303,10 @@ export default function TourNotesCard({
         {!isTourNotesCardCollapsed && (
           <button
             type="button"
-            onClick={() => setActiveTab('notes')}
+            onClick={() => setActiveTab?.('notes')}
             className="w-full text-center py-1 text-[10px] font-mono text-zinc-550 hover:text-amber-500 transition-colors cursor-pointer inline-block mt-1 font-bold tracking-wider"
           >
-            Swipe to browse • Tap to view all {filteredNotes.length} notes
+            Swipe to browse • Tap to view all {(filteredNotes || []).length} notes
           </button>
         )}
       </div>

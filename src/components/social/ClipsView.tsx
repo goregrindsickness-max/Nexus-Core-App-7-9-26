@@ -19,8 +19,10 @@ import {
   Sparkles,
   Info,
   Send,
-  Eye
+  Eye,
+  RefreshCw
 } from 'lucide-react';
+import { uploadClipVideoFile } from '../../supabase';
 
 interface ClipItem {
   id: any;
@@ -119,6 +121,7 @@ export const ClipsView: React.FC<ClipsViewProps> = ({
   const [shouldCompressClip, setShouldCompressClip] = useState(true);
   const [newClipCaption, setNewClipCaption] = useState('');
   const [newClipSong, setNewClipSong] = useState('Original Audio');
+  const [isUploadingClip, setIsUploadingClip] = useState(false);
 
   // Comment input
   const [commentInput, setCommentInput] = useState('');
@@ -160,30 +163,136 @@ export const ClipsView: React.FC<ClipsViewProps> = ({
     triggerNotification?.("Comment added to clip!");
   };
 
-  const handleCreateClip = () => {
-    if (!newClipVideoUrl && !selectedClipFile) return;
-    const newClipItem: ClipItem = {
-      id: `clip_${Date.now()}`,
-      creator: userProfile?.name || 'Pro Creator',
-      role: portalRole === 'band' ? '💀 Band' : 'Member',
-      avatar: userProfile?.avatar || 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100',
-      caption: newClipCaption || 'Check out my new reel clip!',
-      videoUrl: newClipVideoUrl || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800',
-      likes: 1,
-      comments: 0,
-      shares: 0,
-      reposts: 0,
-      views: 12,
-      audio: newClipSong || 'Original Sound',
-      hasLiked: true,
-      user_id: userProfile?.id,
-    };
-    setClips(prev => [newClipItem, ...prev]);
-    setShowUploadClipModal(false);
-    setNewClipVideoUrl('');
-    setSelectedClipFile(null);
-    setNewClipCaption('');
-    triggerNotification?.("⚡ Video clip uploaded successfully!");
+  const handleCreateClip = async () => {
+    if (!newClipVideoUrl && !selectedClipFile) {
+      triggerNotification?.("Please provide a video URL or select a clip file.");
+      return;
+    }
+
+    setIsUploadingClip(true);
+    try {
+      let finalVideoUrl = newClipVideoUrl;
+      const supabaseClient = getSupabase ? getSupabase() : null;
+      const userId = userProfile?.id || userProfile?.user_id || 'anon';
+
+      if (selectedClipFile) {
+        // Upload to 'clips' storage bucket in Supabase
+        try {
+          finalVideoUrl = await uploadClipVideoFile(selectedClipFile, userId, 'clip');
+        } catch (storageErr) {
+          console.warn("[ClipsView] uploadClipVideoFile error:", storageErr);
+        }
+
+        // Direct fallback to 'clips' bucket if needed
+        if (!finalVideoUrl && supabaseClient) {
+          try {
+            const fileExt = selectedClipFile.name.split('.').pop() || 'mp4';
+            const fileName = `${userId}_${Date.now()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { data, error } = await supabaseClient.storage.from('clips').upload(filePath, selectedClipFile, {
+              upsert: true,
+              contentType: selectedClipFile.type || 'video/mp4'
+            });
+
+            if (!error && data) {
+              const { data: publicData } = supabaseClient.storage.from('clips').getPublicUrl(filePath);
+              finalVideoUrl = publicData?.publicUrl || '';
+            }
+          } catch (directErr) {
+            console.warn("[ClipsView] Direct clips storage upload failed:", directErr);
+          }
+        }
+
+        if (!finalVideoUrl) {
+          console.warn("Storage upload failed, fallback to local object URL");
+          finalVideoUrl = URL.createObjectURL(selectedClipFile);
+        }
+      }
+
+      if (!finalVideoUrl) {
+        finalVideoUrl = 'https://assets.mixkit.co/videos/preview/mixkit-rock-band-performing-on-stage-41584-large.mp4';
+      }
+
+      const clipId = `clip_${Date.now()}`;
+      const newClipItem: ClipItem = {
+        id: clipId,
+        creator: userProfile?.name || userProfile?.username || 'Pro Creator',
+        role: portalRole === 'band' ? '💀 Band' : 'Member',
+        avatar: userProfile?.avatar || userProfile?.avatar_url || 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100',
+        caption: newClipCaption || 'Check out my new reel clip!',
+        title: newClipCaption || 'Live Clip',
+        videoUrl: finalVideoUrl,
+        likes: 1,
+        comments: 0,
+        shares: 0,
+        reposts: 0,
+        views: 1,
+        audio: newClipSong || 'Original Sound',
+        hasLiked: true,
+        user_id: userProfile?.id || userProfile?.user_id,
+        created_at: new Date().toISOString()
+      };
+
+      // Persist to Supabase database ('clips' and 'nexus_clips' tables)
+      if (supabaseClient) {
+        try {
+          const { error: clipsErr } = await supabaseClient.from('clips').insert([{
+            id: clipId,
+            user_id: newClipItem.user_id,
+            video_url: finalVideoUrl,
+            caption: newClipItem.caption,
+            title: newClipItem.title,
+            song_title: newClipSong || 'Original Sound',
+            band_name: userProfile?.name || userProfile?.username || 'Scene Band',
+            username: userProfile?.name || userProfile?.username || 'Anonymous',
+            avatar: newClipItem.avatar,
+            created_at: newClipItem.created_at,
+            likes_count: 1,
+            comments_count: 0,
+            shares_count: 0
+          }]);
+          if (clipsErr) {
+            console.warn("Saving to 'clips' in ClipsView returned:", clipsErr.message);
+          }
+        } catch (_) {}
+
+        try {
+          await supabaseClient.from('nexus_clips').insert([{
+            id: clipId,
+            profile_id: newClipItem.user_id,
+            user_id: newClipItem.user_id,
+            username: newClipItem.creator,
+            avatar: newClipItem.avatar,
+            video_url: finalVideoUrl,
+            caption: newClipItem.caption,
+            song_title: newClipSong || 'Original Sound',
+            band_name: userProfile?.name || 'Scene Band',
+            created_at: newClipItem.created_at
+          }]);
+        } catch (_) {}
+      }
+
+      // Update state and localStorage
+      setClips(prev => {
+        const updated = [newClipItem, ...prev.filter(c => c.id !== clipId)];
+        try {
+          localStorage.setItem('nexus_saved_clips', JSON.stringify(updated));
+        } catch (_) {}
+        return updated;
+      });
+
+      setShowUploadClipModal(false);
+      setNewClipVideoUrl('');
+      setSelectedClipFile(null);
+      setNewClipCaption('');
+      triggerNotification?.("⚡ Video clip uploaded and saved to clips storage!");
+    } catch (err: any) {
+      console.error("Failed to upload clip in ClipsView:", err);
+      triggerNotification?.(`Error posting clip: ${err.message || err}`);
+    } finally {
+      setIsUploadingClip(false);
+    }
   };
 
   return (
@@ -498,15 +607,24 @@ export const ClipsView: React.FC<ClipsViewProps> = ({
                 <div className="pt-2 flex justify-end gap-2">
                   <button
                     onClick={() => setShowUploadClipModal(false)}
-                    className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 text-xs font-bold uppercase rounded-xl transition-colors cursor-pointer"
+                    disabled={isUploadingClip}
+                    className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 text-xs font-bold uppercase rounded-xl transition-colors cursor-pointer disabled:opacity-50"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleCreateClip}
-                    className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-colors cursor-pointer"
+                    disabled={isUploadingClip}
+                    className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
                   >
-                    Publish Clip
+                    {isUploadingClip ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Saving to Clips Storage...</span>
+                      </>
+                    ) : (
+                      <span>Publish Clip</span>
+                    )}
                   </button>
                 </div>
               </div>

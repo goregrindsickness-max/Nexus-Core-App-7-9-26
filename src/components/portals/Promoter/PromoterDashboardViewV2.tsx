@@ -4,7 +4,6 @@ import { UserProfile, Band, Offer, Show, hasRegisteredWorkspace } from '../../..
 import { Power, Globe, Users, User, DollarSign, Database, Activity, RefreshCw, Settings, X, Home, Lock, Sparkles, Layers, LogOut, Bell, Building, MapPin, MessageSquare, ArrowLeft, Send, CheckSquare, Check, Plus, AlertTriangle, TrendingUp, Shield, BarChart3, Radio, Heart, MessageCircle, Play, Pause, Square, SkipBack, SkipForward, Disc, Volume2, Truck, Tag, Edit, Trash2, Upload, ShoppingBag, ShoppingCart, CreditCard, Calendar, ArrowRightLeft, Package, Box, Banknote, ChevronDown, Calculator, Palette, Info, Search, Pin, Flame, Rocket, ThumbsUp, Menu, Briefcase, Star, Mail, ExternalLink, ChevronUp, Camera, Zap, Edit3, ChevronLeft, ChevronRight, Music, Maximize } from 'lucide-react';
 import MarqueeText from '../../MarqueeText';
 import { getSupabase, uploadBase64ToStorage } from '../../../supabase';
-import { UniversalSocialFeed } from '../../social/UniversalSocialFeed';
 import { MASTER_GENRES } from '../../../constants/genres';
 
 import PromoterSettingsTab from './PromoterSettingsTab';
@@ -35,6 +34,7 @@ interface PromoterDashboardViewV2Props {
   setIsOfflineSimActive?: React.Dispatch<React.SetStateAction<boolean>>;
   isOnline?: boolean;
   onUpgradeToPro?: () => void;
+  setActiveTab?: (tab: string) => void;
 }
 
 
@@ -200,6 +200,7 @@ export default function PromoterDashboardViewV2({
   isOfflineSimActive,
   setIsOfflineSimActive,
   isOnline,
+  setActiveTab: setPortalActiveTab
 }: PromoterDashboardViewV2Props) {
   const [activeTab, setActiveTab] = useState<'ROUTING'|'WORKSPACE'|'OFFERS'|'SALES'|'SOCIAL'|'SETTINGS'>('ROUTING');
   const [subTab, setSubTab] = useState<string>('');
@@ -1819,6 +1820,12 @@ export default function PromoterDashboardViewV2({
                 key={`${item.id}-${idx}`}
                 type="button"
                 onClick={() => {
+                  if (item.id === 'SOCIAL') {
+                    if (setPortalActiveTab) {
+                      setPortalActiveTab('social');
+                      return;
+                    }
+                  }
                   setActiveTab(item.id as any);
                   setSubTab('');
                 }}
@@ -2225,20 +2232,6 @@ export default function PromoterDashboardViewV2({
                   </div>
                 )}
               </div>
-            </div>
-          )}
-
-          {/* SOCIAL TAB RENDERING */}
-          {activeTab === 'SOCIAL' && (
-            <div className="w-full animate-fade-in">
-              <UniversalSocialFeed 
-                userProfile={userProfile} 
-                setUserProfile={setUserProfile} 
-                triggerNotification={safeTriggerNotification} 
-                portalRole="promoter" 
-                onLogout={onLogout}
-                onBack={() => setActiveTab('ROUTING')}
-              />
             </div>
           )}
 

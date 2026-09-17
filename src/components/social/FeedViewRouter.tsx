@@ -8,8 +8,36 @@ import { ForumView } from './ForumView';
 import { StoriesCarouselSection } from './StoriesCarouselSection';
 import { ClipsView } from './ClipsView';
 import { formatPostTimestamp } from '../../utils/socialFeedUtils';
+import { getComposerRoleTheme } from './CreatePostCard';
 
 export const FeedViewRouter: React.FC<any> = (props) => {
+  const [feedStreamScope, setFeedStreamScope] = React.useState<'all' | 'workspace'>('all');
+
+  const normRole = (props.portalRole || props.userProfile?.active_workspace || 'industry_pro').toLowerCase();
+  const isWorkspace = ['band', 'label', 'promoter', 'creative', 'industry_pro'].includes(normRole);
+
+  const theme = React.useMemo(() => {
+    return (props.roleTheme && typeof props.roleTheme === 'object' && 'roleTitle' in props.roleTheme)
+      ? props.roleTheme
+      : getComposerRoleTheme(normRole);
+  }, [props.roleTheme, normRole]);
+
+  const workspaceStreamLabel = React.useMemo(() => {
+    if (normRole === 'band' || normRole.includes('artist')) {
+      return `${props.activeBand?.name || 'Band'} Stream`;
+    }
+    if (normRole === 'label') {
+      return `${props.userProfile?.label_company_name || 'Label'} Desk`;
+    }
+    if (normRole === 'promoter') {
+      return `${props.userProfile?.promoter_metadata?.brand_name || props.userProfile?.promoter_name || 'Promoter'} Wire`;
+    }
+    if (normRole === 'creative') {
+      return `${props.userProfile?.creative_metadata?.business_name || props.userProfile?.creative_name || 'Creative'} Reel`;
+    }
+    return 'Operator Wire';
+  }, [normRole, props.activeBand, props.userProfile]);
+
   const {
     activeTab,
     setActiveTab,
@@ -136,6 +164,7 @@ export const FeedViewRouter: React.FC<any> = (props) => {
                   roleTheme={props.roleTheme || props.portalRole}
                   portalRole={props.portalRole}
                   activeBand={props.activeBand}
+                  bands={props.bands}
                   profileFullLegalName={props.profileFullLegalName}
                   profileHandle={props.profileHandle}
                   profileAvatarUrl={props.profileAvatarUrl}
@@ -220,6 +249,56 @@ export const FeedViewRouter: React.FC<any> = (props) => {
             return false;
           }
 
+          // If scoped to workspace, only keep posts authored by or associated with this workspace entity
+          if (feedStreamScope === 'workspace' && isWorkspace) {
+            const authorName = (post.author?.name || post.authorName || '').toLowerCase();
+            const authorRole = (post.authorRole || post.author?.role || '').toLowerCase();
+            const workspaceType = (post.workspace_type || post.workspaceType || post.author?.workspace_type || '').toLowerCase();
+            const personaId = post.persona_id || post.author?.personaId || '';
+
+            if (normRole === 'band' || normRole.includes('artist')) {
+              const activeBandName = (props.activeBand?.name || '').toLowerCase();
+              const activeBandId = String(props.activeBand?.id || '');
+              const matchesBand =
+                (activeBandName && (authorName === activeBandName || post.tapeData?.band?.toLowerCase() === activeBandName || post.songData?.artist?.toLowerCase() === activeBandName)) ||
+                (activeBandId && personaId.includes(activeBandId)) ||
+                workspaceType === 'band' ||
+                authorRole.includes('band') ||
+                authorRole.includes('artist');
+              if (!matchesBand) return false;
+            } else if (normRole === 'label') {
+              const labelName = (userProfile?.label_company_name || '').toLowerCase();
+              const matchesLabel =
+                (labelName && authorName === labelName) ||
+                personaId.includes('label') ||
+                workspaceType === 'label' ||
+                authorRole.includes('label');
+              if (!matchesLabel) return false;
+            } else if (normRole === 'promoter') {
+              const promoterName = (userProfile?.promoter_metadata?.brand_name || userProfile?.promoter_name || '').toLowerCase();
+              const matchesPromoter =
+                (promoterName && authorName === promoterName) ||
+                personaId.includes('promoter') ||
+                workspaceType === 'promoter' ||
+                authorRole.includes('promoter');
+              if (!matchesPromoter) return false;
+            } else if (normRole === 'creative') {
+              const creativeName = (userProfile?.creative_metadata?.business_name || userProfile?.creative_name || '').toLowerCase();
+              const matchesCreative =
+                (creativeName && authorName === creativeName) ||
+                personaId.includes('creative') ||
+                workspaceType === 'creative' ||
+                authorRole.includes('creative');
+              if (!matchesCreative) return false;
+            } else if (normRole === 'industry_pro') {
+              const matchesPro =
+                workspaceType === 'industry_pro' ||
+                authorRole.includes('pro') ||
+                personaId.includes('pro');
+              if (!matchesPro) return false;
+            }
+          }
+
           if (filterHideTicketPresales) {
             const isTicket = 
               post.tag?.toLowerCase().includes('ticket') || 
@@ -277,9 +356,9 @@ export const FeedViewRouter: React.FC<any> = (props) => {
 
           const rawAvatar = typeof p.author?.avatar === 'string' ? p.author.avatar : (typeof p.authorAvatar === 'string' ? p.authorAvatar : undefined);
           const isGenericUiAvatar = rawAvatar && (rawAvatar.includes('ui-avatars.com') || rawAvatar === 'U' || rawAvatar === 'Anon');
-          const resolvedAuthorAvatar = isSelf
-            ? (liveUserAvatar || (!isGenericUiAvatar ? rawAvatar : undefined))
-            : (!isGenericUiAvatar ? rawAvatar : undefined);
+          const resolvedAuthorAvatar = (!isGenericUiAvatar && rawAvatar)
+            ? rawAvatar
+            : (isSelf ? liveUserAvatar : (!isGenericUiAvatar ? rawAvatar : undefined));
 
           return {
             id: p.id,
@@ -340,6 +419,40 @@ export const FeedViewRouter: React.FC<any> = (props) => {
 
         return (
           <div className="max-w-2xl mx-auto pt-2 pb-2 px-4">
+            {/* Stream Scope Toggle Bar */}
+            {isWorkspace && (
+              <div className="flex items-center justify-between mb-3 px-1">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFeedStreamScope('all')}
+                    className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                      feedStreamScope === 'all'
+                        ? 'bg-zinc-800 text-white border-zinc-600 shadow-sm'
+                        : 'bg-[#0d0e12] text-zinc-400 border-zinc-800/80 hover:text-zinc-200'
+                    }`}
+                  >
+                    🌐 Scene Network
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFeedStreamScope('workspace')}
+                    className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 ${
+                      feedStreamScope === 'workspace'
+                        ? `${theme.badgeBg} ${theme.badgeText} ${theme.accentBorder} shadow-sm`
+                        : 'bg-[#0d0e12] text-zinc-400 border-zinc-800/80 hover:text-zinc-200'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: theme.glowHex }} />
+                    {workspaceStreamLabel}
+                  </button>
+                </div>
+                <span className="text-[9px] font-mono text-zinc-500 hidden sm:inline">
+                  {feedStreamScope === 'workspace' ? 'Workspace scoped' : 'All signals'}
+                </span>
+              </div>
+            )}
+
             <TimelineFeed
               posts={postsToPass}
               currentUserId={userProfile?.id}
@@ -548,7 +661,7 @@ export const FeedViewRouter: React.FC<any> = (props) => {
 
 
       {/* REELS / CLIPS VIEW */}
-      {activeTab === 'reels' && (
+      {(activeTab === 'reels' || activeTab === 'clips') && (
         <ClipsView
           userProfile={userProfile}
           clips={clips}

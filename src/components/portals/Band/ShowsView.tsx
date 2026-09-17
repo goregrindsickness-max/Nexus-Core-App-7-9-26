@@ -38,7 +38,9 @@ import {
   CloudLightning,
   Cloud,
   MessageSquare,
-  Send
+  Send,
+  Unlink,
+  Share2
 } from 'lucide-react';
 
 export interface ShowWeatherWarning {
@@ -250,6 +252,7 @@ interface ShowsViewProps {
   setIsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   onBack: () => void;
   bandName?: string;
+  activeBandId?: string;
   initialOpenForm?: boolean;
   onCloseForm?: () => void;
   inventory?: any[];
@@ -460,6 +463,7 @@ export default function ShowsView({
   setIsModalOpen,
   onBack,
   bandName,
+  activeBandId,
   initialOpenForm = false,
   onCloseForm,
   inventory = [],
@@ -529,6 +533,7 @@ export default function ShowsView({
   const [settlementShow, setSettlementShow] = useState<Show | null>(null);
   const [settlementMode, setSettlementMode] = useState<'audit' | 'final' | null>(null);
   const [daySheetShow, setDaySheetShow] = useState<Show | null>(null);
+  const [showActionModal, setShowActionModal] = useState<{ type: 'remove_or_delete'; show: Show } | null>(null);
 
   // Auto-open show form if controlled by parent state
   const onCloseFormRef = useRef(onCloseForm);
@@ -726,6 +731,16 @@ export default function ShowsView({
       });
 
       mapRef.current = map;
+
+      // Force a resize calculation to fix mobile WebViews sizing issues
+      map.on('load', () => {
+        map.resize();
+      });
+
+      // Fallback timeout for mobile rendering layout passes
+      setTimeout(() => {
+        map.resize();
+      }, 250);
 
       addLog('Initialized Mapbox Interactive Tour Hub.');
 
@@ -943,6 +958,8 @@ export default function ShowsView({
       festival_name: show.festival_name ? `${show.festival_name} (Copy)` : undefined,
       name: `${show.name} (Copy)`,
       revenue: show.revenue ? parseFloat((show.revenue * 0.9).toFixed(2)) : undefined, // slight variation
+      band_id: show.band_id || activeBandId || 'b1',
+      is_community_submitted: false
     };
     
     setShows(prev => [...prev, duplicated]);
@@ -956,7 +973,7 @@ export default function ShowsView({
         const extendedMap = JSON.parse(existing);
         const extra = extendedMap[show.id];
         if (extra) {
-          extendedMap[id] = { ...extra };
+          extendedMap[id] = { ...extra, band_id: show.band_id || activeBandId || 'b1', is_community_submitted: false };
           localStorage.setItem('nexus_core_shows_extended', JSON.stringify(extendedMap));
         }
       }
@@ -980,12 +997,49 @@ export default function ShowsView({
     }
   };
 
-  // Delete Show Action
+  // Remove / Detach Show from Band Workspace (Keeps show intact in Community Shows Hub)
+  const handleRemoveFromBandWorkspace = async (id: string, name: string) => {
+    setShows(prev => prev.filter(s => s.id !== id));
+    if (selectedShowId === id) setSelectedShowId(null);
+    setShowActionModal(null);
+    addLog(`Removed show [${name}] from band workspace. Record remains live in Community Shows Hub.`);
+    triggerNotification(`"${name}" removed from Band Workspace (persisted in Community Shows Hub).`);
+
+    // Database Sync: Update band_id to 'community_hub' and ensure is_community_submitted is true
+    const supabase = getSupabase();
+    if (supabase) {
+      try {
+        await supabase.from('shows').update({
+          band_id: 'community_hub',
+          is_community_submitted: true
+        }).eq('id', id);
+        addLog(`Database sync: Show detached from band roster and published to community.`);
+      } catch (err: any) {
+        addLog(`Database detach error: ${err?.message || err}`);
+      }
+    }
+
+    // Extended storage update
+    try {
+      const raw = localStorage.getItem('nexus_core_shows_extended');
+      if (raw) {
+        const extMap = JSON.parse(raw);
+        if (extMap[id]) {
+          extMap[id].band_id = 'community_hub';
+          extMap[id].is_community_submitted = true;
+          localStorage.setItem('nexus_core_shows_extended', JSON.stringify(extMap));
+        }
+      }
+    } catch (_) {}
+  };
+
+  // Delete Show Action (Deletes permanently from database)
   const handleDeleteShow = async (id: string, name: string) => {
     setShows(prev => prev.filter(s => s.id !== id));
     if (selectedShowId === id) setSelectedShowId(null);
+    setShowActionModal(null);
     addLog(`Deleted tour stop slot ID: [${id}] - ${name}`);
-    triggerNotification('Tour stop record removed.');
+    triggerNotification('Tour stop record permanently removed.');
 
     // Database Sync
     const supabase = getSupabase();
@@ -1042,7 +1096,9 @@ export default function ShowsView({
       status: payload.status || 'Active',
       revenue: payload.guarantee_amount || payload.revenue || 0,
       show_type: payload.show_type || 'headliner',
-      band_id: payload.band_id,
+      band_id: payload.band_id || (payload.is_community_submitted ? 'community_hub' : (activeBandId || 'b1')),
+      is_community_submitted: !!payload.is_community_submitted,
+      external_ticket_url: payload.external_ticket_url,
       
       // High Fidelity Fields
       event_scope: payload.event_scope,
@@ -1290,7 +1346,11 @@ export default function ShowsView({
 
   if (onlyMap) {
     return (
-      <div className="bg-[#0b0d13] border-2 border-[#1f2330] rounded-xl overflow-hidden relative shadow-lg h-[340px]" id="shows-coordinate-map">
+      <div 
+        className="bg-[#0b0d13] border-2 border-[#1f2330] rounded-xl overflow-hidden relative shadow-lg" 
+        style={{ height: '380px', width: '100%', minHeight: '380px' }}
+        id="shows-coordinate-map"
+      >
         
         {/* Gesture Lock Overlay */}
         {isMapLocked && (
@@ -1299,7 +1359,11 @@ export default function ShowsView({
 
         {mapboxAccessToken && !mapError ? (
           // Active Mapbox viewport container
-          <div ref={mapContainerRef} className="absolute inset-0 w-full h-full z-0" />
+          <div 
+            ref={mapContainerRef} 
+            className="absolute inset-0 w-full h-full z-0" 
+            style={{ height: '380px', width: '100%', minHeight: '380px' }}
+          />
         ) : (
           // Falling back to vector layout with background Dark Map overlay if Mapbox token is absent
           <>
@@ -1865,7 +1929,11 @@ export default function ShowsView({
 
       {/* TOP COMPONENT: DESIGNER INTERACTIVE ROUTING MAP */}
       {!hideMap && (
-        <div className="bg-[#0b0d13] border-2 border-[#1f2330] rounded-xl overflow-hidden relative shadow-lg h-[340px]" id="shows-coordinate-map">
+        <div 
+          className="bg-[#0b0d13] border-2 border-[#1f2330] rounded-xl overflow-hidden relative shadow-lg" 
+          style={{ height: '380px', width: '100%', minHeight: '380px' }}
+          id="shows-coordinate-map"
+        >
           
           {/* Gesture Lock Overlay */}
           {isMapLocked && (
@@ -1874,7 +1942,11 @@ export default function ShowsView({
 
           {mapboxAccessToken && !mapError ? (
             // Active Mapbox viewport container
-            <div ref={mapContainerRef} className="absolute inset-0 w-full h-full z-0" />
+            <div 
+              ref={mapContainerRef} 
+              className="absolute inset-0 w-full h-full z-0" 
+              style={{ height: '380px', width: '100%', minHeight: '380px' }}
+            />
           ) : (
             // Falling back to vector layout with background Dark Map overlay if Mapbox token is absent
             <>
@@ -2293,7 +2365,7 @@ export default function ShowsView({
                               {/* Dynamic and Colorful Weather Warnings */}
                               {weatherData.warnings.map((warn, wIdx) => (
                                 <div 
-                                  key={`show-warn-${wIdx}`} 
+                                  key={`show-warn-${show.id}-${wIdx}`} 
                                   className={`p-2 rounded-lg border text-[9.5px] leading-relaxed flex items-start gap-1.5 ${warn.color}`}
                                 >
                                   <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-inherit" />
@@ -2756,11 +2828,15 @@ export default function ShowsView({
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDeleteShow(stop.id, stop.name);
+                            setShowActionModal({
+                              type: 'remove_or_delete',
+                              show: stop
+                            });
                           }}
                           className="py-2.5 rounded-lg border border-[#4a1c1d] text-red-400 bg-red-400/5 flex items-center justify-center gap-2 hover:bg-red-400/10 transition-colors cursor-pointer"
+                          title="Remove from Band Workspace or Delete"
                         >
-                          <Trash2 className="w-3.5 h-3.5" /> Delete
+                          <Trash2 className="w-3.5 h-3.5" /> Remove / Delete
                         </button>
 
                         {/* Row 3: Spot Check, Settle Show */}
@@ -3030,6 +3106,89 @@ export default function ShowsView({
         onSubmit={handleSaveFormShow}
         initialShowType={formInitialType}
       />
+
+      {showActionModal && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0e1117] border border-zinc-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-4 border-b border-zinc-800 flex items-center justify-between bg-black/50">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                  <Unlink className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white tracking-wide">Manage Show / Tour Stop</h3>
+                  <p className="text-[11px] text-zinc-400 font-mono">{showActionModal.show.name} • {showActionModal.show.date}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowActionModal(null)}
+                className="p-1.5 hover:bg-zinc-800 rounded-full text-zinc-400 hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <p className="text-xs text-zinc-300 leading-relaxed">
+                How would you like to handle <strong className="text-white">"{showActionModal.show.name}"</strong>?
+              </p>
+
+              {/* Option 1: Remove from Band Workspace (Keep in Community Shows) */}
+              <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-950/20 hover:bg-emerald-950/30 transition-all">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
+                      <Globe className="w-4 h-4" />
+                      <span>Remove from Band Workspace Only</span>
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase">Recommended</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-300 leading-normal">
+                      Removes this show from your active band calendar, day sheets, and settlements, but <strong>preserves it live in the Community Shows Hub</strong> for fans, attendees, and promoters.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveFromBandWorkspace(showActionModal.show.id, showActionModal.show.name)}
+                  className="mt-3 w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-black font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-colors cursor-pointer"
+                >
+                  <Unlink className="w-3.5 h-3.5" /> Remove from Band (Keep in Community Hub)
+                </button>
+              </div>
+
+              {/* Option 2: Delete Permanently Everywhere */}
+              <div className="p-4 rounded-xl border border-red-500/20 bg-red-950/15 hover:bg-red-950/25 transition-all">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-red-400">
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete Permanently Everywhere</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400 leading-normal">
+                    Completely deletes this show from the database. It will be removed from both this Band Workspace and the public Community Shows section.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteShow(showActionModal.show.id, showActionModal.show.name)}
+                  className="mt-3 w-full py-2 px-3 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Delete Permanently
+                </button>
+              </div>
+            </div>
+
+            <div className="p-3 bg-black/40 border-t border-zinc-800 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowActionModal(null)}
+                className="px-4 py-1.5 rounded-lg text-xs font-mono text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {transactionsShowId && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">

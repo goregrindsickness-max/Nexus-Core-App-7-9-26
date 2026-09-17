@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { getSupabase } from '../../supabase';
+import { getAvailablePersonas, resolveActivePersona } from './utils/personaResolution';
 import {
   Send,
   Image as ImageIcon,
@@ -250,6 +251,7 @@ export interface CreatePostCardProps {
   setNewPostCategory: (cat: string) => void;
   handleCreatePost: (e: React.FormEvent) => void;
   availableIdentities?: Array<{ id: string; name: string }>;
+  bands?: any[];
 
   // Video & Venue
   youtubeUrl?: string;
@@ -341,6 +343,7 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
   setNewPostCategory,
   handleCreatePost,
   availableIdentities = [],
+  bands = [],
   youtubeUrl = '',
   setYoutubeUrl,
   taggedVenue = '',
@@ -396,39 +399,45 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
   eventData,
   setEventData,
 }) => {
-  const roleString = typeof roleTheme === 'string' ? roleTheme : (portalRole || userProfile?.active_workspace || userProfile?.account_type || userProfile?.role || postIdentity || 'industry_pro');
-  const effectiveRole = roleString.toLowerCase();
+  const availablePersonas = useMemo(() => {
+    const effectiveBands = (bands && bands.length > 0) ? bands : (availableIdentities && availableIdentities.length > 0 ? availableIdentities : []);
+    return getAvailablePersonas({
+      portalRole,
+      userProfile,
+      activeBand,
+      bands: effectiveBands,
+      profileFullLegalName,
+      profileHandle,
+      profileAvatarUrl,
+    });
+  }, [portalRole, userProfile, activeBand, bands, availableIdentities, profileFullLegalName, profileHandle, profileAvatarUrl]);
+
+  const activePersona = useMemo(() => {
+    const effectiveBands = (bands && bands.length > 0) ? bands : (availableIdentities && availableIdentities.length > 0 ? availableIdentities : []);
+    return resolveActivePersona({
+      postIdentity,
+      portalRole,
+      userProfile,
+      activeBand,
+      bands: effectiveBands,
+      profileFullLegalName,
+      profileHandle,
+      profileAvatarUrl,
+    });
+  }, [postIdentity, portalRole, userProfile, activeBand, bands, availableIdentities, profileFullLegalName, profileHandle, profileAvatarUrl]);
+
+  const effectiveRole = activePersona.type;
   const theme: ComposerThemeConfig = (roleTheme && typeof roleTheme === 'object' && 'roleTitle' in roleTheme) ? (roleTheme as ComposerThemeConfig) : getComposerRoleTheme(effectiveRole);
 
-  const isBandRole = effectiveRole === 'band' || effectiveRole.includes('artist') || effectiveRole.includes('band');
-  const isCreativeRole = effectiveRole === 'creative';
-  const isLabelRole = effectiveRole === 'label';
-  const isPromoterRole = effectiveRole === 'promoter';
-  const isFanRole = effectiveRole === 'fan_only' || effectiveRole === 'fan';
+  const isBandRole = activePersona.type === 'band';
+  const isCreativeRole = activePersona.type === 'creative';
+  const isLabelRole = activePersona.type === 'label';
+  const isPromoterRole = activePersona.type === 'promoter';
+  const isFanRole = activePersona.type === 'fan';
 
-  const displayName = isBandRole
-    ? (activeBand?.name || userProfile?.bandName || userProfile?.band_name || 'Artist')
-    : isCreativeRole
-    ? (userProfile?.creative_metadata?.business_name || userProfile?.creative_business_name || userProfile?.creative_name || profileFullLegalName || userProfile?.name || 'Pro Creative')
-    : isLabelRole
-    ? (userProfile?.label_company_name || profileFullLegalName || userProfile?.name || 'Record Label')
-    : isPromoterRole
-    ? (userProfile?.promoter_metadata?.brand_name || (userProfile as any)?.promoter_name || profileFullLegalName || userProfile?.name || 'Promoter')
-    : isFanRole
-    ? (profileFullLegalName || userProfile?.full_name || userProfile?.screen_name || userProfile?.name || 'Fan Listener')
-    : (profileFullLegalName || userProfile?.full_name || userProfile?.legal_name || userProfile?.name || 'Industry Pro');
-
-  const liveUserAvatar = profileAvatarUrl || userProfile?.avatar || userProfile?.avatar_url || userProfile?.profile_avatar || userProfile?.profile_image;
-
-  const avatarUrl = isBandRole
-    ? (activeBand?.logo_url || activeBand?.logo || activeBand?.avatar_url || userProfile?.band_logo || liveUserAvatar)
-    : isCreativeRole
-    ? (userProfile?.creative_avatar || liveUserAvatar)
-    : isLabelRole
-    ? (userProfile?.label_logo || liveUserAvatar)
-    : isPromoterRole
-    ? (userProfile?.promoter_metadata?.logo || (userProfile as any)?.promoter_logo || liveUserAvatar)
-    : liveUserAvatar;
+  const displayName = activePersona.name;
+  const avatarUrl = activePersona.avatarUrl;
+  const roleBadgeTitle = activePersona.roleBadge;
 
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [tagBandInput, setTagBandInput] = useState('');
@@ -706,7 +715,7 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
 
   return (
     <div 
-      className={`w-full ${theme.cardBg} border rounded-2xl p-4 sm:p-5 transition-all mb-2 text-left relative overflow-hidden group ${theme.cardBorderGlow}`}
+      className={`w-full ${theme.cardBg} border rounded-2xl p-3.5 sm:p-5 transition-all mb-2 text-left relative overflow-hidden group ${theme.cardBorderGlow}`}
       style={theme.key === 'fan_only' ? { backgroundColor: '#00133b' } : undefined}
     >
       {/* Hidden file input for Tape Audio */}
@@ -726,101 +735,138 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
         style={{ backgroundColor: theme.glowHex }}
       />
 
-      {/* Header & Identity Row */}
-      <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80 mb-3 relative z-10">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div 
-            className="w-8 h-8 rounded-full border p-0.5 bg-black/60 shrink-0 overflow-hidden transition-all"
-            style={{ borderColor: `${theme.glowHex}80`, boxShadow: `0 0 10px ${theme.glowHex}40` }}
-          >
-            {avatarUrl ? (
-              <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover rounded-full" referrerPolicy="no-referrer" />
-            ) : (
-              <div className="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center font-black text-xs" style={{ color: theme.glowHex }}>
-                {displayName.charAt(0).toUpperCase()}
-              </div>
-            )}
-          </div>
-          <div className="flex flex-col min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <Sparkles className="w-3.5 h-3.5 animate-pulse" style={{ color: theme.glowHex }} />
-              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-white truncate">
+      {/* Header & Identity Section */}
+      <div className="flex flex-col gap-2.5 pb-3 border-b border-zinc-800/80 mb-3 relative z-10">
+        {/* Top Tier: User Identity (Avatar + Name + Sparkles + Role Badge) & Desktop Persona Switcher */}
+        <div className="flex items-center justify-between gap-2 min-w-0 w-full">
+          {/* Author Identity */}
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <div 
+              className="w-8 h-8 rounded-full border p-0.5 bg-black/60 shrink-0 overflow-hidden transition-all"
+              style={{ borderColor: `${theme.glowHex}80`, boxShadow: `0 0 10px ${theme.glowHex}40` }}
+            >
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover rounded-full" referrerPolicy="no-referrer" />
+              ) : (
+                <div className="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center font-black text-xs" style={{ color: theme.glowHex }}>
+                  {displayName.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5 min-w-0 flex-nowrap">
+              <Sparkles className="w-3.5 h-3.5 animate-pulse shrink-0" style={{ color: theme.glowHex }} />
+              <span className="text-[11.5px] sm:text-xs font-mono font-bold uppercase tracking-wider text-white truncate max-w-[140px] xs:max-w-[180px] sm:max-w-[220px]">
                 {displayName}
               </span>
               {/* Role Badge Tag */}
-              <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border uppercase ${theme.badgeBg} ${theme.badgeText} ${theme.accentBorder}`}>
-                {theme.roleTitle.replace(' COMPOSER', '')}
+              <span className={`text-[8px] sm:text-[8.5px] font-mono font-bold px-1.5 py-0.5 rounded border uppercase shrink-0 whitespace-nowrap ${theme.badgeBg} ${theme.badgeText} ${theme.accentBorder}`}>
+                {roleBadgeTitle}
               </span>
             </div>
-
-            {/* Auto Location Scraper Display Under User Name */}
-            <div className="flex items-center gap-1 mt-0.5">
-              {isScrapingLocation ? (
-                <span className="text-[9px] font-mono text-zinc-400 animate-pulse flex items-center gap-1">
-                  <RefreshCw className="w-2.5 h-2.5 animate-spin text-rose-400" /> Scraper detecting location...
-                </span>
-              ) : scrapedLocation ? (
-                <div className="flex items-center gap-1 text-[9px] font-mono text-emerald-400 bg-emerald-950/70 px-1.5 py-0.5 rounded border border-emerald-800/80 shadow-sm">
-                  <MapPin className="w-2.5 h-2.5 text-rose-400 shrink-0" />
-                  <span className="truncate max-w-[160px] sm:max-w-[240px] font-bold">{scrapedLocation}</span>
-                  <button
-                    type="button"
-                    title="Re-scrape current location"
-                    onClick={fetchAutoLocation}
-                    className="text-zinc-400 hover:text-white ml-0.5 cursor-pointer"
-                  >
-                    <RefreshCw className="w-2.5 h-2.5" />
-                  </button>
-                  <button
-                    type="button"
-                    title={includeAutoLocation ? "Location attached to post. Click to detach." : "Click to attach location to post."}
-                    onClick={() => {
-                      const next = !includeAutoLocation;
-                      setIncludeAutoLocation(next);
-                      if (next) {
-                        if (setTaggedVenue && scrapedLocation) {
-                          setTaggedVenue(scrapedLocation);
-                        }
-                      } else {
-                        if (setTaggedVenue && taggedVenue === scrapedLocation) {
-                          setTaggedVenue('');
-                        }
-                      }
-                    }}
-                    className={`ml-1 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase transition-colors cursor-pointer ${
-                      includeAutoLocation ? 'bg-emerald-800 text-white shadow-sm' : 'bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-700'
-                    }`}
-                  >
-                    {includeAutoLocation ? 'ATTACHED ✓' : '+ ATTACH'}
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={fetchAutoLocation}
-                  className={`text-[9px] font-mono hover:text-white flex items-center gap-1 px-1.5 py-0.5 rounded border transition-colors cursor-pointer ${theme.badgeBg} ${theme.badgeText} ${theme.accentBorder}`}
-                >
-                  <MapPin className="w-2.5 h-2.5 text-rose-400" />
-                  <span>Detect Location</span>
-                </button>
-              )}
-            </div>
           </div>
+
+          {/* Desktop Identity Selector */}
+          {availablePersonas.length > 1 ? (
+            <div className="hidden sm:flex items-center gap-1.5 shrink-0 ml-2">
+              <span className="text-[9px] font-mono text-zinc-400 shrink-0">Posting as:</span>
+              <select
+                value={activePersona.id}
+                onChange={(e) => setPostIdentity(e.target.value)}
+                className={`bg-[#07050d] text-[10px] font-mono font-bold border rounded-lg px-2.5 py-1 focus:outline-none transition-all cursor-pointer max-w-[220px] truncate ${theme.badgeText} ${theme.accentBorder}`}
+                title="Select which workspace or band persona you are publishing as"
+              >
+                {availablePersonas.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.roleBadge})
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className="hidden sm:flex items-center gap-1.5 shrink-0 ml-2 text-[9px] font-mono text-zinc-400">
+              <span>Posting as:</span>
+              <span className={`px-2 py-0.5 rounded text-[9px] font-bold border ${theme.badgeBg} ${theme.badgeText} ${theme.accentBorder}`}>
+                {activePersona.name}
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* Identity Selector */}
-        {availableIdentities.length > 0 && (
-          <select
-            value={postIdentity}
-            onChange={(e) => setPostIdentity(e.target.value)}
-            className={`bg-[#07050d] text-[10px] font-mono border rounded-lg px-2.5 py-1 focus:outline-none ${theme.badgeText} ${theme.accentBorder}`}
-          >
-            <option value="label">{displayName}</option>
-            {availableIdentities.map((b, bIdx) => (
-              <option key={b.id ? `id-${b.id}-${bIdx}` : `id-${bIdx}`} value={b.id}>{b.name}</option>
-            ))}
-          </select>
-        )}
+        {/* Sub-Tier: Location Scraper & Mobile Persona Switcher */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 w-full">
+          {/* Auto Location Scraper Display */}
+          <div className="flex items-center gap-1 min-w-0">
+            {isScrapingLocation ? (
+              <span className="text-[9px] font-mono text-zinc-400 animate-pulse flex items-center gap-1">
+                <RefreshCw className="w-2.5 h-2.5 animate-spin text-rose-400" /> Scraper detecting location...
+              </span>
+            ) : scrapedLocation ? (
+              <div className="inline-flex items-center gap-1 text-[9px] font-mono text-emerald-400 bg-emerald-950/70 px-2 py-0.5 rounded border border-emerald-800/80 shadow-sm max-w-full">
+                <MapPin className="w-2.5 h-2.5 text-rose-400 shrink-0" />
+                <span className="truncate max-w-[150px] xs:max-w-[200px] sm:max-w-[260px] font-bold">{scrapedLocation}</span>
+                <button
+                  type="button"
+                  title="Re-scrape current location"
+                  onClick={fetchAutoLocation}
+                  className="text-zinc-400 hover:text-white ml-0.5 cursor-pointer p-0.5"
+                >
+                  <RefreshCw className="w-2.5 h-2.5" />
+                </button>
+                <button
+                  type="button"
+                  title={includeAutoLocation ? "Location attached to post. Click to detach." : "Click to attach location to post."}
+                  onClick={() => {
+                    const next = !includeAutoLocation;
+                    setIncludeAutoLocation(next);
+                    if (next) {
+                      if (setTaggedVenue && scrapedLocation) {
+                        setTaggedVenue(scrapedLocation);
+                      }
+                    } else {
+                      if (setTaggedVenue && taggedVenue === scrapedLocation) {
+                        setTaggedVenue('');
+                      }
+                    }
+                  }}
+                  className={`ml-1 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
+                    includeAutoLocation ? 'bg-emerald-800 text-white shadow-sm' : 'bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-700'
+                  }`}
+                >
+                  {includeAutoLocation ? 'ATTACHED ✓' : '+ ATTACH'}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={fetchAutoLocation}
+                className={`text-[9px] font-mono hover:text-white flex items-center gap-1 px-2 py-0.5 rounded border transition-colors cursor-pointer ${theme.badgeBg} ${theme.badgeText} ${theme.accentBorder}`}
+              >
+                <MapPin className="w-2.5 h-2.5 text-rose-400" />
+                <span>Detect Location</span>
+              </button>
+            )}
+          </div>
+
+          {/* Mobile-Only Persona Switcher (Clean dedicated full-width strip on mobile) */}
+          {availablePersonas.length > 1 && (
+            <div className="flex sm:hidden items-center justify-between gap-1.5 w-full bg-black/40 px-2.5 py-1.5 rounded-lg border border-zinc-800/80 mt-0.5">
+              <span className="text-[9px] font-mono text-zinc-400 shrink-0 font-bold uppercase tracking-wider">Posting as:</span>
+              <select
+                value={activePersona.id}
+                onChange={(e) => setPostIdentity(e.target.value)}
+                className={`bg-[#07050d] text-[10px] font-mono font-bold border rounded-md px-2 py-1 focus:outline-none transition-all cursor-pointer flex-1 max-w-[210px] truncate ml-1 ${theme.badgeText} ${theme.accentBorder}`}
+                title="Select which workspace or band persona you are publishing as"
+              >
+                {availablePersonas.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.roleBadge})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
       </div>
 
       <form onSubmit={handleFormSubmit} className="space-y-3">

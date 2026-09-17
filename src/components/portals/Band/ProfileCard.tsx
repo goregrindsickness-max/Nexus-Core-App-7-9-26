@@ -376,15 +376,10 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
           const targetBandId = base?.band_id || selectedUserProfile?.band_id || (base?.isYou ? userProfile?.band_id : null);
           const targetBandName = base?.band_name || base?.bandName || selectedUserProfile?.band_name || selectedUserProfile?.bandName || (base?.isYou ? (userProfile?.band_name || userProfile?.bandName) : null);
 
-          // Always default/prioritize Virulent Excision (cbddb810-259b-4230-9968-3d402dfdb872) if you are viewing your own band workspace
-          if ((base?.isYou || selectedUserProfile?.isYou || !targetId || targetId === 'my_band_id' || userProfile?.id === targetId)) {
-            try {
-              const { data } = await supabase.from('bands').select('*').eq('id', 'cbddb810-259b-4230-9968-3d402dfdb872').maybeSingle();
-              if (data) record = data;
-            } catch (_) {}
-          }
+          const isOwnerMiguel = isMiguelNameOrProfile(userProfile) || isMiguelNameOrProfile(base) || userProfile?.email === 'admin@nexus.com';
 
-          if (!record && targetBandId && extractUUID(targetBandId)) {
+          // If the profile has a specific band assigned, fetch that band
+          if (targetBandId && extractUUID(targetBandId)) {
             try {
               const { data } = await supabase.from('bands').select('*').eq('id', extractUUID(targetBandId)).maybeSingle();
               if (data) record = data;
@@ -395,13 +390,6 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
             try {
               const { data } = await supabase.from('bands').select('*').eq('creator_id', validUUID).neq('verification_status', 'community_archive').order('created_at', { ascending: false }).limit(1).maybeSingle();
               if (data && data.verification_status !== 'community_archive') record = data;
-            } catch (_) {}
-          }
-
-          if (!record && (base?.isYou || selectedUserProfile?.isYou)) {
-            try {
-              const { data } = await supabase.from('bands').select('*').ilike('band_name', 'Virulent Excision').maybeSingle();
-              if (data) record = data;
             } catch (_) {}
           }
 
@@ -417,6 +405,14 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
             try {
               const localBandStr = localStorage.getItem('nexus_my_band_profile');
               if (localBandStr) record = JSON.parse(localBandStr);
+            } catch (_) {}
+          }
+
+          // Virulent Excision is the founder's (Miguel's) band — only use as fallback for Miguel / Admin
+          if (!record && isOwnerMiguel && (base?.isYou || selectedUserProfile?.isYou || !targetId || targetId === 'my_band_id' || userProfile?.id === targetId)) {
+            try {
+              const { data } = await supabase.from('bands').select('*').eq('id', 'cbddb810-259b-4230-9968-3d402dfdb872').maybeSingle();
+              if (data) record = data;
             } catch (_) {}
 
             if (!record) {
@@ -918,8 +914,9 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
   );
   
   return (
-    <AnimatePresence>
-      {selectedUserProfile && (
+    <>
+      <AnimatePresence>
+        {selectedUserProfile && (
         <motion.div
           key="public-profile-modal-backdrop"
           initial={{ opacity: 0 }}
@@ -3902,65 +3899,69 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
           })()}
         </motion.div>
       )}
+    </AnimatePresence>
 
-      {/* Community Band Curator Modal (Lightweight Fan Archiving - No forms required) */}
-      <CommunityBandCuratorModal
-        isOpen={showCuratorModal}
-        onClose={() => setShowCuratorModal(false)}
-        initialBand={
-          communityArchiveMatch ||
-          (rawResolvedBandName && rawResolvedBandName !== 'Band' ? communityBandManager.findByName(rawResolvedBandName) : null) ||
-          (bData ? {
-            id: bData.id || generateUUID(),
-            name: rawResolvedBandName || bData.name || bData.band_name || 'Band',
-            band_name: rawResolvedBandName || bData.name || bData.band_name || 'Band',
-            genre: bData.genre || 'Extreme Metal',
-            micro_genres: bData.micro_genres || bData.subgenres || [],
-            bio: resolvedBandBio || bData.bio || '',
-            avatar_url: rawResolvedBandLogo || bData.avatar_url || '',
-            cover_url: bData.cover_url || bData.banner_url || '',
-            city: bData.city || '',
-            state_province: bData.state_province || bData.state || '',
-            country: bData.country || 'USA',
-            record_label: bData.record_label || bData.label || '',
-            spotify_url: bData.spotify_url || '',
-            bandcamp_url: bData.bandcamp_url || '',
-            metal_archives_url: bData.metal_archives_url || '',
-            youtube_url: bData.youtube_url || '',
-            lineup: bData.lineup || [],
-            discography: bData.discography || []
-          } as CommunityBandRecord : null)
-        }
-        userProfile={userProfile}
-        triggerNotification={triggerNotification}
-        onSaved={(updatedBand) => {
-          setCommunityArchiveMatch(updatedBand);
-          triggerNotification?.(`Community archive for "${updatedBand.name}" updated!`);
+    {/* Community Band Curator Modal (Lightweight Fan Archiving - No forms required) */}
+    <CommunityBandCuratorModal
+      key="community-band-curator-modal"
+      isOpen={showCuratorModal}
+      onClose={() => setShowCuratorModal(false)}
+      initialBand={
+        communityArchiveMatch ||
+        (rawResolvedBandName && rawResolvedBandName !== 'Band' ? communityBandManager.findByName(rawResolvedBandName) : null) ||
+        (bData ? {
+          id: bData.id || generateUUID(),
+          name: rawResolvedBandName || bData.name || bData.band_name || 'Band',
+          band_name: rawResolvedBandName || bData.name || bData.band_name || 'Band',
+          genre: bData.genre || 'Extreme Metal',
+          micro_genres: bData.micro_genres || bData.subgenres || [],
+          bio: resolvedBandBio || bData.bio || '',
+          avatar_url: rawResolvedBandLogo || bData.avatar_url || '',
+          cover_url: bData.cover_url || bData.banner_url || '',
+          city: bData.city || '',
+          state_province: bData.state_province || bData.state || '',
+          country: bData.country || 'USA',
+          record_label: bData.record_label || bData.label || '',
+          spotify_url: bData.spotify_url || '',
+          bandcamp_url: bData.bandcamp_url || '',
+          metal_archives_url: bData.metal_archives_url || '',
+          youtube_url: bData.youtube_url || '',
+          lineup: bData.lineup || [],
+          discography: bData.discography || []
+        } as CommunityBandRecord : null)
+      }
+      userProfile={userProfile}
+      triggerNotification={triggerNotification}
+      onSaved={(updatedBand) => {
+        setCommunityArchiveMatch(updatedBand);
+        triggerNotification?.(`Community archive for "${updatedBand.name}" updated!`);
+      }}
+    />
+
+    {/* Band Claim Handover Modal (For official band members/managers claiming community pages) */}
+    {communityArchiveMatch && (
+      <BandClaimHandoverModal
+        key="band-claim-handover-modal"
+        isOpen={showClaimModal}
+        onClose={() => setShowClaimModal(false)}
+        bandRecord={communityArchiveMatch}
+        currentUserId={userProfile?.id || 'official_claimant'}
+        onClaimSuccess={(claimedBand) => {
+          setCommunityArchiveMatch(claimedBand);
+          triggerNotification?.(
+            `⚡ Successfully claimed "${claimedBand.name}"! All discography, tracklists, lineup, and followers transferred in full.`
+          );
         }}
       />
+    )}
 
-      {/* Band Claim Handover Modal (For official band members/managers claiming community pages) */}
-      {communityArchiveMatch && (
-        <BandClaimHandoverModal
-          isOpen={showClaimModal}
-          onClose={() => setShowClaimModal(false)}
-          bandRecord={communityArchiveMatch}
-          currentUserId={userProfile?.id || 'official_claimant'}
-          onClaimSuccess={(claimedBand) => {
-            setCommunityArchiveMatch(claimedBand);
-            triggerNotification?.(
-              `⚡ Successfully claimed "${claimedBand.name}"! All discography, tracklists, lineup, and followers transferred in full.`
-            );
-          }}
-        />
-      )}
-
-      {/* DISCOGRAPHY DETAILS MODAL */}
-      <ReleaseDetailsModal
-        release={selectedRelease}
-        onClose={() => setSelectedRelease(null)}
-        bandName={bData?.name || communityArchiveMatch?.name || selectedUserProfile?.name || fetchedBandData?.name || 'Band'}
-      />
-    </AnimatePresence>
-  );
+    {/* DISCOGRAPHY DETAILS MODAL */}
+    <ReleaseDetailsModal
+      key="band-release-details-modal"
+      release={selectedRelease}
+      onClose={() => setSelectedRelease(null)}
+      bandName={bData?.name || communityArchiveMatch?.name || selectedUserProfile?.name || fetchedBandData?.name || 'Band'}
+    />
+  </>
+);
 };

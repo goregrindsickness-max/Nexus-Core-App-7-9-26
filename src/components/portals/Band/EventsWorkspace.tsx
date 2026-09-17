@@ -331,7 +331,7 @@ export default function EventsWorkspace(props: any) {
 
                     {/* ALWAYS VISIBLE INTERACTIVE MAP */}
                     <div className="px-5 py-2.5 bg-black" id="events-workspace-always-visible-map">
-                      <ShowsView shows={filteredShows} setShows={setShows} sales={filteredSales} triggerNotification={triggerNotification} addLog={addLog} setModalType={setModalType} setIsModalOpen={setIsModalOpen} onBack={() => {}} hideBackButton={true} onlyMap={true} disableScrollToTop={true} />
+                      <ShowsView shows={filteredShows} setShows={setShows} sales={filteredSales} triggerNotification={triggerNotification} addLog={addLog} setModalType={setModalType} setIsModalOpen={setIsModalOpen} onBack={() => {}} hideBackButton={true} onlyMap={true} disableScrollToTop={true} activeBandId={props.activeBandId || activeBand?.id} bandName={activeBand?.name} />
                     </div>
 
                     
@@ -352,7 +352,7 @@ export default function EventsWorkspace(props: any) {
                       }}
                     >
                       <div className="w-full">
-                        <ShowsView shows={filteredShows} setShows={setShows} sales={filteredSales} triggerNotification={triggerNotification} addLog={addLog} setModalType={setModalType} setIsModalOpen={setIsModalOpen} onBack={() => {}} hideBackButton={true} hideMap={true} disableScrollToTop={true} />
+                        <ShowsView shows={filteredShows} setShows={setShows} sales={filteredSales} triggerNotification={triggerNotification} addLog={addLog} setModalType={setModalType} setIsModalOpen={setIsModalOpen} onBack={() => {}} hideBackButton={true} hideMap={true} disableScrollToTop={true} activeBandId={props.activeBandId || activeBand?.id} bandName={activeBand?.name} />
                       </div>
                     </V2ExpandableCard>
                     <V2ExpandableCard 
@@ -1140,7 +1140,7 @@ export default function EventsWorkspace(props: any) {
                                             </div>
                                             
                                             <div className="space-y-1.5">
-                                              {weather.warnings.map((warn, wIdx) => <div key={`weather-warn-${wIdx}`} className={`p-2 rounded-lg border text-[9.5px] leading-relaxed flex items-start gap-1.5 ${warn.color}`}>
+                                              {weather.warnings.map((warn, wIdx) => <div key={`weather-warn-${show.id || idx}-${wIdx}`} className={`p-2 rounded-lg border text-[9.5px] leading-relaxed flex items-start gap-1.5 ${warn.color}`}>
                                                   <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-inherit" />
                                                   <div>
                                                     <p className="font-bold tracking-wide uppercase text-[9.5px]">{warn.title}</p>

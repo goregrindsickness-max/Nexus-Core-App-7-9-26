@@ -4,7 +4,6 @@ import { UserProfile, hasRegisteredWorkspace } from '../../../types';
 import { Power, Globe, Users, User, DollarSign, Database, Activity, RefreshCw, Settings, X, Home, Lock, Sparkles, Layers, LogOut, Bell, Building, MapPin, MessageSquare, ArrowLeft, Send, CheckSquare, Check, Plus, AlertTriangle, TrendingUp, Shield, BarChart3, Radio, Heart, MessageCircle, Play, Pause, Square, SkipBack, SkipForward, Disc, Volume2, Truck, Tag, Edit, Trash2, Upload, ShoppingBag, ShoppingCart, CreditCard, Calendar, ArrowRightLeft, Package, Box, Banknote, ChevronDown, Calculator, Palette, Info, Search, Pin, Flame, Rocket, ThumbsUp, Menu, Briefcase, Star, Mail, ExternalLink, ChevronUp, Camera, Zap, Edit3, ChevronLeft, ChevronRight, Music, Maximize } from 'lucide-react';
 import MarqueeText from '../../MarqueeText';
 import { getSupabase, uploadBase64ToStorage, executeWithSchemaResilience, sanitizeCreativePayload, formatCreativePayload, extractGlobalProfilePayload, autoSyncCreativeProfile } from '../../../supabase';
-import { UniversalSocialFeed } from '../../social/UniversalSocialFeed';
 import CreativeSettingsTab from './CreativeSettingsTab';
 import CreativeAlliancesView from './CreativeAlliancesView';
 import CreativeWorkspaceProtocols from './CreativeWorkspaceProtocols';
@@ -23,6 +22,7 @@ interface CreativeDashboardViewV2Props {
   triggerNotification?: (msg: string) => void;
   addLog?: (msg: string) => void;
   onUpgradeToPro?: () => void;
+  setActiveTab?: (tab: string) => void;
 }
 
 // Preloaded beautiful gig leads that match different creative categories
@@ -210,7 +210,8 @@ export default function CreativeDashboardViewV2({
    onOpenNotifications,
    onBack,
    triggerNotification: propTriggerNotification,
-   addLog: propAddLog
+   addLog: propAddLog,
+   setActiveTab: setPortalActiveTab
 }: CreativeDashboardViewV2Props) {
   const [activeTab, setActiveTab] = useState<'JOBS'|'BOOKINGS'|'PORTFOLIO'|'TEAMS'|'SOCIAL'|'SETTINGS'>('JOBS');
   const [subTab, setSubTab] = useState<string>('');
@@ -1739,6 +1740,12 @@ export default function CreativeDashboardViewV2({
                 key={`${item.id}-${idx}`}
                 type="button"
                 onClick={() => {
+                  if (item.id === 'SOCIAL') {
+                    if (setPortalActiveTab) {
+                      setPortalActiveTab('social');
+                      return;
+                    }
+                  }
                   setActiveTab(item.id as any);
                   setSubTab('');
                 }}
@@ -2611,20 +2618,6 @@ export default function CreativeDashboardViewV2({
 
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* SOCIAL TAB RENDERING */}
-          {activeTab === 'SOCIAL' && (
-            <div className="w-full animate-fade-in">
-              <UniversalSocialFeed 
-                userProfile={userProfile} 
-                setUserProfile={setUserProfile} 
-                triggerNotification={safeTriggerNotification} 
-                portalRole="creative" 
-                onLogout={onLogout}
-                onBack={() => setActiveTab('JOBS')}
-              />
             </div>
           )}
 
