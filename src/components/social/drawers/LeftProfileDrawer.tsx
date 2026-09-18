@@ -455,8 +455,157 @@ if (!leftDrawerOpen) return null;
                     className="absolute inset-0 overflow-y-auto py-4 flex flex-col"
                   >
                     <div className="space-y-1 px-3 flex-1">
-                      {/* Scene Cred Block on Main Settings Tray Page */}
-                      <div className="mx-1 mb-4 bg-zinc-950/60 border border-zinc-900 p-3.5 rounded-2xl space-y-3 shadow-md">
+                      {/* Short Profile blurb preview inside root */}
+                      <div className="mx-1 mb-3 p-3 bg-zinc-950/50 rounded-xl border border-zinc-900 text-center">
+                        <p className="text-[11px] text-zinc-400 italic">"{profileBlurb || 'No profile blurb written yet.'}"</p>
+                        <div className="mt-2 flex flex-wrap gap-1 justify-center">
+                          <span className="text-[8px] font-black uppercase tracking-wider bg-rose-950/40 border border-rose-900/40 text-rose-400 px-2 py-0.5 rounded-md font-mono">
+                            {portalRole === 'fan_only' ? 'Fan Only' : 'Industry Pro'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Main Navigation Menu */}
+                      <div className="space-y-2 mt-2">
+                        {/* Profile Settings */}
+                        <button 
+                          type="button"
+                          onClick={() => setDrawerCurrentView('profile')} 
+                          className="w-full flex items-center justify-between p-2.5 rounded-xl bg-zinc-950/60 hover:bg-zinc-900/90 border border-zinc-900 hover:border-zinc-800 transition-all duration-200 group cursor-pointer text-left"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 group-hover:border-cyan-500/40 group-hover:bg-cyan-500/15 group-hover:shadow-[0_0_10px_rgba(6,182,212,0.25)] transition-all shrink-0">
+                              <User className="w-4 h-4" />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-xs font-bold text-zinc-200 group-hover:text-white transition-colors truncate">
+                                Profile Settings
+                              </span>
+                              <span className="text-[10px] text-zinc-500 group-hover:text-zinc-400 font-mono transition-colors truncate">
+                                Identity, bio & preferences
+                              </span>
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+                        </button>
+
+                        {/* Saved Payment Methods */}
+                        <button 
+                          type="button"
+                          onClick={() => setDrawerCurrentView('payment')} 
+                          className="w-full flex items-center justify-between p-2.5 rounded-xl bg-zinc-950/60 hover:bg-zinc-900/90 border border-zinc-900 hover:border-zinc-800 transition-all duration-200 group cursor-pointer text-left"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:border-purple-500/40 group-hover:bg-purple-500/15 group-hover:shadow-[0_0_10px_rgba(168,85,247,0.25)] transition-all shrink-0">
+                              <CreditCard className="w-4 h-4" />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-xs font-bold text-zinc-200 group-hover:text-white transition-colors truncate">
+                                Saved Payment Methods
+                              </span>
+                              <span className="text-[10px] text-zinc-500 group-hover:text-zinc-400 font-mono transition-colors truncate">
+                                Digital wallets & 1-tap checkout
+                              </span>
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+                        </button>
+
+                        {/* VIP Club Info */}
+                        {!isEmbedded && (
+                          <button 
+                            type="button"
+                            onClick={() => setDrawerCurrentView('vip')} 
+                            className="w-full flex items-center justify-between p-2.5 rounded-xl bg-zinc-950/60 hover:bg-zinc-900/90 border border-zinc-900 hover:border-zinc-800 transition-all duration-200 group cursor-pointer text-left"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 group-hover:border-rose-500/40 group-hover:bg-rose-500/15 group-hover:shadow-[0_0_10px_rgba(244,63,94,0.25)] transition-all shrink-0">
+                                <Crown className="w-4 h-4" />
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-xs font-bold text-zinc-200 group-hover:text-white transition-colors truncate">
+                                  VIP Club Info
+                                </span>
+                                <span className="text-[10px] text-zinc-500 group-hover:text-zinc-400 font-mono transition-colors truncate">
+                                  Balcony access & perks
+                                </span>
+                              </div>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+                          </button>
+                        )}
+
+                        {/* My Collections */}
+                        {!isEmbedded && (
+                          <button 
+                            type="button"
+                            onClick={() => setDrawerCurrentView('collections')} 
+                            className="w-full flex items-center justify-between p-2.5 rounded-xl bg-zinc-950/60 hover:bg-zinc-900/90 border border-zinc-900 hover:border-zinc-800 transition-all duration-200 group cursor-pointer text-left"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:border-emerald-500/40 group-hover:bg-emerald-500/15 group-hover:shadow-[0_0_10px_rgba(16,185,129,0.25)] transition-all shrink-0">
+                                <Library className="w-4 h-4" />
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-xs font-bold text-zinc-200 group-hover:text-white transition-colors truncate">
+                                  My Collections
+                                </span>
+                                <span className="text-[10px] text-zinc-500 group-hover:text-zinc-400 font-mono transition-colors truncate">
+                                  Tickets, vinyl, merch & tapes
+                                </span>
+                              </div>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+                          </button>
+                        )}
+
+                        {/* Following Lists */}
+                        <button 
+                          type="button"
+                          onClick={() => setDrawerCurrentView('following')} 
+                          className="w-full flex items-center justify-between p-2.5 rounded-xl bg-zinc-950/60 hover:bg-zinc-900/90 border border-zinc-900 hover:border-zinc-800 transition-all duration-200 group cursor-pointer text-left"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:border-blue-500/40 group-hover:bg-blue-500/15 group-hover:shadow-[0_0_10px_rgba(59,130,246,0.25)] transition-all shrink-0">
+                              <Users className="w-4 h-4" />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-xs font-bold text-zinc-200 group-hover:text-white transition-colors truncate">
+                                Following Lists
+                              </span>
+                              <span className="text-[10px] text-zinc-500 group-hover:text-zinc-400 font-mono transition-colors truncate">
+                                Bands, venues, peers & artists
+                              </span>
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+                        </button>
+
+                        {/* Band Archivist */}
+                        <button 
+                          type="button"
+                          onClick={() => setIsCommunityCuratorOpen(true)} 
+                          className="w-full flex items-center justify-between p-2.5 rounded-xl bg-zinc-950/60 hover:bg-zinc-900/90 border border-zinc-900 hover:border-zinc-800 transition-all duration-200 group cursor-pointer text-left"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 group-hover:border-amber-500/40 group-hover:bg-amber-500/15 group-hover:shadow-[0_0_10px_rgba(245,158,11,0.25)] transition-all shrink-0">
+                              <Disc className="w-4 h-4" />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-xs font-bold text-zinc-200 group-hover:text-white transition-colors truncate">
+                                Band Archivist
+                              </span>
+                              <span className="text-[10px] text-zinc-500 group-hover:text-zinc-400 font-mono transition-colors truncate">
+                                Community archive & discography
+                              </span>
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+                        </button>
+                      </div>
+
+                      {/* Scene Cred Block moved to bottom of root drawer view */}
+                      <div className="mx-1 mt-5 bg-zinc-950/60 border border-zinc-900 p-3.5 rounded-2xl space-y-3 shadow-md">
                         <div className="flex items-center justify-between">
                           <h4 className="text-[10px] font-black uppercase text-rose-400 tracking-wider font-mono flex items-center gap-1.5">
                             <Sparkles className="w-3.5 h-3.5 text-rose-500" /> Scene Cred
@@ -485,68 +634,7 @@ if (!leftDrawerOpen) return null;
                           Unlock VIP Balcony Upgrade
                         </button>
                       </div>
-
-                    {/* Short Profile blurb preview inside root */}
-                    <div className="mx-1 mb-4 p-3 bg-zinc-950/50 rounded-xl border border-zinc-900 text-center">
-                      <p className="text-[11px] text-zinc-400 italic">"{profileBlurb || 'No profile blurb written yet.'}"</p>
-                      <div className="mt-2 flex flex-wrap gap-1 justify-center">
-                        <span className="text-[8px] font-black uppercase tracking-wider bg-rose-950/40 border border-rose-900/40 text-rose-400 px-2 py-0.5 rounded-md font-mono">
-                          {portalRole === 'fan_only' ? 'Fan Only' : 'Industry Pro'}
-                        </span>
-                      </div>
                     </div>
-
-                    <button onClick={() => setDrawerCurrentView('profile')} className="w-full flex items-center gap-3 px-3 py-3.5 text-sm font-bold text-zinc-300 hover:text-white hover:bg-zinc-900/80 rounded-lg transition-colors">
-                      <User className="w-4 h-4 text-zinc-500" /> Profile Settings
-                    </button>
-
-                    <button 
-                      onClick={() => setDrawerCurrentView('payment')} 
-                      className="w-full flex items-center justify-between px-3 py-3.5 text-sm font-bold text-zinc-300 hover:text-white hover:bg-zinc-900/80 rounded-xl transition-colors group cursor-pointer"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:border-purple-500/40">
-                          <CreditCard className="w-4 h-4" />
-                        </div>
-                        <span>Saved Payment Methods</span>
-                      </div>
-                      <span className="text-[8px] font-mono font-bold uppercase tracking-wider text-purple-300 bg-purple-950/60 border border-purple-800/40 px-1.5 py-0.5 rounded">
-                        1-Tap Ready
-                      </span>
-                    </button>
-
-                    {!isEmbedded && (
-                      <button onClick={() => setDrawerCurrentView('vip')} className="w-full flex items-center gap-3 px-3 py-3.5 text-sm font-bold text-zinc-300 hover:text-white hover:bg-zinc-900/80 rounded-lg transition-colors">
-                        <Crown className="w-4 h-4 text-rose-500" /> VIP Club Info
-                      </button>
-                    )}
-
-                    {!isEmbedded && (
-                      <button onClick={() => setDrawerCurrentView('collections')} className="w-full flex items-center gap-3 px-3 py-3.5 text-sm font-bold text-zinc-300 hover:text-white hover:bg-zinc-900/80 rounded-lg transition-colors">
-                        <Library className="w-4 h-4 text-zinc-500" /> My Collections
-                      </button>
-                    )}
-
-                    <button onClick={() => setDrawerCurrentView('following')} className="w-full flex items-center gap-3 px-3 py-3.5 text-sm font-bold text-zinc-300 hover:text-white hover:bg-zinc-900/80 rounded-lg transition-colors">
-                      <Users className="w-4 h-4 text-zinc-500" /> Following Lists
-                    </button>
-
-                    <button 
-                      type="button"
-                      onClick={() => setIsCommunityCuratorOpen(true)} 
-                      className="w-full flex items-center justify-between px-3 py-3.5 text-sm font-bold text-zinc-300 hover:text-white hover:bg-zinc-900/80 rounded-xl transition-colors group cursor-pointer"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 group-hover:border-amber-500/40">
-                          <Disc className="w-4 h-4" />
-                        </div>
-                        <span>Band Archivist</span>
-                      </div>
-                      <span className="text-[8px] font-mono font-bold uppercase tracking-wider text-amber-300 bg-amber-950/60 border border-amber-800/40 px-1.5 py-0.5 rounded">
-                        Curator Hub
-                      </span>
-                    </button>
-                  </div>
                   <div className="p-4 border-t border-zinc-900 bg-zinc-950/50 mt-auto shrink-0">
                     <button onClick={() => { setLeftDrawerOpen(false); onLogout?.(); }} className="w-full py-3.5 bg-zinc-900 text-rose-500 text-xs font-black uppercase tracking-wider rounded-lg hover:bg-zinc-800 transition-colors">
                       Log Out

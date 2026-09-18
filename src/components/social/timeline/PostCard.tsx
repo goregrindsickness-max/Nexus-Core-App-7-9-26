@@ -737,19 +737,6 @@ export const PostCard: React.FC<PostCardProps> = ({
         </div>
       </div>
 
-      {/* Tag / Category Badge */}
-      <div className="flex flex-wrap items-center gap-2">
-        {displayTag && (
-          <span className={`inline-block px-2.5 py-1 rounded-md font-mono text-[10px] font-black uppercase tracking-wider shadow-inner border ${
-            displayTag === 'ALBUM RELEASE' || post.albumData
-              ? 'bg-rose-950/90 border-rose-500/50 text-rose-400'
-              : 'bg-zinc-900/90 border-zinc-800 text-zinc-300'
-          }`}>
-            #{displayTag}
-          </span>
-        )}
-      </div>
-
       {/* SMART GIG & TOUR PROXIMITY PILL */}
       <GigProximityPill
         post={post}
@@ -844,12 +831,18 @@ export const PostCard: React.FC<PostCardProps> = ({
         <YouTubeEmbedCard youtubeId={post.youtubeId} />
       )}
 
-      {/* Media Attachment Image(s) */}
+      {/* Media Attachment Image(s) - Edge-to-Edge Showcase */}
       {!post.songData && !post.albumData && !post.merchData && !post.youtubeId && (
         <MediaGalleryGrid
           images={post.images}
           imageUrl={post.image_url}
           onOpenLightbox={(images, index) => onOpenLightbox(images, index)}
+          tag={post.tag}
+          location={locationDisplay}
+          ticketData={post.ticketData}
+          eventData={post.eventData}
+          onOpenTicketModal={onOpenTicketModal}
+          onSelectTicketShow={onSelectTicketShow}
         />
       )}
 

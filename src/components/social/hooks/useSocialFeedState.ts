@@ -132,6 +132,7 @@ export function useSocialFeedState({
   const [eventFlyerUrl, setEventFlyerUrl] = useState('');
   const [eventDescription, setEventDescription] = useState('');
   const [eventCost, setEventCost] = useState('Free / Donation');
+  const [eventTicketUrl, setEventTicketUrl] = useState('');
 
   // Shop & Category Filter states
   const [shopCategory, setShopCategory] = useState<string>('all');
@@ -701,16 +702,66 @@ export function useSocialFeedState({
             date: eventDate.trim() || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
             time: eventTime.trim() || '8:00 PM',
             locationName: eventLocationName.trim() || 'DIY Venue Spot',
+            city: eventAddress.trim() ? eventAddress.trim().split(',')[0].trim() : (eventLocationName.trim() || undefined),
             address: eventAddress.trim() || undefined,
             isSecretLocation: eventIsSecret,
             lineup: eventLineup ? eventLineup.split(',').map((s) => s.trim()).filter(Boolean) : [],
             flyerUrl: eventFlyerUrl.trim() || finalImage || undefined,
             description: eventDescription.trim() || undefined,
             cost: eventCost.trim() || 'Free / Donation',
+            ticketUrl: eventTicketUrl.trim() || undefined,
             rsvpsCount: 1,
             attendees: [authorName],
           }
         : undefined;
+
+      const ticketDataValue = eventDataValue
+        ? {
+            headliner: eventDataValue.title,
+            venue: eventDataValue.locationName,
+            date: eventDataValue.date,
+            priceRange: eventDataValue.cost,
+            ticketUrl: eventTicketUrl.trim() || undefined,
+            lineup: eventDataValue.lineup,
+            city: eventDataValue.city || eventDataValue.locationName,
+          }
+        : undefined;
+
+      // Automatically register event in community shows database (creating live event page if new)
+      if (eventDataValue) {
+        try {
+          const storedCommunityEvents = JSON.parse(localStorage.getItem('nexus_community_events') || '[]');
+          const newEventRecord = {
+            id: eventDataValue.id,
+            name: eventDataValue.title,
+            headliner: eventDataValue.title,
+            date: eventDataValue.date,
+            time: eventDataValue.time,
+            venue_name: eventDataValue.locationName,
+            venue_address: eventDataValue.address || '',
+            city: eventDataValue.city || '',
+            state_province: eventAddress.includes(',') ? eventAddress.split(',')[1]?.trim() : '',
+            category: eventDataValue.category,
+            lineup: eventDataValue.lineup,
+            price: eventDataValue.cost,
+            external_ticket_url: eventTicketUrl.trim() || '',
+            flyer_url: eventDataValue.flyerUrl || '',
+            description: eventDataValue.description || '',
+            created_by: authorName,
+            created_at: new Date().toISOString(),
+          };
+          const existingIdx = storedCommunityEvents.findIndex((e: any) => e.name?.toLowerCase() === eventDataValue.title.toLowerCase());
+          if (existingIdx >= 0) {
+            storedCommunityEvents[existingIdx] = { ...storedCommunityEvents[existingIdx], ...newEventRecord };
+          } else {
+            storedCommunityEvents.unshift(newEventRecord);
+          }
+          localStorage.setItem('nexus_community_events', JSON.stringify(storedCommunityEvents));
+          window.dispatchEvent(new CustomEvent('nexus_community_events_updated', { detail: { event: newEventRecord } }));
+        } catch (err) {
+          console.error('Error saving community event record:', err);
+        }
+      }
 
       const postUuid = typeof crypto !== 'undefined' && crypto.randomUUID
         ? crypto.randomUUID()

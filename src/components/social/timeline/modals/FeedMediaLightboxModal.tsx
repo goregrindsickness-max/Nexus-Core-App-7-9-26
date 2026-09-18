@@ -237,7 +237,7 @@ export const FeedMediaLightboxModal: React.FC<FeedMediaLightboxModalProps> = ({
         >
           <img 
             src={currentImageUrl} 
-            alt={`Photo Pit Master ${lightbox.index + 1}`} 
+            alt={`Photo ${lightbox.index + 1}`} 
             referrerPolicy="no-referrer"
             onError={(e) => {
               e.currentTarget.src = 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/public-assets/High%20energy%20live%20music%20concert%201.png';

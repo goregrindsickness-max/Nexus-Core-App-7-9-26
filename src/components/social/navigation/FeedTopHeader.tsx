@@ -72,6 +72,8 @@ export interface FeedTopHeaderProps {
   onNavigateToTab?: (tab: string, subNav?: string) => void;
   setDashboardV2ActiveNav?: (nav: any) => void;
   dashboardV2ActiveNav?: string;
+  activeFeedCategoryFilter?: string;
+  setActiveFeedCategoryFilter?: (category: string) => void;
 }
 
 export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
@@ -113,7 +115,9 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
   onLogout,
   onNavigateToTab,
   setDashboardV2ActiveNav,
-  dashboardV2ActiveNav
+  dashboardV2ActiveNav,
+  activeFeedCategoryFilter = 'all',
+  setActiveFeedCategoryFilter
 }) => {
   const handleLogout = async () => {
     setRoleMenuOpen(false);
@@ -156,7 +160,7 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
   }, [userProfile?.id]);
 
   return (
-    <div className="relative z-30 bg-[#030303]/90 backdrop-blur-md border-b border-zinc-900/85 flex flex-col">
+    <div className="relative z-30 bg-[#030303]/95 backdrop-blur-md border-b border-zinc-900/85 flex flex-col shadow-md">
       {/* Top Navbar */}
       <div className={`px-4 py-1.5 min-h-[66px] items-center justify-between relative z-40 ${isEmbedded ? 'hidden' : 'flex'}`}>
         <div className="flex items-center gap-3">
@@ -177,6 +181,7 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
             }}
           />
         </div>
+
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsCartOpen(true)}
@@ -189,6 +194,7 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
               </span>
             )}
           </button>
+
           {!isEmbedded && (
             <div className="text-right mr-1">
               <p className={`text-[9px] font-mono font-bold uppercase tracking-wider leading-none mb-1 ${
@@ -207,7 +213,7 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                   : 'INDUSTRY PRO'}
               </p>
               <p className="text-sm font-black text-white leading-none">
-                Hi {portalRole === 'band' ? (resolveBandName(activeBand, userProfile).split(' ')[0]) : (profileFullLegalName || userProfile?.display_name || userProfile?.username || 'User').split(' ')[0]},
+                Hi {portalRole === 'band' ? (resolveBandName(activeBand, userProfile).split(' ')[0]) : (profileFullLegalName || userProfile?.display_name || userProfile?.username || userProfile?.name || 'Miguel').split(' ')[0]},
               </p>
             </div>
           )}
@@ -852,13 +858,13 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                     />
                   )}
                 </button>
-              )
+              );
             })}
           </div>
 
           {/* Universal Live Search Bar (Hidden in Photo Pit to keep UI focused) */}
           {activeTab !== 'photopit' && activeTab !== 'gallery' && (
-            <div className="w-full p-2 pb-3.5 border-t border-zinc-900 bg-[#060607] relative">
+            <div className="w-full p-2 pb-2.5 border-t border-zinc-900 bg-[#060607] relative">
               <div className="relative flex items-center">
                 <Search className="w-4 h-4 text-zinc-500 absolute left-3 pointer-events-none" />
                 <input
@@ -878,6 +884,39 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                 )}
               </div>
 
+              {/* 2. One-Tap Category Filter Chips (Active on Feed tab when not searching) */}
+              {activeTab === 'feed' && !globalSearchQuery && (
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2 px-0.5 select-none">
+                  {[
+                    { id: 'all', label: 'All Stream', emoji: '🔥' },
+                    { id: 'tour', label: 'Tour Dates', emoji: '🎟️' },
+                    { id: 'merch', label: 'Merch Drops', emoji: '👕' },
+                    { id: 'audio', label: 'Demos & Tapes', emoji: '🎙️' },
+                    { id: 'photos', label: 'Photo Pit', emoji: '📸' },
+                    { id: 'following', label: 'Following', emoji: '⭐' }
+                  ].map((chip) => {
+                    const isSelected = (activeFeedCategoryFilter || 'all') === chip.id;
+                    return (
+                      <button
+                        key={`feed-filter-chip-${chip.id}`}
+                        type="button"
+                        onClick={() => setActiveFeedCategoryFilter?.(chip.id)}
+                        className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-tight whitespace-nowrap transition-all cursor-pointer ${
+                          isSelected
+                            ? portalRole === 'fan_only'
+                              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/70 shadow-[0_0_12px_rgba(34,211,238,0.35)]'
+                              : 'bg-[#6601BB]/30 text-[#e9d5ff] border border-[#a855f7]/70 shadow-[0_0_12px_rgba(168,85,247,0.35)]'
+                            : 'bg-zinc-900/90 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/80 border border-zinc-800/80'
+                        }`}
+                      >
+                        <span className="text-[12px]">{chip.emoji}</span>
+                        <span>{chip.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
               {/* Search Dropdown Results */}
               {globalSearchQuery.trim().length > 0 && (
                 <div className="absolute right-0 left-0 top-full mt-2 mx-2 bg-[#121214] border border-zinc-800 rounded-2xl shadow-2xl p-2 z-[9999] overflow-hidden max-h-96 overflow-y-auto no-scrollbar">
@@ -892,14 +931,69 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
 
                   {(() => {
                     const q = globalSearchQuery.toLowerCase();
-                    const combined = [...(searchResults || []), ...(allProfiles || []), ...(discoverProfiles || [])];
-                    const seen = new Set<string>();
-                    const unique = combined.filter(p => {
-                      if (!p) return false;
-                      const key = String(p.id || p.band_id || p.band_name || p.username || p.name);
-                      if (!key || seen.has(key)) return false;
-                      seen.add(key);
-                      return true;
+                    const rawList = [...(searchResults || []), ...(allProfiles || []), ...(discoverProfiles || [])];
+                    
+                    // Create a map to unify profiles by normalized identity (name, handle, or ID)
+                    const profileMap = new Map<string, any>();
+
+                    rawList.forEach((p) => {
+                      if (!p) return;
+                      const rawName = (
+                        p.full_name ||
+                        p.name ||
+                        p.band_name ||
+                        p.business_name ||
+                        p.agency_name ||
+                        p.label_name ||
+                        p.username ||
+                        p.console_handle ||
+                        ''
+                      ).trim();
+
+                      const normalizedName = rawName.toLowerCase();
+                      const handle = (p.console_handle || p.username || '').trim().toLowerCase();
+                      const idKey = p.id ? String(p.id).toLowerCase() : '';
+                      const bandIdKey = p.band_id ? String(p.band_id).toLowerCase() : '';
+
+                      // Determine primary deduplication key (prefer normalized name, then handle, then id)
+                      const primaryKey = normalizedName || handle || idKey || bandIdKey;
+                      if (!primaryKey) return;
+
+                      if (!profileMap.has(primaryKey)) {
+                        profileMap.set(primaryKey, { ...p });
+                      } else {
+                        // Merge fields: prefer real database UUIDs, richer avatars, and sync followed state
+                        const existing = profileMap.get(primaryKey);
+                        const isDbUuid = (id: any) => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+                        const mergedId = isDbUuid(p.id) ? p.id : existing.id;
+                        const mergedBandId = isDbUuid(p.band_id) ? p.band_id : existing.band_id;
+                        const isFollowed = Boolean(existing.followed || p.followed || existing.isFollowed || p.isFollowed);
+                        const avatar = p.avatar_url || p.avatar || p.logo_url || existing.avatar_url || existing.avatar || existing.logo_url;
+
+                        profileMap.set(primaryKey, {
+                          ...existing,
+                          ...p,
+                          id: mergedId,
+                          band_id: mergedBandId,
+                          avatar,
+                          followed: isFollowed,
+                          isFollowed
+                        });
+                      }
+                    });
+
+                    // Cross-check follow status against discoverProfiles
+                    const unique = Array.from(profileMap.values()).map((p) => {
+                      const pName = (p.full_name || p.name || p.band_name || p.username || '').trim().toLowerCase();
+                      const matchedDiscover = (discoverProfiles || []).find((dp: any) => {
+                        const dpName = (dp.full_name || dp.name || dp.band_name || dp.username || '').trim().toLowerCase();
+                        return (dp.id && p.id && dp.id === p.id) || (dpName && pName && dpName === pName);
+                      });
+                      if (matchedDiscover?.followed) {
+                        return { ...p, followed: true, isFollowed: true };
+                      }
+                      return p;
                     });
 
                     const matchingProfiles = unique.filter(p => {

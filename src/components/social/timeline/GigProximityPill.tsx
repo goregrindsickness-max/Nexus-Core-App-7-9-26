@@ -89,7 +89,7 @@ export const GigProximityPill: React.FC<GigProximityPillProps> = ({
     setCustomCityInput('');
   };
 
-  // Find matching or closest tour date for this post
+  // Find matching or closest tour date for this post ONLY if explicit tourData, ticketData, or eventData exists
   const gigMatch = useMemo(() => {
     const normUserCity = userCity.toLowerCase().trim();
     const cityPrimary = normUserCity.split(',')[0].trim();
@@ -155,52 +155,6 @@ export const GigProximityPill: React.FC<GigProximityPillProps> = ({
         headliner: post.eventData.title || post.authorName,
         eventData: post.eventData,
         distanceText: isLocal ? '~5 mi away' : 'Regional Event'
-      };
-    }
-
-    // 4. Check author name / handle against known band database
-    const authorKey = (post.authorName || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
-    for (const [bandKey, dates] of Object.entries(ARTIST_TOUR_DATES)) {
-      if (authorKey.includes(bandKey)) {
-        const matchingDate = dates.find(d => d.city.toLowerCase().includes(cityPrimary));
-        if (matchingDate) {
-          return {
-            isExactCity: true,
-            city: matchingDate.city,
-            venue: matchingDate.venue,
-            date: matchingDate.date,
-            price: matchingDate.price,
-            headliner: matchingDate.headliner,
-            ticketData: { headliner: matchingDate.headliner, venue: matchingDate.venue, date: matchingDate.date, priceRange: matchingDate.price },
-            distanceText: '~10 mi away'
-          };
-        }
-        const defaultDate = dates[0];
-        return {
-          isExactCity: false,
-          city: defaultDate.city,
-          venue: defaultDate.venue,
-          date: defaultDate.date,
-          price: defaultDate.price,
-          headliner: defaultDate.headliner,
-          ticketData: { headliner: defaultDate.headliner, venue: defaultDate.venue, date: defaultDate.date, priceRange: defaultDate.price },
-          distanceText: 'Upcoming Tour'
-        };
-      }
-    }
-
-    // Check if post message contains keywords like "tour", "live at", "tickets", "playing"
-    const msgLower = (post.message || '').toLowerCase();
-    if (msgLower.includes('tour') || msgLower.includes('live at') || msgLower.includes('playing next') || msgLower.includes('gig')) {
-      return {
-        isExactCity: false,
-        city: userCity,
-        venue: post.location || 'Local Underground Stage',
-        date: 'Upcoming Live Date',
-        price: '$20',
-        headliner: post.authorName,
-        ticketData: { headliner: post.authorName, venue: post.location || 'Local Stage', date: 'Upcoming', priceRange: '$20' },
-        distanceText: 'Live Scene Notice'
       };
     }
 

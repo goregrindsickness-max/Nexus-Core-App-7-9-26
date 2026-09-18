@@ -18,7 +18,7 @@ export const SocialThemeShell: React.FC<SocialThemeShellProps> = ({
       <div 
         ref={containerRef}
         data-theme={dataTheme}
-        className="min-h-screen w-full bg-[#030303] text-zinc-200 font-sans overflow-x-hidden pl-0 pb-6 sm:pb-8"
+        className="min-h-screen w-full bg-[#030303] text-zinc-200 font-sans overflow-x-clip pl-0 pb-6 sm:pb-8"
         style={gridStyle}
       >
       <style>{`

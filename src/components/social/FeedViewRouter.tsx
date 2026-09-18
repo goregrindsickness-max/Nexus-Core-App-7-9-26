@@ -331,6 +331,83 @@ export const FeedViewRouter: React.FC<any> = (props) => {
               }
             }
           }
+
+          // 1-Tap Category Filter Chips Logic
+          if (props.activeFeedCategoryFilter && props.activeFeedCategoryFilter !== 'all') {
+            const filter = props.activeFeedCategoryFilter;
+            if (filter === 'tour') {
+              const isTour = 
+                Boolean(post.event_data || post.tour_dates || post.eventData || post.tourDates || post.tourData || post.ticketData) ||
+                ['TOUR DATES', 'GIG', 'EVENT', 'TOUR ANNOUNCEMENT', 'TICKETS', 'PRESALE', 'LIVE EVENT', 'CONCERT'].includes(post.tag?.toUpperCase() || '') ||
+                post.tag?.toLowerCase().includes('tour') ||
+                post.tag?.toLowerCase().includes('ticket') ||
+                post.tag?.toLowerCase().includes('presale') ||
+                post.tag?.toLowerCase().includes('show') ||
+                post.tag?.toLowerCase().includes('gig') ||
+                post.content?.toLowerCase().includes('tour') ||
+                post.content?.toLowerCase().includes('ticket') ||
+                post.content?.toLowerCase().includes('presale') ||
+                post.content?.toLowerCase().includes('live at') ||
+                post.type === 'tour' ||
+                post.type === 'event';
+              if (!isTour) return false;
+            } else if (filter === 'merch') {
+              const isMerch = 
+                Boolean(post.merch_data || post.merchDrop || post.merchData || post.merch_drop) ||
+                ['MERCH DROP', 'MERCH', 'MERCH ALERT', 'STORE', 'VINYL DROP', 'APPAREL'].includes(post.tag?.toUpperCase() || '') ||
+                post.tag?.toLowerCase().includes('merch') ||
+                post.tag?.toLowerCase().includes('vinyl') ||
+                post.tag?.toLowerCase().includes('cassette') ||
+                post.tag?.toLowerCase().includes('shirt') ||
+                post.tag?.toLowerCase().includes('hoodie') ||
+                post.content?.toLowerCase().includes('merch drop') ||
+                post.content?.toLowerCase().includes('merch alert') ||
+                post.content?.toLowerCase().includes('merch') ||
+                post.content?.toLowerCase().includes('pre-order') ||
+                post.type === 'merch';
+              if (!isMerch) return false;
+            } else if (filter === 'audio') {
+              const isAudio = 
+                Boolean(post.attached_song || post.songData || post.tapeData || post.tape_data || post.audio_url || post.audioUrl) ||
+                ['DEMO', 'SONG SHARE', 'LIVE BOOTLEG', 'ALBUM RELEASE', 'AUDIO', 'TRACK', 'CASSETTE', 'SOUNDCHECK'].includes(post.tag?.toUpperCase() || '') ||
+                post.tag?.toLowerCase().includes('demo') ||
+                post.tag?.toLowerCase().includes('tape') ||
+                post.tag?.toLowerCase().includes('audio') ||
+                post.tag?.toLowerCase().includes('track') ||
+                post.tag?.toLowerCase().includes('bootleg') ||
+                post.tag?.toLowerCase().includes('album') ||
+                post.tag?.toLowerCase().includes('song') ||
+                post.content?.toLowerCase().includes('new single') ||
+                post.content?.toLowerCase().includes('demo') ||
+                post.content?.toLowerCase().includes('track') ||
+                post.content?.toLowerCase().includes('song') ||
+                post.content?.toLowerCase().includes('soundboard') ||
+                post.type === 'music' ||
+                post.type === 'audio';
+              if (!isAudio) return false;
+            } else if (filter === 'photos') {
+              const isPhoto = 
+                (Array.isArray(post.images) && post.images.length > 0) ||
+                (Array.isArray(post.media_urls) && post.media_urls.length > 0) ||
+                Boolean(post.image_url || post.imageUrl || post.mediaUrl || post.media_url || post.photo_pit) ||
+                ['PHOTO PIT', 'GALLERY', 'PIT SNAP', 'CONCERT PHOTOS', 'PHOTO'].includes(post.tag?.toUpperCase() || '') ||
+                post.tag?.toLowerCase().includes('photo') ||
+                post.tag?.toLowerCase().includes('gallery') ||
+                post.type === 'photo';
+              if (!isPhoto) return false;
+            } else if (filter === 'following') {
+              const authorName = (post?.author?.name || (post as any)?.profile?.name || (post as any)?.author_name || '').toLowerCase();
+              const isAuthorFollowed = (discoverProfiles || []).some(p => (p?.name || '').toLowerCase() === authorName && p.followed);
+              const isSelf = Boolean(
+                (post?.author?.name || '') === profileFullLegalName ||
+                (userProfile && (post?.author?.name || '') === userProfile?.name) ||
+                post.author?.isYou ||
+                post.isYou ||
+                (userProfile?.id && (post.author?.id === userProfile.id || post.profile_id === userProfile.id || post.user_id === userProfile.id))
+              );
+              if (!isAuthorFollowed && !isSelf) return false;
+            }
+          }
           return true;
         }).map(post => {
           const isBoostActive = !!post.is_boosted && !!post.boost_expires_at && new Date(post.boost_expires_at).getTime() > Date.now();
@@ -342,6 +419,7 @@ export const FeedViewRouter: React.FC<any> = (props) => {
         });
 
         const liveUserAvatar = profileAvatarUrl || userProfile?.avatar || userProfile?.avatar_url || userProfile?.profile_avatar;
+        const isFilterActive = Boolean(props.activeFeedCategoryFilter && props.activeFeedCategoryFilter !== 'all');
 
         const postsToPass = filteredFeed.length > 0 ? filteredFeed.map((p: any) => {
           const isSelf = Boolean(
@@ -415,7 +493,7 @@ export const FeedViewRouter: React.FC<any> = (props) => {
             })),
             is_pinned: p.is_pinned,
           };
-        }) : labelPosts;
+        }) : (isFilterActive ? [] : labelPosts);
 
         return (
           <div className="max-w-2xl mx-auto pt-2 pb-2 px-4">
@@ -450,6 +528,36 @@ export const FeedViewRouter: React.FC<any> = (props) => {
                 <span className="text-[9px] font-mono text-zinc-500 hidden sm:inline">
                   {feedStreamScope === 'workspace' ? 'Workspace scoped' : 'All signals'}
                 </span>
+              </div>
+            )}
+
+            {/* Empty state for active category filter */}
+            {isFilterActive && filteredFeed.length === 0 && (
+              <div className="bg-[#0b0b0d] border border-zinc-800/80 rounded-2xl p-8 text-center my-4 space-y-3 shadow-xl animate-in fade-in duration-200">
+                <div className="w-12 h-12 mx-auto rounded-full bg-zinc-900/90 border border-zinc-800 flex items-center justify-center text-xl shadow-inner">
+                  {props.activeFeedCategoryFilter === 'tour' && '🎟️'}
+                  {props.activeFeedCategoryFilter === 'merch' && '👕'}
+                  {props.activeFeedCategoryFilter === 'audio' && '🎙️'}
+                  {props.activeFeedCategoryFilter === 'photos' && '📸'}
+                  {props.activeFeedCategoryFilter === 'following' && '⭐'}
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-white uppercase tracking-wider">
+                    No {props.activeFeedCategoryFilter === 'tour' ? 'Tour Dates' : props.activeFeedCategoryFilter === 'merch' ? 'Merch Drops' : props.activeFeedCategoryFilter === 'audio' ? 'Demos & Tapes' : props.activeFeedCategoryFilter === 'photos' ? 'Photo Pit Snaps' : 'Followed Posts'} Yet
+                  </h3>
+                  <p className="text-xs text-zinc-400 mt-1 max-w-sm mx-auto">
+                    {props.activeFeedCategoryFilter === 'following'
+                      ? 'Follow more bands, venues, and scene members to see their posts here.'
+                      : `There are currently no active posts in the stream tagged with this category.`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => props.setActiveFeedCategoryFilter?.('all')}
+                  className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 transition-all cursor-pointer shadow"
+                >
+                  🔥 Show All Stream
+                </button>
               </div>
             )}
 

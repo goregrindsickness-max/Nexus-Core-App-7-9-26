@@ -272,6 +272,7 @@ export function UniversalSocialFeed({
   const [showLabelEpkModal, setShowLabelEpkModal] = useState(false);
   const [isCommunityShowModalOpen, setIsCommunityShowModalOpen] = useState(false);
   const [editingCommunityShow, setEditingCommunityShow] = useState<any | null>(null);
+  const [activeFeedCategoryFilter, setActiveFeedCategoryFilter] = useState<string>('all');
 
   const handleCommunityShowSubmit = async (payload: any) => {
     let currentUserId = userProfile?.id;
@@ -4639,6 +4640,8 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
         onNavigateToTab={onNavigateToTab}
         setDashboardV2ActiveNav={setDashboardV2ActiveNav}
         dashboardV2ActiveNav={dashboardV2ActiveNav}
+        activeFeedCategoryFilter={activeFeedCategoryFilter}
+        setActiveFeedCategoryFilter={setActiveFeedCategoryFilter}
       />
 
         {/* Profile Hub Card */}
@@ -4818,6 +4821,8 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
   filterHideTicketPresales={filterHideTicketPresales}
   filterShowFollowedOnly={filterShowFollowedOnly}
   filterShowMerchDropsOnlyFromFollowed={filterShowMerchDropsOnlyFromFollowed}
+  activeFeedCategoryFilter={activeFeedCategoryFilter}
+  setActiveFeedCategoryFilter={setActiveFeedCategoryFilter}
   discoverProfiles={discoverProfiles}
   profileFullLegalName={profileFullLegalName}
   feed={feed}
