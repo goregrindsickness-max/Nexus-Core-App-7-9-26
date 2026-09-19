@@ -28,8 +28,10 @@ import {
   Folder,
   Plus,
   RefreshCw,
-  Calendar
+  Calendar,
+  Ticket
 } from 'lucide-react';
+import { checkDuplicateCommunityEvent, EVENT_CATEGORIES } from '../../utils/communityEventUtils';
 
 export type ComposerRoleTheme = 'band' | 'creative' | 'promoter' | 'label' | 'industry_pro' | 'fan_only';
 
@@ -312,12 +314,32 @@ export interface CreatePostCardProps {
   handleSchedulePost?: (e: React.FormEvent, scheduledAt: string) => void;
   triggerNotification?: (msg: string) => void;
 
-  // DIY Event Props
+  // DIY Event & Ticket Props (Optional)
   setShowEventModal?: (show: boolean) => void;
   eventTitle?: string;
   setEventTitle?: (val: string) => void;
   eventType?: string;
   setEventType?: (val: string) => void;
+  eventDate?: string;
+  setEventDate?: (val: string) => void;
+  eventTime?: string;
+  setEventTime?: (val: string) => void;
+  eventLocationName?: string;
+  setEventLocationName?: (val: string) => void;
+  eventAddress?: string;
+  setEventAddress?: (val: string) => void;
+  eventIsSecret?: boolean;
+  setEventIsSecret?: (val: boolean) => void;
+  eventLineup?: string;
+  setEventLineup?: (val: string) => void;
+  eventFlyerUrl?: string;
+  setEventFlyerUrl?: (val: string) => void;
+  eventDescription?: string;
+  setEventDescription?: (val: string) => void;
+  eventCost?: string;
+  setEventCost?: (val: string) => void;
+  eventTicketUrl?: string;
+  setEventTicketUrl?: (val: string) => void;
   eventData?: any;
   setEventData?: (data: any) => void;
 }
@@ -396,6 +418,26 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
   setEventTitle,
   eventType = 'DIY Show',
   setEventType,
+  eventDate = '',
+  setEventDate,
+  eventTime = '',
+  setEventTime,
+  eventLocationName = '',
+  setEventLocationName,
+  eventAddress = '',
+  setEventAddress,
+  eventIsSecret = false,
+  setEventIsSecret,
+  eventLineup = '',
+  setEventLineup,
+  eventFlyerUrl = '',
+  setEventFlyerUrl,
+  eventDescription = '',
+  setEventDescription,
+  eventCost = '',
+  setEventCost,
+  eventTicketUrl = '',
+  setEventTicketUrl,
   eventData,
   setEventData,
 }) => {
@@ -458,6 +500,32 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
   const [scrapedLocation, setScrapedLocation] = useState<string | null>(null);
   const [isScrapingLocation, setIsScrapingLocation] = useState<boolean>(false);
   const [includeAutoLocation, setIncludeAutoLocation] = useState<boolean>(false);
+
+  // Real-time duplicate check for Show / Fest / Tour event details
+  const dupCheck = useMemo(() => {
+    return checkDuplicateCommunityEvent({
+      title: eventTitle || '',
+      date: eventDate || '',
+      venue: eventLocationName || taggedVenue || '',
+      ticketUrl: eventTicketUrl || '',
+    });
+  }, [eventTitle, eventDate, eventLocationName, taggedVenue, eventTicketUrl]);
+
+  const handleClearEventDetails = () => {
+    setEventTitle?.('');
+    setEventDate?.('');
+    setEventTime?.('');
+    setEventLocationName?.('');
+    setEventAddress?.('');
+    setEventLineup?.('');
+    setEventCost?.('');
+    setEventTicketUrl?.('');
+    setEventDescription?.('');
+    setEventFlyerUrl?.('');
+    setEventIsSecret?.(false);
+    setEventData?.(null);
+    triggerNotification?.('Event details cleared.');
+  };
 
   // Mention State
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
@@ -711,6 +779,8 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
     Boolean(pollQuestion) ||
     Boolean(merchDropName) ||
     Boolean(tapeTitle || tapeAudioUrl) ||
+    Boolean(eventTitle) ||
+    Boolean(eventData) ||
     postScope !== 'public';
 
   return (
@@ -934,9 +1004,70 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
           )}
         </div>
 
+        {/* Flyer & Tour Announcement Smart Companion Prompt (Completely Optional) */}
+        {(Boolean(newPostImageUrl) || selectedMediaFiles.length > 0) && (
+          <div className="p-2.5 sm:p-3 rounded-xl bg-gradient-to-r from-amber-950/40 via-zinc-950/80 to-amber-950/30 border border-amber-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 animate-in fade-in">
+            <div className="flex items-start gap-2.5 min-w-0">
+              <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 shrink-0 mt-0.5 sm:mt-0">
+                <Ticket className="w-4 h-4" />
+              </div>
+              <div className="min-w-0 text-left">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-mono font-black uppercase tracking-wider text-amber-400">
+                    🎪 Sharing a Show, Fest or Tour Flyer?
+                  </span>
+                  <span className="text-[8.5px] font-mono px-1.5 py-0.2 rounded bg-amber-950/80 text-amber-300 border border-amber-500/30 font-bold">
+                    OPTIONAL
+                  </span>
+                </div>
+                <p className="text-[10px] text-zinc-300 font-mono leading-tight mt-0.5">
+                  {eventTitle
+                    ? `Attached Event: "${eventTitle}" (${eventDate || 'Date set'} @ ${eventLocationName || taggedVenue || 'Venue set'})`
+                    : 'Attach ticket links & date details to generate an interactive event page on the scene calendar with duplicate prevention.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+              <button
+                type="button"
+                onClick={() => togglePanel('event')}
+                className={`px-2.5 py-1.5 rounded-lg border text-[10px] font-mono font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                  eventTitle
+                    ? 'bg-amber-500 text-black border-amber-400 hover:bg-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.3)]'
+                    : 'bg-amber-950/80 hover:bg-amber-900 border-amber-500/60 text-amber-300 hover:text-white'
+                }`}
+              >
+                {eventTitle ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>EDIT EVENT PAGE</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ ADD EVENT / TICKETS</span>
+                  </>
+                )}
+              </button>
+
+              {eventTitle && (
+                <button
+                  type="button"
+                  onClick={handleClearEventDetails}
+                  className="p-1.5 text-zinc-500 hover:text-rose-400 transition-colors cursor-pointer"
+                  title="Remove event details"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Reordered & Refactored Action Buttons Layout */}
         <div className="space-y-2">
-          {/* Row 1: +PHOTO/ MEDIA, +DIY EVENT */}
+          {/* Row 1: +PHOTO/ MEDIA, +EVENT / TICKETS */}
           <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
             <button
               type="button"
@@ -953,18 +1084,17 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
 
             <button
               type="button"
-              onClick={() => {
-                if (setShowEventModal) setShowEventModal(true);
-                else togglePanel('event');
-              }}
+              onClick={() => togglePanel('event')}
               className={`w-full px-2 py-2 rounded-xl border text-[10px] font-mono tracking-wider uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer truncate ${
                 eventTitle || eventData || activePanel === 'event'
-                  ? 'bg-amber-950/70 border-amber-500 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.35)]'
+                  ? 'bg-amber-950/70 border-amber-500 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.35)] font-bold'
                   : theme.inactiveBtnStyle
               }`}
             >
-              <Calendar className="w-3 h-3 shrink-0 text-amber-400" />
-              <span className="truncate text-amber-300 font-bold">+DIY EVENT</span>
+              <Ticket className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+              <span className="truncate text-amber-300">
+                {eventTitle ? '✓ EVENT ATTACHED' : '+EVENT / TICKETS'}
+              </span>
             </button>
           </div>
 
@@ -1826,6 +1956,284 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
           </div>
         )}
 
+        {/* Event, Fest, Tour & Ticket Details Panel (Completely Optional) */}
+        {activePanel === 'event' && (
+          <div className="p-3.5 sm:p-4 rounded-xl bg-[#0e0a05] border border-amber-500/40 space-y-3.5 animate-in fade-in duration-150 text-left shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+            {/* Header */}
+            <div className="flex items-center justify-between text-[10px] font-mono text-amber-300 font-bold uppercase pb-2 border-b border-amber-500/20">
+              <div className="flex items-center gap-2">
+                <Ticket className="w-4 h-4 text-amber-400" />
+                <span className="tracking-wider">SHOW, FEST & TOUR DETAILS (OPTIONAL)</span>
+                <span className="px-1.5 py-0.5 rounded text-[8px] bg-amber-950/80 text-amber-400 border border-amber-500/30 font-normal">
+                  CREATES EVENT PAGE
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {setShowEventModal && (
+                  <button
+                    type="button"
+                    onClick={() => setShowEventModal(true)}
+                    className="text-[9px] text-amber-400/80 hover:text-amber-300 underline font-mono flex items-center gap-1 cursor-pointer"
+                    title="Open expanded modal studio"
+                  >
+                    FULL STUDIO ↗
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setActivePanel(null)}
+                  className="text-zinc-500 hover:text-zinc-300 p-0.5 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Smart Deduplication Banner */}
+            {dupCheck.isDuplicate && dupCheck.matchedEvent ? (
+              <div className="p-3 bg-amber-950/70 border-2 border-amber-500/70 rounded-xl text-amber-200 text-xs space-y-1.5 shadow-[0_0_15px_rgba(245,158,11,0.25)]">
+                <div className="flex items-center gap-1.5 font-bold font-mono text-[11px] text-amber-400 uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                  <span>Existing Event Page Detected ({dupCheck.matchReason})</span>
+                </div>
+                <p className="text-[11px] text-zinc-200 font-mono">
+                  Matches <strong className="text-amber-300 font-bold">"{dupCheck.matchedEvent.name}"</strong> on {dupCheck.matchedEvent.date} @ {dupCheck.matchedEvent.venue_name}.
+                </p>
+                <div className="p-2 rounded-lg bg-black/40 border border-amber-500/30 flex items-center gap-2 text-[10px] text-emerald-400 font-mono">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>
+                    ✓ Deduplication Active: Posting will link to this existing event page to avoid duplicates and consolidate RSVP attendance & tickets!
+                  </span>
+                </div>
+              </div>
+            ) : (
+              eventTitle && (
+                <div className="p-2 rounded-lg bg-emerald-950/30 border border-emerald-500/30 flex items-center gap-2 text-[10px] text-emerald-400 font-mono">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>
+                    ✨ New Event Page: A fresh scene event page will be generated upon posting for "{eventTitle}".
+                  </span>
+                </div>
+              )
+            )}
+
+            {/* Event Category Pills */}
+            <div className="space-y-1">
+              <label className="text-[9px] font-mono uppercase text-amber-400 font-bold block">
+                EVENT TYPE / CATEGORY
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { id: 'DIY Show', label: 'DIY SHOW', icon: '🎸' },
+                  { id: 'Fest / Festival', label: 'FESTIVAL', icon: '🎪' },
+                  { id: 'Tour Date', label: 'TOUR DATE', icon: '🚐' },
+                  { id: 'Club Gig', label: 'CLUB GIG', icon: '⚡' },
+                  { id: 'Warehouse Rave', label: 'WAREHOUSE RAVE', icon: '🔊' },
+                  { id: 'House Party', label: 'HOUSE PARTY', icon: '🎉' },
+                  { id: 'Pop-Up / Jam', label: 'POP-UP / JAM', icon: '🔥' },
+                  { id: 'Other Gathering', label: 'OTHER', icon: '✨' },
+                ].map((cat) => (
+                  <button
+                    key={`composer-cat-${cat.id}`}
+                    type="button"
+                    onClick={() => setEventType?.(cat.id)}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer ${
+                      eventType === cat.id
+                        ? 'bg-amber-500 text-black font-black shadow-[0_0_10px_rgba(245,158,11,0.4)]'
+                        : 'bg-zinc-950 text-zinc-400 border border-zinc-800 hover:border-zinc-700 hover:text-zinc-200'
+                    }`}
+                  >
+                    <span>{cat.icon}</span>
+                    <span>{cat.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Event Title / Fest Name */}
+            <div className="space-y-1">
+              <label className="text-[9px] font-mono text-amber-400 uppercase font-bold block">
+                Event / Tour / Fest Name
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Sanguisugabogg + Kruelty US Tour, Mass Destruction Fest"
+                value={eventTitle}
+                onChange={(e) => setEventTitle?.(e.target.value)}
+                className="w-full bg-zinc-950 border border-zinc-800 focus:border-amber-500 rounded-lg p-2 text-xs text-white font-mono placeholder:text-zinc-600 focus:outline-none transition-colors"
+              />
+            </div>
+
+            {/* Date & Time Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-[9px] font-mono text-amber-400 uppercase font-bold block">
+                  Date
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Oct 24, 2026 or 2026-10-24"
+                  value={eventDate}
+                  onChange={(e) => setEventDate?.(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 focus:border-amber-500 rounded-lg p-2 text-xs text-white font-mono placeholder:text-zinc-600 focus:outline-none transition-colors"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[9px] font-mono text-amber-400 uppercase font-bold block">
+                  Doors / Start Time
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 7:00 PM / Doors 6:30"
+                  value={eventTime}
+                  onChange={(e) => setEventTime?.(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 focus:border-amber-500 rounded-lg p-2 text-xs text-white font-mono placeholder:text-zinc-600 focus:outline-none transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Venue & Location Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-[9px] font-mono text-amber-400 uppercase font-bold block">
+                  Venue / Location Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. The Underground, Basement, Saint Vitus"
+                  value={eventLocationName}
+                  onChange={(e) => setEventLocationName?.(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 focus:border-amber-500 rounded-lg p-2 text-xs text-white font-mono placeholder:text-zinc-600 focus:outline-none transition-colors"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[9px] font-mono text-amber-400 uppercase font-bold block">
+                  Street Address or City
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 1120 Manhattan Ave, Brooklyn NY"
+                  value={eventAddress}
+                  onChange={(e) => setEventAddress?.(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 focus:border-amber-500 rounded-lg p-2 text-xs text-white font-mono placeholder:text-zinc-600 focus:outline-none transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Secret Location Toggle */}
+            <div className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800/80 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <div>
+                  <span className="text-[10px] font-mono font-bold text-zinc-200 uppercase block">
+                    Underground / Secret Location
+                  </span>
+                  <span className="text-[8.5px] font-mono text-zinc-500 block">
+                    Hides exact street address on public feed; revealed via DM or to RSVPs.
+                  </span>
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={eventIsSecret}
+                onChange={(e) => setEventIsSecret?.(e.target.checked)}
+                className="w-4 h-4 rounded bg-zinc-900 border-zinc-700 text-amber-500 focus:ring-0 cursor-pointer"
+              />
+            </div>
+
+            {/* Lineup & Performers */}
+            <div className="space-y-1">
+              <label className="text-[9px] font-mono text-amber-400 uppercase font-bold block">
+                Performing Lineup (Bands / Artists / DJs)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Mortician, Vomit Corpse, Local Support"
+                value={eventLineup}
+                onChange={(e) => setEventLineup?.(e.target.value)}
+                className="w-full bg-zinc-950 border border-zinc-800 focus:border-amber-500 rounded-lg p-2 text-xs text-white font-mono placeholder:text-zinc-600 focus:outline-none transition-colors"
+              />
+            </div>
+
+            {/* Ticket Link & Door Price Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-[9px] font-mono text-amber-400 uppercase font-bold flex items-center justify-between">
+                  <span className="flex items-center gap-1">
+                    <Ticket className="w-3 h-3 text-amber-400" /> TICKET / PRESALE LINK
+                  </span>
+                  <span className="text-[8px] text-zinc-500 font-mono">DICE, EVENTBRITE, ETC.</span>
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://dice.fm/event/... or ticketmaster link"
+                  value={eventTicketUrl}
+                  onChange={(e) => setEventTicketUrl?.(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 focus:border-amber-500 rounded-lg p-2 text-xs text-white font-mono placeholder:text-zinc-600 focus:outline-none transition-colors"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[9px] font-mono text-amber-400 uppercase font-bold block">
+                  Entry / Cover / Door Price
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. $15 ADV / $20 DOS or FREE / $5 DONATION"
+                  value={eventCost}
+                  onChange={(e) => setEventCost?.(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 focus:border-amber-500 rounded-lg p-2 text-xs text-white font-mono placeholder:text-zinc-600 focus:outline-none transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Description / Scene Guidelines */}
+            <div className="space-y-1">
+              <label className="text-[9px] font-mono text-amber-400 uppercase font-bold block">
+                Event Notes / Accessibility / Guidelines (Optional)
+              </label>
+              <textarea
+                placeholder="e.g. All ages, BYOB, respect the space, no violence outside the pit."
+                value={eventDescription}
+                onChange={(e) => setEventDescription?.(e.target.value)}
+                rows={2}
+                className="w-full bg-zinc-950 border border-zinc-800 focus:border-amber-500 rounded-lg p-2 text-xs text-white font-mono placeholder:text-zinc-600 focus:outline-none resize-none transition-colors"
+              />
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex items-center justify-between gap-2 pt-1 border-t border-amber-500/20">
+              <button
+                type="button"
+                onClick={handleClearEventDetails}
+                className="px-3 py-1.5 rounded-lg border border-zinc-800 hover:border-rose-900/60 text-zinc-400 hover:text-rose-400 text-[10px] font-mono uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                CLEAR EVENT
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActivePanel(null);
+                  if (triggerNotification) {
+                    triggerNotification(
+                      eventTitle
+                        ? `✓ Event details attached: "${eventTitle}"!`
+                        : 'Event panel saved.'
+                    );
+                  }
+                }}
+                className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-[10px] font-mono font-black uppercase tracking-wider transition-all cursor-pointer shadow-[0_0_12px_rgba(245,158,11,0.3)] flex items-center gap-1.5"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>SAVE & ATTACH TO POST</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Active Attachments Bar */}
         {hasAttachments && (
           <div className={`flex flex-wrap items-center gap-1.5 pt-2 border-t ${theme.inputBorder}`}>
@@ -1913,16 +2321,25 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
             )}
 
             {(eventTitle || eventData?.title) && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-950/80 border border-amber-500/50 text-[10px] font-mono text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.25)]">
-                <Calendar className="w-3 h-3 text-amber-400 shrink-0" />
-                <span>Event: {eventTitle || eventData?.title}</span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-950/80 border border-amber-500/50 text-[10px] font-mono text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.25)]">
+                <Ticket className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="font-bold">
+                  Event: {eventTitle || eventData?.title}
+                  {eventDate ? ` (${eventDate})` : ''}
+                  {eventTicketUrl ? ' 🎟️ Presale' : ''}
+                </span>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (setEventTitle) setEventTitle('');
-                    if (setEventData) setEventData(null);
-                  }}
-                  className="hover:text-rose-400 ml-1 cursor-pointer"
+                  onClick={() => togglePanel('event')}
+                  className="text-amber-400 hover:text-amber-200 underline text-[9px] ml-1 cursor-pointer font-bold uppercase"
+                >
+                  EDIT
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClearEventDetails}
+                  className="hover:text-rose-400 ml-1 cursor-pointer p-0.5"
+                  title="Remove event details"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -1952,7 +2369,7 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
         <div className="pt-2">
           <button
             type="submit"
-            disabled={!newPostText.trim() && !newPostImageUrl && !tapeAudioUrl && !pollQuestion && !merchDropName}
+            disabled={!newPostText.trim() && !newPostImageUrl && !tapeAudioUrl && !pollQuestion && !merchDropName && !eventTitle && !eventData}
             className={`w-full py-3 sm:py-3.5 rounded-xl disabled:bg-zinc-800/80 disabled:border-zinc-800 disabled:text-zinc-500 disabled:shadow-none font-mono font-bold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed active:scale-[0.99] ${theme.buttonBg}`}
           >
             <Send className="w-3.5 h-3.5" />
@@ -2070,7 +2487,7 @@ export const CreatePostCard: React.FC<CreatePostCardProps> = ({
               <div className="flex items-center gap-2 pt-1">
                 <button
                   type="button"
-                  disabled={!activeScheduledTime || (!newPostText.trim() && !newPostImageUrl && !tapeAudioUrl && !pollQuestion && !merchDropName)}
+                  disabled={!activeScheduledTime || (!newPostText.trim() && !newPostImageUrl && !tapeAudioUrl && !pollQuestion && !merchDropName && !eventTitle && !eventData)}
                   onClick={(e) => handleFormSubmit(e)}
                   className={`w-full py-2.5 px-3 rounded-lg ${theme.gradientBtn} disabled:from-zinc-900 disabled:to-zinc-900 disabled:border disabled:border-zinc-800 disabled:text-zinc-600 text-white font-mono font-bold text-[10px] sm:text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:cursor-not-allowed`}
                 >

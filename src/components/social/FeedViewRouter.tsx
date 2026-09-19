@@ -9,6 +9,7 @@ import { StoriesCarouselSection } from './StoriesCarouselSection';
 import { ClipsView } from './ClipsView';
 import { formatPostTimestamp } from '../../utils/socialFeedUtils';
 import { getComposerRoleTheme } from './CreatePostCard';
+import { mergePostWithReactions } from './utils/reactionStore';
 
 export const FeedViewRouter: React.FC<any> = (props) => {
   const [feedStreamScope, setFeedStreamScope] = React.useState<'all' | 'workspace'>('all');
@@ -229,6 +230,26 @@ export const FeedViewRouter: React.FC<any> = (props) => {
                   setEventTitle={props.setEventTitle}
                   eventType={props.eventType}
                   setEventType={props.setEventType}
+                  eventDate={props.eventDate}
+                  setEventDate={props.setEventDate}
+                  eventTime={props.eventTime}
+                  setEventTime={props.setEventTime}
+                  eventLocationName={props.eventLocationName}
+                  setEventLocationName={props.setEventLocationName}
+                  eventAddress={props.eventAddress}
+                  setEventAddress={props.setEventAddress}
+                  eventIsSecret={props.eventIsSecret}
+                  setEventIsSecret={props.setEventIsSecret}
+                  eventLineup={props.eventLineup}
+                  setEventLineup={props.setEventLineup}
+                  eventFlyerUrl={props.eventFlyerUrl}
+                  setEventFlyerUrl={props.setEventFlyerUrl}
+                  eventDescription={props.eventDescription}
+                  setEventDescription={props.setEventDescription}
+                  eventCost={props.eventCost}
+                  setEventCost={props.setEventCost}
+                  eventTicketUrl={props.eventTicketUrl}
+                  setEventTicketUrl={props.setEventTicketUrl}
                   eventData={props.eventData}
                   setEventData={props.setEventData}
                 />
@@ -438,7 +459,7 @@ export const FeedViewRouter: React.FC<any> = (props) => {
             ? rawAvatar
             : (isSelf ? liveUserAvatar : (!isGenericUiAvatar ? rawAvatar : undefined));
 
-          return {
+          const parsedPost = {
             id: p.id,
             type: p.type || 'post',
             timestamp: p.timestamp || p.created_at || (p.timeAgo && p.timeAgo !== 'Just now' ? p.timeAgo : undefined) || new Date().toISOString(),
@@ -466,6 +487,7 @@ export const FeedViewRouter: React.FC<any> = (props) => {
             tourData: p.tourData,
             merchData: p.merchData,
             ticketData: p.ticketData,
+            eventData: p.eventData || p.event_data,
             isVipExclusive: p.isVipExclusive || p.is_vip_exclusive,
             requiredTier: p.requiredTier || p.required_tier,
             vipDiscountPct: p.vipDiscountPct || p.vip_discount_pct,
@@ -493,7 +515,8 @@ export const FeedViewRouter: React.FC<any> = (props) => {
             })),
             is_pinned: p.is_pinned,
           };
-        }) : (isFilterActive ? [] : labelPosts);
+          return mergePostWithReactions(parsedPost, userProfile?.id);
+        }) : (isFilterActive ? [] : labelPosts.map((p: any) => mergePostWithReactions(p, userProfile?.id)));
 
         return (
           <div className="max-w-2xl mx-auto pt-2 pb-2 px-4">

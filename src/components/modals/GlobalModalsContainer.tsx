@@ -66,11 +66,27 @@ export interface GlobalModalsContainerProps {
   deletingBandId?: string | null;
   setDeletingBandId?: (id: string | null) => void;
   handleDeleteBand?: (id: string, name: string) => void;
-  newBandForm?: { name: string; genre: string; logo_url: string };
-  setNewBandForm?: React.Dispatch<React.SetStateAction<{ name: string; genre: string; logo_url: string }>>;
+  newBandForm?: any;
+  setNewBandForm?: React.Dispatch<React.SetStateAction<any>>;
   handleCreateBand?: (e: React.FormEvent) => void;
   customLogoPreset?: number;
   setCustomLogoPreset?: (val: number) => void;
+  editIsManagedClient?: boolean;
+  setEditIsManagedClient?: (val: boolean) => void;
+  editManagementRole?: 'tour_manager' | 'booking_agent' | 'executive_producer' | 'owner';
+  setEditManagementRole?: (val: 'tour_manager' | 'booking_agent' | 'executive_producer' | 'owner') => void;
+  editCommissionPct?: number;
+  setEditCommissionPct?: (val: number) => void;
+  editDayRate?: number;
+  setEditDayRate?: (val: number) => void;
+  editExecutiveContactName?: string;
+  setEditExecutiveContactName?: (val: string) => void;
+  editExecutiveContactEmail?: string;
+  setEditExecutiveContactEmail?: (val: string) => void;
+  editExecutiveContactPhone?: string;
+  setEditExecutiveContactPhone?: (val: string) => void;
+  editClientRosterNotes?: string;
+  setEditClientRosterNotes?: (val: string) => void;
 
   // Cash Drawer
   isCashDrawerOpen?: boolean;
@@ -257,6 +273,22 @@ export const GlobalModalsContainer: React.FC<GlobalModalsContainerProps> = (prop
   const handleCreateBand = props.handleCreateBand ?? bm.handleCreateBand ?? (() => {});
   const customLogoPreset = props.customLogoPreset ?? bm.customLogoPreset ?? 0;
   const setCustomLogoPreset = props.setCustomLogoPreset ?? bm.setCustomLogoPreset ?? (() => {});
+  const editIsManagedClient = props.editIsManagedClient ?? bm.editIsManagedClient ?? false;
+  const setEditIsManagedClient = props.setEditIsManagedClient ?? bm.setEditIsManagedClient ?? (() => {});
+  const editManagementRole = props.editManagementRole ?? bm.editManagementRole ?? 'tour_manager';
+  const setEditManagementRole = props.setEditManagementRole ?? bm.setEditManagementRole ?? (() => {});
+  const editCommissionPct = props.editCommissionPct ?? bm.editCommissionPct ?? 15;
+  const setEditCommissionPct = props.setEditCommissionPct ?? bm.setEditCommissionPct ?? (() => {});
+  const editDayRate = props.editDayRate ?? bm.editDayRate ?? 250;
+  const setEditDayRate = props.setEditDayRate ?? bm.setEditDayRate ?? (() => {});
+  const editExecutiveContactName = props.editExecutiveContactName ?? bm.editExecutiveContactName ?? '';
+  const setEditExecutiveContactName = props.setEditExecutiveContactName ?? bm.setEditExecutiveContactName ?? (() => {});
+  const editExecutiveContactEmail = props.editExecutiveContactEmail ?? bm.editExecutiveContactEmail ?? '';
+  const setEditExecutiveContactEmail = props.setEditExecutiveContactEmail ?? bm.setEditExecutiveContactEmail ?? (() => {});
+  const editExecutiveContactPhone = props.editExecutiveContactPhone ?? bm.editExecutiveContactPhone ?? '';
+  const setEditExecutiveContactPhone = props.setEditExecutiveContactPhone ?? bm.setEditExecutiveContactPhone ?? (() => {});
+  const editClientRosterNotes = props.editClientRosterNotes ?? bm.editClientRosterNotes ?? '';
+  const setEditClientRosterNotes = props.setEditClientRosterNotes ?? bm.setEditClientRosterNotes ?? (() => {});
   const addLog = props.addLog ?? (() => {});
 
   return (
@@ -322,6 +354,23 @@ export const GlobalModalsContainer: React.FC<GlobalModalsContainerProps> = (prop
         handleCreateBand={handleCreateBand}
         customLogoPreset={customLogoPreset}
         setCustomLogoPreset={setCustomLogoPreset}
+        editIsManagedClient={editIsManagedClient}
+        setEditIsManagedClient={setEditIsManagedClient}
+        editManagementRole={editManagementRole}
+        setEditManagementRole={setEditManagementRole}
+        editCommissionPct={editCommissionPct}
+        setEditCommissionPct={setEditCommissionPct}
+        editDayRate={editDayRate}
+        setEditDayRate={setEditDayRate}
+        editExecutiveContactName={editExecutiveContactName}
+        setEditExecutiveContactName={setEditExecutiveContactName}
+        editExecutiveContactEmail={editExecutiveContactEmail}
+        setEditExecutiveContactEmail={setEditExecutiveContactEmail}
+        editExecutiveContactPhone={editExecutiveContactPhone}
+        setEditExecutiveContactPhone={setEditExecutiveContactPhone}
+        editClientRosterNotes={editClientRosterNotes}
+        setEditClientRosterNotes={setEditClientRosterNotes}
+        userProfile={userProfile}
       />
 
       {/* Cash Drawer Modal */}

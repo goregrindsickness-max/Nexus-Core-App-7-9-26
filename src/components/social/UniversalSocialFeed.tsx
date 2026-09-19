@@ -35,6 +35,7 @@ import {
   loadProfileIndexedDBCache
 } from './utils/feedCacheUtils';
 import { resolveActiveUserId, syncPostToSupabase } from './utils/postSyncUtils';
+import { mergePostWithReactions } from './utils/reactionStore';
 import { useSocialProfileState } from './hooks/useSocialProfileState';
 import { FeedTopHeader } from './navigation/FeedTopHeader';
 import { FeedSideDrawers } from './navigation/FeedSideDrawers';
@@ -177,7 +178,7 @@ export function UniversalSocialFeed({
     activeBandId,
     defaultFeed: mockFeed
   });
-  const [labelPosts, setLabelPosts] = useState<any[]>(DEFAULT_LABEL_POSTS);
+  const [labelPosts, setLabelPosts] = useState<any[]>(() => DEFAULT_LABEL_POSTS.map(p => mergePostWithReactions(p, userProfile?.id)));
   const [liveEvents, setLiveEvents] = useState(mockLiveTonight);
   const [liveSetlists, setLiveSetlists] = useState<Record<string, string[]>>(bandSetlists);
   const [venueMessages, setVenueMessages] = useState<any[]>([]);
@@ -1516,6 +1517,8 @@ export function UniversalSocialFeed({
     setEventDescription,
     eventCost,
     setEventCost,
+    eventTicketUrl,
+    setEventTicketUrl,
 
     // Handlers
     handleDetectLocation,
@@ -1713,14 +1716,14 @@ export function UniversalSocialFeed({
 
       if (portalRole === 'fan_only') {
         defaultName = userProfile?.full_name || userProfile?.legal_name || userProfile?.name || userProfile?.screen_name || 'Fan Listener';
-        defaultHandle = userProfile?.console_handle || userProfile?.screen_name?.toLowerCase().replace(/\s+/g, '') || 'fan_core';
+        defaultHandle = userProfile?.console_handle || userProfile?.screen_name?.replace(/\s+/g, '') || 'fan_core';
         defaultAvatar = userProfile?.avatar_url || 'FL';
         defaultCover = userProfile?.banner_url || null;
         defaultLocation = signupLocation || userProfile?.location_code || 'Denison, TX';
         defaultGenres = (userProfile?.genre_tags && userProfile.genre_tags.length > 0) ? userProfile.genre_tags : ['Goregrind', 'Slam', 'Brutal Death Metal', 'Death Metal'];
       } else if (portalRole === 'industry_pro' || portalRole === 'industry pro') {
         defaultName = userProfile?.full_name || userProfile?.legal_name || userProfile?.name || 'Industry Pro';
-        defaultHandle = userProfile?.console_handle || userProfile?.handle || (userProfile?.screen_name || userProfile?.name || '').toLowerCase().replace(/\s+/g, '') || 'pro_user';
+        defaultHandle = userProfile?.console_handle || userProfile?.handle || (userProfile?.screen_name || userProfile?.name || '').replace(/\s+/g, '') || 'pro_user';
         defaultAvatar = userProfile?.avatar_url || null;
         defaultCover = userProfile?.banner_url || null;
         defaultLocation = signupLocation || userProfile?.location_code || 'Detroit, MI';
@@ -1735,8 +1738,8 @@ export function UniversalSocialFeed({
           : (userProfile?.full_name || userProfile?.legal_name || userProfile?.name || 'Pro Account');
 
         defaultHandle = portalRole === 'band' ? resolveBandHandle(resolvedActiveBand || activeBand, userProfile)
-          : portalRole === 'creative' ? (userProfile?.creative_metadata?.business_name?.toLowerCase().replace(/\s+/g, '') || 'creative_pro')
-          : portalRole === 'promoter' ? (userProfile?.promoter_metadata?.brand_name?.toLowerCase().replace(/\s+/g, '') || 'promoter_pro')
+          : portalRole === 'creative' ? (userProfile?.creative_metadata?.business_name?.replace(/\s+/g, '') || 'creative_pro')
+          : portalRole === 'promoter' ? (userProfile?.promoter_metadata?.brand_name?.replace(/\s+/g, '') || 'promoter_pro')
           : portalRole === 'label' ? (userProfile?.label_url_slug || 'label_pro')
           : (userProfile?.console_handle || userProfile?.handle || 'pro_account');
 
@@ -1848,7 +1851,7 @@ try {
       }
     }
 
-    const uHandle = userProfile?.handle || userProfile?.console_handle || userProfile?.screen_name?.toLowerCase().replace(/\s+/g, '');
+    const uHandle = userProfile?.handle || userProfile?.console_handle || userProfile?.screen_name?.replace(/\s+/g, '');
     if (uHandle && uHandle !== '') {
       setProfileHandle(uHandle);
     } else if (parsed.profileHandle) {
@@ -3569,18 +3572,18 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
          (userParam as any).realName || userParam.name);
 
     const resolvedHandle = isYou 
-      ? (portalRole === 'band' ? (profileHandle || (activeBand?.name || '').toLowerCase().replace(/\s+/g, ''))
+      ? (portalRole === 'band' ? (profileHandle || (activeBand?.name || '').replace(/\s+/g, ''))
          : portalRole === 'fan_only' ? (profileHandle || userProfile?.fan_handle || 'listener')
          : portalRole === 'creative' ? (profileHandle || 'creative_pro')
          : portalRole === 'promoter' ? (profileHandle || 'promoter_pro')
          : portalRole === 'label' ? (profileHandle || userProfile?.label_url_slug || 'label_pro')
          : (profileHandle || userProfile?.console_handle || userProfile?.handle))
-      : (userParam.name === 'GoregrindSlayer' ? 'goregrind_slayer' :
-         userParam.name === 'Blastfiend999' ? 'blast_fiend' :
-         userParam.name === 'TapeTrader99' ? 'tape_trader_99' :
-         userParam.name === 'Scene Photographer' ? 'scene_photog' :
-         userParam.name === 'DeathMetalFan99' ? 'death_metal_99' :
-         (userParam as any).handle || userParam.name.toLowerCase().replace(/\s+/g, ''));
+      : (userParam.name === 'GoregrindSlayer' ? 'GoregrindSlayer' :
+         userParam.name === 'Blastfiend999' ? 'Blastfiend999' :
+         userParam.name === 'TapeTrader99' ? 'TapeTrader99' :
+         userParam.name === 'Scene Photographer' ? 'ScenePhotographer' :
+         userParam.name === 'DeathMetalFan99' ? 'DeathMetalFan99' :
+         (userParam as any).handle || userParam.name.replace(/\s+/g, ''));
 
     return {
       id: dbProfile?.id || (userParam as any).id || null,
@@ -4815,6 +4818,8 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
   setEventDescription={setEventDescription}
   eventCost={eventCost}
   setEventCost={setEventCost}
+  eventTicketUrl={eventTicketUrl}
+  setEventTicketUrl={setEventTicketUrl}
   stories={stories}
   setShowUploadStoryModal={setShowUploadStoryModal}
   setActiveStory={setActiveStory}
@@ -5219,6 +5224,8 @@ if (Array.isArray(targetProfObj?.label_band_roster)) {
         setEventDescription={setEventDescription}
         eventCost={eventCost}
         setEventCost={setEventCost}
+        eventTicketUrl={eventTicketUrl}
+        setEventTicketUrl={setEventTicketUrl}
 
         // Report Profile
         showReportModal={showReportModal}

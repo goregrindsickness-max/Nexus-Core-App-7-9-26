@@ -25,7 +25,15 @@ export function useBandManagement({
   const [newBandForm, setNewBandForm] = useState({
     name: '',
     genre: '',
-    logo_url: ''
+    logo_url: '',
+    is_managed_client: false,
+    management_role: 'tour_manager' as 'tour_manager' | 'booking_agent' | 'executive_producer' | 'owner',
+    management_commission_pct: 15,
+    management_day_rate: 250,
+    executive_contact_name: userProfile?.name || 'Miguel (@bdmCEO)',
+    executive_contact_email: userProfile?.email || 'goregrindsickness@gmail.com',
+    executive_contact_phone: '',
+    client_roster_notes: ''
   });
 
   const [customLogoPreset, setCustomLogoPreset] = useState(0);
@@ -43,6 +51,14 @@ export function useBandManagement({
   const [editGenre, setEditGenre] = useState('');
   const [editLogoUrl, setEditLogoUrl] = useState('');
   const [editLogoPresetIdx, setEditLogoPresetIdx] = useState(-1);
+  const [editIsManagedClient, setEditIsManagedClient] = useState(false);
+  const [editManagementRole, setEditManagementRole] = useState<'tour_manager' | 'booking_agent' | 'executive_producer' | 'owner'>('tour_manager');
+  const [editCommissionPct, setEditCommissionPct] = useState(15);
+  const [editDayRate, setEditDayRate] = useState(250);
+  const [editExecutiveContactName, setEditExecutiveContactName] = useState('');
+  const [editExecutiveContactEmail, setEditExecutiveContactEmail] = useState('');
+  const [editExecutiveContactPhone, setEditExecutiveContactPhone] = useState('');
+  const [editClientRosterNotes, setEditClientRosterNotes] = useState('');
   const [dragActive, setDragActive] = useState(false);
 
   const rosterFileInputRef = useRef<HTMLInputElement | null>(null);
@@ -293,7 +309,15 @@ export function useBandManagement({
       name: editName.trim(),
       band_name: editName.trim(),
       genre: editGenre.trim() || '',
-      logo_url: updatedLogo || ''
+      logo_url: updatedLogo || '',
+      is_managed_client: editIsManagedClient,
+      management_role: editManagementRole,
+      management_commission_pct: editCommissionPct,
+      management_day_rate: editDayRate,
+      executive_contact_name: editExecutiveContactName,
+      executive_contact_email: editExecutiveContactEmail,
+      executive_contact_phone: editExecutiveContactPhone,
+      client_roster_notes: editClientRosterNotes
     };
 
     setBands(prev => prev.map(b => b.id === editingBand.id ? updatedBandObj : b));
@@ -325,6 +349,22 @@ export function useBandManagement({
     setEditLogoUrl,
     editLogoPresetIdx,
     setEditLogoPresetIdx,
+    editIsManagedClient,
+    setEditIsManagedClient,
+    editManagementRole,
+    setEditManagementRole,
+    editCommissionPct,
+    setEditCommissionPct,
+    editDayRate,
+    setEditDayRate,
+    editExecutiveContactName,
+    setEditExecutiveContactName,
+    editExecutiveContactEmail,
+    setEditExecutiveContactEmail,
+    editExecutiveContactPhone,
+    setEditExecutiveContactPhone,
+    editClientRosterNotes,
+    setEditClientRosterNotes,
     dragActive,
     setDragActive,
     rosterFileInputRef,

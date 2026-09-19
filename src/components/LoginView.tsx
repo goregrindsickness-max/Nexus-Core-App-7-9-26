@@ -1238,7 +1238,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
       if (supabase && !isUpgradeMode) {
         setStatusMessage('Creating platform security credentials...');
         const authPass = signUpPassword.trim().length >= 6 ? signUpPassword.trim() : (signUpUnlockPin.trim() + "000000").slice(0, 6);
-        const userConsoleHandle = consoleHandle.trim() || handle.trim() || rootFullName.toLowerCase().replace(/\s+/g, '') || 'user';
+        const userConsoleHandle = consoleHandle.trim() || handle.trim() || rootFullName.replace(/\s+/g, '') || 'user';
         const userAccountType = isWorkspaceRegistration ? 'industry pro' : (accountTypeToggle === 'Industry Pro' ? 'pro' : 'fan');
         const userRole = isWorkspaceRegistration ? 'Industry Pro' : (accountTypeToggle === 'Industry Pro' ? 'Industry Pro' : 'Fan Listener');
 

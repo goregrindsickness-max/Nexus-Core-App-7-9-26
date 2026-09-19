@@ -63,28 +63,28 @@ export function useUserProfileState({
     }
     if (portalRole === 'creative') {
       const rawC = userProfile?.creative_handle || userProfile?.creative_metadata?.business_name || 'creative_pro';
-      return rawC.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '_');
+      return rawC.replace(/^@+/, '').replace(/\s+/g, '_');
     }
     if (portalRole === 'promoter') {
       const rawP = userProfile?.promoter_handle || userProfile?.promoter_metadata?.brand_name || 'promoter_pro';
-      return rawP.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '_');
+      return rawP.replace(/^@+/, '').replace(/\s+/g, '_');
     }
     if (portalRole === 'label') {
       const rawL = userProfile?.label_url_slug || userProfile?.label_company_name || 'label_pro';
-      return rawL.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '_');
+      return rawL.replace(/^@+/, '').replace(/\s+/g, '_');
     }
 
     if (userProfile?.console_handle && userProfile.console_handle !== '') {
-      return userProfile.console_handle.toLowerCase().replace(/^@+/, '');
+      return userProfile.console_handle.replace(/^@+/, '');
     }
     if (portalRole === 'fan_only') {
-      return userProfile?.screen_name?.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '') || 'fan_core';
+      return userProfile?.screen_name?.replace(/^@+/, '').replace(/\s+/g, '') || 'fan_core';
     }
     if (userProfile?.screen_name && userProfile.screen_name !== '') {
-      return userProfile.screen_name.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '');
+      return userProfile.screen_name.replace(/^@+/, '').replace(/\s+/g, '');
     }
     if (userProfile?.name && userProfile.name !== 'New User' && userProfile.name !== '') {
-      return userProfile.name.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '');
+      return userProfile.name.replace(/^@+/, '').replace(/\s+/g, '');
     }
     return 'pro_user';
   });
@@ -304,21 +304,21 @@ export function useUserProfileState({
       handle = resolveBandHandle(activeBand, userProfile);
     } else if (portalRole === 'creative') {
       const rawC = userProfile?.creative_handle || userProfile?.creative_metadata?.business_name || 'creative_pro';
-      handle = rawC.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '_');
+      handle = rawC.replace(/^@+/, '').replace(/\s+/g, '_');
     } else if (portalRole === 'promoter') {
       const rawP = userProfile?.promoter_handle || userProfile?.promoter_metadata?.brand_name || 'promoter_pro';
-      handle = rawP.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '_');
+      handle = rawP.replace(/^@+/, '').replace(/\s+/g, '_');
     } else if (portalRole === 'label') {
       const rawL = userProfile?.label_url_slug || userProfile?.label_company_name || 'label_pro';
-      handle = rawL.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '_');
+      handle = rawL.replace(/^@+/, '').replace(/\s+/g, '_');
     } else if (portalRole === 'fan_only') {
-      handle = (userProfile?.screen_name || userProfile?.console_handle || userProfile?.name || 'fan_core').toLowerCase().replace(/^@+/, '').replace(/\s+/g, '');
+      handle = (userProfile?.screen_name || userProfile?.console_handle || userProfile?.name || 'fan_core').replace(/^@+/, '').replace(/\s+/g, '');
     } else if (userProfile?.console_handle && userProfile.console_handle !== '') {
-      handle = userProfile.console_handle.toLowerCase().replace(/^@+/, '');
+      handle = userProfile.console_handle.replace(/^@+/, '');
     } else if (userProfile?.screen_name && userProfile.screen_name !== '') {
-      handle = userProfile.screen_name.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '');
+      handle = userProfile.screen_name.replace(/^@+/, '').replace(/\s+/g, '');
     } else if (userProfile?.name && userProfile.name !== 'New User' && userProfile.name !== '') {
-      handle = userProfile.name.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '');
+      handle = userProfile.name.replace(/^@+/, '').replace(/\s+/g, '');
     } else {
       handle = 'fan_core';
     }

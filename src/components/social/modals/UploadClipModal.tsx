@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PlaySquare, X, Upload, Video, RefreshCw, Music2 } from 'lucide-react';
 import { uploadClipVideoFile } from '../../../supabase';
+import { saveClipMediaBlob, generateVideoThumbnail } from '../utils/clipsPersistenceService';
 
 interface UploadClipModalProps {
   showUploadClipModal: boolean;
@@ -104,6 +105,16 @@ export const UploadClipModal: React.FC<UploadClipModalProps> = ({
       }
 
       const clipId = `clip_${Date.now()}`;
+
+      let thumbUrl = '';
+      if (selectedClipFile) {
+        // Save full video blob in IndexedDB for reliable playback across browser sessions
+        await saveClipMediaBlob(clipId, selectedClipFile);
+        try {
+          thumbUrl = await generateVideoThumbnail(selectedClipFile);
+        } catch (_) {}
+      }
+
       const newClipObj = {
         id: clipId,
         user_id: userProfile?.id || userProfile?.user_id || 'anonymous',
@@ -114,6 +125,8 @@ export const UploadClipModal: React.FC<UploadClipModalProps> = ({
         avatar: userProfile?.avatar_url || userProfile?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
         video_url: finalVideoUrl,
         videoUrl: finalVideoUrl,
+        thumbnail_url: thumbUrl,
+        thumbnailUrl: thumbUrl,
         caption: newClipCaption,
         title: newClipTitle || newClipCaption || 'Live Clip',
         song_title: newClipSongTitle || 'Pit Anthem',

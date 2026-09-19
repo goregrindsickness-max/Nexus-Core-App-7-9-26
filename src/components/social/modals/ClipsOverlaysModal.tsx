@@ -14,9 +14,11 @@ import {
   Trash2,
   Send,
   Link as LinkIcon,
-  Heart
+  Heart,
+  Zap
 } from 'lucide-react';
 import { UploadClipModal } from './UploadClipModal';
+import { calculateClipsDashboardStats } from '../utils/clipsPersistenceService';
 
 export interface ClipsOverlaysModalProps {
   showClipsAnalyticsModal: boolean;
@@ -86,6 +88,9 @@ export const ClipsOverlaysModal: React.FC<ClipsOverlaysModalProps> = ({
   triggerNotification,
 }) => {
   const [commentInputText, setCommentInputText] = useState('');
+  const dashboardStats = calculateClipsDashboardStats(clips, userProfile?.id);
+  const myClipsList = dashboardStats.activeClips;
+
   return (
     <>
       {/* Clips Analytics Modal */}
@@ -100,7 +105,7 @@ export const ClipsOverlaysModal: React.FC<ClipsOverlaysModalProps> = ({
             >
               <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-900 bg-black sticky top-0 z-10">
                 <span className="text-xs font-black uppercase tracking-wider flex items-center gap-1.5 font-display text-white">
-                  <Activity className="w-4 h-4 text-emerald-400" /> Creator Dashboard: My Clips
+                  <Activity className="w-4 h-4 text-emerald-400" /> Creator Dashboard: Clips Analytics
                 </span>
                 <button 
                   onClick={() => setShowClipsAnalyticsModal(false)}
@@ -114,10 +119,10 @@ export const ClipsOverlaysModal: React.FC<ClipsOverlaysModalProps> = ({
                 {/* Aggregate Stats */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {[
-                    { label: 'Total Views', val: '2.1M', color: 'text-white' },
-                    { label: 'Avg Engagement', val: '14.2%', color: 'text-emerald-400' },
-                    { label: 'Total Shares', val: '8.4K', color: 'text-cyan-400' },
-                    { label: 'Growth', val: '+22%', color: 'text-emerald-400', icon: TrendingUp }
+                    { label: 'Total Views', val: dashboardStats.totalViews.toLocaleString(), color: 'text-white' },
+                    { label: 'Avg Engagement', val: dashboardStats.avgEngagementRate, color: 'text-emerald-400' },
+                    { label: 'Total Likes', val: dashboardStats.totalLikes.toLocaleString(), color: 'text-rose-400' },
+                    { label: 'Total Shares', val: dashboardStats.totalShares.toLocaleString(), color: 'text-cyan-400', icon: TrendingUp }
                   ].map((stat, i) => (
                     <div key={`stat-box-${stat.label}-${i}`} className="bg-black border border-zinc-900 p-3 rounded-xl flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] uppercase font-bold text-zinc-500 font-mono tracking-wider">{stat.label}</span>
@@ -129,81 +134,82 @@ export const ClipsOverlaysModal: React.FC<ClipsOverlaysModalProps> = ({
                   ))}
                 </div>
 
-                <h3 className="text-xs font-black uppercase text-zinc-400 tracking-wider pt-2 border-t border-zinc-900 mt-2">Recent Clips</h3>
+                <div className="flex items-center justify-between pt-2 border-t border-zinc-900 mt-2">
+                  <h3 className="text-xs font-black uppercase text-zinc-400 tracking-wider">
+                    Published Clips ({myClipsList.length})
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowClipsAnalyticsModal(false);
+                      setShowUploadClipModal(true);
+                    }}
+                    className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-rose-400 hover:text-rose-300"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Upload New
+                  </button>
+                </div>
                 
                 <div className="space-y-3">
-                  {/* Clip Row 1 */}
-                  <div className="bg-black border border-zinc-900 rounded-xl p-3 flex flex-col sm:flex-row gap-4 items-center">
-                    <div className="w-full sm:w-20 h-32 sm:h-20 bg-zinc-900 rounded-lg shrink-0 relative overflow-hidden">
-                      <img src="https://images.unsplash.com/photo-1540039155732-d6741b687c22?q=80&w=300" className="w-full h-full object-cover opacity-70" alt="" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <PlayCircle className="w-6 h-6 text-white/50" />
-                      </div>
-                      <span className="absolute bottom-1 right-1 bg-black/60 px-1 rounded text-[8px] font-mono font-bold text-white">0:58</span>
+                  {myClipsList.length === 0 ? (
+                    <div className="py-12 flex flex-col items-center justify-center text-center gap-3">
+                      <PlaySquare className="w-8 h-8 text-zinc-600" />
+                      <p className="text-xs text-zinc-400">No clips published yet</p>
                     </div>
-                    <div className="flex-1 min-w-0 w-full space-y-2">
-                      <p className="text-xs text-white font-medium truncate">Testing out the new Nexus Core clips! This quality is insane. 🚀🎸</p>
-                      <div className="grid grid-cols-4 gap-2 border-t border-zinc-900/50 pt-2">
-                        <div className="flex flex-col">
-                           <span className="text-[9px] uppercase font-bold text-zinc-500 font-mono">Views</span>
-                           <span className="text-xs font-bold text-white">150K</span>
+                  ) : (
+                    myClipsList.map((clip, idx) => (
+                      <div key={clip.id ? `dash-clip-${clip.id}-${idx}` : `dash-clip-${idx}`} className="bg-black border border-zinc-900 rounded-xl p-3 flex flex-col sm:flex-row gap-4 items-center">
+                        <div className="w-full sm:w-20 h-32 sm:h-20 bg-zinc-900 rounded-lg shrink-0 relative overflow-hidden flex items-center justify-center">
+                          {clip.thumbnailUrl ? (
+                            <img src={clip.thumbnailUrl} className="w-full h-full object-cover opacity-70" alt="" />
+                          ) : clip.videoUrl ? (
+                            <video src={clip.videoUrl} className="w-full h-full object-cover opacity-70" muted playsInline />
+                          ) : (
+                            <PlayCircle className="w-6 h-6 text-zinc-500" />
+                          )}
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <PlayCircle className="w-6 h-6 text-white/50" />
+                          </div>
                         </div>
-                        <div className="flex flex-col">
-                           <span className="text-[9px] uppercase font-bold text-zinc-500 font-mono">Likes</span>
-                           <span className="text-xs font-bold text-rose-400">12.4K</span>
+                        <div className="flex-1 min-w-0 w-full space-y-2">
+                          <p className="text-xs text-white font-medium truncate">{clip.caption || clip.title || 'Untitled Clip'}</p>
+                          <div className="grid grid-cols-4 gap-2 border-t border-zinc-900/50 pt-2">
+                            <div className="flex flex-col">
+                               <span className="text-[9px] uppercase font-bold text-zinc-500 font-mono">Views</span>
+                               <span className="text-xs font-bold text-white">{Number(clip.views || 0).toLocaleString()}</span>
+                            </div>
+                            <div className="flex flex-col">
+                               <span className="text-[9px] uppercase font-bold text-zinc-500 font-mono">Likes</span>
+                               <span className="text-xs font-bold text-rose-400">{Number(clip.likes || 0).toLocaleString()}</span>
+                            </div>
+                            <div className="flex flex-col">
+                               <span className="text-[9px] uppercase font-bold text-zinc-500 font-mono">Comments</span>
+                               <span className="text-xs font-bold text-cyan-400">{Number(clip.comments || 0).toLocaleString()}</span>
+                            </div>
+                            <div className="flex flex-col">
+                               <span className="text-[9px] uppercase font-bold text-zinc-500 font-mono">Shares</span>
+                               <span className="text-xs font-bold text-emerald-400">{Number(clip.shares || 0).toLocaleString()}</span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex flex-col">
-                           <span className="text-[9px] uppercase font-bold text-zinc-500 font-mono">Comments</span>
-                           <span className="text-xs font-bold text-cyan-400">410</span>
-                        </div>
-                        <div className="flex flex-col">
-                           <span className="text-[9px] uppercase font-bold text-zinc-500 font-mono">Shares</span>
-                           <span className="text-xs font-bold text-emerald-400">1.2K</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="w-full sm:w-auto mt-2 sm:mt-0 flex sm:flex-col gap-2 shrink-0">
-                      <button className="flex-1 bg-zinc-900 hover:bg-zinc-800 text-[10px] uppercase font-bold text-white px-3 py-2 rounded-lg transition-colors text-center">Boost</button>
-                      <button className="flex-1 bg-rose-950/20 hover:bg-rose-900/30 text-[10px] uppercase font-bold text-rose-400 border border-rose-900/50 px-3 py-2 rounded-lg transition-colors text-center">Delete</button>
-                    </div>
-                  </div>
-
-                  {/* Clip Row 2 */}
-                  <div className="bg-black border border-zinc-900 rounded-xl p-3 flex flex-col sm:flex-row gap-4 items-center">
-                    <div className="w-full sm:w-20 h-32 sm:h-20 bg-zinc-900 rounded-lg shrink-0 relative overflow-hidden">
-                      <img src="https://images.unsplash.com/photo-1459749411175-04bf5292ceea?q=80&w=300" className="w-full h-full object-cover opacity-70" alt="" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <PlayCircle className="w-6 h-6 text-white/50" />
-                      </div>
-                      <span className="absolute bottom-1 right-1 bg-black/60 px-1 rounded text-[8px] font-mono font-bold text-white">2:45</span>
-                      <span className="absolute top-1 left-1 bg-emerald-500 px-1 rounded text-[8px] font-bold text-black uppercase">Long Form</span>
-                    </div>
-                    <div className="flex-1 min-w-0 w-full space-y-2">
-                      <p className="text-xs text-white font-medium truncate">Full live performance of "Infecting the Crypts" at The Underground</p>
-                      <div className="grid grid-cols-4 gap-2 border-t border-zinc-900/50 pt-2">
-                        <div className="flex flex-col">
-                           <span className="text-[9px] uppercase font-bold text-zinc-500 font-mono">Views</span>
-                           <span className="text-xs font-bold text-white">45K</span>
-                        </div>
-                        <div className="flex flex-col">
-                           <span className="text-[9px] uppercase font-bold text-zinc-500 font-mono">Likes</span>
-                           <span className="text-xs font-bold text-rose-400">8.3K</span>
-                        </div>
-                        <div className="flex flex-col">
-                           <span className="text-[9px] uppercase font-bold text-zinc-500 font-mono">Comments</span>
-                           <span className="text-xs font-bold text-cyan-400">204</span>
-                        </div>
-                        <div className="flex flex-col">
-                           <span className="text-[9px] uppercase font-bold text-zinc-500 font-mono">Shares</span>
-                           <span className="text-xs font-bold text-emerald-400">342</span>
+                        <div className="w-full sm:w-auto mt-2 sm:mt-0 flex sm:flex-col gap-2 shrink-0">
+                          <button 
+                            onClick={() => triggerNotification?.(`Clip boosted across trending reels!`)}
+                            className="flex-1 bg-zinc-900 hover:bg-zinc-800 text-[10px] uppercase font-bold text-white px-3 py-2 rounded-lg transition-colors text-center"
+                          >
+                            Boost
+                          </button>
+                          {deleteClip && (
+                            <button 
+                              onClick={() => deleteClip(clip.id)}
+                              className="flex-1 bg-rose-950/20 hover:bg-rose-900/30 text-[10px] uppercase font-bold text-rose-400 border border-rose-900/50 px-3 py-2 rounded-lg transition-colors text-center"
+                            >
+                              Delete
+                            </button>
+                          )}
                         </div>
                       </div>
-                    </div>
-                    <div className="w-full sm:w-auto mt-2 sm:mt-0 flex sm:flex-col gap-2 shrink-0">
-                      <button className="flex-1 bg-zinc-900 hover:bg-zinc-800 text-[10px] uppercase font-bold text-white px-3 py-2 rounded-lg transition-colors text-center">Boost</button>
-                      <button className="flex-1 bg-rose-950/20 hover:bg-rose-900/30 text-[10px] uppercase font-bold text-rose-400 border border-rose-900/50 px-3 py-2 rounded-lg transition-colors text-center">Delete</button>
-                    </div>
-                  </div>
+                    ))
+                  )}
                 </div>
 
               </div>

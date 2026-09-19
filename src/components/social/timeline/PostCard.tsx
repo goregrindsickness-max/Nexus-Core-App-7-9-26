@@ -244,26 +244,144 @@ export const PostCard: React.FC<PostCardProps> = ({
   );
 
   const postWorkspaceType = ((post as any).workspace_type || (post as any).workspaceType || '').toLowerCase();
-  const isCreative = postWorkspaceType === 'creative' || 
-    postRoleUpper.includes('CREATIVE') || 
-    postRoleUpper === 'PHOTOGRAPHER' || 
-    authorNameLower.includes('scene photographer') ||
-    (post as any).author?.role === 'Creative Pro';
-    
+
+  // 1. Band = Neon Green (#39ff14)
   const isArtistOrBand = postWorkspaceType === 'band' || 
     postRoleUpper === 'ARTIST' || 
     postRoleUpper === 'BAND' || 
     postRoleUpper === 'BAND / ARTIST' ||
-    Boolean((post as any).author?.isBand);
-    
-  const isLabel = postWorkspaceType === 'label' || 
+    postRoleUpper.includes('BAND') ||
+    postRoleUpper.includes('ARTIST') ||
+    Boolean((post as any).author?.isBand) ||
+    Boolean((post as any).isBandProfile);
+
+  // 2. Label = Neon Orange (#ff6b00)
+  const isLabel = !isArtistOrBand && (
+    postWorkspaceType === 'label' || 
     postRoleUpper === 'LABEL' || 
-    postRoleUpper === 'RECORD LABEL';
-    
-  const isPromoter = postWorkspaceType === 'promoter' || 
+    postRoleUpper === 'RECORD LABEL' ||
+    postRoleUpper.includes('LABEL')
+  );
+
+  // 3. Creative = Magenta (#ff00aa)
+  const isCreative = !isArtistOrBand && !isLabel && (
+    postWorkspaceType === 'creative' || 
+    postRoleUpper.includes('CREATIVE') || 
+    postRoleUpper === 'PHOTOGRAPHER' || 
+    postRoleUpper.includes('MEDIA') ||
+    authorNameLower.includes('scene photographer') ||
+    (post as any).author?.role === 'Creative Pro'
+  );
+
+  // 4. Promoter = Neon Yellow (#ffff00)
+  const isPromoter = !isArtistOrBand && !isLabel && !isCreative && (
+    postWorkspaceType === 'promoter' || 
     postRoleUpper === 'PROMOTER' || 
     postRoleUpper === 'PROMOTER / VENUE' ||
-    postRoleUpper === 'VENUE PROMOTER';
+    postRoleUpper === 'VENUE PROMOTER' ||
+    postRoleUpper.includes('PROMOTER') ||
+    postRoleUpper.includes('VENUE')
+  );
+
+  // 5. Industry Pro = Deep Purple (#8b5cf6 / #7c3aed)
+  const isIndustryPro = !isArtistOrBand && !isLabel && !isCreative && !isPromoter && Boolean(
+    postWorkspaceType === 'industry_pro' ||
+    postWorkspaceType === 'pro' ||
+    postRoleUpper.includes('INDUSTRY PRO') ||
+    postRoleUpper === 'INDUSTRY' ||
+    postRoleUpper === 'PRO' ||
+    postRoleUpper === 'MANAGER' ||
+    postRoleUpper === 'EXECUTIVE' ||
+    postRoleUpper === 'PRODUCER' ||
+    postRoleUpper === 'ENGINEER' ||
+    (post as any).author?.role === 'Industry Pro' ||
+    (post as any).author?.account_type === 'industry pro' ||
+    (post as any).author?.account_type === 'industry_pro' ||
+    (isCurrentUser && (
+      userProfile?.account_type === 'industry pro' ||
+      userProfile?.account_type === 'industry_pro' ||
+      userProfile?.account_type === 'pro' ||
+      userProfile?.role === 'Industry Pro' ||
+      portalRole === 'industry_pro' ||
+      userProfile?.active_workspace === 'industry_pro'
+    ))
+  );
+
+  // 6. Fan = Cyan Blue (#00f0ff)
+  const isFan = !isArtistOrBand && !isLabel && !isCreative && !isPromoter && !isIndustryPro;
+
+  // Canonical Role Colors:
+  // Band = Neon Green (#39ff14)
+  // Label = Neon Orange (#ff6b00)
+  // Creative = Magenta (#ff00aa)
+  // Promoter = Neon Yellow (#ffff00)
+  // Fan = Cyan Blue (#00f0ff)
+  // Industry Pro = Deep Purple (#8b5cf6)
+  const roleTheme = isArtistOrBand
+    ? {
+        name: 'Band / Artist',
+        colorHex: '#39ff14',
+        ringClasses: 'border-[#39ff14] text-[#39ff14] shadow-[0_0_14px_rgba(57,255,20,0.65)] ring-2 ring-[#39ff14]/35 ring-offset-1 ring-offset-zinc-950',
+        shieldClasses: 'text-[#39ff14] fill-[#39ff14]/20',
+        fullNameClass: 'text-[#39ff14]',
+        badgeDotClass: 'bg-[#39ff14] shadow-[0_0_8px_rgba(57,255,20,0.85)]',
+        badgeTextClass: 'text-[#39ff14]',
+        tagLabel: postRoleUpper === 'BAND' || postRoleUpper === 'BAND / ARTIST' ? 'Band / Artist' : (post.authorRole || (post as any).author?.role || 'Band / Artist')
+      }
+    : isLabel
+    ? {
+        name: 'Record Label',
+        colorHex: '#ff6b00',
+        ringClasses: 'border-[#ff6b00] text-[#ff6b00] shadow-[0_0_14px_rgba(255,107,0,0.65)] ring-2 ring-[#ff6b00]/35 ring-offset-1 ring-offset-zinc-950',
+        shieldClasses: 'text-[#ff6b00] fill-[#ff6b00]/20',
+        fullNameClass: 'text-[#ff6b00]',
+        badgeDotClass: 'bg-[#ff6b00] shadow-[0_0_8px_rgba(255,107,0,0.85)]',
+        badgeTextClass: 'text-[#ff6b00]',
+        tagLabel: 'Record Label'
+      }
+    : isCreative
+    ? {
+        name: 'Creative Pro',
+        colorHex: '#ff00aa',
+        ringClasses: 'border-[#ff00aa] text-[#ff00aa] shadow-[0_0_14px_rgba(255,0,170,0.65)] ring-2 ring-[#ff00aa]/35 ring-offset-1 ring-offset-zinc-950',
+        shieldClasses: 'text-[#ff00aa] fill-[#ff00aa]/20',
+        fullNameClass: 'text-[#ff00aa]',
+        badgeDotClass: 'bg-[#ff00aa] shadow-[0_0_8px_rgba(255,0,170,0.85)]',
+        badgeTextClass: 'text-[#ff00aa]',
+        tagLabel: 'Creative Pro'
+      }
+    : isPromoter
+    ? {
+        name: 'Venue Promoter',
+        colorHex: '#ffff00',
+        ringClasses: 'border-[#ffff00] text-[#ffff00] shadow-[0_0_14px_rgba(255,255,0,0.65)] ring-2 ring-[#ffff00]/35 ring-offset-1 ring-offset-zinc-950',
+        shieldClasses: 'text-[#ffff00] fill-[#ffff00]/20',
+        fullNameClass: 'text-[#ffff00]',
+        badgeDotClass: 'bg-[#ffff00] shadow-[0_0_8px_rgba(255,255,0,0.85)]',
+        badgeTextClass: 'text-[#ffff00]',
+        tagLabel: 'Venue Promoter'
+      }
+    : isIndustryPro
+    ? {
+        name: 'Industry Pro',
+        colorHex: '#8b5cf6',
+        ringClasses: 'border-[#8b5cf6] text-[#a78bfa] shadow-[0_0_14px_rgba(139,92,246,0.65)] ring-2 ring-[#8b5cf6]/35 ring-offset-1 ring-offset-zinc-950',
+        shieldClasses: 'text-[#a78bfa] fill-[#8b5cf6]/20',
+        fullNameClass: 'text-[#a78bfa]',
+        badgeDotClass: 'bg-[#8b5cf6] shadow-[0_0_8px_rgba(139,92,246,0.85)]',
+        badgeTextClass: 'text-[#a78bfa]',
+        tagLabel: 'Industry Pro'
+      }
+    : {
+        name: 'Fan Supporter',
+        colorHex: '#00f0ff',
+        ringClasses: 'border-[#00f0ff] text-[#00f0ff] shadow-[0_0_14px_rgba(0,240,255,0.65)] ring-2 ring-[#00f0ff]/35 ring-offset-1 ring-offset-zinc-950',
+        shieldClasses: 'text-[#00f0ff] fill-[#00f0ff]/20',
+        fullNameClass: 'text-[#00f0ff]',
+        badgeDotClass: 'bg-[#00f0ff] shadow-[0_0_8px_rgba(0,240,255,0.85)]',
+        badgeTextClass: 'text-[#00f0ff]',
+        tagLabel: 'Fan Supporter'
+      };
 
   // Comprehensive Avatar Resolution & Initials Generator
   const liveSelfAvatar = userProfile?.avatar || userProfile?.avatar_url || userProfile?.profile_avatar || (userProfile as any)?.profile_image;
@@ -300,40 +418,14 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   const displayInitials = getInitials(isCurrentUser ? (userProfile?.console_handle || userProfile?.name || handleDisplay) : handleDisplay);
 
-  const isIndustryPro = Boolean(
-    (isCurrentUser && (
-      userProfile?.account_type === 'industry pro' ||
-      userProfile?.account_type === 'industry_pro' ||
-      userProfile?.account_type === 'pro' ||
-      userProfile?.role === 'Industry Pro' ||
-      portalRole === 'industry_pro' ||
-      portalRole === 'creative' ||
-      portalRole === 'band' ||
-      portalRole === 'label' ||
-      portalRole === 'promoter' ||
-      userProfile?.active_workspace === 'industry_pro'
-    )) ||
-    (!isCurrentUser && (
-      postRoleUpper === 'INDUSTRY PRO' ||
-      postRoleUpper === 'INDUSTRY' ||
-      postRoleUpper === 'PROMOTER' ||
-      postRoleUpper === 'LABEL' ||
-      postRoleUpper === 'CREATIVE' ||
-      postRoleUpper === 'PHOTOGRAPHER' ||
-      postRoleUpper === 'ARTIST' ||
-      postRoleUpper === 'BAND' ||
-      postRoleUpper === 'MANAGER' ||
-      postRoleUpper === 'EXECUTIVE' ||
-      (post as any).author?.account_type === 'industry pro' ||
-      (post as any).author?.account_type === 'industry_pro' ||
-      (post as any).workspace_type === 'promoter' ||
-      (post as any).workspace_type === 'label' ||
-      (post as any).workspace_type === 'industry_pro'
-    ))
-  );
-
   const isPostBoosted = Boolean(post.isBoosted || boostData?.isBoosted);
-  const auraColor = boostData?.boostGlowColor || post.boostGlowColor || (isIndustryPro ? 'purple' : 'blue');
+  const auraColor = boostData?.boostGlowColor || post.boostGlowColor || (
+    isArtistOrBand ? 'green' :
+    isLabel ? 'orange' :
+    isCreative ? 'fuchsia' :
+    isPromoter ? 'yellow' :
+    isIndustryPro ? 'purple' : 'blue'
+  );
 
   // Resolve full_name from Supabase profiles table
   const localSavedFullName = typeof window !== 'undefined'
@@ -520,25 +612,13 @@ export const PostCard: React.FC<PostCardProps> = ({
       )}
 
       {/* Post Header Row */}
-      <div className="flex items-start justify-between pb-1 gap-3">
+      <div className="flex items-start justify-between gap-3">
         {/* Author Info */}
         <div
-          className="flex items-start gap-3 cursor-pointer group flex-1 min-w-0 pt-1.5"
+          className="flex items-start gap-3 cursor-pointer group flex-1 min-w-0 pt-0.5"
           onClick={() => onOpenProfile?.(post.authorId, post.authorName)}
         >
-          <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center font-black font-mono text-xs overflow-hidden shrink-0 bg-zinc-900 ${
-            isCreative
-              ? 'border-fuchsia-500 text-fuchsia-400 shadow-[0_0_12px_rgba(217,70,239,0.45)]'
-              : isArtistOrBand
-              ? 'border-emerald-500 text-emerald-400 shadow-md'
-              : isLabel
-              ? 'border-purple-500 text-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.45)]'
-              : isPromoter
-              ? 'border-amber-500 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.45)]'
-              : isIndustryPro
-              ? 'border-purple-500 text-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.45)]'
-              : 'border-sky-500 text-sky-400 shadow-md'
-          }`}>
+          <div className={`w-[50px] h-[50px] rounded-full border-2 flex items-center justify-center font-black font-mono text-xs sm:text-sm overflow-hidden shrink-0 bg-zinc-900 transition-all ${roleTheme.ringClasses}`}>
             {displayAvatar ? (
               <img 
                 src={displayAvatar} 
@@ -547,7 +627,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                 }}
-                className="w-full h-full object-cover" 
+                className="w-full h-full object-cover rounded-full" 
               />
             ) : (
               displayInitials
@@ -557,24 +637,14 @@ export const PostCard: React.FC<PostCardProps> = ({
             {/* Line 1: Handle + Verified Badge */}
             <h3 className="text-xs sm:text-sm font-mono font-black tracking-wider transition-colors flex items-center gap-1.5 truncate leading-tight text-white group-hover:text-purple-300">
               <span className="truncate">{handleDisplay}</span>
-              {(isCreative || isArtistOrBand || isIndustryPro || post.isVerified) && (
-                <Shield className={`w-3.5 h-3.5 shrink-0 ${
-                  isCreative
-                    ? 'text-fuchsia-400 fill-fuchsia-400/20'
-                    : (isArtistOrBand || isIndustryPro)
-                    ? 'text-purple-500 fill-purple-500/20'
-                    : 'text-rose-400 fill-rose-400/20'
-                }`} />
+              {(isCreative || isArtistOrBand || isIndustryPro || isLabel || isPromoter || post.isVerified) && (
+                <Shield className={`w-3.5 h-3.5 shrink-0 ${roleTheme.shieldClasses}`} />
               )}
             </h3>
 
             {/* Line 2: Person's Full Name under the handle */}
             {fullNameDisplay && (
-              <p className={`text-[11px] sm:text-xs font-mono font-bold tracking-wider mt-0.5 truncate uppercase ${
-                isIndustryPro
-                  ? 'text-purple-400 dark:text-purple-400'
-                  : 'text-blue-400 dark:text-blue-400'
-              }`}>
+              <p className={`text-[11px] sm:text-xs font-mono font-bold tracking-wider mt-0.5 truncate uppercase ${roleTheme.fullNameClass}`}>
                 {fullNameDisplay.toUpperCase()}
               </p>
             )}
@@ -593,39 +663,12 @@ export const PostCard: React.FC<PostCardProps> = ({
               )}
             </div>
 
-            {/* Line 4: Role ("Fan Supporter or Industry Pro") under the date */}
+            {/* Line 4: Role badge with glowing micro-indicator dot */}
             <div className="mt-0.5 flex items-center gap-1">
-              {isCreative ? (
-                <span className="text-[10px] font-mono font-bold tracking-wider text-fuchsia-400 uppercase flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-fuchsia-500 inline-block shadow-[0_0_6px_rgba(217,70,239,0.6)]" />
-                  Creative Pro
-                </span>
-              ) : isArtistOrBand ? (
-                <span className="text-[10px] font-mono font-bold tracking-wider text-emerald-400 uppercase flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block shadow-[0_0_6px_rgba(16,185,129,0.6)]" />
-                  {postRoleUpper === 'BAND' || postRoleUpper === 'BAND / ARTIST' ? 'Band / Artist' : (post.authorRole || (post as any).author?.role || 'Band / Artist')}
-                </span>
-              ) : isLabel ? (
-                <span className="text-[10px] font-mono font-bold tracking-wider text-purple-400 uppercase flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500 inline-block shadow-[0_0_6px_rgba(168,85,247,0.6)]" />
-                  Record Label
-                </span>
-              ) : isPromoter ? (
-                <span className="text-[10px] font-mono font-bold tracking-wider text-amber-400 uppercase flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block shadow-[0_0_6px_rgba(245,158,11,0.6)]" />
-                  Venue Promoter
-                </span>
-              ) : isIndustryPro ? (
-                <span className="text-[10px] font-mono font-bold tracking-wider text-purple-400 uppercase flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500 inline-block shadow-[0_0_6px_rgba(168,85,247,0.6)]" />
-                  Industry Pro
-                </span>
-              ) : (
-                <span className="text-[10px] font-mono font-bold tracking-wider text-blue-400 uppercase flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block shadow-[0_0_6px_rgba(59,130,246,0.6)]" />
-                  Fan Supporter
-                </span>
-              )}
+              <span className={`text-[10px] font-mono font-bold tracking-wider uppercase flex items-center gap-1.5 ${roleTheme.badgeTextClass}`}>
+                <span className={`w-1.5 h-1.5 rounded-full inline-block ${roleTheme.badgeDotClass}`} />
+                {roleTheme.tagLabel}
+              </span>
             </div>
           </div>
         </div>
@@ -737,49 +780,51 @@ export const PostCard: React.FC<PostCardProps> = ({
         </div>
       </div>
 
-      {/* SMART GIG & TOUR PROXIMITY PILL */}
+      {/* Message Content (or Edit Form) - Sits directly snug under author header */}
+      <div className="-mt-1 sm:-mt-1.5">
+        {isEditing ? (
+          <div className="space-y-2 bg-zinc-950 border border-amber-500/50 rounded-xl p-3">
+            <textarea
+              value={editingText}
+              onChange={(e) => onSetEditingText(e.target.value)}
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/80 font-sans min-h-[80px]"
+              placeholder="Update post content..."
+            />
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                onClick={onCancelEditing}
+                className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs font-mono font-bold transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => onSaveEditing(editingText)}
+                className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-xs font-mono font-bold transition-colors cursor-pointer flex items-center gap-1"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Save Changes</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-sans whitespace-pre-wrap break-words">
+              {renderPostMessage(post.message, onOpenProfile)}
+            </p>
+
+            {/* RICH EMBED 0: AUTO LINK PREVIEW CARD */}
+            <LinkPreviewCard message={post.message} />
+          </div>
+        )}
+      </div>
+
+      {/* SMART GIG & TOUR PROXIMITY PILL (rendered below post caption, only if dates/tickets exist) */}
       <GigProximityPill
         post={post}
         userProfile={userProfile}
         onOpenTicketModal={onOpenTicketModal}
         onSelectTicketShow={onSelectTicketShow}
       />
-
-      {/* Message Content (or Edit Form) */}
-      {isEditing ? (
-        <div className="space-y-2 bg-zinc-950 border border-amber-500/50 rounded-xl p-3">
-          <textarea
-            value={editingText}
-            onChange={(e) => onSetEditingText(e.target.value)}
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/80 font-sans min-h-[80px]"
-            placeholder="Update post content..."
-          />
-          <div className="flex items-center justify-end gap-2 pt-1">
-            <button
-              onClick={onCancelEditing}
-              className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs font-mono font-bold transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => onSaveEditing(editingText)}
-              className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-xs font-mono font-bold transition-colors cursor-pointer flex items-center gap-1"
-            >
-              <Check className="w-3.5 h-3.5" />
-              <span>Save Changes</span>
-            </button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-sans whitespace-pre-wrap break-words">
-            {renderPostMessage(post.message, onOpenProfile)}
-          </p>
-
-          {/* RICH EMBED 0: AUTO LINK PREVIEW CARD */}
-          <LinkPreviewCard message={post.message} />
-        </>
-      )}
 
       {/* RICH EMBED 1: SONG SHARE CARD */}
       {post.songData && (

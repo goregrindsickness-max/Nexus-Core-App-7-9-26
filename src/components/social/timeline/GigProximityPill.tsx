@@ -9,6 +9,7 @@ interface GigProximityPillProps {
   onSelectTicketShow?: (dateObj: any) => void;
 }
 
+// Default list of notable metal scene hubs
 const DEFAULT_POPULAR_CITIES = [
   'Seattle, WA',
   'Los Angeles, CA',
@@ -21,35 +22,6 @@ const DEFAULT_POPULAR_CITIES = [
   'Toronto, ON',
   'Berlin, DE'
 ];
-
-// Fallback upcoming tour dates database for iconic underground bands if not directly embedded
-const ARTIST_TOUR_DATES: Record<string, Array<{ city: string; venue: string; date: string; price: string; headliner: string }>> = {
-  'analepsy': [
-    { city: 'Seattle, WA', venue: 'Substation Seattle', date: 'Oct 14, 2026', price: '$22', headliner: 'Analepsy + Vulvodynia' },
-    { city: 'Los Angeles, CA', venue: '1720 Warehouse', date: 'Oct 18, 2026', price: '$25', headliner: 'Analepsy Slam Fest' },
-    { city: 'Chicago, IL', venue: 'Reggies Rock Club', date: 'Oct 24, 2026', price: '$20', headliner: 'Analepsy Midwest Tour' },
-    { city: 'New York, NY', venue: 'Saint Vitus Bar', date: 'Nov 02, 2026', price: '$24', headliner: 'Analepsy East Coast Siege' }
-  ],
-  'devourment': [
-    { city: 'Austin, TX', venue: 'Come and Take It Live', date: 'Sep 29, 2026', price: '$28', headliner: 'Devourment TX Slamdown' },
-    { city: 'Los Angeles, CA', venue: 'Catch One', date: 'Oct 08, 2026', price: '$30', headliner: 'Devourment West Coast Beatdown' },
-    { city: 'Seattle, WA', venue: 'El Corazon', date: 'Oct 12, 2026', price: '$25', headliner: 'Devourment Live in Seattle' }
-  ],
-  'sanguisugabogg': [
-    { city: 'Chicago, IL', venue: 'Bottom Lounge', date: 'Nov 05, 2026', price: '$22', headliner: 'Sanguisugabogg Riff Assault' },
-    { city: 'Denver, CO', venue: 'Marquis Theater', date: 'Nov 12, 2026', price: '$20', headliner: 'Sanguisugabogg Tour' },
-    { city: 'Seattle, WA', venue: 'Neumos', date: 'Nov 19, 2026', price: '$24', headliner: 'Sanguisugabogg Pacific Slam' }
-  ],
-  'peelingflesh': [
-    { city: 'Austin, TX', venue: 'The Lost Well', date: 'Oct 04, 2026', price: '$20', headliner: 'PeelingFlesh Slam Party' },
-    { city: 'Philadelphia, PA', venue: 'Kung Fu Necktie', date: 'Oct 22, 2026', price: '$18', headliner: 'PeelingFlesh Tour' },
-    { city: 'Seattle, WA', venue: 'Funhouse', date: 'Nov 01, 2026', price: '$18', headliner: 'PeelingFlesh NW Beatdown' }
-  ],
-  'internal bleeding': [
-    { city: 'New York, NY', venue: 'The Brooklyn Monarch', date: 'Oct 30, 2026', price: '$25', headliner: 'Internal Bleeding NYDM' },
-    { city: 'Philadelphia, PA', venue: 'Underground Arts', date: 'Nov 04, 2026', price: '$22', headliner: 'Internal Bleeding Slam' }
-  ]
-};
 
 export const GigProximityPill: React.FC<GigProximityPillProps> = ({
   post,
@@ -94,8 +66,8 @@ export const GigProximityPill: React.FC<GigProximityPillProps> = ({
     const normUserCity = userCity.toLowerCase().trim();
     const cityPrimary = normUserCity.split(',')[0].trim();
 
-    // 1. Check if post has explicit ticketData
-    if (post.ticketData) {
+    // 1. Check if post has explicit ticketData with real ticketUrl or valid date
+    if (post.ticketData && (post.ticketData.ticketUrl || (post.ticketData.date && post.ticketData.date !== 'Upcoming Tour Date' && post.ticketData.venue))) {
       const venueLower = (post.ticketData.venue || '').toLowerCase();
       const headliner = post.ticketData.headliner || post.authorName || 'Live Gig';
       const isLocal = venueLower.includes(cityPrimary) || (post.location && post.location.toLowerCase().includes(cityPrimary));
@@ -103,7 +75,7 @@ export const GigProximityPill: React.FC<GigProximityPillProps> = ({
         isExactCity: isLocal,
         city: isLocal ? userCity : (post.location || 'Your Region'),
         venue: post.ticketData.venue || 'Underground Stage',
-        date: post.ticketData.date || 'Upcoming Tour Date',
+        date: post.ticketData.date || 'Tour Date',
         price: post.ticketData.priceRange || '$20',
         headliner: headliner,
         ticketData: post.ticketData,
@@ -143,15 +115,15 @@ export const GigProximityPill: React.FC<GigProximityPillProps> = ({
       };
     }
 
-    // 3. Check if post has eventData
-    if (post.eventData) {
+    // 3. Check if post has eventData with real date or venue
+    if (post.eventData && (post.eventData.date || post.eventData.venue || post.eventData.locationName || post.eventData.ticketUrl)) {
       const isLocal = post.eventData.city?.toLowerCase().includes(cityPrimary) || post.location?.toLowerCase().includes(cityPrimary);
       return {
         isExactCity: Boolean(isLocal),
         city: post.eventData.city || userCity,
-        venue: post.eventData.venue || 'Local Pit',
-        date: post.eventData.date || 'This Month',
-        price: post.eventData.price || 'Free / $10',
+        venue: post.eventData.venue || post.eventData.locationName || 'Local Pit',
+        date: post.eventData.date || 'Upcoming Show',
+        price: post.eventData.price || post.eventData.cost || 'Free / $10',
         headliner: post.eventData.title || post.authorName,
         eventData: post.eventData,
         distanceText: isLocal ? '~5 mi away' : 'Regional Event'

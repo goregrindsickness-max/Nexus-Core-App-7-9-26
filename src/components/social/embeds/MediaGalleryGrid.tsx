@@ -25,13 +25,15 @@ export const MediaGalleryGrid: React.FC<MediaGalleryGridProps> = ({
   onSelectTicketShow,
 }) => {
   const isTourFlyer = Boolean(
-    ticketData ||
-    eventData ||
+    (ticketData && (ticketData.ticketUrl || (ticketData.date && ticketData.date !== 'Upcoming Tour Date'))) ||
+    (eventData && (eventData.category?.toLowerCase().includes('tour') || eventData.title?.toLowerCase().includes('tour'))) ||
     tag === 'TOUR DATES' ||
-    tag === 'GIG' ||
-    tag === 'EVENT' ||
-    tag === 'TOUR ANNOUNCEMENT' ||
-    tag === 'PRESALE'
+    tag === 'TOUR ANNOUNCEMENT'
+  );
+
+  const hasValidTickets = Boolean(
+    ticketData &&
+    (ticketData.ticketUrl || ticketData.external_ticket_url || (ticketData.date && ticketData.date !== 'Upcoming Tour Date' && ticketData.venue))
   );
 
   const renderSingleImage = (src: string) => (
@@ -92,8 +94,8 @@ export const MediaGalleryGrid: React.FC<MediaGalleryGridProps> = ({
           )}
         </div>
 
-        {/* Optional Integrated 1-Tap Ticket / RSVP CTA */}
-        {ticketData && (
+        {/* Optional Integrated 1-Tap Ticket / RSVP CTA (only when valid ticket links or explicit dates exist) */}
+        {hasValidTickets && ticketData && (
           <button
             type="button"
             onClick={(e) => {

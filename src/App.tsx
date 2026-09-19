@@ -122,7 +122,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sale, Show, InventoryItem, TourNote, Band, UserProfile, ChecklistItem, BankItem, Flight, InventoryAudit, UserReview, LoyaltyMember, Offer, DbNotification, SubscriptionTier, StagedDistroItem, AssetRevenueSplit, CashTransaction, BandJoinRequest, RegisteredWorkspaceRef, hasRegisteredWorkspace, normalizeRegisteredWorkspaces } from './types';
-import { communityBandManager } from './lib/communityBands';
+import { communityBandManager, isCommunityBandRecord } from './lib/communityBands';
 import { initOfflineQueue, getSupabase, testSupabaseConnection, getSupabaseUrl, getSupabaseAnonKey, subscribeToTable, sanitizeInventoryItemForDb, executeWithSchemaResilience, getOfflineQueue, processOfflineQueue, isBypassRequiredError, handleDatabaseFailover, saveToFailoverCache, generateUUID, uploadBase64ToStorage, fetchUserBands, sanitizeBandPayload, ensureValidSupabaseAuthSession, autoSyncCreativeProfile, fetchUserCreatives, resolveInventoryImageUrl } from './supabase';
 import AlbumArt from './components/AlbumArt';
 import { useOfflineSync } from './hooks/useOfflineSync';
@@ -627,62 +627,56 @@ export default function App() {
     const emoji = matrix[reactionType]?.icon || '🔥';
     const label = matrix[reactionType]?.label || 'Hype';
     
-    // Sync Notification to Supabase
+    // Sync Notification to Supabase for author only
     const targetPost = alliancePosts.find((p) => p.id === postId);
     if (targetPost) {
       const actorName = userProfile?.name || userProfile?.console_handle || 'A user';
       const postSnippet = (targetPost.content || targetPost.message || 'transmission').substring(0, 50);
       const targetUserId = targetPost.author?.email || targetPost.author?.name || 'author';
       
-      // Resolve target receiver UUID
-      const validReceiverUUID = (targetUserId && extractUUID(targetUserId)) || (userProfile?.id && extractUUID(userProfile.id)) || null;
+      // Resolve target receiver UUID for the author (never fall back to current user)
+      const validReceiverUUID = (targetUserId && extractUUID(targetUserId)) || null;
       
-      const notifId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : (extractUUID(postId) || '00000000-0000-0000-0000-000000000000');
-      const notifItem = {
-        id: notifId,
-        user_id: validReceiverUUID,
-        title: `🔥 NEW REACTION`,
-        message: `${actorName} reacted (${label}) to your transmission: "${postSnippet}"`,
-        category: 'REACTION',
-        timeAgo: 'Just now',
-        timestamp: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        read: false,
-        is_read: false,
-        type: 'post_reaction',
-        postId: postId,
-        linkTab: 'feed',
-      };
+      if (validReceiverUUID && validReceiverUUID !== userProfile?.id) {
+        const notifId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : (extractUUID(postId) || '00000000-0000-0000-0000-000000000000');
+        const notifItem = {
+          id: notifId,
+          user_id: validReceiverUUID,
+          title: `🔥 NEW REACTION`,
+          message: `${actorName} reacted (${label}) to your transmission: "${postSnippet}"`,
+          category: 'REACTION',
+          timeAgo: 'Just now',
+          timestamp: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          read: false,
+          is_read: false,
+          type: 'post_reaction',
+          postId: postId,
+          linkTab: 'feed',
+        };
 
-    try {
-        const supabaseClient = getSupabase();
-        if (supabaseClient && validReceiverUUID) {
-          // 1. Insert the individual notification row cleanly with valid UUIDs
-          supabaseClient.from('nexus_notifications').insert([{
-            id: notifItem.id, // Valid UUID
-            user_id: validReceiverUUID, // Valid UUID
-            title: notifItem.title,
-            message: notifItem.message,
-            category: 'REACTION',
-            type: 'post_reaction',
-            is_read: false,
-            data: notifItem,
-            created_at: new Date().toISOString(),
-          }]).then(({ error }) => {
-            if (error) console.error("Notification insert error:", error);
-          });
+        try {
+          const supabaseClient = getSupabase();
+          if (supabaseClient) {
+            supabaseClient.from('nexus_notifications').insert([{
+              id: notifItem.id,
+              user_id: validReceiverUUID,
+              title: notifItem.title,
+              message: notifItem.message,
+              category: 'REACTION',
+              type: 'post_reaction',
+              is_read: false,
+              data: notifItem,
+              created_at: new Date().toISOString(),
+            }]).then(({ error }) => {
+              if (error) console.error("Notification insert error:", error);
+            });
+          }
+        } catch (err) {
+          console.warn('Sync notice:', err);
         }
-
-        // Also update local current user if applicable
-        if (userProfile?.id && validReceiverUUID === userProfile.id) {
-           setNotifications(prev => [(notifItem as unknown as DbNotification), ...(prev || [])]);
-        }
-      } catch (err) {
-        console.warn('Sync notice:', err);
       }
     }
-
-    triggerNotification?.(`Reacted with ${emoji} ${label}! Notification synced to Supabase.`);
   };
 
   // Blocked Promoters state
@@ -1368,7 +1362,6 @@ export default function App() {
             ...b,
             name: b.band_name || b.name || 'Artist'
           }));
-          profileStore.setItem(`nexus_core_${userProfile?.id}_bands`, userBands);
         } else if (cachedBands && Array.isArray(cachedBands) && cachedBands.length > 0) {
           userBands = cachedBands;
         } else if (bands && bands.length > 0) {
@@ -1376,13 +1369,46 @@ export default function App() {
         } else {
           userBands = [];
         }
+
+        // Filter out community archive bands so they never pollute the user's active band workspace
+        userBands = userBands.filter((b: any) => {
+          const bId = String(b.id || '').trim();
+          const bName = String(b.name || b.band_name || '').trim();
+          if (bId === 'cbddb810-259b-4230-9968-3d402dfdb872' || bName.toLowerCase() === 'virulent excision') {
+            return true;
+          }
+          return !isCommunityBandRecord(bId) && !isCommunityBandRecord(bName);
+        });
+
+        if (userProfile?.id) {
+          profileStore.setItem(`nexus_core_${userProfile?.id}_bands`, userBands);
+        }
         setBands(userBands);
 
-        // Backfill userProfile band_id / band_name if user has a band registered
+        const isOwnerMiguel = (userProfile?.name?.toLowerCase()?.includes('miguel') || userProfile?.email === 'admin@nexus.com' || (userProfile as any)?.console_handle?.toLowerCase()?.includes('miguel'));
+
+        // Cleanse corrupted band_id from userProfile if it was set to a community archive
+        if (userProfile?.band_id && isCommunityBandRecord(userProfile.band_id)) {
+          userProfile.band_id = isOwnerMiguel ? 'cbddb810-259b-4230-9968-3d402dfdb872' : null;
+          userProfile.band_name = isOwnerMiguel ? 'Virulent Excision' : null;
+          userProfile.bandName = isOwnerMiguel ? 'Virulent Excision' : null;
+          try {
+            localStorage.setItem('nexus_core_user_profile', JSON.stringify(userProfile));
+          } catch (_) {}
+          if (supabase && userProfile.id) {
+            supabase.from('profiles').update({
+              band_id: userProfile.band_id,
+              band_name: userProfile.band_name,
+              bandName: userProfile.bandName
+            }).eq('id', userProfile.id).then();
+          }
+        }
+
+        // Backfill userProfile band_id / band_name if user has a valid band registered
         if (userBands.length > 0 && userProfile?.id) {
           const primaryBand = userBands[0];
           const hasMissingBandFields = !userProfile.band_id || !userProfile.band_name || !userProfile.bandName;
-          if (hasMissingBandFields) {
+          if (hasMissingBandFields && !isCommunityBandRecord(primaryBand.id) && !isCommunityBandRecord(primaryBand.name)) {
             const updatedProfile = {
               ...userProfile,
               band_id: userProfile.band_id || primaryBand.id,
@@ -1428,9 +1454,17 @@ export default function App() {
           }).catch((err) => console.warn('Creative auto-sync notice:', err));
         }
 
-        const isOwnerMiguel = (userProfile?.name?.toLowerCase()?.includes('miguel') || userProfile?.email === 'admin@nexus.com' || (userProfile as any)?.console_handle?.toLowerCase()?.includes('miguel'));
+        let validActiveId = typeof cachedActiveBandIdStr === 'string' ? cachedActiveBandIdStr : null;
+        if (validActiveId && isCommunityBandRecord(validActiveId)) {
+          validActiveId = null;
+          localStorage.removeItem('nexus_active_band_id');
+        }
+
         const veBand = userBands.find((b: any) => b.id === 'cbddb810-259b-4230-9968-3d402dfdb872');
-        const userActiveId = cachedActiveBandIdStr || userProfile?.band_id || userBands[0]?.id || (isOwnerMiguel ? (veBand?.id || 'cbddb810-259b-4230-9968-3d402dfdb872') : null);
+        let userActiveId = validActiveId || userProfile?.band_id || userBands[0]?.id || (isOwnerMiguel ? (veBand?.id || 'cbddb810-259b-4230-9968-3d402dfdb872') : null);
+        if (isOwnerMiguel && (!userActiveId || isCommunityBandRecord(String(userActiveId)))) {
+          userActiveId = 'cbddb810-259b-4230-9968-3d402dfdb872';
+        }
         if (userActiveId) {
           setActiveBandId(userActiveId);
           currentActiveBandId = userActiveId;
@@ -1928,7 +1962,19 @@ export default function App() {
     setIsBandModalOpen(false);
 
     // Reset form
-    setNewBandForm({ name: '', genre: '', logo_url: '' });
+    setNewBandForm({
+      name: '',
+      genre: '',
+      logo_url: '',
+      is_managed_client: false,
+      management_role: 'tour_manager',
+      management_commission_pct: 15,
+      management_day_rate: 250,
+      executive_contact_name: '',
+      executive_contact_email: '',
+      executive_contact_phone: '',
+      client_roster_notes: ''
+    });
     
     addLog(`Registered new roster artist "${newBand.name}" and generated starter tour dataset.`);
     triggerNotification(`Active artist switched to: ${newBand.name}`);

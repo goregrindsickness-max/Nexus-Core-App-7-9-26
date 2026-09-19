@@ -96,8 +96,8 @@ export interface CommunityBandRecord {
 }
 
 // Initial pre-seeded community archives for iconic bands loaded from seedBandsData
-export { INITIAL_COMMUNITY_BANDS } from './seedBandsData';
-import { INITIAL_COMMUNITY_BANDS } from './seedBandsData';
+export { INITIAL_COMMUNITY_BANDS, isCommunityBandRecord } from './seedBandsData';
+import { INITIAL_COMMUNITY_BANDS, isCommunityBandRecord } from './seedBandsData';
 
 export const UNOFFICIAL_MOCK_BAND_IDS = new Set<string>([
   'exhumed',
@@ -136,6 +136,47 @@ export function isDeletedOrZombieBand(idOrName?: string): boolean {
   const deletedIds = getDeletedBandIds();
   if (deletedIds.has(clean)) return true;
   return false;
+}
+
+
+export function deduplicateDiscography(releases: DiscographyRelease[]): DiscographyRelease[] {
+  if (!Array.isArray(releases)) return [];
+  const seen = new Map<string, DiscographyRelease>();
+  for (const r of releases) {
+    if (!r || !r.title) continue;
+    const normTitle = r.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!normTitle) continue;
+    if (!seen.has(normTitle)) {
+      seen.set(normTitle, r);
+    } else {
+      const existing = seen.get(normTitle)!;
+      const hasBetterCover = (!existing.cover_url || existing.cover_url.includes('unsplash') || existing.cover_url.includes('placeholder')) && (r.cover_url && !r.cover_url.includes('unsplash') && !r.cover_url.includes('placeholder'));
+      const hasMoreTracks = (r.tracks?.length || 0) > (existing.tracks?.length || 0);
+      if (hasBetterCover || hasMoreTracks) {
+        seen.set(normTitle, { ...existing, ...r, cover_url: r.cover_url || existing.cover_url });
+      }
+    }
+  }
+  return Array.from(seen.values());
+}
+
+export function deduplicateLineup(members: LineupMember[]): LineupMember[] {
+  if (!Array.isArray(members)) return [];
+  const seen = new Map<string, LineupMember>();
+  for (const m of members) {
+    if (!m || !m.name) continue;
+    const normName = m.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!normName) continue;
+    if (!seen.has(normName)) {
+      seen.set(normName, m);
+    } else {
+      const existing = seen.get(normName)!;
+      if (existing.status === 'past' && m.status === 'active') {
+        seen.set(normName, m);
+      }
+    }
+  }
+  return Array.from(seen.values());
 }
 
 export function purgeDeletedAndZombieBands(): void {
@@ -288,7 +329,17 @@ export class CommunityBandManager {
                 (updated[idx].cover_url && updated[idx].cover_url !== initBand.cover_url && !updated[idx].cover_url.includes('unsplash') ? updated[idx].cover_url : null) ||
                 (updated[idx].banner_url && updated[idx].banner_url !== initBand.banner_url && !updated[idx].banner_url.includes('unsplash') ? updated[idx].banner_url : null) ||
                 initBand.cover_url;
-              const bestBio = (updated[idx].bio && updated[idx].bio !== initBand.bio && updated[idx].bio.trim() !== '') ? updated[idx].bio : (initBand.bio || updated[idx].bio);
+              const bestBio = (updated[idx].bio && updated[idx].bio.trim() !== '') ? updated[idx].bio : (initBand.bio || '');
+              const bestDiscography = deduplicateDiscography(
+                (updated[idx].discography && updated[idx].discography.length > 0)
+                  ? updated[idx].discography
+                  : (initBand.discography || [])
+              );
+              const bestLineup = deduplicateLineup(
+                (updated[idx].lineup && updated[idx].lineup.length > 0)
+                  ? updated[idx].lineup
+                  : (initBand.lineup || [])
+              );
 
               // Upgrade with user edits taking absolute precedence over pre-seeded master
               updated[idx] = {
@@ -303,8 +354,9 @@ export class CommunityBandManager {
                 bio: bestBio,
                 record_label: updated[idx].record_label || updated[idx].label || initBand.record_label || initBand.label,
                 label: updated[idx].label || updated[idx].record_label || initBand.label || initBand.record_label,
-                discography: (updated[idx].discography && updated[idx].discography.length > 0) ? updated[idx].discography : (initBand.discography || []),
-                lineup: (updated[idx].lineup && updated[idx].lineup.length > 0) ? updated[idx].lineup : (initBand.lineup || [])
+                discography: bestDiscography,
+                lineup: bestLineup,
+                verification_status: updated[idx].verification_status || initBand.verification_status || 'community_archive'
               };
             }
           }
@@ -1163,40 +1215,39 @@ export class CommunityBandManager {
           (b.banner_url && b.banner_url !== seedMatch?.banner_url && !b.banner_url.includes('unsplash') ? b.banner_url : null) ||
           seedMatch?.cover_url || seedMatch?.banner_url || existingItem?.cover_url || existingItem?.banner_url || b.cover_url || b.banner_url || '';
 
-        // Intelligently merge discography: prioritize existingItem/local edits, then seedMatch, then remote
-        const mergedDiscography: DiscographyRelease[] = [];
-        const localReleases = (existingItem?.discography && existingItem.discography.length > 0)
-          ? existingItem.discography
-          : (seedMatch?.discography && seedMatch.discography.length > 0)
-          ? seedMatch.discography
-          : remoteDiscography;
-
-        const seenReleaseKeys = new Set<string>();
-        for (const locRel of localReleases) {
-          const key = (locRel.title || '').toLowerCase().trim();
-          seenReleaseKeys.add(key);
-          if (locRel.id) seenReleaseKeys.add(locRel.id);
-          mergedDiscography.push(locRel);
-        }
-
-        for (const remRel of remoteDiscography) {
-          const titleKey = (remRel.title || '').toLowerCase().trim();
-          const idKey = remRel.id || '';
-          if (!seenReleaseKeys.has(titleKey) && !seenReleaseKeys.has(idKey)) {
-            seenReleaseKeys.add(titleKey);
-            if (idKey) seenReleaseKeys.add(idKey);
-            mergedDiscography.push(remRel);
+        // Intelligently merge discography: prioritize Supabase remoteDiscography, then local edits, strictly deduplicated
+        const mergedDiscography: DiscographyRelease[] = (() => {
+          let list: DiscographyRelease[] = [];
+          if (remoteDiscography && remoteDiscography.length > 0) {
+            list = [...remoteDiscography];
+            if (existingItem?.discography && existingItem.discography.length > 0) {
+              list.push(...existingItem.discography);
+            }
+          } else if (existingItem?.discography && existingItem.discography.length > 0) {
+            list = [...existingItem.discography];
+          } else if (seedMatch?.discography && seedMatch.discography.length > 0) {
+            list = [...seedMatch.discography];
           }
-        }
+          return deduplicateDiscography(list);
+        })();
 
-        // Merge lineup non-destructively: prioritize existingItem
-        const mergedLineup: LineupMember[] = (existingItem?.lineup && existingItem.lineup.length > 0)
-          ? existingItem.lineup
-          : (seedMatch?.lineup && seedMatch.lineup.length > 0)
-          ? seedMatch.lineup
-          : (parsedLineup.length > 0 ? parsedLineup : []);
+        // Merge lineup non-destructively: prioritize Supabase parsedLineup, then existingItem, then seedMatch
+        const mergedLineup: LineupMember[] = deduplicateLineup(
+          (parsedLineup && parsedLineup.length > 0)
+            ? parsedLineup
+            : (existingItem?.lineup && existingItem.lineup.length > 0)
+            ? existingItem.lineup
+            : (seedMatch?.lineup && seedMatch.lineup.length > 0)
+            ? seedMatch.lineup
+            : []
+        );
 
-        // Prioritize local existingItem edits for all attributes if present
+        const isOfficialVE = (b.id === 'cbddb810-259b-4230-9968-3d402dfdb872' || cleanBandName === 'virulent excision');
+        const resolvedVerification: BandVerificationStatus = isOfficialVE
+          ? 'verified_official'
+          : 'community_archive';
+
+        // Prioritize Supabase cloud data for bio, then local edits, then seed match
         const record: CommunityBandRecord = {
           id: existingItem?.id || b.id,
           name: existingItem?.name || bandName,
@@ -1212,9 +1263,9 @@ export class CommunityBandManager {
           label: existingItem?.label || existingItem?.record_label || b.label || b.record_label || b.label_name || seedMatch?.label || seedMatch?.record_label || '',
           creator_id: existingItem?.creator_id || b.creator_id,
           bio: (() => {
-            if (existingItem?.bio && existingItem.bio.trim() !== '') return existingItem.bio;
-            if (seedMatch?.bio && seedMatch.bio.trim() !== '') return seedMatch.bio;
-            if (b.bio && b.bio.trim() !== '') return b.bio;
+            if (b.bio && b.bio.trim() !== '') return b.bio.trim();
+            if (existingItem?.bio && existingItem.bio.trim() !== '') return existingItem.bio.trim();
+            if (seedMatch?.bio && seedMatch.bio.trim() !== '') return seedMatch.bio.trim();
             return `Community-curated archive for ${bandName}.`;
           })(),
           avatar_url: resolvedAvatar,
@@ -1233,7 +1284,7 @@ export class CommunityBandManager {
           curated_by: existingItem?.curated_by || seedMatch?.curated_by || '@fan_archivist',
           curator_name: existingItem?.curator_name || seedMatch?.curator_name || 'Community Archivist',
           created_at: existingItem?.created_at || b.created_at || seedMatch?.created_at || new Date().toISOString(),
-          verification_status: existingItem?.verification_status || (b.is_verified ? 'verified_official' : (b.verification_status || seedMatch?.verification_status || 'community_archive')),
+          verification_status: resolvedVerification,
           followers_count: existingItem?.followers_count || seedMatch?.followers_count || 120
         };
 
@@ -1265,15 +1316,18 @@ export class CommunityBandManager {
       for (const group of byIdentity.values()) {
         if (group.length > 1) {
           group.sort((a, b) => {
+            const isOfficialA = (a.id === 'cbddb810-259b-4230-9968-3d402dfdb872' || (a.name || '').toLowerCase() === 'virulent excision');
+            const isOfficialB = (b.id === 'cbddb810-259b-4230-9968-3d402dfdb872' || (b.name || '').toLowerCase() === 'virulent excision');
+            if (isOfficialA && !isOfficialB) return -1;
+            if (!isOfficialA && isOfficialB) return 1;
+
             const scoreA = (a.discography?.length || 0) * 10 +
               (a.lineup?.length || 0) * 2 +
-              (a.verification_status === 'verified_official' ? 30 : 0) +
               (a.creator_id ? 20 : 0) +
               (a.id.includes('-') && a.id.length >= 30 ? 15 : 0);
 
             const scoreB = (b.discography?.length || 0) * 10 +
               (b.lineup?.length || 0) * 2 +
-              (b.verification_status === 'verified_official' ? 30 : 0) +
               (b.creator_id ? 20 : 0) +
               (b.id.includes('-') && b.id.length >= 30 ? 15 : 0);
 

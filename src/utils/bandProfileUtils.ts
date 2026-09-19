@@ -63,12 +63,12 @@ export const resolveBandCover = (activeBand: any, userProfile: any): string => {
 export const resolveBandHandle = (activeBand: any, userProfile: any): string => {
   const raw = activeBand?.custom_slug || activeBand?.handle || activeBand?.slug || activeBand?.name || userProfile?.band_slug || userProfile?.band_name || userProfile?.bandName;
   if (raw && typeof raw === 'string' && raw.trim() !== '') {
-    return raw.toLowerCase().replace(/^@+/, '').replace(/\s+/g, '_');
+    return raw.replace(/^@+/, '').replace(/\s+/g, '_');
   }
   if (isVirulentExcisionProfile(activeBand, userProfile)) {
-    return 'virulent_excision';
+    return 'Virulent_Excision';
   }
-  return 'virulent_excision';
+  return 'Virulent_Excision';
 };
 
 export const resolveBandName = (activeBand: any, userProfile: any): string => {

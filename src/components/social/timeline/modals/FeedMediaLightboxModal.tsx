@@ -257,11 +257,6 @@ export const FeedMediaLightboxModal: React.FC<FeedMediaLightboxModalProps> = ({
             <span className="text-zinc-400 text-[11px] font-bold">
               {lightbox.index + 1} / {lightbox.images.length}
             </span>
-            <span className="text-zinc-600">•</span>
-            <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-amber-400" />
-              Photo Pit 4K Master
-            </span>
           </div>
         </div>
 

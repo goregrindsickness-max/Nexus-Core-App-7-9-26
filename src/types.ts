@@ -2,17 +2,24 @@ export interface Venue {
   id: string;
   created_at?: string;
   name: string;
+  address?: string;
   city: string;
   state_province?: string;
   country?: string;
+  lat?: number;
+  lng?: number;
   capacity?: number;
   email?: string;
+  phone?: string;
+  website?: string;
   genre_fit?: number;
   payout_rating?: number;
   load_in_rating?: number;
   buyers?: string;
   intel_entries?: string[];
   promoter_id?: string;
+  source?: string;
+  place_type?: 'venue' | 'studio' | 'rehearsal' | 'other' | string;
 }
 
 export interface Sale {
@@ -126,6 +133,19 @@ export interface Show {
   is_community_submitted?: boolean;
   external_ticket_url?: string;
   collaborator_ids?: string[];
+
+  // Tour Manager / Client Agency Booking Extension Fields
+  is_client_managed_show?: boolean;
+  tour_manager_id?: string;
+  tour_manager_name?: string;
+  tour_manager_handle?: string;
+  tour_manager_email?: string;
+  tour_manager_phone?: string;
+  tm_commission_rate?: number; // e.g. 15 for 15%
+  tm_commission_amount?: number; // calculated dollar amount
+  tm_flat_fee?: number; // optional flat day rate
+  client_artist_payout?: number; // net payout to client band
+  tm_executive_notes?: string;
 }
 
 export interface SupportBand {
@@ -391,6 +411,8 @@ export interface UserProfile {
   label_id?: string;
   account_type?: string; // 'fan' | 'industry pro'
   active_workspace?: string; // 'fan' | 'band' | 'promoter' | 'creative' | 'label' etc.
+  band_role_mode?: 'musician' | 'tour_manager' | string; // Active identity mode within band workspace
+  previous_band_role?: string; // Saved previous musician role for toggling
   target_region?: string; // region matching promoter's profile target_region
   console_handle?: string; // Unique console handle
   location_code?: string; // Legacy location code
@@ -628,6 +650,16 @@ export interface Band {
   apple_music?: string;
   bandcamp?: string;
   website?: string;
+
+  // Executive Management & Tour Agency Mode
+  is_managed_client?: boolean;
+  management_role?: 'tour_manager' | 'booking_agent' | 'executive_producer' | 'owner';
+  management_commission_pct?: number;
+  management_day_rate?: number;
+  executive_contact_name?: string;
+  executive_contact_email?: string;
+  executive_contact_phone?: string;
+  client_roster_notes?: string;
 }
 
 export interface Label {

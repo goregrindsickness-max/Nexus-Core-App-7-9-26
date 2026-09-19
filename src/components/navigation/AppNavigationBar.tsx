@@ -617,12 +617,12 @@ export function AppNavigationBar({
                         <p className="text-[10px] text-zinc-500 font-mono truncate">
                           {(() => {
                             const r = userProfile?.active_workspace || userProfile?.account_type || 'industry_pro';
-                            if (r === 'industry_pro') return '@' + (userProfile?.console_handle || userProfile?.screen_name || 'pro_user').toLowerCase().replace(/\s+/g, '');
-                            if (r === 'fan_only') return '@' + (userProfile?.console_handle || userProfile?.screen_name || 'fan_only').toLowerCase().replace(/\s+/g, '');
-                            if (r === 'promoter') return '@' + ((userProfile as any)?.promoter_handle || 'promoter_pro');
-                            if (r === 'creative') return '@' + ((userProfile as any)?.creative_handle || 'creative_pro');
-                            if (r === 'label') return '@' + (userProfile?.label_url_slug || 'label_pro');
-                            return '@' + (activeBand?.name || userProfile?.bandName || 'band_core').toLowerCase().replace(/\s+/g, '');
+                            if (r === 'industry_pro') return '@' + (userProfile?.console_handle || userProfile?.screen_name || 'pro_user').replace(/^@+/, '').replace(/\s+/g, '');
+                            if (r === 'fan_only') return '@' + (userProfile?.console_handle || userProfile?.screen_name || 'fan_only').replace(/^@+/, '').replace(/\s+/g, '');
+                            if (r === 'promoter') return '@' + ((userProfile as any)?.promoter_handle || 'promoter_pro').replace(/^@+/, '');
+                            if (r === 'creative') return '@' + ((userProfile as any)?.creative_handle || 'creative_pro').replace(/^@+/, '');
+                            if (r === 'label') return '@' + (userProfile?.label_url_slug || 'label_pro').replace(/^@+/, '');
+                            return '@' + (activeBand?.name || userProfile?.bandName || 'band_core').replace(/^@+/, '').replace(/\s+/g, '');
                           })()}
                         </p>
                       </div>

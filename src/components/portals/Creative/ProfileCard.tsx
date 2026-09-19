@@ -764,8 +764,12 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
       country: bData.country || baseTarget.country,
       homebase: bData.homebase || formatLocationDisplay(bData) || baseTarget.homebase,
       bio: bData.bio || baseTarget.bio,
-      custom_slug: bData.custom_slug || baseTarget.custom_slug,
-      console_handle: bData.custom_slug ? `@${bData.custom_slug.replace('@', '')}` : (baseTarget.console_handle || baseTarget.handle),
+      custom_slug: isArtistOrBand ? (bData.custom_slug || baseTarget.custom_slug) : (fetchedProfileData?.custom_slug || baseTarget.custom_slug),
+      console_handle: isCreativeTarget 
+        ? (creativeHandleVal || 'vortexgraphics') 
+        : ((baseTarget?.isYou || selectedUserProfile?.isYou)
+            ? '@bdmCEO'
+            : (isArtistOrBand && bData.custom_slug ? `@${bData.custom_slug.replace('@', '')}` : (baseTarget.console_handle || baseTarget.handle || '@bdmCEO'))),
       genre: bData.genre || baseTarget.genre,
       genre_tags: bData.genre_tags || (bData.genre ? [bData.genre] : baseTarget.genre_tags),
       lineup: bData.lineup || baseTarget.lineup,
@@ -1401,9 +1405,14 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                    if (hasBand) {
                     const name = String(rawBandName).trim();
                     const isVirulentExcision = name.toLowerCase() === 'virulent excision';
-                    const defaultVeLogo = 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/avatars/5403162d-1947-43aa-b5f6-38a1bd2a1b80/band-logo_1786739491396.jpg?t=1786739491396';
-                    const logo = lbd?.logo_url || lbd?.avatar_url || lbd?.avatar || matchingBandProfile?.logo_url || matchingBandProfile?.avatar_url || matchingBandProfile?.avatar || (isVirulentExcision ? defaultVeLogo : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=300');
-                    const subtitle = lbd?.genre || matchingBandProfile?.genre || (lbd?.micro_genres && Array.isArray(lbd.micro_genres) && lbd.micro_genres.length > 0 ? lbd.micro_genres.join(' • ') : (isVirulentExcision ? 'Brutal Death Metal' : 'Metal / Hardcore'));
+                    const veLogo = 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/avatars/5403162d-1947-43aa-b5f6-38a1bd2a1b80/band-logo_1786739491396.jpg?t=1786739491396';
+                    const veBanner = 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/bannersv2/5403162d-1947-43aa-b5f6-38a1bd2a1b80/band-cover_1787467851123.jpg?t=1787467851123';
+                    const logo = isVirulentExcision
+                      ? (lbd?.logo_url && !lbd.logo_url.includes('unsplash') ? lbd.logo_url : veLogo)
+                      : (lbd?.logo_url || lbd?.avatar_url || lbd?.avatar || matchingBandProfile?.logo_url || matchingBandProfile?.avatar_url || matchingBandProfile?.avatar || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=300');
+                    const subtitle = isVirulentExcision
+                      ? 'Brutal Death Metal • Slamming BDM • Death Metal'
+                      : (lbd?.genre || matchingBandProfile?.genre || (lbd?.micro_genres && Array.isArray(lbd.micro_genres) && lbd.micro_genres.length > 0 ? lbd.micro_genres.join(' • ') : 'Metal / Hardcore'));
 
                     entities.push({
                       key: 'band',
@@ -1419,8 +1428,8 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                         const targetBandProfile = isRealBandProfile ? matchingBandProfile : null;
 
                         const bandProfileObj = {
-                          ...(targetBandProfile || lbd || {}),
-                          id: targetBandProfile?.id || lbd?.id || targetBandId || `band_${effTarget?.id || Date.now()}`,
+                          ...(isVirulentExcision ? {} : (targetBandProfile || lbd || {})),
+                          id: isVirulentExcision ? 'cbddb810-259b-4230-9968-3d402dfdb872' : (targetBandProfile?.id || lbd?.id || targetBandId || `band_${effTarget?.id || Date.now()}`),
                           name,
                           band_name: name,
                           bandName: name,
@@ -1432,14 +1441,25 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                           isPersonal: false,
                           avatar: logo,
                           avatar_url: logo,
-                          banner: lbd?.cover_url || lbd?.banner_url || targetBandProfile?.banner_url || (isVirulentExcision ? 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/bannersv2/5403162d-1947-43aa-b5f6-38a1bd2a1b80/band-cover_1787467851123.jpg?t=1787467851123' : effTarget.banner_url),
-                          banner_url: lbd?.cover_url || lbd?.banner_url || targetBandProfile?.banner_url || (isVirulentExcision ? 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/bannersv2/5403162d-1947-43aa-b5f6-38a1bd2a1b80/band-cover_1787467851123.jpg?t=1787467851123' : effTarget.banner_url),
-                          cover_url: lbd?.cover_url || targetBandProfile?.cover_url,
+                          banner: isVirulentExcision ? veBanner : (lbd?.cover_url || lbd?.banner_url || targetBandProfile?.banner_url || effTarget.banner_url),
+                          banner_url: isVirulentExcision ? veBanner : (lbd?.cover_url || lbd?.banner_url || targetBandProfile?.banner_url || effTarget.banner_url),
+                          cover_url: isVirulentExcision ? veBanner : (lbd?.cover_url || targetBandProfile?.cover_url),
                           logo_url: logo,
-                          genre: subtitle,
-                          micro_genres: lbd?.micro_genres || targetBandProfile?.micro_genres || (isVirulentExcision ? ['Brutal Death Metal', 'Death Metal', 'Slamming BDM'] : []),
-                          homebase: lbd?.homebase || targetBandProfile?.homebase || effTarget.homebase || (isVirulentExcision ? 'Denison, TX' : 'Global Scene'),
-                          bio: lbd?.bio || lbd?.description || targetBandProfile?.bio || (isVirulentExcision ? 'V.E. is brutal death metal, fusing old-school NYDM weight with modern technical slam.' : `Official Nexus Artist Profile for ${name}.`)
+                          genre: isVirulentExcision ? 'Brutal Death Metal' : subtitle,
+                          micro_genres: isVirulentExcision ? ['Brutal Death Metal', 'Death Metal', 'Slamming BDM'] : (lbd?.micro_genres || targetBandProfile?.micro_genres || []),
+                          subgenres: isVirulentExcision ? ['Brutal Death Metal', 'Death Metal', 'Slamming BDM'] : undefined,
+                          genre_tags: isVirulentExcision ? ['Brutal Death Metal', 'Death Metal', 'Slamming BDM'] : undefined,
+                          homebase: isVirulentExcision ? 'Denison, TX, USA' : (lbd?.homebase || targetBandProfile?.homebase || effTarget.homebase || 'Global Scene'),
+                          city: isVirulentExcision ? 'Denison' : undefined,
+                          state_province: isVirulentExcision ? 'TX' : undefined,
+                          country: isVirulentExcision ? 'USA' : undefined,
+                          custom_slug: isVirulentExcision ? 'virulent-excision' : (lbd?.custom_slug || targetBandProfile?.custom_slug),
+                          handle: isVirulentExcision ? '@virulent-excision' : (lbd?.custom_slug ? `@${lbd.custom_slug}` : undefined),
+                          console_handle: isVirulentExcision ? '@virulent-excision' : undefined,
+                          record_label: isVirulentExcision ? 'Comatose Music' : undefined,
+                          label: isVirulentExcision ? 'Comatose Music' : undefined,
+                          metal_archives_url: isVirulentExcision ? 'https://www.metal-archives.com/bands/Virulent_Excision/3540459437' : undefined,
+                          bio: isVirulentExcision ? 'V.E. is brutal death metal, fusing old-school NYDM weight with modern technical slam. Driven by themes of biological reconfiguration and systemic depopulation, the project stands as an uncompromising, heavy-hitting soundtrack to humanity’s extinction..' : (lbd?.bio || lbd?.description || targetBandProfile?.bio || `Official Nexus Artist Profile for ${name}.`)
                         };
                         setSelectedUserProfile(bandProfileObj);
                         triggerNotification?.(`🎸 Opening Public Band Profile for ${name}...`);

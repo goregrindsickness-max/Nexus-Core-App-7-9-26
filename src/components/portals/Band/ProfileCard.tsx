@@ -7,7 +7,7 @@ import { formatLocationDisplay } from '../../../constants/location';
 import { ROSTER_CATALOGS } from '../../../data/socialFeedMockData';
 import { normalizeLoadedProfile, getSupabase, executeWithSchemaResilience, executeSanitizedProfileUpsert, upsertBandToDatabase, generateUUID } from '../../../supabase';
 import { getEmbedUrl, getCollectionsTrackDuration, extractUUID } from '../../../utils/socialFeedUtils';
-import { communityBandManager, CommunityBandRecord } from '../../../lib/communityBands';
+import { communityBandManager, CommunityBandRecord, isCommunityBandRecord } from '../../../lib/communityBands';
 import CommunityBandCuratorModal from '../../social/modals/CommunityBandCuratorModal';
 import BandClaimHandoverModal from '../../social/modals/BandClaimHandoverModal';
 import MarqueeText from '../../MarqueeText';
@@ -378,38 +378,59 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
 
           const isOwnerMiguel = isMiguelNameOrProfile(userProfile) || isMiguelNameOrProfile(base) || userProfile?.email === 'admin@nexus.com';
 
-          // If the profile has a specific band assigned, fetch that band
-          if (targetBandId && extractUUID(targetBandId)) {
+          // If the profile has a specific band assigned, fetch that band (unless it's a community archive in user workspace)
+          if (targetBandId && extractUUID(targetBandId) && (!isOwnerMiguel || !isCommunityBandRecord(targetBandId))) {
             try {
               const { data } = await supabase.from('bands').select('*').eq('id', extractUUID(targetBandId)).maybeSingle();
-              if (data) record = data;
+              if (data && (!isOwnerMiguel || (!isCommunityBandRecord(data.id) && !isCommunityBandRecord(data.name || data.band_name)))) {
+                record = data;
+              }
             } catch (_) {}
           }
 
           if (!record && validUUID) {
             try {
-              const { data } = await supabase.from('bands').select('*').eq('creator_id', validUUID).neq('verification_status', 'community_archive').order('created_at', { ascending: false }).limit(1).maybeSingle();
-              if (data && data.verification_status !== 'community_archive') record = data;
+              const { data } = await supabase.from('bands').select('*').eq('creator_id', validUUID).order('created_at', { ascending: false });
+              if (Array.isArray(data)) {
+                const userBand = data.find((b: any) => {
+                  const bId = String(b.id || '').trim();
+                  const bName = String(b.name || b.band_name || '').trim();
+                  if (bId === 'cbddb810-259b-4230-9968-3d402dfdb872' || bName.toLowerCase() === 'virulent excision') return true;
+                  return !isCommunityBandRecord(bId) && !isCommunityBandRecord(bName);
+                });
+                if (userBand) record = userBand;
+              }
             } catch (_) {}
           }
 
           if (!record && (targetBandName || targetName)) {
             const queryName = targetBandName || targetName;
-            try {
-              const { data } = await supabase.from('bands').select('*').ilike('band_name', `%${queryName.trim()}%`).maybeSingle();
-              if (data) record = data;
-            } catch (_) {}
+            if (!isCommunityBandRecord(queryName)) {
+              try {
+                const { data } = await supabase.from('bands').select('*').ilike('band_name', `%${queryName.trim()}%`).maybeSingle();
+                if (data && (!isOwnerMiguel || (!isCommunityBandRecord(data.id) && !isCommunityBandRecord(data.name || data.band_name)))) {
+                  record = data;
+                }
+              } catch (_) {}
+            }
           }
 
           if (!record && (base?.isYou || selectedUserProfile?.isYou || userProfile?.id === targetId)) {
             try {
               const localBandStr = localStorage.getItem('nexus_my_band_profile');
-              if (localBandStr) record = JSON.parse(localBandStr);
+              if (localBandStr) {
+                const parsed = JSON.parse(localBandStr);
+                if (parsed && (isCommunityBandRecord(parsed.id) || isCommunityBandRecord(parsed.name || parsed.band_name))) {
+                  localStorage.removeItem('nexus_my_band_profile');
+                } else {
+                  record = parsed;
+                }
+              }
             } catch (_) {}
           }
 
           // Virulent Excision is the founder's (Miguel's) band — only use as fallback for Miguel / Admin
-          if (!record && isOwnerMiguel && (base?.isYou || selectedUserProfile?.isYou || !targetId || targetId === 'my_band_id' || userProfile?.id === targetId)) {
+          if ((!record || isCommunityBandRecord(record.id) || isCommunityBandRecord(record.name || record.band_name)) && isOwnerMiguel && (base?.isYou || selectedUserProfile?.isYou || !targetId || targetId === 'my_band_id' || userProfile?.id === targetId)) {
             try {
               const { data } = await supabase.from('bands').select('*').eq('id', 'cbddb810-259b-4230-9968-3d402dfdb872').maybeSingle();
               if (data) record = data;
@@ -777,10 +798,10 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
       custom_slug: isBandTarget ? (bData.custom_slug || baseTarget.custom_slug) : (fetchedProfileData?.custom_slug || baseTarget.custom_slug),
       console_handle: isBandTarget && resolvedBandHandle 
         ? resolvedBandHandle 
-        : (bData.custom_slug ? `@${bData.custom_slug.replace('@', '')}` : resolvedPersonalHandle),
+        : resolvedPersonalHandle,
       handle: isBandTarget && resolvedBandHandle 
         ? resolvedBandHandle 
-        : (bData.custom_slug ? `@${bData.custom_slug.replace('@', '')}` : resolvedPersonalHandle),
+        : resolvedPersonalHandle,
       genre: bData.genre || baseTarget.genre,
       genre_tags: bData.genre_tags || (bData.genre ? [bData.genre] : baseTarget.genre_tags),
       micro_genres: bData.micro_genres || baseTarget.micro_genres || baseTarget.profileMicroGenres || [],
@@ -1786,11 +1807,13 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                   if (hasBand) {
                     const name = String(rawBandName).trim();
                     const isVirulentExcision = name.toLowerCase() === 'virulent excision';
+                    const veLogo = 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/avatars/5403162d-1947-43aa-b5f6-38a1bd2a1b80/band-logo_1786739491396.jpg?t=1786739491396';
+                    const veBanner = 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/bannersv2/5403162d-1947-43aa-b5f6-38a1bd2a1b80/band-cover_1787467851123.jpg?t=1787467851123';
                     const logo = isVirulentExcision
-                      ? 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=300'
+                      ? (lbd?.logo_url && !lbd.logo_url.includes('unsplash') ? lbd.logo_url : veLogo)
                       : (lbd?.logo_url || lbd?.avatar_url || lbd?.avatar || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=300');
                     const subtitle = isVirulentExcision
-                      ? 'Deathgrind • Technical Death Metal'
+                      ? 'Brutal Death Metal • Slamming BDM • Death Metal'
                       : (lbd?.genre || (lbd?.micro_genres && Array.isArray(lbd.micro_genres) && lbd.micro_genres.length > 0 ? lbd.micro_genres.join(' • ') : 'Metal / Hardcore'));
 
                     entities.push({
@@ -1808,7 +1831,7 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
 
                         const bandProfileObj = {
                           ...(isVirulentExcision ? {} : (targetBandProfile || lbd || {})),
-                          id: targetBandProfile?.id || lbd?.id || targetBandId || `band_${effTarget?.id || Date.now()}`,
+                          id: isVirulentExcision ? 'cbddb810-259b-4230-9968-3d402dfdb872' : (targetBandProfile?.id || lbd?.id || targetBandId || `band_${effTarget?.id || Date.now()}`),
                           name,
                           band_name: name,
                           bandName: name,
@@ -1820,14 +1843,25 @@ export const ProfileCard: React.FC<PublicProfileModalProps> = ({
                           isPersonal: false,
                           avatar: logo,
                           avatar_url: logo,
-                          banner: isVirulentExcision ? effTarget.banner_url : (lbd?.cover_url || lbd?.banner_url || targetBandProfile?.banner_url || effTarget.banner_url),
-                          banner_url: isVirulentExcision ? effTarget.banner_url : (lbd?.cover_url || lbd?.banner_url || targetBandProfile?.banner_url || effTarget.banner_url),
-                          cover_url: isVirulentExcision ? undefined : (lbd?.cover_url || targetBandProfile?.cover_url),
+                          banner: isVirulentExcision ? veBanner : (lbd?.cover_url || lbd?.banner_url || targetBandProfile?.banner_url || effTarget.banner_url),
+                          banner_url: isVirulentExcision ? veBanner : (lbd?.cover_url || lbd?.banner_url || targetBandProfile?.banner_url || effTarget.banner_url),
+                          cover_url: isVirulentExcision ? veBanner : (lbd?.cover_url || targetBandProfile?.cover_url),
                           logo_url: logo,
-                          genre: subtitle,
-                          micro_genres: isVirulentExcision ? ['Deathgrind', 'Technical Death Metal'] : (lbd?.micro_genres || targetBandProfile?.micro_genres || []),
-                          homebase: isVirulentExcision ? 'Chicago, IL' : (lbd?.homebase || targetBandProfile?.homebase || effTarget.homebase || 'Global Scene'),
-                          bio: isVirulentExcision ? 'Official Nexus Artist Profile for Virulent Excision.' : (lbd?.bio || lbd?.description || targetBandProfile?.bio || `Official Nexus Artist Profile for ${name}.`)
+                          genre: isVirulentExcision ? 'Brutal Death Metal' : subtitle,
+                          micro_genres: isVirulentExcision ? ['Brutal Death Metal', 'Death Metal', 'Slamming BDM'] : (lbd?.micro_genres || targetBandProfile?.micro_genres || []),
+                          subgenres: isVirulentExcision ? ['Brutal Death Metal', 'Death Metal', 'Slamming BDM'] : undefined,
+                          genre_tags: isVirulentExcision ? ['Brutal Death Metal', 'Death Metal', 'Slamming BDM'] : undefined,
+                          homebase: isVirulentExcision ? 'Denison, TX, USA' : (lbd?.homebase || targetBandProfile?.homebase || effTarget.homebase || 'Global Scene'),
+                          city: isVirulentExcision ? 'Denison' : undefined,
+                          state_province: isVirulentExcision ? 'TX' : undefined,
+                          country: isVirulentExcision ? 'USA' : undefined,
+                          custom_slug: isVirulentExcision ? 'virulent-excision' : (lbd?.custom_slug || targetBandProfile?.custom_slug),
+                          handle: isVirulentExcision ? '@virulent-excision' : (lbd?.custom_slug ? `@${lbd.custom_slug}` : undefined),
+                          console_handle: isVirulentExcision ? '@virulent-excision' : undefined,
+                          record_label: isVirulentExcision ? 'Comatose Music' : undefined,
+                          label: isVirulentExcision ? 'Comatose Music' : undefined,
+                          metal_archives_url: isVirulentExcision ? 'https://www.metal-archives.com/bands/Virulent_Excision/3540459437' : undefined,
+                          bio: isVirulentExcision ? 'V.E. is brutal death metal, fusing old-school NYDM weight with modern technical slam. Driven by themes of biological reconfiguration and systemic depopulation, the project stands as an uncompromising, heavy-hitting soundtrack to humanity’s extinction..' : (lbd?.bio || lbd?.description || targetBandProfile?.bio || `Official Nexus Artist Profile for ${name}.`)
                         };
                         setSelectedUserProfile(bandProfileObj);
                         triggerNotification?.(`🎸 Opening Public Band Profile for ${name}...`);

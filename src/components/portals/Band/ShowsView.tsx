@@ -40,7 +40,9 @@ import {
   MessageSquare,
   Send,
   Unlink,
-  Share2
+  Share2,
+  Key,
+  Settings
 } from 'lucide-react';
 
 export interface ShowWeatherWarning {
@@ -237,10 +239,20 @@ import PostShowReview from './PostShowReview';
 const concertBg = "https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/public-assets/High%20energy%20concert%202.png";
 const darkMapAsset = "https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/public-assets/Dark%20World%20Map.png";
 
-// Read Mapbox keys dynamically from client env settings conforming to standards
-const envs = (import.meta as any).env || {};
-const mapboxAccessToken = envs.VITE_MAPBOX_ACCESS_TOKEN;
-const mapboxStyleUrl = 'mapbox://styles/mapbox/dark-v11'; // Hardcoded default to fix broken custom style
+// Read Mapbox keys dynamically from client env settings or local storage fallback for APK compatibility
+export const getResolvedMapboxToken = (): string => {
+  const envs = (import.meta as any).env || {};
+  if (envs.VITE_MAPBOX_ACCESS_TOKEN && typeof envs.VITE_MAPBOX_ACCESS_TOKEN === 'string' && envs.VITE_MAPBOX_ACCESS_TOKEN.trim() !== '') {
+    return envs.VITE_MAPBOX_ACCESS_TOKEN.trim();
+  }
+  if (typeof window !== 'undefined') {
+    const local = localStorage.getItem('nexus_mapbox_token') || localStorage.getItem('VITE_MAPBOX_ACCESS_TOKEN') || localStorage.getItem('mapbox_token');
+    if (local && local.trim() !== '') return local.trim();
+    if ((window as any).__MAPBOX_TOKEN__) return (window as any).__MAPBOX_TOKEN__;
+  }
+  return '';
+};
+const mapboxStyleUrl = 'mapbox://styles/mapbox/dark-v11'; // High performance dark theme
 
 interface ShowsViewProps {
   shows: Show[];
@@ -526,7 +538,25 @@ export default function ShowsView({
   const [editingShow, setEditingShow] = useState<Show | null>(null);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isMapLocked, setIsMapLocked] = useState(true);
+  const [activeMapboxToken, setActiveMapboxToken] = useState<string>(getResolvedMapboxToken);
+  const [showTokenConfigModal, setShowTokenConfigModal] = useState<boolean>(false);
+  const [tokenInputVal, setTokenInputVal] = useState<string>('');
   const [mapError, setMapError] = useState(false);
+
+  const handleSaveMapboxToken = (newToken: string) => {
+    const trimmed = newToken.trim();
+    if (typeof window !== 'undefined') {
+      if (trimmed) {
+        localStorage.setItem('nexus_mapbox_token', trimmed);
+      } else {
+        localStorage.removeItem('nexus_mapbox_token');
+      }
+    }
+    setActiveMapboxToken(trimmed);
+    setMapError(false);
+    setShowTokenConfigModal(false);
+    triggerNotification(trimmed ? '🗺️ Mapbox Access Token saved & activated!' : '🗺️ Mapbox Token removed. Using fallback vector map.');
+  };
   const [editingFormShow, setEditingFormShow] = useState<Show | null>(null);
   const [formInitialType, setFormInitialType] = useState<'headliner' | 'support' | 'festival' | 'tour date' | 'one-off'>('headliner');
   const [transactionsShowId, setTransactionsShowId] = useState<string | null>(null);
@@ -699,52 +729,101 @@ export default function ShowsView({
 
   // Mapbox initialization logic
   useEffect(() => {
-    if (!mapboxAccessToken || !mapContainerRef.current || mapError) return;
+    if (!activeMapboxToken || !mapContainerRef.current || mapError) return;
+
+    // Verify WebGL availability before attempting canvas initialization
+    if (typeof mapboxgl.supported === 'function' && !mapboxgl.supported()) {
+      console.warn('Mapbox GL is not supported in this WebGL environment.');
+      setMapError(true);
+      return;
+    }
+
+    let isMounted = true;
+    let resizeObserver: ResizeObserver | null = null;
 
     try {
-      mapboxgl.accessToken = mapboxAccessToken;
+      mapboxgl.accessToken = activeMapboxToken;
       
+      // Mobile & Android WebView optimization: use Mercator projection which has universal GPU shader support
+      const isMobileDevice = typeof window !== 'undefined' && (
+        window.innerWidth < 768 || 
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      );
+
       const map = new mapboxgl.Map({
         container: mapContainerRef.current,
         style: mapboxStyleUrl,
         center: [-98.5795, 39.8283], // Centered globally/US-scale
         zoom: 3,
-        projection: { name: 'globe' }, // Immersive 3D globe layout
+        projection: isMobileDevice ? ({ name: 'mercator' } as any) : ({ name: 'globe' } as any),
         attributionControl: false
       });
 
       map.on('style.load', () => {
+        if (!isMounted) return;
         try {
-          map.setFog({
-            color: 'rgb(11, 13, 20)',
-            'high-color': 'rgb(24, 28, 38)',
-            'horizon-blend': 0.03,
-            'space-color': 'rgb(4, 4, 6)',
-            'star-intensity': 0.7
-          });
+          if (!isMobileDevice) {
+            map.setFog({
+              color: 'rgb(11, 13, 20)',
+              'high-color': 'rgb(24, 28, 38)',
+              'horizon-blend': 0.03,
+              'space-color': 'rgb(4, 4, 6)',
+              'star-intensity': 0.7
+            });
+          }
         } catch (_) {}
       });
 
+      // Resilient error listener: only trigger fallback if WebGL context was destroyed / lost, NOT on minor 404 tile/sprite errors
       map.on('error', (e) => {
-        console.error('Mapbox error event encountered:', e);
-        setMapError(true);
+        const errorMsg = String(e?.error?.message || e?.error || '');
+        console.warn('Mapbox event notification:', errorMsg, e);
+        if (
+          errorMsg.toLowerCase().includes('webgl') ||
+          errorMsg.toLowerCase().includes('context lost') ||
+          errorMsg.toLowerCase().includes('failed to initialize webgl')
+        ) {
+          console.error('Fatal Mapbox WebGL Context Error:', e);
+          if (isMounted) {
+            setMapError(true);
+          }
+        }
       });
 
       mapRef.current = map;
 
-      // Force a resize calculation to fix mobile WebViews sizing issues
+      // Handle dynamic resizing with ResizeObserver for slow Android WebView layout calculations
+      if (typeof ResizeObserver !== 'undefined' && mapContainerRef.current) {
+        resizeObserver = new ResizeObserver(() => {
+          if (mapRef.current) {
+            mapRef.current.resize();
+          }
+        });
+        resizeObserver.observe(mapContainerRef.current);
+      }
+
+      // Force resize calculation on map load
       map.on('load', () => {
-        map.resize();
+        if (isMounted) {
+          map.resize();
+        }
       });
 
-      // Fallback timeout for mobile rendering layout passes
-      setTimeout(() => {
-        map.resize();
-      }, 250);
+      // Progressive fallback timeouts for mobile rendering layout passes
+      const t1 = setTimeout(() => { if (isMounted && mapRef.current) mapRef.current.resize(); }, 150);
+      const t2 = setTimeout(() => { if (isMounted && mapRef.current) mapRef.current.resize(); }, 500);
+      const t3 = setTimeout(() => { if (isMounted && mapRef.current) mapRef.current.resize(); }, 1200);
 
       addLog('Initialized Mapbox Interactive Tour Hub.');
 
       return () => {
+        isMounted = false;
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+        if (resizeObserver) {
+          resizeObserver.disconnect();
+        }
         try {
           map.remove();
         } catch (_) {}
@@ -754,7 +833,7 @@ export default function ShowsView({
       console.error('Failed to initialize mapbox canvas:', err);
       setMapError(true);
     }
-  }, [mapboxAccessToken, mapboxStyleUrl, mapError]);
+  }, [activeMapboxToken, mapboxStyleUrl, mapError]);
 
   // Marker and route updating effect
   useEffect(() => {
@@ -1357,7 +1436,7 @@ export default function ShowsView({
           <div className="absolute inset-0 z-10 bg-transparent" />
         )}
 
-        {mapboxAccessToken && !mapError ? (
+        {activeMapboxToken && !mapError ? (
           // Active Mapbox viewport container
           <div 
             ref={mapContainerRef} 
@@ -1474,14 +1553,33 @@ export default function ShowsView({
         
         {/* Title Tag overlay */}
         <div className="absolute top-2 left-2 md:top-4 md:left-4 z-20 bg-black/75 backdrop-blur-md border border-zinc-800 rounded-lg p-2 md:p-2.5 max-w-[200px] md:max-w-[240px]">
-          <span className="text-[9px] font-mono uppercase text-[#00ffcc] tracking-wider block font-black">{bandName || "Void Walkers"} Tour '26</span>
-          <h3 className="text-xs font-semibold tracking-wide text-[#ffffff] font-display mt-0.5">
-            Interactive Mapbox
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[9px] font-mono uppercase text-[#00ffcc] tracking-wider block font-black truncate">{bandName || "Void Walkers"} Tour '26</span>
+            <button
+              onClick={() => {
+                setTokenInputVal(activeMapboxToken);
+                setShowTokenConfigModal(true);
+              }}
+              title="Configure Mapbox Token"
+              className="text-zinc-400 hover:text-[#00ffcc] p-0.5 rounded hover:bg-zinc-800 transition-colors shrink-0"
+            >
+              <Key className="w-3 h-3" />
+            </button>
+          </div>
+          <h3 className="text-xs font-semibold tracking-wide text-[#ffffff] font-display mt-0.5 flex items-center justify-between">
+            <span>Interactive Mapbox</span>
+            {activeMapboxToken && !mapError && (
+              <span className="text-[7.5px] font-mono text-emerald-400 bg-emerald-950/60 px-1 py-0.2 rounded border border-emerald-800">LIVE</span>
+            )}
           </h3>
           <p className="text-[8px] font-mono text-zinc-400 mt-1 hidden sm:block">
-            {mapboxAccessToken 
+            {activeMapboxToken 
               ? `Displaying ${shows.length} global stops with live Fly-to zoom control!`
-              : "To enable the full Zoomable Interactive Mapbox map, configure the VITE_MAPBOX_ACCESS_TOKEN secret."
+              : (
+                <span className="cursor-pointer hover:underline text-[#00ffcc]" onClick={() => { setTokenInputVal(activeMapboxToken); setShowTokenConfigModal(true); }}>
+                  Click to configure Mapbox Token for interactive 3D map.
+                </span>
+              )
             }
           </p>
 
@@ -1940,7 +2038,7 @@ export default function ShowsView({
             <div className="absolute inset-0 z-10 bg-transparent" />
           )}
 
-          {mapboxAccessToken && !mapError ? (
+          {activeMapboxToken && !mapError ? (
             // Active Mapbox viewport container
             <div 
               ref={mapContainerRef} 
@@ -2057,14 +2155,33 @@ export default function ShowsView({
           
           {/* Title Tag overlay */}
           <div className="absolute top-2 left-2 md:top-4 md:left-4 z-20 bg-black/75 backdrop-blur-md border border-zinc-800 rounded-lg p-2 md:p-2.5 max-w-[200px] md:max-w-[240px]">
-            <span className="text-[9px] font-mono uppercase text-[#00ffcc] tracking-wider block font-black">{bandName || "Void Walkers"} Tour '26</span>
-            <h3 className="text-xs font-semibold tracking-wide text-[#ffffff] font-display mt-0.5">
-              Interactive Mapbox
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[9px] font-mono uppercase text-[#00ffcc] tracking-wider block font-black truncate">{bandName || "Void Walkers"} Tour '26</span>
+              <button
+                onClick={() => {
+                  setTokenInputVal(activeMapboxToken);
+                  setShowTokenConfigModal(true);
+                }}
+                title="Configure Mapbox Token"
+                className="text-zinc-400 hover:text-[#00ffcc] p-0.5 rounded hover:bg-zinc-800 transition-colors shrink-0"
+              >
+                <Key className="w-3 h-3" />
+              </button>
+            </div>
+            <h3 className="text-xs font-semibold tracking-wide text-[#ffffff] font-display mt-0.5 flex items-center justify-between">
+              <span>Interactive Mapbox</span>
+              {activeMapboxToken && !mapError && (
+                <span className="text-[7.5px] font-mono text-emerald-400 bg-emerald-950/60 px-1 py-0.2 rounded border border-emerald-800">LIVE</span>
+              )}
             </h3>
             <p className="text-[8px] font-mono text-zinc-400 mt-1 hidden sm:block">
-              {mapboxAccessToken 
+              {activeMapboxToken 
                 ? `Displaying ${shows.length} global stops with live Fly-to zoom control!`
-                : "To enable the full Zoomable Interactive Mapbox map, configure the VITE_MAPBOX_ACCESS_TOKEN secret."
+                : (
+                  <span className="cursor-pointer hover:underline text-[#00ffcc]" onClick={() => { setTokenInputVal(activeMapboxToken); setShowTokenConfigModal(true); }}>
+                    Click to configure Mapbox Token for interactive 3D map.
+                  </span>
+                )
               }
             </p>
 
@@ -3230,6 +3347,68 @@ export default function ShowsView({
                   </div>
                 ));
               })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTokenConfigModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#0e1118] border border-zinc-700 rounded-xl p-5 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Key className="w-4 h-4 text-[#00ffcc]" />
+                <h3 className="font-display text-white text-sm font-bold tracking-wide">Mapbox Token Configuration</h3>
+              </div>
+              <button 
+                onClick={() => setShowTokenConfigModal(false)}
+                className="text-zinc-400 hover:text-white p-1 rounded hover:bg-zinc-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              Enter your Mapbox public access token (<code className="text-[#00ffcc] font-mono text-[11px]">pk.eyJ...</code>) to activate high-performance live 3D routing & fly-to navigation on this device or APK installation.
+            </p>
+
+            <div>
+              <label className="block text-[10px] font-mono uppercase text-zinc-400 mb-1 font-bold">Public Access Token</label>
+              <input
+                type="text"
+                value={tokenInputVal}
+                onChange={(e) => setTokenInputVal(e.target.value)}
+                placeholder="pk.eyJ1..."
+                className="w-full bg-[#161a24] border border-zinc-700 rounded-lg px-3 py-2 text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-[#00ffcc]"
+              />
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              {activeMapboxToken ? (
+                <button
+                  type="button"
+                  onClick={() => handleSaveMapboxToken('')}
+                  className="text-[11px] text-red-400 hover:text-red-300 font-mono transition-colors underline cursor-pointer"
+                >
+                  Clear Token
+                </button>
+              ) : <div />}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowTokenConfigModal(false)}
+                  className="px-3 py-1.5 rounded-lg border border-zinc-700 text-xs text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSaveMapboxToken(tokenInputVal)}
+                  className="px-4 py-1.5 rounded-lg bg-[#00ffcc] text-black font-bold text-xs hover:bg-[#00ffcc]/80 transition-colors cursor-pointer shadow-md shadow-[#00ffcc]/20"
+                >
+                  Save & Activate
+                </button>
+              </div>
             </div>
           </div>
         </div>

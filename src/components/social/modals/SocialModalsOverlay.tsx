@@ -377,6 +377,8 @@ export const SocialModalsOverlay: React.FC<SocialModalsOverlayProps> = (props) =
         setEventDescription={props.setEventDescription}
         eventCost={props.eventCost}
         setEventCost={props.setEventCost}
+        eventTicketUrl={props.eventTicketUrl}
+        setEventTicketUrl={props.setEventTicketUrl}
         triggerNotification={props.triggerNotification}
       />
 

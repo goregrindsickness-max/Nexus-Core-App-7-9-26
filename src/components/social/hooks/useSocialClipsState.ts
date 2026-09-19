@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getSupabase } from '../../../supabase';
+import { reviveClipsArray, clipsMediaStore } from '../utils/clipsPersistenceService';
 
 export interface UseSocialClipsStateParams {
   triggerNotification?: (msg: string) => void;
@@ -90,8 +91,27 @@ export function useSocialClipsState({ triggerNotification }: UseSocialClipsState
     }
   };
 
-  // Load clips from Supabase database tables on mount
+  // Load and revive clips from Supabase and IndexedDB on mount
   useEffect(() => {
+    let isMounted = true;
+
+    // Initial revival of cached local clips
+    const initLocalClips = async () => {
+      try {
+        const saved = localStorage.getItem('nexus_saved_clips');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const revived = await reviveClipsArray(parsed);
+            if (isMounted) {
+              setClips(revived);
+            }
+          }
+        }
+      } catch (_) {}
+    };
+    initLocalClips();
+
     const fetchClips = async () => {
       const supabaseClient = getSupabase();
       if (!supabaseClient) return;
@@ -178,7 +198,7 @@ export function useSocialClipsState({ triggerNotification }: UseSocialClipsState
               comments: clip.comments_count || clip.comments || 0,
               shares: clip.shares_count || clip.shares || 0,
               reposts: 0,
-              views: clip.views_count || clip.views || 100,
+              views: clip.views_count || clip.views || 0,
               audio: songTitle ? `${bandName} - ${songTitle}` : `Original Audio - ${creatorName}`,
               songTitle: songTitle,
               bandName: bandName,
@@ -188,21 +208,30 @@ export function useSocialClipsState({ triggerNotification }: UseSocialClipsState
             };
           });
 
-          setClips(prev => {
-            const dbIds = new Set(mappedClips.map(c => c.id));
-            const localOnly = prev.filter(c => !dbIds.has(c.id));
-            const merged = [...mappedClips, ...localOnly];
-            try {
-              localStorage.setItem('nexus_saved_clips', JSON.stringify(merged));
-            } catch (_) {}
-            return merged;
-          });
+          // Revive all video URLs ensuring IndexedDB binaries and valid sources
+          const revivedMapped = await reviveClipsArray(mappedClips);
+
+          if (isMounted) {
+            setClips(prev => {
+              const dbIds = new Set(revivedMapped.map(c => c.id));
+              const localOnly = prev.filter(c => !dbIds.has(c.id));
+              const merged = [...revivedMapped, ...localOnly];
+              try {
+                localStorage.setItem('nexus_saved_clips', JSON.stringify(merged));
+              } catch (_) {}
+              return merged;
+            });
+          }
         }
       } catch (err) {
         console.error("Failed to fetch clips from Supabase:", err);
       }
     };
     fetchClips();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return {

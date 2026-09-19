@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Shield, Sparkles, ChevronDown, CheckCircle2, CloudOff, RefreshCcw, 
   Bell, Repeat, User, Plus, ArrowRight, Settings, X, Lock, Home, Radio,
-  Volume2, Layers, Wifi, Zap, Activity
+  Volume2, Layers, Wifi, Zap, Activity, Compass, Music, Briefcase
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { hasRegisteredWorkspace, normalizeRegisteredWorkspaces, Band, UserProfile } from '../../types';
@@ -79,9 +79,13 @@ export const NexusTopBar: React.FC<NexusTopBarProps> = ({
   const [tickerIndex, setTickerIndex] = useState(0);
   const unreadNotificationsCount = (notifications || []).filter((n: any) => !n.is_read).length;
 
+  const isTourManager = userProfile?.band_role_mode === 'tour_manager' || userProfile?.role?.toLowerCase() === 'tour manager';
+
   const tickerMessages = [
     `⚡ NEXUS CORE: Live Sync Gateway Active [${isOnline ? 'ONLINE' : 'OFFLINE FAILOVER'}]`,
-    `🎸 ARTIST: ${activeBand?.name || 'Artist Workspace'} • LEVEL ${activeClearanceLevel} ACCESS`,
+    isTourManager 
+      ? `🧭 TOUR MANAGER: ${activeBand?.name || 'Tour Operations'} • LEVEL ${activeClearanceLevel} ACCESS`
+      : `🎸 ARTIST: ${activeBand?.name || 'Artist Workspace'} • LEVEL ${activeClearanceLevel} ACCESS`,
     pendingSyncCount > 0 ? `⚠️ PENDING SYNC: [${pendingSyncCount}] Offline mutations in queue` : `✨ LEDGER: All tour records & sales synchronized`,
     `📡 SCENE RADAR: Underground heavy network broadcast connected`
   ];
@@ -301,7 +305,7 @@ export const NexusTopBar: React.FC<NexusTopBarProps> = ({
                           </span>
                         </h4>
                         <p className="text-[9px] text-zinc-400 font-mono uppercase truncate mt-0.5">
-                          {userProfile?.account_type === 'industry_pro' ? 'Professional' : userProfile?.account_type === 'fan_only' ? 'Fan' : (activeSimulatedMember?.role || userProfile?.role || 'Manager')} • LEVEL {activeClearanceLevel} CLEARANCE
+                          {userProfile?.account_type === 'industry_pro' ? 'Professional' : userProfile?.account_type === 'fan_only' ? 'Fan' : (userProfile?.band_role_mode === 'tour_manager' || userProfile?.role?.toLowerCase() === 'tour manager' ? 'Tour Manager & Booking Agent' : (activeSimulatedMember?.role || userProfile?.role || 'Vocals'))} • LEVEL {activeClearanceLevel} CLEARANCE
                         </p>
                       </div>
                     </div>
@@ -348,6 +352,88 @@ export const NexusTopBar: React.FC<NexusTopBarProps> = ({
                           </div>
                         </div>
                         
+                        {/* Switch to Tour Manager Mode / Switch to Band Member Mode Button */}
+                        {(() => {
+                          const isTourManagerMode = userProfile?.band_role_mode === 'tour_manager' || userProfile?.role?.toLowerCase() === 'tour manager';
+                          
+                          if (isTourManagerMode) {
+                            return (
+                              <div className="mt-2.5 pt-2 border-t border-zinc-800/80 space-y-1.5">
+                                <div className="flex items-center justify-between px-0.5">
+                                  <span className="text-[8px] font-mono font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                                    <Compass className="w-3 h-3 text-amber-400 animate-spin" style={{ animationDuration: '10s' }} />
+                                    Identity: Tour Manager
+                                  </span>
+                                  <span className="text-[7.5px] font-mono px-1.5 py-0.5 bg-amber-500/15 text-amber-300 border border-amber-500/30 rounded font-bold uppercase tracking-wider">
+                                    TM MODE ACTIVE
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const prevRole = userProfile?.previous_band_role || 'Vocals';
+                                    const updated: UserProfile = {
+                                      ...userProfile!,
+                                      band_role_mode: 'musician',
+                                      role: prevRole,
+                                    };
+                                    if (setUserProfile) setUserProfile(updated);
+                                    try {
+                                      localStorage.setItem('nexus_core_user_profile', JSON.stringify(updated));
+                                      window.dispatchEvent(new CustomEvent('nexus_core_user_profile_updated', { detail: updated }));
+                                    } catch {}
+                                    triggerNotification?.(`🎸 Switched to Band Member (${prevRole}) Mode for ${activeBand.name}.`);
+                                  }}
+                                  className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-zinc-800/80 hover:bg-zinc-700/80 border border-zinc-700 hover:border-zinc-500 text-zinc-200 hover:text-white rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider transition-all cursor-pointer shadow-sm active:scale-95"
+                                  title="Switch identity back to Artist / Band Member mode"
+                                >
+                                  <Music className="w-3 h-3 text-emerald-400" />
+                                  <span>Switch to Artist / Member Mode</span>
+                                </button>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div className="mt-2.5 pt-2 border-t border-zinc-800/80 space-y-1.5">
+                              <div className="flex items-center justify-between px-0.5">
+                                <span className="text-[8px] font-mono font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                                  <Music className="w-3 h-3 text-emerald-400" />
+                                  Identity: {userProfile?.role || 'Vocals'}
+                                </span>
+                                <span className="text-[7.5px] font-mono px-1.5 py-0.5 bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 rounded font-bold uppercase tracking-wider">
+                                  BAND MEMBER
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const currentRole = userProfile?.role || 'Vocals';
+                                  const updated: UserProfile = {
+                                    ...userProfile!,
+                                    band_role_mode: 'tour_manager',
+                                    previous_band_role: currentRole !== 'Tour Manager' ? currentRole : (userProfile?.previous_band_role || 'Vocals'),
+                                    role: 'Tour Manager',
+                                  };
+                                  if (setUserProfile) setUserProfile(updated);
+                                  try {
+                                    localStorage.setItem('nexus_core_user_profile', JSON.stringify(updated));
+                                    window.dispatchEvent(new CustomEvent('nexus_core_user_profile_updated', { detail: updated }));
+                                  } catch {}
+                                  setActiveTab('home-v2');
+                                  if (setDashboardV2ActiveNav) setDashboardV2ActiveNav('EVENTS');
+                                  triggerNotification?.(`🧭 Switched to Tour Manager & Booking Agent Mode for ${activeBand.name}. Executive tour suite active.`);
+                                }}
+                                className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-gradient-to-r from-amber-500/20 via-amber-500/15 to-amber-600/20 hover:from-amber-500/30 hover:to-amber-600/30 border border-amber-500/40 hover:border-amber-400 text-amber-300 hover:text-white rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider transition-all cursor-pointer shadow-sm active:scale-95"
+                                title="Switch to Tour Manager & Booking Agent executive identity"
+                              >
+                                <Compass className="w-3 h-3 text-amber-400" />
+                                <span>Switch to Tour Manager Mode</span>
+                              </button>
+                            </div>
+                          );
+                        })()}
+
                         {/* Add Another Band/Artist Button */}
                         {(() => {
                           const currentLimit = 

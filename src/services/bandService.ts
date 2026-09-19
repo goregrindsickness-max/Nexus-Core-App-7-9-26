@@ -1,5 +1,6 @@
 import { getSupabase } from './clientService';
 import { ensureUUID, generateUUID, executeWithSchemaResilience } from './schemaResilienceService';
+import { isCommunityBandRecord } from '../lib/seedBandsData';
 
 export const PRIMARY_GENRE_KEYWORDS = new Set([
   'extreme metal',
@@ -119,6 +120,14 @@ export const VALID_BAND_COLUMNS = new Set([
   'featured_video_track_name',
   'verification_status',
   'is_verified',
+  'is_managed_client',
+  'management_role',
+  'management_commission_pct',
+  'management_day_rate',
+  'executive_contact_name',
+  'executive_contact_email',
+  'executive_contact_phone',
+  'client_roster_notes',
 ]);
 
 export function sanitizeBandPayload(rawPayload: any): Record<string, any> {
@@ -783,7 +792,6 @@ export const fetchUserBands = async (userId: string) => {
       .from('bands')
       .select('*')
       .or(`creator_id.eq.${userId},owner_id.eq.${userId}`)
-      .neq('verification_status', 'community_archive')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -791,7 +799,20 @@ export const fetchUserBands = async (userId: string) => {
       return [];
     }
 
-    return mapBandData(data || []);
+    // Filter out community archives so they never pollute the user's active band workspace
+    const validUserBands = (data || []).filter((b: any) => {
+      const bId = String(b.id || '').trim();
+      const bName = String(b.name || b.band_name || '').trim();
+      if (bId === 'cbddb810-259b-4230-9968-3d402dfdb872' || bName.toLowerCase() === 'virulent excision') {
+        return true;
+      }
+      if (isCommunityBandRecord(bId) || isCommunityBandRecord(bName)) {
+        return false;
+      }
+      return true;
+    });
+
+    return mapBandData(validUserBands);
   } catch (err: any) {
     console.warn('Notice fetching bands exception:', err?.message || err);
     return [];

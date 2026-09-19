@@ -223,8 +223,10 @@ export async function uploadBase64ToStorage(
     let primaryBucket = 'community-bands';
     if (cleanRequested === 'clips' || cleanRequested.includes('clip') || cleanToken.includes('clip')) {
       primaryBucket = 'clips';
+    } else if (cleanRequested === 'shop-merch' || cleanRequested === 'shop_merch' || cleanToken.includes('shop') || cleanToken.includes('classified')) {
+      primaryBucket = 'shop-merch';
     } else if (cleanRequested === 'inventory-items' || cleanRequested.includes('inventory') || cleanRequested.includes('merch') || cleanToken.includes('inventory') || cleanToken.includes('merch')) {
-      primaryBucket = 'inventory-items';
+      primaryBucket = 'shop-merch';
     } else if (cleanRequested.includes('audio') || cleanRequested.includes('track') || cleanRequested.includes('music')) {
       primaryBucket = 'audio-vault';
     } else if (cleanRequested.includes('photo') || cleanRequested.includes('gallery') || cleanRequested.includes('pit')) {
@@ -264,8 +266,9 @@ export async function uploadBase64ToStorage(
       new Set(
         [
           primaryBucket,
-          'clips',
+          'shop-merch',
           'inventory-items',
+          'clips',
           'avatars',
           'bannersv2',
           'community-bands',

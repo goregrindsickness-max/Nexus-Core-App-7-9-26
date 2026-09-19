@@ -3,8 +3,10 @@ import type { FeedItem } from '../../../data/socialFeedMockData';
 import { mockFeed } from '../../../data/socialFeedMockData';
 import { getSupabase, uploadBase64ToStorage, createShopMerchItem } from '../../../supabase';
 import { isAudioUrl, extractUUID } from '../../../utils/socialFeedUtils';
+import { registerCommunityEvent } from '../../../utils/communityEventUtils';
 import { syncPostToSupabase } from '../utils/postSyncUtils';
 import { resolveActivePersona } from '../utils/personaResolution';
+import { savePostReaction } from '../utils/reactionStore';
 
 export function getYouTubeId(url: string): string {
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -330,54 +332,55 @@ export function useSocialFeedState({
     const userReacts = targetPost?.user_reactions || {};
     const wasActive = Boolean(userReacts[reactionKey] || (reactionKey === 'likes' && targetPost?.user_liked));
 
+    const rx = targetPost?.reactions;
+    const currObj: any =
+      typeof rx === 'object' && rx !== null && !Array.isArray(rx)
+        ? { ...rx }
+        : Array.isArray(rx)
+        ? rx.reduce(
+            (acc: any, r: any) => {
+              const mapped = keyMap[r.type] || r.type;
+              if (acc[mapped] !== undefined) acc[mapped] += r.count || 1;
+              return acc;
+            },
+            { likes: 0, horns: 0, hype: 0, brutal: 0, respect: 0, crushed: 0 }
+          )
+        : { likes: 0, horns: 0, hype: 0, brutal: 0, respect: 0, crushed: 0 };
+
+    const fullCurr = {
+      likes: Number(currObj.likes || currObj.thumbs || currObj.heart || 0),
+      horns: Number(currObj.horns || 0),
+      hype: Number(currObj.hype || currObj.flame || 0),
+      brutal: Number(currObj.brutal || currObj.heavy || 0),
+      respect: Number(currObj.respect || 0),
+      crushed: Number(currObj.crushed || 0),
+    };
+
+    const nextUserReacts = { ...userReacts };
+
+    if (!wasActive) {
+      Object.keys(nextUserReacts).forEach((k) => {
+        if (k !== reactionKey && nextUserReacts[k]) {
+          nextUserReacts[k] = false;
+          const prevTargetKey = k as 'likes' | 'horns' | 'hype' | 'brutal' | 'respect' | 'crushed';
+          if (fullCurr[prevTargetKey] > 0) {
+            fullCurr[prevTargetKey] -= 1;
+          }
+        }
+      });
+      nextUserReacts[reactionKey] = true;
+      fullCurr[reactionKey as keyof typeof fullCurr] += 1;
+    } else {
+      nextUserReacts[reactionKey] = false;
+      if (fullCurr[reactionKey as keyof typeof fullCurr] > 0) {
+        fullCurr[reactionKey as keyof typeof fullCurr] -= 1;
+      }
+    }
+
+    // 1. Optimistically update local feed state
     setFeed((prev) =>
       prev.map((post) => {
         if (post.id === postId) {
-          const rx = post.reactions;
-          const currObj: any =
-            typeof rx === 'object' && rx !== null && !Array.isArray(rx)
-              ? { ...rx }
-              : Array.isArray(rx)
-              ? rx.reduce(
-                  (acc: any, r: any) => {
-                    const mapped = keyMap[r.type] || r.type;
-                    if (acc[mapped] !== undefined) acc[mapped] += r.count || 1;
-                    return acc;
-                  },
-                  { likes: 0, horns: 0, hype: 0, brutal: 0, respect: 0, crushed: 0 }
-                )
-              : { likes: 0, horns: 0, hype: 0, brutal: 0, respect: 0, crushed: 0 };
-
-          const fullCurr = {
-            likes: Number(currObj.likes || currObj.thumbs || currObj.heart || 0),
-            horns: Number(currObj.horns || 0),
-            hype: Number(currObj.hype || currObj.flame || 0),
-            brutal: Number(currObj.brutal || currObj.heavy || 0),
-            respect: Number(currObj.respect || 0),
-            crushed: Number(currObj.crushed || 0),
-          };
-
-          const nextUserReacts = { ...userReacts };
-
-          if (!wasActive) {
-            Object.keys(nextUserReacts).forEach((k) => {
-              if (k !== reactionKey && nextUserReacts[k]) {
-                nextUserReacts[k] = false;
-                const prevTargetKey = k as 'likes' | 'horns' | 'hype' | 'brutal' | 'respect' | 'crushed';
-                if (fullCurr[prevTargetKey] > 0) {
-                  fullCurr[prevTargetKey] -= 1;
-                }
-              }
-            });
-            nextUserReacts[reactionKey] = true;
-            fullCurr[reactionKey as keyof typeof fullCurr] += 1;
-          } else {
-            nextUserReacts[reactionKey] = false;
-            if (fullCurr[reactionKey as keyof typeof fullCurr] > 0) {
-              fullCurr[reactionKey as keyof typeof fullCurr] -= 1;
-            }
-          }
-
           return {
             ...post,
             reactions: fullCurr,
@@ -390,56 +393,103 @@ export function useSocialFeedState({
       })
     );
 
+    // 2. Persist locally to reactionStore (localStorage + IndexedDB) immediately
+    let activeUserId = userProfile?.id;
+    if (!activeUserId && typeof window !== 'undefined') {
+      activeUserId = localStorage.getItem('nexus_active_profile_id') || localStorage.getItem('nexus_user_profile_id') || 'guest';
+    }
+    savePostReaction(postId, fullCurr, nextUserReacts, activeUserId);
+
+    // 3. Persist globally to Supabase
     const supabase = getSupabase();
     if (supabase) {
       try {
-        let activeUserId = userProfile?.id;
-        if (!activeUserId) {
+        if (!activeUserId || activeUserId === 'guest') {
           const {
             data: { session },
           } = await supabase.auth.getSession();
-          activeUserId = session?.user?.id;
-        }
-        if (!activeUserId) {
-          activeUserId = localStorage.getItem('nexus_active_profile_id') || localStorage.getItem('nexus_user_profile_id') || 'guest';
+          if (session?.user?.id) {
+            activeUserId = session.user.id;
+          }
         }
 
-        await supabase.rpc('toggle_post_reaction', {
-          p_post_id: postId,
-          p_profile_id: activeUserId,
-          p_reaction_type: reactionKey,
-        });
+        // Direct update into nexus_posts
+        const { data: existingRows } = await supabase
+          .from('nexus_posts')
+          .select('id, data, reactions, likes_count')
+          .or(`id.eq.${postId},id.eq.nexus_post_${postId}`)
+          .limit(1);
 
+        if (existingRows && existingRows.length > 0) {
+          const row = existingRows[0];
+          const postObj = typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {});
+          await supabase.from('nexus_posts').update({
+            reactions: fullCurr,
+            likes_count: fullCurr.likes,
+            data: {
+              ...postObj,
+              reactions: fullCurr,
+              likes_count: fullCurr.likes,
+            },
+          }).eq('id', row.id);
+        } else if (targetPost) {
+          // If mock/seed post, upsert into nexus_posts so it is globally stored in Supabase
+          await supabase.from('nexus_posts').upsert([{
+            id: postId,
+            profile_id: (activeUserId && activeUserId !== 'guest') ? activeUserId : '00000000-0000-0000-0000-000000000000',
+            content: targetPost.content || (targetPost as any).text || (targetPost as any).message || ' ',
+            media_url: (targetPost as any).media_url || (targetPost as any).mediaUrl || targetPost.image || null,
+            reactions: fullCurr,
+            likes_count: fullCurr.likes,
+            data: {
+              ...targetPost,
+              reactions: fullCurr,
+              likes_count: fullCurr.likes,
+            },
+            created_at: targetPost.created_at || targetPost.timestamp || new Date().toISOString()
+          }], { onConflict: 'id' });
+        }
+
+        // Best effort call to toggle_post_reaction RPC
+        try {
+          await supabase.rpc('toggle_post_reaction', {
+            p_post_id: postId,
+            p_profile_id: activeUserId,
+            p_reaction_type: reactionKey,
+          });
+        } catch (_) {}
+
+        // 4. Notifications:
+        // When reacting to someone else's content, ONLY send notification to the author.
+        // The reacting user does NOT need a notification toast or notification inbox entry.
         if (!wasActive && targetPost) {
-          const actorName = userProfile?.name || userProfile?.console_handle || profileHandle || 'A user';
-          const postSnippet = (targetPost.content || (targetPost as any).message || (targetPost as any).text || 'transmission').substring(0, 50);
-          const targetUserId = (targetPost as any).authorId || (targetPost.author as any)?.email || targetPost.author?.name || 'author';
-          const targetEmail = (targetPost as any).authorEmail || (targetPost.author as any)?.email || (typeof targetPost.author === 'string' ? targetPost.author : undefined);
-          
-          // Target user ID for the notification receiver (must be a valid UUID)
-          const validReceiverUUID = (targetUserId && extractUUID(targetUserId)) || (userProfile?.id && extractUUID(userProfile.id)) || null;
+          const targetUserId = (targetPost as any).authorId || (targetPost.author as any)?.id || (targetPost.author as any)?.email;
+          const validReceiverUUID = (targetUserId && extractUUID(targetUserId)) || null;
 
-          const notifId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : extractUUID(postId) || '00000000-0000-0000-0000-000000000000';
-          const notifItem = {
-            id: notifId,
-            user_id: validReceiverUUID,
-            title: `🔥 NEW REACTION`,
-            message: `${actorName} reacted (${reactionKey.toUpperCase()}) to your transmission: "${postSnippet}"`,
-            content: `${actorName} reacted (${reactionKey.toUpperCase()}) to your transmission: "${postSnippet}"`,
-            category: 'REACTION',
-            highlight: 'New Reaction',
-            timeAgo: 'Just now',
-            timestamp: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-            read: false,
-            is_read: false,
-            type: 'post_reaction',
-            postId: postId,
-            linkTab: 'feed',
-          };
+          // Only notify author if they are a different user!
+          const isReactingToSomeoneElse = validReceiverUUID && validReceiverUUID !== activeUserId && validReceiverUUID !== userProfile?.id;
+          if (isReactingToSomeoneElse) {
+            const actorName = userProfile?.name || userProfile?.console_handle || profileHandle || 'A user';
+            const postSnippet = (targetPost.content || (targetPost as any).message || (targetPost as any).text || 'transmission').substring(0, 50);
+            const notifId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : (extractUUID(postId) || '00000000-0000-0000-0000-000000000000');
+            const notifItem = {
+              id: notifId,
+              user_id: validReceiverUUID,
+              title: `🔥 NEW REACTION`,
+              message: `${actorName} reacted (${reactionKey.toUpperCase()}) to your transmission: "${postSnippet}"`,
+              content: `${actorName} reacted (${reactionKey.toUpperCase()}) to your transmission: "${postSnippet}"`,
+              category: 'REACTION',
+              highlight: 'New Reaction',
+              timeAgo: 'Just now',
+              timestamp: new Date().toISOString(),
+              created_at: new Date().toISOString(),
+              read: false,
+              is_read: false,
+              type: 'post_reaction',
+              postId: postId,
+              linkTab: 'feed',
+            };
 
-          // 1. Direct row insert into nexus_notifications table with valid UUIDs
-          if (validReceiverUUID) {
             await supabase.from('nexus_notifications').insert([
               {
                 id: notifItem.id,
@@ -454,14 +504,9 @@ export function useSocialFeedState({
               },
             ]);
           }
-
-          if (setNotifications) {
-            setNotifications(prev => [notifItem, ...(prev || [])]);
-          }
-          triggerNotification?.(`Reacted with ${reactionKey.toUpperCase()}! Notification synced to Supabase.`);
         }
       } catch (e) {
-        console.warn('Notice: Syncing reaction via RPC notice:', e);
+        console.warn('Notice: Syncing reaction note:', e);
       }
     }
   };
@@ -694,15 +739,16 @@ export function useSocialFeedState({
         });
       }
 
-      const eventDataValue = eventTitle.trim()
-        ? {
-            id: `evt_${Date.now()}`,
+      // Deduplicated & Persistent Event Page Integration (Completely Optional)
+      let resolvedEventRecord: any = null;
+      if (eventTitle.trim()) {
+        try {
+          const registered = registerCommunityEvent({
             title: eventTitle.trim(),
             category: eventType || 'DIY Show',
             date: eventDate.trim() || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
             time: eventTime.trim() || '8:00 PM',
-            locationName: eventLocationName.trim() || 'DIY Venue Spot',
-            city: eventAddress.trim() ? eventAddress.trim().split(',')[0].trim() : (eventLocationName.trim() || undefined),
+            venue: eventLocationName.trim() || 'DIY Venue Spot',
             address: eventAddress.trim() || undefined,
             isSecretLocation: eventIsSecret,
             lineup: eventLineup ? eventLineup.split(',').map((s) => s.trim()).filter(Boolean) : [],
@@ -710,58 +756,51 @@ export function useSocialFeedState({
             description: eventDescription.trim() || undefined,
             cost: eventCost.trim() || 'Free / Donation',
             ticketUrl: eventTicketUrl.trim() || undefined,
-            rsvpsCount: 1,
-            attendees: [authorName],
+          }, authorName);
+
+          resolvedEventRecord = registered.event;
+          if (!registered.isNew && registered.matchedEvent) {
+            console.log(`[Scene Deduplication] Linked post to existing event page: ${registered.matchedEvent.name} (${registered.matchedEvent.id})`);
+          }
+        } catch (err) {
+          console.error('Error registering community event:', err);
+        }
+      }
+
+      const eventDataValue = resolvedEventRecord
+        ? {
+            id: resolvedEventRecord.id,
+            title: resolvedEventRecord.name,
+            category: resolvedEventRecord.category || eventType || 'DIY Show',
+            date: resolvedEventRecord.date,
+            time: resolvedEventRecord.time,
+            locationName: resolvedEventRecord.venue_name,
+            city: resolvedEventRecord.city || (resolvedEventRecord.venue_address?.includes(',') ? resolvedEventRecord.venue_address.split(',')[0].trim() : resolvedEventRecord.venue_name),
+            address: resolvedEventRecord.venue_address,
+            isSecretLocation: resolvedEventRecord.is_secret_location,
+            lineup: Array.isArray(resolvedEventRecord.lineup) ? resolvedEventRecord.lineup : [],
+            flyerUrl: resolvedEventRecord.flyer_url || eventFlyerUrl.trim() || finalImage || undefined,
+            description: resolvedEventRecord.description,
+            cost: resolvedEventRecord.price || resolvedEventRecord.cost || eventCost.trim(),
+            ticketUrl: resolvedEventRecord.external_ticket_url || resolvedEventRecord.ticketUrl || eventTicketUrl.trim() || undefined,
+            rsvpsCount: resolvedEventRecord.rsvps_count || 1,
+            attendees: resolvedEventRecord.attendees || [authorName],
           }
         : undefined;
 
-      const ticketDataValue = eventDataValue
+      const ticketDataValue = eventDataValue && (eventTicketUrl.trim() || eventDataValue.ticketUrl)
         ? {
             headliner: eventDataValue.title,
             venue: eventDataValue.locationName,
             date: eventDataValue.date,
-            priceRange: eventDataValue.cost,
-            ticketUrl: eventTicketUrl.trim() || undefined,
+            doorTime: eventDataValue.time || '8:00 PM',
+            priceRange: eventDataValue.cost || 'Free / Donation',
+            ticketUrl: eventDataValue.ticketUrl,
+            external_ticket_url: eventDataValue.ticketUrl,
             lineup: eventDataValue.lineup,
             city: eventDataValue.city || eventDataValue.locationName,
           }
         : undefined;
-
-      // Automatically register event in community shows database (creating live event page if new)
-      if (eventDataValue) {
-        try {
-          const storedCommunityEvents = JSON.parse(localStorage.getItem('nexus_community_events') || '[]');
-          const newEventRecord = {
-            id: eventDataValue.id,
-            name: eventDataValue.title,
-            headliner: eventDataValue.title,
-            date: eventDataValue.date,
-            time: eventDataValue.time,
-            venue_name: eventDataValue.locationName,
-            venue_address: eventDataValue.address || '',
-            city: eventDataValue.city || '',
-            state_province: eventAddress.includes(',') ? eventAddress.split(',')[1]?.trim() : '',
-            category: eventDataValue.category,
-            lineup: eventDataValue.lineup,
-            price: eventDataValue.cost,
-            external_ticket_url: eventTicketUrl.trim() || '',
-            flyer_url: eventDataValue.flyerUrl || '',
-            description: eventDataValue.description || '',
-            created_by: authorName,
-            created_at: new Date().toISOString(),
-          };
-          const existingIdx = storedCommunityEvents.findIndex((e: any) => e.name?.toLowerCase() === eventDataValue.title.toLowerCase());
-          if (existingIdx >= 0) {
-            storedCommunityEvents[existingIdx] = { ...storedCommunityEvents[existingIdx], ...newEventRecord };
-          } else {
-            storedCommunityEvents.unshift(newEventRecord);
-          }
-          localStorage.setItem('nexus_community_events', JSON.stringify(storedCommunityEvents));
-          window.dispatchEvent(new CustomEvent('nexus_community_events_updated', { detail: { event: newEventRecord } }));
-        } catch (err) {
-          console.error('Error saving community event record:', err);
-        }
-      }
 
       const postUuid = typeof crypto !== 'undefined' && crypto.randomUUID
         ? crypto.randomUUID()
@@ -866,6 +905,7 @@ export function useSocialFeedState({
       setEventFlyerUrl('');
       setEventDescription('');
       setEventCost('Free / Donation');
+      setEventTicketUrl('');
       setShowTapeInput(false);
       setShowMediaInput(false);
       setShowYoutubeInput(false);
@@ -1003,6 +1043,8 @@ export function useSocialFeedState({
     setEventDescription,
     eventCost,
     setEventCost,
+    eventTicketUrl,
+    setEventTicketUrl,
 
     // Filters
     shopCategory,

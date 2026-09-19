@@ -3,6 +3,7 @@ import { FeedItem } from '../../../data/socialFeedMockData';
 import { loadFeedCache, saveFeedCache, getDeletedPostIdsLocal, resolveWorkspaceEntityId } from '../utils/feedCacheUtils';
 import { getSupabase, subscribeToTable } from '../../../supabase';
 import { extractYouTubeId } from '../utils/postSyncUtils';
+import { mergePostWithReactions } from '../utils/reactionStore';
 
 interface UseFeedLocalCacheOptions {
   portalRole: string;
@@ -164,7 +165,7 @@ export function useFeedLocalCache({
                       ? postObj.images
                       : (resolvedMediaUrl ? [resolvedMediaUrl] : []);
 
-                    return {
+                    const parsedPostItem = {
                       ...postObj,
                       id: item.id || postObj.id,
                       timestamp: item.created_at || postObj.timestamp || postObj.created_at || new Date().toISOString(),
@@ -187,13 +188,50 @@ export function useFeedLocalCache({
                       author: author,
                       type: postObj.type || (postObj.tapeData ? 'tape_share' : postObj.songData ? 'song' : postObj.pollData ? 'poll' : postObj.merchData ? 'merch_drop' : 'post')
                     };
+                    return mergePostWithReactions(parsedPostItem, userProfile?.id);
                   } catch (err) {
                     console.warn("Failed to parse remote post JSON:", err);
                     return null;
                   }
                 }).filter(Boolean) as FeedItem[];
 
-                finalFeed = remoteFeed;
+                if (storedFeed && storedFeed.length > 0) {
+                  const remoteMap = new Map(remoteFeed.map(p => [p.id, p]));
+                  const merged: FeedItem[] = [];
+
+                  remoteFeed.forEach(rp => {
+                    const sp = storedFeed.find(s => s.id === rp.id);
+                    if (sp) {
+                      const combined = {
+                        ...rp,
+                        reactions: {
+                          likes: Math.max(rp.reactions?.likes || 0, sp.reactions?.likes || 0),
+                          horns: Math.max(rp.reactions?.horns || 0, sp.reactions?.horns || 0),
+                          hype: Math.max(rp.reactions?.hype || 0, sp.reactions?.hype || 0),
+                          brutal: Math.max(rp.reactions?.brutal || 0, sp.reactions?.brutal || 0),
+                          respect: Math.max(rp.reactions?.respect || 0, sp.reactions?.respect || 0),
+                          crushed: Math.max(rp.reactions?.crushed || 0, sp.reactions?.crushed || 0),
+                        },
+                        user_reactions: sp.user_reactions || rp.user_reactions,
+                        user_liked: sp.user_liked ?? rp.user_liked,
+                      };
+                      combined.likes_count = combined.reactions.likes;
+                      merged.push(mergePostWithReactions(combined, userProfile?.id));
+                    } else {
+                      merged.push(mergePostWithReactions(rp, userProfile?.id));
+                    }
+                  });
+
+                  storedFeed.forEach(sp => {
+                    if (!remoteMap.has(sp.id) && !deletedPosts.includes(sp.id)) {
+                      merged.push(mergePostWithReactions(sp, userProfile?.id));
+                    }
+                  });
+
+                  finalFeed = merged;
+                } else {
+                  finalFeed = remoteFeed.map(p => mergePostWithReactions(p, userProfile?.id));
+                }
 
                 // Query comments
                 try {
@@ -292,9 +330,13 @@ export function useFeedLocalCache({
 
         if (finalFeed.length < 10 && defaultFeed.length > 0) {
           const existingIds = new Set(finalFeed.map((item: any) => item.id));
-          const toAppend = defaultFeed.filter(item => !existingIds.has(item.id));
+          const toAppend = defaultFeed
+            .filter(item => !existingIds.has(item.id))
+            .map(item => mergePostWithReactions(item, userProfile?.id));
           finalFeed = [...finalFeed, ...toAppend];
         }
+
+        finalFeed = finalFeed.map(p => mergePostWithReactions(p, userProfile?.id));
 
         if (active) {
           _setFeed(finalFeed);
@@ -466,16 +508,20 @@ export function useFeedLocalCache({
 
             if (matchIdx !== -1) {
               const updated = [...nextPrev];
-              updated[matchIdx] = {
+              const mergedPost = mergePostWithReactions({
                 ...updated[matchIdx],
                 ...parsedPost,
                 id: parsedPost.id,
                 image: parsedPost.image || updated[matchIdx].image || updated[matchIdx].images?.[0],
-                images: (parsedPost.images && parsedPost.images.length > 0) ? parsedPost.images : (updated[matchIdx].images || (updated[matchIdx].image ? [updated[matchIdx].image] : []))
-              };
+                images: (parsedPost.images && parsedPost.images.length > 0) ? parsedPost.images : (updated[matchIdx].images || (updated[matchIdx].image ? [updated[matchIdx].image] : [])),
+                user_reactions: updated[matchIdx].user_reactions || parsedPost.user_reactions,
+                user_liked: updated[matchIdx].user_liked ?? parsedPost.user_liked,
+              }, userProfile?.id);
+              updated[matchIdx] = mergedPost;
               return updated;
             } else {
-              return [parsedPost, ...nextPrev].sort((a: any, b: any) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
+              const freshPost = mergePostWithReactions(parsedPost, userProfile?.id);
+              return [freshPost, ...nextPrev].sort((a: any, b: any) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
             }
           });
         } catch (e) { }
@@ -529,11 +575,36 @@ export function useFeedLocalCache({
     };
     window.addEventListener('nexus_post_deleted', handlePostDeletedSync as EventListener);
 
+    const handleReactionSync = (e: any) => {
+      if (!active) return;
+      const detail = e.detail;
+      if (!detail || !detail.postId) return;
+      _setFeed(prev => {
+        let matched = false;
+        const next = prev.map(p => {
+          if (p.id === detail.postId) {
+            matched = true;
+            return {
+              ...p,
+              reactions: detail.reactions,
+              likes_count: detail.likes_count,
+              user_liked: detail.user_liked,
+              user_reactions: detail.user_reactions,
+            };
+          }
+          return p;
+        });
+        return matched ? next : prev;
+      });
+    };
+    window.addEventListener('nexus_reaction_updated', handleReactionSync as EventListener);
+
     return () => {
       active = false;
       if (unsub1) unsub1();
       if (unsubComments) unsubComments();
       window.removeEventListener('nexus_post_deleted', handlePostDeletedSync as EventListener);
+      window.removeEventListener('nexus_reaction_updated', handleReactionSync as EventListener);
     };
   }, [userProfile?.id, setFeed]);
 

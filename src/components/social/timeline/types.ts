@@ -105,6 +105,8 @@ export interface FeedPost {
     date: string;
     doorTime: string;
     priceRange: string;
+    ticketUrl?: string;
+    external_ticket_url?: string;
   };
   merchData?: {
     name: string;

@@ -20,9 +20,17 @@ import {
   Info,
   Send,
   Eye,
-  RefreshCw
+  RefreshCw,
+  TrendingUp
 } from 'lucide-react';
 import { uploadClipVideoFile } from '../../supabase';
+import {
+  saveClipMediaBlob,
+  generateVideoThumbnail,
+  resolveClipVideoPlaybackUrl,
+  trackRealClipView,
+  calculateClipsDashboardStats
+} from './utils/clipsPersistenceService';
 
 interface ClipItem {
   id: any;
@@ -215,6 +223,15 @@ export const ClipsView: React.FC<ClipsViewProps> = ({
       }
 
       const clipId = `clip_${Date.now()}`;
+
+      let thumbUrl = '';
+      if (selectedClipFile) {
+        await saveClipMediaBlob(clipId, selectedClipFile);
+        try {
+          thumbUrl = await generateVideoThumbnail(selectedClipFile);
+        } catch (_) {}
+      }
+
       const newClipItem: ClipItem = {
         id: clipId,
         creator: userProfile?.name || userProfile?.username || 'Pro Creator',
@@ -223,6 +240,7 @@ export const ClipsView: React.FC<ClipsViewProps> = ({
         caption: newClipCaption || 'Check out my new reel clip!',
         title: newClipCaption || 'Live Clip',
         videoUrl: finalVideoUrl,
+        thumbnailUrl: thumbUrl,
         likes: 1,
         comments: 0,
         shares: 0,
@@ -350,6 +368,20 @@ export const ClipsView: React.FC<ClipsViewProps> = ({
                   loop
                   playsInline
                   controls
+                  onPlay={() => {
+                    trackRealClipView(clip.id, clip.views, (newViews) => {
+                      setClips(prev => prev.map(c => c.id === clip.id ? { ...c, views: newViews } : c));
+                    });
+                  }}
+                  onError={async (e) => {
+                    const el = e.currentTarget;
+                    const fallback = await resolveClipVideoPlaybackUrl(clip.id, clip.videoUrl);
+                    if (el.src !== fallback) {
+                      el.src = fallback;
+                      el.load();
+                      el.play().catch(() => {});
+                    }
+                  }}
                 />
               ) : (
                 <>
@@ -690,53 +722,56 @@ export const ClipsView: React.FC<ClipsViewProps> = ({
 
       {/* CLIPS ANALYTICS DASHBOARD MODAL */}
       <AnimatePresence>
-        {showClipsAnalyticsModal && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex justify-center items-center p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-[#121214] border border-emerald-900/40 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-[0_0_40px_rgba(52,211,153,0.1)]"
-            >
-              <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
-                <span className="text-xs font-black uppercase text-emerald-400 tracking-wider flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-emerald-400" /> Clips Performance & Engagement
-                </span>
-                <button onClick={() => setShowClipsAnalyticsModal(false)} className="text-zinc-500 hover:text-white">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+        {showClipsAnalyticsModal && (() => {
+          const stats = calculateClipsDashboardStats(clips, userProfile?.id);
+          return (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex justify-center items-center p-4">
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-[#121214] border border-emerald-900/40 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-[0_0_40px_rgba(52,211,153,0.1)]"
+              >
+                <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
+                  <span className="text-xs font-black uppercase text-emerald-400 tracking-wider flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-emerald-400" /> Clips Performance & Engagement
+                  </span>
+                  <button onClick={() => setShowClipsAnalyticsModal(false)} className="text-zinc-500 hover:text-white">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-zinc-950 border border-zinc-900 p-3 rounded-xl">
-                  <span className="text-[9px] font-mono text-zinc-500 uppercase">Total Reel Views</span>
-                  <p className="text-xl font-black text-white mt-1">13,420</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-zinc-950 border border-zinc-900 p-3 rounded-xl">
+                    <span className="text-[9px] font-mono text-zinc-500 uppercase">Total Reel Views</span>
+                    <p className="text-xl font-black text-white mt-1">{stats.totalViews.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-zinc-950 border border-zinc-900 p-3 rounded-xl">
+                    <span className="text-[9px] font-mono text-zinc-500 uppercase">Avg Engagement Rate</span>
+                    <p className="text-xl font-black text-emerald-400 mt-1">{stats.avgEngagementRate}</p>
+                  </div>
+                  <div className="bg-zinc-950 border border-zinc-900 p-3 rounded-xl">
+                    <span className="text-[9px] font-mono text-zinc-500 uppercase">Total Likes</span>
+                    <p className="text-xl font-black text-rose-400 mt-1">{stats.totalLikes.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-zinc-950 border border-zinc-900 p-3 rounded-xl">
+                    <span className="text-[9px] font-mono text-zinc-500 uppercase">Shares & Reposts</span>
+                    <p className="text-xl font-black text-cyan-400 mt-1">{stats.totalShares.toLocaleString()}</p>
+                  </div>
                 </div>
-                <div className="bg-zinc-950 border border-zinc-900 p-3 rounded-xl">
-                  <span className="text-[9px] font-mono text-zinc-500 uppercase">Avg Completion Rate</span>
-                  <p className="text-xl font-black text-emerald-400 mt-1">84.2%</p>
-                </div>
-                <div className="bg-zinc-950 border border-zinc-900 p-3 rounded-xl">
-                  <span className="text-[9px] font-mono text-zinc-500 uppercase">Total Likes</span>
-                  <p className="text-xl font-black text-rose-400 mt-1">2,400</p>
-                </div>
-                <div className="bg-zinc-950 border border-zinc-900 p-3 rounded-xl">
-                  <span className="text-[9px] font-mono text-zinc-500 uppercase">Shares & Reposts</span>
-                  <p className="text-xl font-black text-cyan-400 mt-1">395</p>
-                </div>
-              </div>
 
-              <div className="pt-2 flex justify-end">
-                <button
-                  onClick={() => setShowClipsAnalyticsModal(false)}
-                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-bold uppercase transition-colors"
-                >
-                  Close Dashboard
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
+                <div className="pt-2 flex justify-end">
+                  <button
+                    onClick={() => setShowClipsAnalyticsModal(false)}
+                    className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-bold uppercase transition-colors"
+                  >
+                    Close Dashboard
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          );
+        })()}
       </AnimatePresence>
 
       {/* ATTACH SONG / AUDIO SELECTION MODAL */}

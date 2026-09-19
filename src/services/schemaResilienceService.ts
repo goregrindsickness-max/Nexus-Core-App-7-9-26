@@ -112,7 +112,11 @@ export function sanitizeShowForDb(show: any): any {
     'revenue',
     'age',
     'show_name',
-    'show_date'
+    'show_date',
+    'is_managed_client_booking',
+    'tm_commission_rate',
+    'executive_contact_info',
+    'management_notes'
   ];
 
   const dbShow: any = {};

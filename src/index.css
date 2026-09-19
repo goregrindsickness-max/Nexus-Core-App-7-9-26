@@ -183,6 +183,16 @@ body {
 .mapboxgl-ctrl {
   display: none !important;
 }
+.mapboxgl-map {
+  width: 100% !important;
+  height: 100% !important;
+}
+.mapboxgl-canvas-container,
+.mapboxgl-canvas {
+  width: 100% !important;
+  height: 100% !important;
+  outline: none;
+}
 
 /* Hide scrollbars globally */
 html, body {

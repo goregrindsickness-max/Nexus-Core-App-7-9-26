@@ -17,7 +17,8 @@ import {
   Heart,
   Share2,
   ExternalLink,
-  Disc
+  Disc,
+  Sparkles
 } from 'lucide-react';
 import { RADIO_PLAYLISTS, FRONTEND_FALLBACK_PLAYLISTS } from '../../../data/socialFeedMockData';
 
@@ -29,6 +30,23 @@ export interface SceneRadioPlayerProps {
   traysHiddenOnMobile?: boolean;
   triggerNotification?: (msg: string) => void;
 }
+
+// Helper to choose a completely random genre on initial mount
+const getRandomRadioGenre = (): keyof typeof RADIO_PLAYLISTS => {
+  const genreKeys = Object.keys(RADIO_PLAYLISTS) as Array<keyof typeof RADIO_PLAYLISTS>;
+  const randomIndex = Math.floor(Math.random() * genreKeys.length);
+  return genreKeys[randomIndex] || 'brutal';
+};
+
+// Helper to get a random track index within range
+const getRandomTrackIndex = (max: number, excludeIndex?: number): number => {
+  if (max <= 1) return 0;
+  let randIdx = Math.floor(Math.random() * max);
+  if (excludeIndex !== undefined && randIdx === excludeIndex && max > 1) {
+    randIdx = (randIdx + 1) % max;
+  }
+  return randIdx;
+};
 
 export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
   showSceneRadio: externalShowSceneRadio,
@@ -43,8 +61,25 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
   const setShowSceneRadio = externalSetShowSceneRadio || setInternalShowSceneRadio;
 
   const [sceneRadioPlaying, setSceneRadioPlaying] = useState(false);
-  const [selectedRadioGenre, setSelectedRadioGenre] = useState<keyof typeof RADIO_PLAYLISTS>('brutal');
+  // Pick completely random genre on component mount
+  const [selectedRadioGenre, setSelectedRadioGenre] = useState<keyof typeof RADIO_PLAYLISTS>(getRandomRadioGenre);
   const [isRadioExpanded, setIsRadioExpanded] = useState(false);
+
+  // Random Radio vs. Specific User Track Selection State
+  const [userSelectedTrack, setUserSelectedTrack] = useState<boolean>(false);
+  const userSelectedTrackRef = useRef<boolean>(false);
+  const currentVideoIndexRef = useRef<number>(0);
+  const isShuffleRef = useRef<boolean>(true);
+  const [isShuffle, setIsShuffle] = useState<boolean>(true);
+
+  // Keep ref synchronized with state
+  useEffect(() => {
+    userSelectedTrackRef.current = userSelectedTrack;
+  }, [userSelectedTrack]);
+
+  useEffect(() => {
+    isShuffleRef.current = isShuffle;
+  }, [isShuffle]);
 
   // Live Scene Radio Advanced States
   const [playlistVideos, setPlaylistVideos] = useState<any[]>([]);
@@ -58,7 +93,10 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isScrubbing, setIsScrubbing] = useState(false);
-  const [isShuffle, setIsShuffle] = useState(false);
+
+  useEffect(() => {
+    currentVideoIndexRef.current = currentVideoIndex;
+  }, [currentVideoIndex]);
 
   // Liked / Favorited Tracks State
   const [likedTrackIds, setLikedTrackIds] = useState<Set<string>>(() => {
@@ -268,13 +306,14 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
 
     if (currentIndex >= 0) {
       setCurrentVideoIndex(currentIndex);
+      currentVideoIndexRef.current = currentIndex;
     }
   };
 
-  const initYoutubePlayer = (playlistId: string) => {
+  const initYoutubePlayer = (playlistId: string, startIndex?: number) => {
     const win = window as any;
     if (!win.YT || !win.YT.Player) {
-      setTimeout(() => initYoutubePlayer(playlistId), 500);
+      setTimeout(() => initYoutubePlayer(playlistId, startIndex), 500);
       return;
     }
 
@@ -310,29 +349,53 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
             console.log("[RADIO PLAYER] YT Player is Ready.");
             if (ytPlayerRef.current && typeof ytPlayerRef.current.getPlaylist === 'function') {
                 if (typeof ytPlayerRef.current.setShuffle === 'function') {
-                  ytPlayerRef.current.setShuffle(isShuffle);
+                  ytPlayerRef.current.setShuffle(isShuffleRef.current);
                 }
                 const ids = ytPlayerRef.current.getPlaylist() || [];
                 if (ids.length > 0) {
-                    syncPlaylistData(ids, 0);
+                    let targetIndex = 0;
+                    if (!userSelectedTrackRef.current) {
+                      targetIndex = startIndex !== undefined && startIndex < ids.length
+                        ? startIndex
+                        : getRandomTrackIndex(ids.length);
+                    }
+                    syncPlaylistData(ids, targetIndex);
                     enrichPlaylistBatch(playlistId, ids);
-                }
 
-                if (sceneRadioPlayingRef.current) {
-                   setTimeout(() => {
-                      if (ytPlayerRef.current && typeof ytPlayerRef.current.playVideoAt === 'function') {
-                          ytPlayerRef.current.playVideoAt(0);
-                      }
-                   }, 500);
+                    if (sceneRadioPlayingRef.current) {
+                       setTimeout(() => {
+                          if (ytPlayerRef.current && typeof ytPlayerRef.current.playVideoAt === 'function') {
+                              ytPlayerRef.current.playVideoAt(targetIndex);
+                          }
+                       }, 500);
+                    }
                 }
             }
           },
           onStateChange: (event: any) => {
-            if (event.data === 1) {
+            if (event.data === 1) { // Playing
               setSceneRadioPlaying(true);
               setRadioPlayerError(null);
-            } else if (event.data === 2) {
+            } else if (event.data === 2) { // Paused
               setSceneRadioPlaying(false);
+            } else if (event.data === 0) { // Track Ended
+              // Continuous Random Radio: if user hasn't locked onto a specific track, pick another random track!
+              if (!userSelectedTrackRef.current) {
+                if (ytPlayerRef.current && typeof ytPlayerRef.current.getPlaylist === 'function') {
+                  const ids = ytPlayerRef.current.getPlaylist() || [];
+                  if (ids.length > 1) {
+                    const currentIdx = ytPlayerRef.current.getPlaylistIndex() ?? currentVideoIndexRef.current;
+                    const nextRandIdx = getRandomTrackIndex(ids.length, currentIdx);
+                    setTimeout(() => {
+                      if (ytPlayerRef.current && typeof ytPlayerRef.current.playVideoAt === 'function') {
+                        ytPlayerRef.current.playVideoAt(nextRandIdx);
+                      }
+                    }, 300);
+                  } else if (typeof ytPlayerRef.current.nextVideo === 'function') {
+                    ytPlayerRef.current.nextVideo();
+                  }
+                }
+              }
             }
 
             if (ytPlayerRef.current && typeof ytPlayerRef.current.getPlaylist === 'function') {
@@ -347,7 +410,7 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
             const player = event.target;
             const videoData = player?.getVideoData ? player.getVideoData() : null;
 
-            console.warn("[RADIO PLAYER] Non-fatal playback restriction on track, auto-advancing:", {
+            console.warn("[RADIO PLAYER] Non-fatal playback restriction on track, auto-advancing to random track:", {
               videoId: videoData?.video_id,
               title: videoData?.title,
               errorCode: event.data
@@ -355,7 +418,7 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
 
             let errorMsg = "Skipping restricted track...";
             if (event.data === 101 || event.data === 150) {
-              errorMsg = "Embedding restricted by video owner. Skipping to next track...";
+              errorMsg = "Embedding restricted by video owner. Skipping to next scene track...";
             } else if (event.data === 100) {
               errorMsg = "Track unavailable. Skipping...";
             } else if (event.data === 2 || event.data === 5) {
@@ -363,12 +426,21 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
             }
             setRadioPlayerError(errorMsg);
 
-            // Fast auto-advance so radio stream does not stall
+            // Fast auto-advance to next random track so radio stream does not stall
             setTimeout(() => {
-              if (ytPlayerRef.current && typeof ytPlayerRef.current.nextVideo === 'function') {
+              if (!userSelectedTrackRef.current && ytPlayerRef.current && typeof ytPlayerRef.current.getPlaylist === 'function') {
+                const ids = ytPlayerRef.current.getPlaylist() || [];
+                if (ids.length > 1 && typeof ytPlayerRef.current.playVideoAt === 'function') {
+                  const curIdx = ytPlayerRef.current.getPlaylistIndex() ?? currentVideoIndexRef.current;
+                  const nextRandIdx = getRandomTrackIndex(ids.length, curIdx);
+                  ytPlayerRef.current.playVideoAt(nextRandIdx);
+                } else if (typeof ytPlayerRef.current.nextVideo === 'function') {
+                  ytPlayerRef.current.nextVideo();
+                }
+              } else if (ytPlayerRef.current && typeof ytPlayerRef.current.nextVideo === 'function') {
                 ytPlayerRef.current.nextVideo();
-                setTimeout(() => setRadioPlayerError(null), 1200);
               }
+              setTimeout(() => setRadioPlayerError(null), 1200);
             }, 400);
           }
         }
@@ -383,7 +455,7 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
     if (!ytPlayerRef.current || typeof ytPlayerRef.current.playVideo !== 'function') {
       const playlistId = RADIO_PLAYLISTS[selectedRadioGenre].playlistId;
       setSceneRadioPlaying(true);
-      initYoutubePlayer(playlistId);
+      initYoutubePlayer(playlistId, currentVideoIndex);
       return;
     }
 
@@ -402,35 +474,136 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
 
   const handleNextSong = () => {
     hasUserInteractedWithRadio.current = true;
-    if (ytPlayerRef.current && typeof ytPlayerRef.current.nextVideo === 'function') {
-        ytPlayerRef.current.nextVideo();
+    // In continuous random radio mode, skip to a random track
+    if (!userSelectedTrackRef.current && playlistVideos.length > 1) {
+      const nextIdx = getRandomTrackIndex(playlistVideos.length, currentVideoIndex);
+      setCurrentVideoIndex(nextIdx);
+      currentVideoIndexRef.current = nextIdx;
+      if (ytPlayerRef.current) {
+        if (typeof ytPlayerRef.current.getPlaylist === 'function') {
+          const ids = ytPlayerRef.current.getPlaylist() || [];
+          const targetId = playlistVideos[nextIdx]?.videoId;
+          const idxInYt = ids.indexOf(targetId);
+          if (idxInYt !== -1 && typeof ytPlayerRef.current.playVideoAt === 'function') {
+            ytPlayerRef.current.playVideoAt(idxInYt);
+            return;
+          }
+        }
+        if (typeof ytPlayerRef.current.playVideoAt === 'function') {
+          ytPlayerRef.current.playVideoAt(nextIdx);
+          return;
+        }
+      }
     } else {
+      if (ytPlayerRef.current && typeof ytPlayerRef.current.nextVideo === 'function') {
+        ytPlayerRef.current.nextVideo();
+      } else {
         setCurrentVideoIndex(prevIndex => (prevIndex + 1) % Math.max(playlistVideos.length, 1));
+      }
     }
   };
 
   const handlePrevSong = () => {
     hasUserInteractedWithRadio.current = true;
-    if (ytPlayerRef.current && typeof ytPlayerRef.current.previousVideo === 'function') {
-        ytPlayerRef.current.previousVideo();
+    if (!userSelectedTrackRef.current && playlistVideos.length > 1) {
+      const prevIdx = getRandomTrackIndex(playlistVideos.length, currentVideoIndex);
+      setCurrentVideoIndex(prevIdx);
+      currentVideoIndexRef.current = prevIdx;
+      if (ytPlayerRef.current) {
+        if (typeof ytPlayerRef.current.getPlaylist === 'function') {
+          const ids = ytPlayerRef.current.getPlaylist() || [];
+          const targetId = playlistVideos[prevIdx]?.videoId;
+          const idxInYt = ids.indexOf(targetId);
+          if (idxInYt !== -1 && typeof ytPlayerRef.current.playVideoAt === 'function') {
+            ytPlayerRef.current.playVideoAt(idxInYt);
+            return;
+          }
+        }
+        if (typeof ytPlayerRef.current.playVideoAt === 'function') {
+          ytPlayerRef.current.playVideoAt(prevIdx);
+          return;
+        }
+      }
     } else {
+      if (ytPlayerRef.current && typeof ytPlayerRef.current.previousVideo === 'function') {
+        ytPlayerRef.current.previousVideo();
+      } else {
         setCurrentVideoIndex(prevIndex => (prevIndex - 1 + playlistVideos.length) % Math.max(playlistVideos.length, 1));
+      }
     }
   };
 
-  // Auto-play 5 seconds after social feed / scene radio mounts
+  // Select a specific track from the playlist queue
+  const handleSelectSpecificTrack = (video: any) => {
+    hasUserInteractedWithRadio.current = true;
+    setUserSelectedTrack(true);
+    userSelectedTrackRef.current = true;
+    setSceneRadioPlaying(true);
+    setCurrentVideoIndex(video.originalIndex);
+    currentVideoIndexRef.current = video.originalIndex;
+
+    if (ytPlayerRef.current) {
+      if (typeof ytPlayerRef.current.getPlaylist === 'function') {
+        const playlistIds = ytPlayerRef.current.getPlaylist() || [];
+        const targetIndex = playlistIds.indexOf(video.videoId);
+        if (targetIndex !== -1 && typeof ytPlayerRef.current.playVideoAt === 'function') {
+          ytPlayerRef.current.playVideoAt(targetIndex);
+          return;
+        }
+      }
+      if (typeof ytPlayerRef.current.playVideoAt === 'function') {
+        ytPlayerRef.current.playVideoAt(video.originalIndex);
+      }
+    }
+    triggerNotification?.(`🎵 Now playing: "${video.title}"`);
+  };
+
+  // Toggle Shuffle / Random Mode
+  const toggleShuffleMode = () => {
+    const nextShuffle = !isShuffle;
+    setIsShuffle(nextShuffle);
+    if (nextShuffle) {
+      setUserSelectedTrack(false);
+      userSelectedTrackRef.current = false;
+      if (ytPlayerRef.current && typeof ytPlayerRef.current.setShuffle === 'function') {
+        ytPlayerRef.current.setShuffle(true);
+      }
+      triggerNotification?.("🎲 Endless Random Radio Mode Active!");
+    } else {
+      setUserSelectedTrack(true);
+      userSelectedTrackRef.current = true;
+      if (ytPlayerRef.current && typeof ytPlayerRef.current.setShuffle === 'function') {
+        ytPlayerRef.current.setShuffle(false);
+      }
+      triggerNotification?.("🔁 Sequential Queue Mode Active");
+    }
+  };
+
+  // Change Genre Channel
+  const handleSelectGenre = (genreKey: keyof typeof RADIO_PLAYLISTS) => {
+    if (selectedRadioGenre !== genreKey) {
+      setUserSelectedTrack(false);
+      userSelectedTrackRef.current = false;
+      setSelectedRadioGenre(genreKey);
+      triggerNotification?.(`📻 Tuned into ${RADIO_PLAYLISTS[genreKey].name} Radio!`);
+    }
+  };
+
+  // Auto-play random track 5 seconds after social feed / scene radio mounts
   useEffect(() => {
     const autoPlayTimer = setTimeout(() => {
       if (!hasUserInteractedWithRadio.current) {
-        console.log("[RADIO PLAYER] Auto-playing 5 seconds after feed mount...");
+        console.log("[RADIO PLAYER] Auto-playing random track after feed mount...");
         setSceneRadioPlaying(true);
         if (ytPlayerRef.current) {
           try {
             if (typeof ytPlayerRef.current.getPlaylist === 'function') {
               const ids = ytPlayerRef.current.getPlaylist() || [];
               if (ids.length > 0 && typeof ytPlayerRef.current.playVideoAt === 'function') {
-                  const randomIdx = Math.floor(Math.random() * ids.length);
-                  ytPlayerRef.current.playVideoAt(randomIdx);
+                  const targetIdx = !userSelectedTrackRef.current
+                    ? (currentVideoIndexRef.current >= 0 && currentVideoIndexRef.current < ids.length ? currentVideoIndexRef.current : getRandomTrackIndex(ids.length))
+                    : 0;
+                  ytPlayerRef.current.playVideoAt(targetIdx);
               } else if (typeof ytPlayerRef.current.playVideo === 'function') {
                   ytPlayerRef.current.playVideo();
               }
@@ -454,18 +627,24 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
     const playlistId = RADIO_PLAYLISTS[selectedRadioGenre].playlistId;
 
     setPlaylistVideos([]);
-    setCurrentVideoIndex(0);
 
-    initYoutubePlayer(playlistId);
+    // Initialize with a random track from fallback seed data on mount/genre change
+    const seedVideos = FRONTEND_FALLBACK_PLAYLISTS[playlistId] || [
+      { videoId: 's7oZ4xV_f_k', title: 'Metal Scene Radio Track 1', author: 'Metal Artist', thumbnailUrl: 'https://img.youtube.com/vi/s7oZ4xV_f_k/hqdefault.jpg' }
+    ];
+    const initialRandomIdx = !userSelectedTrackRef.current && seedVideos.length > 1
+      ? getRandomTrackIndex(seedVideos.length)
+      : 0;
+
+    setCurrentVideoIndex(initialRandomIdx);
+    currentVideoIndexRef.current = initialRandomIdx;
+    setPlaylistVideos(seedVideos);
+
+    initYoutubePlayer(playlistId, initialRandomIdx);
 
     const fetchPlaylistRSS = async () => {
       setIsLoadingPlaylist(true);
       setRadioPlayerError(null);
-
-      const seedVideos = FRONTEND_FALLBACK_PLAYLISTS[playlistId] || [
-        { videoId: 's7oZ4xV_f_k', title: 'Metal Scene Radio Track 1', author: 'Metal Artist', thumbnailUrl: 'https://img.youtube.com/vi/s7oZ4xV_f_k/hqdefault.jpg' }
-      ];
-      setPlaylistVideos(seedVideos);
 
       try {
         const response = await fetch(`/api/playlist/${playlistId}`);
@@ -474,6 +653,11 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
 
         if (active && data && data.videos && data.videos.length > 0) {
           setPlaylistVideos(data.videos);
+          if (!userSelectedTrackRef.current) {
+            const randIdx = getRandomTrackIndex(data.videos.length, currentVideoIndexRef.current);
+            setCurrentVideoIndex(randIdx);
+            currentVideoIndexRef.current = randIdx;
+          }
         }
       } catch (err: any) {
         console.info("[RADIO PLAYER] Using cached fallback radio playlist:", err?.message || err);
@@ -531,11 +715,7 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
                     return (
                       <button
                         key={`radio-genre-${genreKey}-${gIdx}`}
-                        onClick={() => {
-                          if (selectedRadioGenre !== genreKey) {
-                            setSelectedRadioGenre(genreKey);
-                          }
-                        }}
+                        onClick={() => handleSelectGenre(genreKey)}
                         className={`px-3.5 py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-black uppercase tracking-wider font-mono shrink-0 transition-all border cursor-pointer min-h-[38px] sm:min-h-[42px] flex items-center justify-center ${
                           isActive
                             ? 'bg-rose-600 text-white border-rose-500 shadow-md shadow-rose-950/60 scale-[1.02]'
@@ -722,17 +902,11 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
                     {/* Central Controls: Shuffle, Prev, Play/Pause, Next */}
                     <div className="flex items-center gap-2 sm:gap-3">
                       <button
-                        onClick={() => {
-                          const nextShuffle = !isShuffle;
-                          setIsShuffle(nextShuffle);
-                          if (ytPlayerRef.current && typeof ytPlayerRef.current.setShuffle === 'function') {
-                            ytPlayerRef.current.setShuffle(nextShuffle);
-                          }
-                        }}
+                        onClick={toggleShuffleMode}
                         className={`p-1.5 rounded transition-colors cursor-pointer ${
-                          isShuffle ? 'text-rose-400 bg-rose-950/50 border border-rose-500/30' : 'text-zinc-500 hover:text-zinc-300'
+                          !userSelectedTrack && isShuffle ? 'text-rose-400 bg-rose-950/50 border border-rose-500/30' : 'text-zinc-500 hover:text-zinc-300'
                         }`}
-                        title={isShuffle ? "Shuffle On" : "Shuffle Off"}
+                        title={!userSelectedTrack && isShuffle ? "Random Radio Active (Click for Sequential)" : "Sequential / Locked Track (Click for Random Radio)"}
                       >
                         <Shuffle className="w-3.5 h-3.5" />
                       </button>
@@ -780,6 +954,18 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
                     <div className="flex items-center gap-1.5 min-w-0">
                       <Music className="w-3.5 h-3.5 text-rose-500" />
                       <span className="text-[9px] font-black uppercase tracking-wider text-zinc-300 font-mono">PLAYLIST QUEUE</span>
+                      <button
+                        onClick={toggleShuffleMode}
+                        className={`ml-1 px-1.5 py-0.5 rounded text-[8px] font-mono font-bold flex items-center gap-1 border transition-all cursor-pointer ${
+                          !userSelectedTrack && isShuffle
+                            ? 'bg-rose-950/80 text-rose-300 border-rose-500/40'
+                            : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200'
+                        }`}
+                        title={!userSelectedTrack && isShuffle ? "Endless Random Radio Mode Active. Click to switch to sequential mode." : "Track Locked. Click to switch to endless random mode."}
+                      >
+                        <Sparkles className="w-2.5 h-2.5 text-rose-400" />
+                        <span>{!userSelectedTrack && isShuffle ? 'RANDOM RADIO' : 'LOCKED TRACK'}</span>
+                      </button>
                     </div>
                     {/* Search Field */}
                     <div className="relative w-1/2 max-w-xs">
@@ -818,41 +1004,11 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' || e.key === ' ') {
                                   e.preventDefault();
-                                  hasUserInteractedWithRadio.current = true;
-                                  setSceneRadioPlaying(true);
-                                  setCurrentVideoIndex(video.originalIndex);
-                                  if (ytPlayerRef.current) {
-                                    if (typeof ytPlayerRef.current.getPlaylist === 'function') {
-                                      const playlistIds = ytPlayerRef.current.getPlaylist() || [];
-                                      const targetIndex = playlistIds.indexOf(video.videoId);
-                                      if (targetIndex !== -1 && typeof ytPlayerRef.current.playVideoAt === 'function') {
-                                        ytPlayerRef.current.playVideoAt(targetIndex);
-                                        return;
-                                      }
-                                    }
-                                    if (typeof ytPlayerRef.current.playVideoAt === 'function') {
-                                      ytPlayerRef.current.playVideoAt(video.originalIndex);
-                                    }
-                                  }
+                                  handleSelectSpecificTrack(video);
                                 }
                               }}
                               onClick={() => {
-                                hasUserInteractedWithRadio.current = true;
-                                setSceneRadioPlaying(true);
-                                setCurrentVideoIndex(video.originalIndex);
-                                if (ytPlayerRef.current) {
-                                  if (typeof ytPlayerRef.current.getPlaylist === 'function') {
-                                    const playlistIds = ytPlayerRef.current.getPlaylist() || [];
-                                    const targetIndex = playlistIds.indexOf(video.videoId);
-                                    if (targetIndex !== -1 && typeof ytPlayerRef.current.playVideoAt === 'function') {
-                                      ytPlayerRef.current.playVideoAt(targetIndex);
-                                      return;
-                                    }
-                                  }
-                                  if (typeof ytPlayerRef.current.playVideoAt === 'function') {
-                                    ytPlayerRef.current.playVideoAt(video.originalIndex);
-                                  }
-                                }
+                                handleSelectSpecificTrack(video);
                               }}
                               className={`w-full flex items-center gap-2 p-1.5 rounded-lg text-left transition-all cursor-pointer border ${
                                 isCurrent
@@ -995,9 +1151,7 @@ export const SceneRadioPlayer: React.FC<SceneRadioPlayerProps> = ({
                     key={`radio-quick-genre-${genreKey}-${gIdx}`}
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (selectedRadioGenre !== genreKey) {
-                        setSelectedRadioGenre(genreKey);
-                      }
+                      handleSelectGenre(genreKey);
                     }}
                     className={`px-2 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wider font-mono shrink-0 transition-all border cursor-pointer ${
                       isActive

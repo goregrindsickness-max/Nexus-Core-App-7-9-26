@@ -20,12 +20,19 @@ export const TourEmbedCard: React.FC<TourEmbedCardProps> = ({
   const ticketData = post.ticketData;
   const tourData = post.tourData;
 
-  if (!ticketData && !tourData) return null;
+  const hasExplicitTickets = Boolean(
+    ticketData &&
+    (ticketData.ticketUrl || (ticketData.date && ticketData.date !== 'Upcoming Tour Date' && ticketData.venue))
+  );
+
+  const hasTourDates = Boolean(tourData && tourData.dates && tourData.dates.length > 0);
+
+  if (!hasExplicitTickets && !hasTourDates) return null;
 
   return (
     <div className="space-y-3 my-3">
       {/* 1. Single Show Ticket Banner */}
-      {ticketData && (
+      {hasExplicitTickets && ticketData && (
         <div className="bg-gradient-to-r from-purple-950/80 via-zinc-950 to-zinc-950 border border-purple-500/40 rounded-xl p-3.5 flex items-center justify-between gap-3 shadow-[0_0_15px_rgba(168,85,247,0.15)]">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-lg bg-purple-900/50 border border-purple-500/40 flex items-center justify-center text-purple-400 shrink-0">

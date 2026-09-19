@@ -1,7 +1,8 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Calendar, MapPin, Sparkles, Clock, Users, DollarSign, Image as ImageIcon, Flame, Lock, Check, Upload, Trash2 } from 'lucide-react';
+import { X, Calendar, MapPin, Sparkles, Clock, Users, DollarSign, Image as ImageIcon, Flame, Lock, Check, Upload, Trash2, Ticket, AlertTriangle } from 'lucide-react';
 import { compressImageInSocialFeed } from '../../../utils/socialFeedUtils';
+import { checkDuplicateCommunityEvent } from '../../../utils/communityEventUtils';
 
 export interface CreateDIYEventModalProps {
   isOpen: boolean;
@@ -28,6 +29,8 @@ export interface CreateDIYEventModalProps {
   setEventDescription: (val: string) => void;
   eventCost: string;
   setEventCost: (val: string) => void;
+  eventTicketUrl?: string;
+  setEventTicketUrl?: (val: string) => void;
   onSaveEvent?: () => void;
   onRemoveEvent?: () => void;
   isAttached?: boolean;
@@ -36,11 +39,13 @@ export interface CreateDIYEventModalProps {
 
 export const EVENT_CATEGORIES = [
   { id: 'DIY Show', label: 'DIY SHOW', icon: '🎸', desc: 'House, basement, or backyard gig' },
+  { id: 'Fest / Festival', label: 'FESTIVAL', icon: '🎪', desc: 'Multi-band fest or all-dayer' },
+  { id: 'Tour Date', label: 'TOUR DATE', icon: '🚐', desc: 'Official tour routing stop' },
+  { id: 'Club Gig', label: 'CLUB GIG', icon: '⚡', desc: 'Standard music club or venue' },
+  { id: 'Warehouse Rave', label: 'WAREHOUSE RAVE', icon: '🔊', desc: 'Off-grid venue / late night' },
   { id: 'House Party', label: 'HOUSE PARTY', icon: '🎉', desc: 'Social gathering & party' },
-  { id: 'Scene BBQ', label: 'SCENE BBQ', icon: '🍖', desc: 'Cookout, hangout & picnic' },
-  { id: 'Warehouse Rave', label: 'WAREHOUSE RAVE', icon: '⚡', desc: 'Off-grid venue / late night' },
   { id: 'Pop-Up / Jam', label: 'POP-UP / JAM', icon: '🔥', desc: 'Merch swap, jam session or popup' },
-  { id: 'Other Gathering', label: 'OTHER GATHERING', icon: '✨', desc: 'Listening party, movie night, etc.' }
+  { id: 'Other Gathering', label: 'OTHER GATHERING', icon: '✨', desc: 'Listening party, meetup, etc.' }
 ];
 
 export const CreateDIYEventModal: React.FC<CreateDIYEventModalProps> = ({
@@ -68,12 +73,23 @@ export const CreateDIYEventModal: React.FC<CreateDIYEventModalProps> = ({
   setEventDescription,
   eventCost,
   setEventCost,
+  eventTicketUrl,
+  setEventTicketUrl,
   onSaveEvent,
   onRemoveEvent,
   isAttached = false,
   triggerNotification,
 }) => {
   const flyerFileInputRef = useRef<HTMLInputElement>(null);
+
+  const dupCheck = useMemo(() => {
+    return checkDuplicateCommunityEvent({
+      title: eventTitle,
+      date: eventDate,
+      venue: eventLocationName,
+      ticketUrl: eventTicketUrl
+    });
+  }, [eventTitle, eventDate, eventLocationName, eventTicketUrl]);
 
   const handleFlyerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -146,6 +162,23 @@ export const CreateDIYEventModal: React.FC<CreateDIYEventModalProps> = ({
 
             {/* Form Fields - Scrollable */}
             <div className="space-y-3.5 overflow-y-auto pr-1 custom-scrollbar text-left text-xs font-mono">
+              {/* Real-Time Duplicate Prevention Notice */}
+              {dupCheck.isDuplicate && dupCheck.matchedEvent && (
+                <div className="p-3 bg-amber-950/60 border-2 border-amber-500/60 rounded-xl text-amber-200 text-xs space-y-1.5 animate-in fade-in shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+                  <div className="flex items-center gap-1.5 font-bold font-mono text-[11px] text-amber-400 uppercase tracking-wider">
+                    <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                    <span>Existing Event Page Detected ({dupCheck.matchReason})</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-200">
+                    Matches existing scene event <strong className="text-amber-300 font-bold">{dupCheck.matchedEvent.name}</strong> on {dupCheck.matchedEvent.date} @ {dupCheck.matchedEvent.venue_name}.
+                  </p>
+                  <p className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
+                    <Check className="w-3 h-3 text-emerald-400" />
+                    Attaching will link to this existing event page to avoid duplicate calendar listings and consolidate RSVPs!
+                  </p>
+                </div>
+              )}
+
               {/* Event Type Grid */}
               <div>
                 <label className="block text-[10px] font-black uppercase text-amber-300 tracking-wide mb-1.5">
@@ -287,6 +320,23 @@ export const CreateDIYEventModal: React.FC<CreateDIYEventModalProps> = ({
                   value={eventCost}
                   onChange={(e) => setEventCost(e.target.value)}
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-amber-500 transition-all"
+                />
+              </div>
+
+              {/* Ticket URL / Presale Link (Optional) */}
+              <div>
+                <label className="block text-[10px] font-black uppercase text-amber-300 tracking-wide mb-1 flex items-center justify-between">
+                  <span className="flex items-center gap-1">
+                    <Ticket className="w-3 h-3 text-amber-400" /> Ticket / Presale Link (Optional)
+                  </span>
+                  <span className="text-[9px] text-zinc-500 font-mono">DICE, EVENTBRITE, ETC.</span>
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://dice.fm/event/... or presale link (optional)"
+                  value={eventTicketUrl || ''}
+                  onChange={(e) => setEventTicketUrl?.(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-amber-500 transition-all font-mono text-xs"
                 />
               </div>
 

@@ -1,11 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, MapPin, Users, Mail, Star, MessageSquare, Send, ChevronLeft, ChevronRight, ChevronDown, Calendar, Plus, X, Radio, CheckCircle, XCircle, Clock, Edit2 } from 'lucide-react';
+import { Search, MapPin, Users, Mail, Star, MessageSquare, Send, ChevronLeft, ChevronRight, ChevronDown, Calendar, Plus, X, Radio, CheckCircle, XCircle, Clock, Edit2, Sparkles, Database, RefreshCw, Globe, Check, Trash2, Mic2, Music, Building2, SlidersHorizontal, Filter, AlertTriangle, Save, ChevronsUpDown, AlertOctagon, ShieldAlert, CheckSquare, Square } from 'lucide-react';
 import { Offer, UserReview, Venue } from '../../../types';
 import { RoutingBeacon } from '../Promoter/PromoterPortalView';
 import { getSupabase } from '../../../supabase';
 import { handleSendMessage as sendDbMessage } from '../../../store/useChatStore';
 import VenueReputationCard from './VenueReputationCard';
+import { seedVenuesForCities, classifyPlace } from '../../../services/musicBrainzSeederService';
+
+/**
+ * Detect if an existing place record appears to be closed, defunct, or former
+ */
+export function detectDefunctReason(venue: any): string | null {
+  if (!venue) return null;
+  const name = (venue.name || '').toLowerCase();
+  const address = (venue.address || '').toLowerCase();
+  const notes = Array.isArray(venue.intelEntries) 
+    ? venue.intelEntries.join(' ').toLowerCase() 
+    : (Array.isArray(venue.intel_entries) ? venue.intel_entries.join(' ').toLowerCase() : '');
+
+  if (
+    name.includes('(closed') ||
+    name.includes('[closed') ||
+    name.includes('(defunct') ||
+    name.includes('[defunct') ||
+    name.includes('(former') ||
+    name.includes('(demolished') ||
+    name.includes('(historic') ||
+    name.includes('permanently closed')
+  ) {
+    return 'Name marked as closed or former';
+  }
+
+  if (
+    notes.includes('permanently closed') ||
+    notes.includes('shut down') ||
+    notes.includes('defunct') ||
+    notes.includes('demolished') ||
+    notes.includes('out of business') ||
+    notes.includes('ceased operations')
+  ) {
+    return 'Intel notes report closure';
+  }
+
+  if (address.includes('closed') || address.includes('former location')) {
+    return 'Address tagged as former location';
+  }
+
+  return null;
+}
 
 
 interface BlackBookViewProps {
@@ -268,29 +311,353 @@ export default function BlackBookView({ onBack, triggerNotification, userProfile
     }
   }, [activeBandName]);
 
-  const [localVenues, setLocalVenues] = useState<any[]>(mockVenues);
+  // MusicBrainz Hub Seeding State
+  const [isSeederModalOpen, setIsSeederModalOpen] = useState(false);
+  const [isSeedingActive, setIsSeedingActive] = useState(false);
+  const [seedingLogs, setSeedingLogs] = useState<string[]>([]);
+  const [seedingProgress, setSeedingProgress] = useState(0);
+  const [selectedHubs, setSelectedHubs] = useState<string[]>([
+    'Austin', 'Dallas', 'Oklahoma City', 'Houston'
+  ]);
+  const [customCityInput, setCustomCityInput] = useState('');
+
+  const TOUR_HUB_PRESETS = [
+    { city: 'Austin', state: 'TX', label: 'Austin, TX' },
+    { city: 'Dallas', state: 'TX', label: 'Dallas, TX' },
+    { city: 'Oklahoma City', state: 'OK', label: 'Oklahoma City, OK' },
+    { city: 'Houston', state: 'TX', label: 'Houston, TX' },
+    { city: 'San Antonio', state: 'TX', label: 'San Antonio, TX' },
+    { city: 'Chicago', state: 'IL', label: 'Chicago, IL' },
+    { city: 'Denver', state: 'CO', label: 'Denver, CO' },
+    { city: 'Los Angeles', state: 'CA', label: 'Los Angeles, CA' },
+    { city: 'Seattle', state: 'WA', label: 'Seattle, WA' },
+    { city: 'Nashville', state: 'TN', label: 'Nashville, TN' },
+    { city: 'Atlanta', state: 'GA', label: 'Atlanta, GA' },
+    { city: 'New York', state: 'NY', label: 'New York, NY' }
+  ];
+
+  const toggleHubSelection = (cityName: string) => {
+    setSelectedHubs(prev => 
+      prev.includes(cityName) 
+        ? prev.filter(c => c !== cityName) 
+        : [...prev, cityName]
+    );
+  };
+
+  const handleAddCustomHub = () => {
+    const clean = customCityInput.trim();
+    if (!clean) return;
+    if (!selectedHubs.includes(clean)) {
+      setSelectedHubs(prev => [...prev, clean]);
+    }
+    setCustomCityInput('');
+  };
+
+  const [localVenues, setLocalVenues] = useState<any[]>(() => {
+    return mockVenues.map(mv => {
+      const cls = classifyPlace(mv.name, (mv as any).place_type);
+      return {
+        ...mv,
+        place_type: (mv as any).place_type || cls.place_type,
+        capacity: mv.capacity !== undefined ? mv.capacity : cls.estimated_capacity
+      };
+    });
+  });
+
+  // Deleted venues registry
+  const [deletedVenueIds, setDeletedVenueIds] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem('nexus_deleted_venue_ids');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  // Category filter state: all | venue | studio | rehearsal | saved
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'venue' | 'studio' | 'rehearsal' | 'saved'>('all');
+
+  // Edit Venue Modal State
+  const [isEditVenueOpen, setIsEditVenueOpen] = useState(false);
+  const [editVenueForm, setEditVenueForm] = useState({
+    id: '',
+    name: '',
+    place_type: 'venue',
+    capacity: '',
+    address: '',
+    city: '',
+    state: '',
+    country: 'USA',
+    lat: '',
+    lng: '',
+    buyers: '',
+    email: '',
+    phone: '',
+    genreFit: 85,
+    payoutRating: 4.5,
+    loadInRating: 4.0,
+    notes: '',
+    intelNote: ''
+  });
+
+  // Delete Venue Confirmation Modal State
+  const [venueToDelete, setVenueToDelete] = useState<{ id: string; name: string; city?: string; state?: string; capacity?: any; source?: string } | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+
+  // Directory Audit & Defunct Places Cleaner State
+  const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
+  const [auditFlaggedPlaces, setAuditFlaggedPlaces] = useState<Array<{ venue: any; reason: string }>>([]);
+  const [selectedAuditIds, setSelectedAuditIds] = useState<Set<string>>(new Set());
+  const [auditSearch, setAuditSearch] = useState('');
+  const [auditCustomTerm, setAuditCustomTerm] = useState('');
+  const [isPurging, setIsPurging] = useState(false);
+
+  // Load venues from database and local storage on mount with overrides & classifications
+  useEffect(() => {
+    const loadPersistedVenues = async () => {
+      let dbVenues: any[] = [];
+      const supabase = getSupabase();
+      if (supabase) {
+        try {
+          const { data, error } = await supabase.from('venues').select('*');
+          if (!error && data && data.length > 0) {
+            dbVenues = data;
+          }
+        } catch (_) {}
+      }
+
+      let cachedVenues: any[] = [];
+      try {
+        const local = localStorage.getItem('nexus_musicbrainz_venues');
+        if (local) cachedVenues = JSON.parse(local);
+      } catch (_) {}
+
+      // Load custom overrides if user has edited details
+      let customOverrides: Record<string, any> = {};
+      try {
+        const overridesStr = localStorage.getItem('nexus_venue_custom_overrides');
+        if (overridesStr) customOverrides = JSON.parse(overridesStr);
+      } catch (_) {}
+
+      const allCombined = [...dbVenues, ...cachedVenues];
+      if (allCombined.length > 0) {
+        const mapped = allCombined.map(v => {
+          const cls = classifyPlace(v.name, v.place_type || v.type || v.source);
+          const defaultPlaceType = v.place_type || cls.place_type;
+          
+          // Determine capacity: if capacity is 350 (default) but place is a studio/rehearsal, reset to 0
+          let effectiveCapacity = v.capacity;
+          if (effectiveCapacity === 350 && (defaultPlaceType === 'studio' || defaultPlaceType === 'rehearsal')) {
+            effectiveCapacity = 0;
+          } else if (effectiveCapacity === undefined || effectiveCapacity === null) {
+            effectiveCapacity = cls.estimated_capacity;
+          }
+
+          const baseItem = {
+            id: v.id || `v_${Math.random()}`,
+            name: v.name,
+            address: v.address || '',
+            city: v.city,
+            state: v.state_province || '',
+            country: v.country || 'USA',
+            lat: v.lat,
+            lng: v.lng,
+            place_type: defaultPlaceType,
+            capacity: effectiveCapacity,
+            email: v.email || '',
+            genreFit: v.genre_fit || 85,
+            payoutRating: v.payout_rating || 4.5,
+            loadInRating: v.load_in_rating || 4.0,
+            buyers: v.buyers || (defaultPlaceType === 'studio' ? 'Studio Manager' : 'Local Booking Coordinator'),
+            intelEntries: Array.isArray(v.intel_entries) ? v.intel_entries : [
+              v.lat && v.lng ? `GPS: [${v.lat}, ${v.lng}] calibrated for tour routing.` : 'Verified place directory.'
+            ],
+            source: v.source || 'MusicBrainz'
+          };
+
+          // Apply override if present
+          if (customOverrides[baseItem.id]) {
+            return { ...baseItem, ...customOverrides[baseItem.id] };
+          }
+          return baseItem;
+        });
+
+        setLocalVenues(prev => {
+          const existingKeys = new Set(prev.map(p => `${p.name.toLowerCase()}_${p.city.toLowerCase()}`));
+          const uniqueNew = mapped.filter(m => !existingKeys.has(`${m.name.toLowerCase()}_${m.city.toLowerCase()}`));
+          return [...prev, ...uniqueNew];
+        });
+      }
+    };
+
+    loadPersistedVenues();
+  }, []);
+
   useEffect(() => {
     // combine mockVenues with any dynamically passed global venues
-    const mappedGlobal = (venues || []).map(v => ({
-      id: v.id,
-      name: v.name,
-      city: v.city,
-      state: v.state_province || '',
-      country: v.country || '',
-      capacity: v.capacity || 0,
-      email: v.email || '',
-      genreFit: v.genre_fit || 50,
-      payoutRating: v.payout_rating || 3,
-      loadInRating: v.load_in_rating || 3,
-      buyers: v.buyers || '',
-      intelEntries: v.intel_entries || []
-    }));
+    const mappedGlobal = (venues || []).map(v => {
+      const cls = classifyPlace(v.name, (v as any).place_type);
+      return {
+        id: v.id,
+        name: v.name,
+        address: v.address || '',
+        city: v.city,
+        state: v.state_province || '',
+        country: v.country || '',
+        lat: v.lat,
+        lng: v.lng,
+        place_type: (v as any).place_type || cls.place_type,
+        capacity: v.capacity !== undefined ? v.capacity : cls.estimated_capacity,
+        email: v.email || '',
+        genreFit: v.genre_fit || 50,
+        payoutRating: v.payout_rating || 3,
+        loadInRating: v.load_in_rating || 3,
+        buyers: v.buyers || '',
+        intelEntries: v.intel_entries || [],
+        source: v.source
+      };
+    });
     
-    // Merge but don't duplicate (by id)
-    const mockIds = new Set(mockVenues.map(m => m.id));
-    const newGlobals = mappedGlobal.filter(mg => !mockIds.has(mg.id));
-    setLocalVenues([...mockVenues, ...newGlobals]);
+    // Merge but don't duplicate (by id or name+city)
+    setLocalVenues(prev => {
+      const existingIds = new Set(prev.map(m => m.id));
+      const newGlobals = mappedGlobal.filter(mg => !existingIds.has(mg.id));
+      return [...prev, ...newGlobals];
+    });
   }, [venues]);
+
+  const handleRunVenueSeeder = async () => {
+    if (selectedHubs.length === 0) {
+      triggerNotification("⚠️ Please select at least one tour hub city.");
+      return;
+    }
+
+    setIsSeedingActive(true);
+    setSeedingProgress(10);
+    setSeedingLogs([`[INIT] Starting MusicBrainz place seeder for ${selectedHubs.length} hub(s): ${selectedHubs.join(', ')}...`]);
+
+    try {
+      let apiSuccess = false;
+
+      // 1. Try server-side API endpoint
+      try {
+        setSeedingLogs(prev => [...prev, `[SERVER] Calling /api/venues/seed-musicbrainz...`]);
+        const res = await fetch('/api/venues/seed-musicbrainz', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cities: selectedHubs })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.venues && data.venues.length > 0) {
+            apiSuccess = true;
+            setSeedingProgress(100);
+            setSeedingLogs(prev => [
+              ...prev,
+              `[SUCCESS] Server seeded ${data.totalVenues} places across ${selectedHubs.join(', ')}.`,
+              `[DATABASE] Categorized live venues, recording studios, and rehearsal spaces with realistic capacity.`
+            ]);
+
+            const mapped = data.venues.map((v: any) => {
+              const cls = classifyPlace(v.name, v.place_type);
+              return {
+                id: v.id,
+                name: v.name,
+                address: v.address || '',
+                city: v.city,
+                state: v.state_province || '',
+                country: v.country || 'USA',
+                lat: v.lat,
+                lng: v.lng,
+                place_type: v.place_type || cls.place_type,
+                capacity: v.capacity !== undefined ? v.capacity : cls.estimated_capacity,
+                email: v.email || '',
+                genreFit: v.genre_fit || 85,
+                payoutRating: v.payout_rating || 4.5,
+                loadInRating: v.load_in_rating || 4.0,
+                buyers: v.buyers || (v.place_type === 'studio' ? 'Studio Manager' : 'Local Booking Coordinator'),
+                intelEntries: v.intel_entries || [
+                  v.lat && v.lng ? `GPS: [${v.lat}, ${v.lng}] calibrated for tour routing.` : 'Verified place.'
+                ],
+                source: 'MusicBrainz'
+              };
+            });
+
+            setLocalVenues(prev => {
+              const existingKeys = new Set(prev.map(p => `${p.name.toLowerCase()}_${p.city.toLowerCase()}`));
+              const newlyAdded = mapped.filter((m: any) => !existingKeys.has(`${m.name.toLowerCase()}_${m.city.toLowerCase()}`));
+              return [...prev, ...newlyAdded];
+            });
+
+            if (setVenues) {
+              setVenues(prev => {
+                const existingNames = new Set(prev.map(p => p.name.toLowerCase()));
+                const added = data.venues.filter((v: any) => !existingNames.has(v.name.toLowerCase()));
+                return [...prev, ...added];
+              });
+            }
+
+            triggerNotification(`⚡ Pre-seeded ${data.totalVenues} categorized places for tour routing!`);
+          }
+        }
+      } catch (apiErr) {
+        console.warn("Backend API seeder fallback to direct service:", apiErr);
+      }
+
+      // 2. Client-side fallback if server-side is bypassed
+      if (!apiSuccess) {
+        setSeedingLogs(prev => [...prev, `[CLIENT] Running direct MusicBrainz seeder service...`]);
+        const result = await seedVenuesForCities(selectedHubs, (msg, _city, pct) => {
+          if (pct) setSeedingProgress(pct);
+          setSeedingLogs(prev => [...prev, `[STATUS] ${msg}`]);
+        });
+
+        if (result.venues.length > 0) {
+          const mapped = result.venues.map(v => ({
+            id: v.id,
+            name: v.name,
+            address: v.address || '',
+            city: v.city,
+            state: v.state_province || '',
+            country: v.country || 'USA',
+            lat: v.lat,
+            lng: v.lng,
+            place_type: v.place_type || 'venue',
+            capacity: v.capacity !== undefined ? v.capacity : 350,
+            email: v.email || '',
+            genreFit: v.genre_fit || 85,
+            payoutRating: v.payout_rating || 4.5,
+            loadInRating: v.load_in_rating || 4.0,
+            buyers: v.buyers || 'Local Booking Coordinator',
+            intelEntries: v.intel_entries || [],
+            source: 'MusicBrainz'
+          }));
+
+          setLocalVenues(prev => {
+            const existingKeys = new Set(prev.map(p => `${p.name.toLowerCase()}_${p.city.toLowerCase()}`));
+            const newlyAdded = mapped.filter(m => !existingKeys.has(`${m.name.toLowerCase()}_${m.city.toLowerCase()}`));
+            return [...prev, ...newlyAdded];
+          });
+
+          if (setVenues) {
+            setVenues(prev => {
+              const existingNames = new Set(prev.map(p => p.name.toLowerCase()));
+              const added = result.venues.filter(v => !existingNames.has(v.name.toLowerCase()));
+              return [...prev, ...added];
+            });
+          }
+
+          triggerNotification(`⚡ Seeded ${result.totalVenuesFound} places via MusicBrainz!`);
+        }
+      }
+    } catch (err: any) {
+      setSeedingLogs(prev => [...prev, `[ERROR] ${err.message || err}`]);
+      triggerNotification("⚠️ Seeding completed with warnings.");
+    } finally {
+      setIsSeedingActive(false);
+    }
+  };
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedVenue, setSelectedVenue] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -305,7 +672,8 @@ export default function BlackBookView({ onBack, triggerNotification, userProfile
     country: '', 
     capacity: '', 
     email: '', 
-    buyers: '' 
+    buyers: '',
+    place_type: 'venue'
   });
   
   const [intelVenueId, setIntelVenueId] = useState<string | null>(null);
@@ -424,10 +792,47 @@ export default function BlackBookView({ onBack, triggerNotification, userProfile
   const activeMetadata = isCreativeField ? userProfile?.creative_metadata : userProfile?.promoter_metadata;
   const savedVenueIds = activeMetadata?.saved_venues || [];
 
-  const filteredVenues = localVenues.filter(v => {
-    if (showBookmarksOnly && !savedVenueIds.includes(v.id)) {
-      return false;
+  // Expand / Collapse state for all cards
+  const [areAllExpanded, setAreAllExpanded] = useState<boolean>(false);
+  const [globalExpandState, setGlobalExpandState] = useState<boolean | undefined>(undefined);
+
+  // Active places excluding deleted records
+  const activePlaces = localVenues.filter(v => !deletedVenueIds.has(v.id));
+
+  // Compute category counts for tab headers
+  const totalCount = activePlaces.length;
+  const venuesCount = activePlaces.filter(v => {
+    const pType = v.place_type;
+    if (pType === 'studio' || pType === 'rehearsal') return false;
+    if (v.name?.toLowerCase().match(/\b(studio|recording|rehearsal)\b/i)) return false;
+    return true;
+  }).length;
+  const studiosCount = activePlaces.filter(v => {
+    return v.place_type === 'studio' || v.name?.toLowerCase().match(/\b(studio|recording|sound lab|mastering|tracking)\b/i);
+  }).length;
+  const rehearsalCount = activePlaces.filter(v => {
+    return v.place_type === 'rehearsal' || v.place_type === 'other' || v.name?.toLowerCase().match(/\b(rehearsal|lockout|jam space|production center)\b/i);
+  }).length;
+  const savedCount = activePlaces.filter(v => savedVenueIds.includes(v.id)).length;
+  const detectedDefunctCount = activePlaces.filter(v => detectDefunctReason(v) !== null).length;
+
+  const filteredVenues = activePlaces.filter(v => {
+    // 1. Tab category filter
+    if (categoryFilter === 'saved' || showBookmarksOnly) {
+      if (!savedVenueIds.includes(v.id)) return false;
+    } else if (categoryFilter === 'venue') {
+      const isStudio = v.place_type === 'studio' || v.name?.toLowerCase().match(/\b(studio|recording|sound lab)\b/i);
+      const isRehearsal = v.place_type === 'rehearsal' || v.name?.toLowerCase().match(/\b(rehearsal|lockout)\b/i);
+      if (isStudio || isRehearsal) return false;
+    } else if (categoryFilter === 'studio') {
+      const isStudio = v.place_type === 'studio' || v.name?.toLowerCase().match(/\b(studio|recording|sound lab|mastering|tracking)\b/i);
+      if (!isStudio) return false;
+    } else if (categoryFilter === 'rehearsal') {
+      const isRehearsal = v.place_type === 'rehearsal' || v.place_type === 'other' || v.name?.toLowerCase().match(/\b(rehearsal|lockout|jam space|production center)\b/i);
+      if (!isRehearsal) return false;
     }
+
+    // 2. Search term filter
     return (
       v.city.toLowerCase().includes(searchTerm.toLowerCase()) || 
       v.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -435,6 +840,279 @@ export default function BlackBookView({ onBack, triggerNotification, userProfile
       (v.country && v.country.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   });
+
+  const handleOpenEditVenue = (venue: any) => {
+    setEditVenueForm({
+      id: venue.id,
+      name: venue.name || '',
+      place_type: venue.place_type || 'venue',
+      capacity: venue.capacity !== undefined ? String(venue.capacity) : '',
+      address: venue.address || '',
+      city: venue.city || '',
+      state: venue.state || venue.state_province || '',
+      country: venue.country || 'USA',
+      lat: venue.lat !== undefined && venue.lat !== null ? String(venue.lat) : '',
+      lng: venue.lng !== undefined && venue.lng !== null ? String(venue.lng) : '',
+      buyers: venue.buyers || '',
+      email: venue.email || '',
+      phone: venue.phone || '',
+      genreFit: venue.genreFit || venue.genre_fit || 85,
+      payoutRating: venue.payoutRating || venue.payout_rating || 4.5,
+      loadInRating: venue.loadInRating || venue.load_in_rating || 4.0,
+      notes: '',
+      intelNote: ''
+    });
+    setIsEditVenueOpen(true);
+  };
+
+  const handleSaveEditVenue = async () => {
+    if (!editVenueForm.id || !editVenueForm.name || !editVenueForm.city) {
+      triggerNotification("⚠️ Name and City are required.");
+      return;
+    }
+
+    const capNum = parseInt(editVenueForm.capacity);
+    const effectiveCap = isNaN(capNum) ? 0 : capNum;
+
+    const updatedData: any = {
+      name: editVenueForm.name,
+      place_type: editVenueForm.place_type,
+      capacity: effectiveCap,
+      address: editVenueForm.address,
+      city: editVenueForm.city,
+      state: editVenueForm.state,
+      state_province: editVenueForm.state,
+      country: editVenueForm.country,
+      lat: editVenueForm.lat ? parseFloat(editVenueForm.lat) : null,
+      lng: editVenueForm.lng ? parseFloat(editVenueForm.lng) : null,
+      buyers: editVenueForm.buyers,
+      email: editVenueForm.email,
+      phone: editVenueForm.phone,
+      genreFit: Number(editVenueForm.genreFit),
+      genre_fit: Number(editVenueForm.genreFit),
+      payoutRating: Number(editVenueForm.payoutRating),
+      payout_rating: Number(editVenueForm.payoutRating),
+      loadInRating: Number(editVenueForm.loadInRating),
+      load_in_rating: Number(editVenueForm.loadInRating)
+    };
+
+    // Update local state
+    setLocalVenues(prev => prev.map(v => {
+      if (v.id === editVenueForm.id) {
+        const existingEntries = Array.isArray(v.intelEntries) ? [...v.intelEntries] : [];
+        const noteToAdd = editVenueForm.notes?.trim() || editVenueForm.intelNote?.trim();
+        if (noteToAdd) {
+          existingEntries.unshift(`[UPDATED] ${noteToAdd}`);
+        }
+        return {
+          ...v,
+          ...updatedData,
+          intelEntries: existingEntries
+        };
+      }
+      return v;
+    }));
+
+    if (setVenues) {
+      setVenues(prev => prev.map(v => v.id === editVenueForm.id ? { ...v, ...updatedData } : v));
+    }
+
+    // Save to LocalStorage overrides
+    try {
+      const overridesStr = localStorage.getItem('nexus_venue_custom_overrides');
+      const overrides = overridesStr ? JSON.parse(overridesStr) : {};
+      overrides[editVenueForm.id] = updatedData;
+      localStorage.setItem('nexus_venue_custom_overrides', JSON.stringify(overrides));
+    } catch {}
+
+    // Persist to Supabase if connected
+    const supabase = getSupabase();
+    if (supabase) {
+      try {
+        await supabase.from('venues').update({
+          name: updatedData.name,
+          place_type: updatedData.place_type,
+          capacity: updatedData.capacity,
+          address: updatedData.address,
+          city: updatedData.city,
+          state_province: updatedData.state_province,
+          country: updatedData.country,
+          lat: updatedData.lat,
+          lng: updatedData.lng,
+          buyers: updatedData.buyers,
+          email: updatedData.email,
+          genre_fit: updatedData.genre_fit,
+          payout_rating: updatedData.payout_rating,
+          load_in_rating: updatedData.load_in_rating
+        }).eq('id', editVenueForm.id);
+      } catch (err) {
+        console.warn("Could not sync edit to Supabase:", err);
+      }
+    }
+
+    setIsEditVenueOpen(false);
+    triggerNotification(`✅ Updated details for ${editVenueForm.name}`);
+  };
+
+  const handleOpenDeleteVenue = (id: string, name: string, venueObj?: any) => {
+    setVenueToDelete({
+      id,
+      name,
+      city: venueObj?.city,
+      state: venueObj?.state || venueObj?.state_province,
+      capacity: venueObj?.capacity,
+      source: venueObj?.source
+    });
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!venueToDelete) return;
+    const { id, name } = venueToDelete;
+
+    // Remove from localVenues
+    setLocalVenues(prev => prev.filter(v => v.id !== id));
+    if (setVenues) {
+      setVenues(prev => prev.filter(v => v.id !== id));
+    }
+
+    // Update deleted registry
+    setDeletedVenueIds(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      try {
+        localStorage.setItem('nexus_deleted_venue_ids', JSON.stringify(Array.from(next)));
+      } catch {}
+      return next;
+    });
+
+    // Delete from Supabase if connected
+    const supabase = getSupabase();
+    if (supabase) {
+      try {
+        await supabase.from('venues').delete().eq('id', id);
+      } catch (err) {
+        console.warn("Could not delete venue from Supabase:", err);
+      }
+    }
+
+    setIsDeleteConfirmOpen(false);
+    setVenueToDelete(null);
+    triggerNotification(`🗑️ Removed "${name}" from Black Book.`);
+  };
+
+  const handleOpenAuditModal = () => {
+    const flagged: Array<{ venue: any; reason: string }> = [];
+    const seenIds = new Set<string>();
+
+    for (const v of activePlaces) {
+      const reason = detectDefunctReason(v);
+      if (reason && !seenIds.has(v.id)) {
+        flagged.push({ venue: v, reason });
+        seenIds.add(v.id);
+      }
+    }
+
+    setAuditFlaggedPlaces(flagged);
+    setSelectedAuditIds(new Set(flagged.map(f => f.venue.id)));
+    setAuditSearch('');
+    setAuditCustomTerm('');
+    setIsAuditModalOpen(true);
+  };
+
+  const handleAddCustomAuditScan = () => {
+    const term = auditCustomTerm.trim().toLowerCase();
+    if (!term) return;
+
+    const matching = activePlaces.filter(v => 
+      v.name.toLowerCase().includes(term) || 
+      v.city.toLowerCase().includes(term) ||
+      (v.address && v.address.toLowerCase().includes(term))
+    );
+
+    if (matching.length === 0) {
+      triggerNotification(`No active places found matching "${auditCustomTerm}".`);
+      return;
+    }
+
+    setAuditFlaggedPlaces(prev => {
+      const existingIds = new Set(prev.map(p => p.venue.id));
+      const newlyFlagged = matching
+        .filter(m => !existingIds.has(m.id))
+        .map(m => ({ venue: m, reason: `Matches search: "${auditCustomTerm}"` }));
+      return [...prev, ...newlyFlagged];
+    });
+
+    setSelectedAuditIds(prev => {
+      const next = new Set(prev);
+      matching.forEach(m => next.add(m.id));
+      return next;
+    });
+
+    triggerNotification(`Flagged ${matching.length} matching places for review.`);
+    setAuditCustomTerm('');
+  };
+
+  const handleToggleAuditSelect = (id: string) => {
+    setSelectedAuditIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleToggleSelectAllAudit = (filteredList: Array<{ venue: any; reason: string }>) => {
+    const allFilteredSelected = filteredList.every(item => selectedAuditIds.has(item.venue.id));
+    setSelectedAuditIds(prev => {
+      const next = new Set(prev);
+      if (allFilteredSelected) {
+        filteredList.forEach(item => next.delete(item.venue.id));
+      } else {
+        filteredList.forEach(item => next.add(item.venue.id));
+      }
+      return next;
+    });
+  };
+
+  const handlePurgeSelectedDefunct = async () => {
+    if (selectedAuditIds.size === 0) return;
+    setIsPurging(true);
+    const idsToPurge = Array.from(selectedAuditIds);
+
+    // 1. Remove from local state
+    setLocalVenues(prev => prev.filter(v => !selectedAuditIds.has(v.id)));
+    if (setVenues) {
+      setVenues(prev => prev.filter(v => !selectedAuditIds.has(v.id)));
+    }
+
+    // 2. Mark in deleted IDs set and localStorage
+    setDeletedVenueIds(prev => {
+      const next = new Set(prev);
+      idsToPurge.forEach(id => next.add(id));
+      try {
+        localStorage.setItem('nexus_deleted_venue_ids', JSON.stringify(Array.from(next)));
+      } catch {}
+      return next;
+    });
+
+    // 3. Delete from Supabase
+    const supabase = getSupabase();
+    if (supabase) {
+      try {
+        await supabase.from('venues').delete().in('id', idsToPurge);
+      } catch (err) {
+        console.warn("Could not batch delete from Supabase:", err);
+      }
+    }
+
+    setIsPurging(false);
+    setIsAuditModalOpen(false);
+    triggerNotification(`🗑️ Purged ${idsToPurge.length} defunct places from the Black Book!`);
+  };
 
   const handleGeneratePitch = (venue: any) => {
     setSelectedVenue(venue);
@@ -475,23 +1153,32 @@ Representing ${activeBandName}`;
       id: `v${Date.now()}`,
       name: newVenueForm.name,
       city: newVenueForm.city,
+      state: newVenueForm.state || 'N/A',
       state_province: newVenueForm.state || 'N/A',
-      country: newVenueForm.country || 'N/A',
+      country: newVenueForm.country || 'USA',
+      place_type: newVenueForm.place_type || 'venue',
       capacity: parseInt(newVenueForm.capacity) || 0,
       email: newVenueForm.email,
-      buyers: newVenueForm.buyers || 'Booking Dept.',
+      buyers: newVenueForm.buyers || (newVenueForm.place_type === 'studio' ? 'Studio Coordinator' : 'Booking Dept.'),
       genre_fit: Math.floor(Math.random() * (99 - 70) + 70), // Random starting fit
+      genreFit: 85,
       payout_rating: 0,
+      payoutRating: 0,
       load_in_rating: 0,
-      intel_entries: ['No intel yet. Be the first to contribute!']
+      loadInRating: 0,
+      intel_entries: ['Community submitted place. Be the first to contribute intel notes!'],
+      intelEntries: ['Community submitted place. Be the first to contribute intel notes!'],
+      source: 'UserSubmission'
     };
     
+    setLocalVenues(prev => [venue, ...prev]);
+
     if (setVenues) {
-      setVenues(prev => [venue, ...prev]);
+      setVenues(prev => [venue as any, ...prev]);
     }
-    setNewVenueForm({ name: '', city: '', state: '', country: '', capacity: '', email: '', buyers: '' });
+    setNewVenueForm({ name: '', city: '', state: '', country: '', capacity: '', email: '', buyers: '', place_type: 'venue' });
     setIsAddVenueOpen(false);
-    triggerNotification("Venue added to the community pool.");
+    triggerNotification(`Added "${venue.name}" to the Black Book.`);
   };
 
   const handleAddIntel = () => {
@@ -601,39 +1288,128 @@ Representing ${activeBandName}`;
           </div>
         )}
 
-        {/* Action Button & Search Bar */}
+        {/* Action Button, Subcategory Tabs & Search Bar */}
         {activeTab === 'directory' && (
           <div className="mt-4 flex flex-col gap-3 w-full">
-            <button
-              onClick={() => setIsAddVenueOpen(true)}
-              className="w-full bg-transparent border-2 border-[#00ffcc] text-[#00ffcc] hover:bg-[#00ffcc]/10 py-3 sm:py-4 rounded-lg flex items-center justify-center font-bold tracking-widest uppercase transition-colors font-mono cursor-pointer shadow-[0_0_15px_rgba(0,255,204,0.15)]"
-            >
-              <Plus className="w-5 h-5 ml-2 mr-1" />
-              Add New Venue to our Directory
-            </button>
-            <div className="flex gap-2 w-full">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <button
+                onClick={() => setIsAddVenueOpen(true)}
+                className="w-full bg-transparent border-2 border-[#00ffcc] text-[#00ffcc] hover:bg-[#00ffcc]/10 py-2.5 rounded-lg flex items-center justify-center font-bold tracking-widest uppercase transition-colors font-mono cursor-pointer shadow-[0_0_15px_rgba(0,255,204,0.15)] text-xs"
+              >
+                <Plus className="w-4 h-4 mr-1.5 shrink-0" />
+                <span>Add Place</span>
+              </button>
+              <button
+                onClick={() => setIsSeederModalOpen(true)}
+                className="w-full bg-gradient-to-r from-teal-950/60 to-emerald-950/40 border-2 border-teal-400 text-teal-300 hover:from-teal-900/60 hover:to-emerald-900/40 py-2.5 rounded-lg flex items-center justify-center font-bold tracking-widest uppercase transition-all font-mono cursor-pointer shadow-[0_0_20px_rgba(45,212,191,0.25)] text-xs group truncate px-2"
+              >
+                <Sparkles className="w-4 h-4 mr-1.5 text-teal-400 group-hover:rotate-12 transition-transform shrink-0" />
+                <span className="truncate">Seed Tour Hubs</span>
+              </button>
+              <button
+                onClick={handleOpenAuditModal}
+                className="w-full bg-gradient-to-r from-red-950/40 to-zinc-950 border-2 border-red-500/40 hover:border-red-500 text-red-300 hover:bg-red-950/60 py-2.5 rounded-lg flex items-center justify-center font-bold tracking-widest uppercase transition-all font-mono cursor-pointer shadow-[0_0_15px_rgba(239,68,68,0.15)] text-xs group px-2"
+                title="Scan database for closed or defunct places and remove them in bulk"
+              >
+                <AlertOctagon className="w-4 h-4 mr-1.5 text-red-400 group-hover:rotate-12 transition-transform shrink-0" />
+                <span>Audit Defunct</span>
+                {detectedDefunctCount > 0 && (
+                  <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-red-500 text-black text-[10px] font-black shrink-0">
+                    {detectedDefunctCount}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Category Filter Tabs Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 w-full pt-1">
+              {[
+                { id: 'all', label: 'All Places', count: totalCount, icon: Globe, color: 'text-white', activeBg: 'bg-zinc-800', activeBorder: 'border-zinc-400' },
+                { id: 'venue', label: 'Live Stages', count: venuesCount, icon: Music, color: 'text-teal-400', activeBg: 'bg-teal-950/40', activeBorder: 'border-teal-500/70' },
+                { id: 'studio', label: 'Studios', count: studiosCount, icon: Mic2, color: 'text-purple-400', activeBg: 'bg-purple-950/40', activeBorder: 'border-purple-500/70' },
+                { id: 'rehearsal', label: 'Rehearsal', count: rehearsalCount, icon: Building2, color: 'text-sky-400', activeBg: 'bg-sky-950/40', activeBorder: 'border-sky-500/70' },
+                { id: 'saved', label: 'Bookmarks', count: savedCount, icon: Star, color: 'text-amber-400', activeBg: 'bg-amber-950/40', activeBorder: 'border-amber-500/70' }
+              ].map(tab => {
+                const isActive = (categoryFilter === tab.id && !showBookmarksOnly) || (tab.id === 'saved' && showBookmarksOnly);
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={`cat-tab-${tab.id}`}
+                    type="button"
+                    onClick={() => {
+                      if (tab.id === 'saved') {
+                        setShowBookmarksOnly(true);
+                        setCategoryFilter('saved');
+                      } else {
+                        setShowBookmarksOnly(false);
+                        setCategoryFilter(tab.id as any);
+                      }
+                    }}
+                    className={`px-3 py-2 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center justify-between gap-1.5 cursor-pointer border select-none ${
+                      isActive
+                        ? `${tab.activeBg} ${tab.activeBorder} text-white shadow-md ring-1 ring-white/10`
+                        : 'bg-zinc-950/80 border-zinc-900 text-zinc-400 hover:text-zinc-200 hover:border-zinc-800 hover:bg-zinc-900/60'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? tab.color : 'text-zinc-500'}`} />
+                      <span className="truncate text-[11px]">{tab.label}</span>
+                    </div>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] shrink-0 font-mono ${
+                      isActive ? 'bg-zinc-700 text-white font-black' : 'bg-zinc-900 text-zinc-500'
+                    }`}>
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Search Bar & Expand/Collapse Toggle */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                 <input
                   type="text"
-                  placeholder="Search city, state, venue, country..."
+                  placeholder="Search city, state, venue/studio, country..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-[#13161a] border border-zinc-800 text-sm rounded-lg pl-9 pr-4 py-2.5 focus:outline-none focus:border-[#a855f7]/50 focus:ring-1 focus:ring-[#a855f7]/30 transition-all font-sans placeholder:text-zinc-650 text-zinc-200"
+                  className="w-full bg-[#13161a] border border-zinc-800 text-sm rounded-lg pl-9 pr-8 py-2.5 focus:outline-none focus:border-[#a855f7]/50 focus:ring-1 focus:ring-[#a855f7]/30 transition-all font-sans placeholder:text-zinc-500 text-zinc-200"
                 />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 p-1 cursor-pointer"
+                    title="Clear Search"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
-              <button
-                onClick={() => setShowBookmarksOnly(!showBookmarksOnly)}
-                className={`px-3 py-2.5 rounded-lg border font-mono text-[10px] font-black uppercase transition-all flex items-center justify-center gap-1.5 shrink-0 ${
-                  showBookmarksOnly 
-                    ? 'bg-amber-400/20 border-amber-500 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.25)]' 
-                    : 'bg-[#13161a] border-zinc-800 text-zinc-500 hover:text-zinc-300'
-                }`}
-                title="Toggle Bookmarked Only"
-              >
-                <Star className={`w-3.5 h-3.5 ${showBookmarksOnly ? 'fill-amber-400 text-amber-400' : ''}`} />
-                <span className="hidden sm:inline">Bookmarks</span>
-              </button>
+
+              <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+                <div className="text-[11px] font-mono text-zinc-500 px-2.5 py-2 bg-zinc-950/80 rounded-lg border border-zinc-900">
+                  <span className="text-zinc-300 font-bold">{filteredVenues.length}</span> {filteredVenues.length === 1 ? 'place' : 'places'}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !areAllExpanded;
+                    setAreAllExpanded(next);
+                    setGlobalExpandState(next);
+                  }}
+                  className={`px-3 py-2 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 border cursor-pointer select-none ${
+                    areAllExpanded
+                      ? 'bg-[#a855f7]/20 border-[#a855f7]/50 text-[#d8b4fe]'
+                      : 'bg-[#13161a] border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                  }`}
+                  title={areAllExpanded ? "Collapse All Cards" : "Expand All Cards"}
+                >
+                  <ChevronsUpDown className="w-3.5 h-3.5" />
+                  <span>{areAllExpanded ? 'Collapse All' : 'Expand All'}</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -643,9 +1419,12 @@ Representing ${activeBandName}`;
       <div className="flex-1 overflow-y-auto p-5 space-y-4">
         {activeTab === 'directory' ? (
           filteredVenues.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <MapPin className="w-8 h-8 text-zinc-700 mb-3" />
-            <p className="text-zinc-400 font-mono text-xs uppercase">No venues found for routing</p>
+          <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed border-zinc-800 rounded-2xl bg-zinc-950/40">
+            <MapPin className="w-10 h-10 text-zinc-750 mb-3" />
+            <p className="text-zinc-400 font-mono text-sm uppercase tracking-wider font-bold">No places found</p>
+            <p className="text-zinc-600 font-mono text-xs mt-1 max-w-sm">
+              Try adjusting your search query, switching category tabs, or running the MusicBrainz seeder above.
+            </p>
           </div>
         ) : (
           filteredVenues.map((venue, idx) => {
@@ -667,6 +1446,10 @@ Representing ${activeBandName}`;
                 onTouchEndHandler={onTouchEndHandler}
                 triggerNotification={triggerNotification}
                 onBuyerClick={setSelectedPromoter}
+                onEditVenue={handleOpenEditVenue}
+                onDeleteVenue={handleOpenDeleteVenue}
+                defaultExpanded={false}
+                isExpandedOverride={globalExpandState}
               />
             );
           })
@@ -1179,7 +1962,7 @@ Representing ${activeBandName}`;
           </>
         )}
 
-        {/* Add Venue Modal */}
+        {/* Add Place Modal */}
         {isAddVenueOpen && (
           <>
             <motion.div 
@@ -1193,51 +1976,79 @@ Representing ${activeBandName}`;
               initial={{ opacity: 0, y: 50, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              className="fixed left-4 right-4 top-[10%] bg-[#13161a] border border-zinc-800 rounded-xl z-50 overflow-hidden shadow-2xl max-h-[85vh] flex flex-col max-w-lg mx-auto"
+              className="fixed left-4 right-4 top-[8%] bg-[#13161a] border border-zinc-800 rounded-xl z-50 overflow-hidden shadow-2xl max-h-[88vh] flex flex-col max-w-lg mx-auto"
             >
               <div className="px-5 py-4 border-b border-zinc-800 flex items-center justify-between bg-[#0a0a0c]">
                 <h3 className="font-display font-bold text-white flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-[#a855f7]" /> Add Venue
+                  <MapPin className="w-4 h-4 text-[#00ffcc]" /> Add New Place to Black Book
                 </h3>
                 <button onClick={() => setIsAddVenueOpen(false)} className="text-zinc-500 hover:text-white cursor-pointer"><X className="w-4 h-4" /></button>
               </div>
               <div className="p-5 overflow-y-auto space-y-4 bg-[#0d0f12] text-left">
                 <div>
-                  <label className="block text-[10px] uppercase font-mono text-zinc-500 mb-1">Venue Name</label>
-                  <input type="text" value={newVenueForm.name} onChange={e => setNewVenueForm(p => ({ ...p, name: e.target.value }))} className="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-sm focus:outline-none focus:border-[#a855f7]/50 text-white" placeholder="The Empty Bottle" />
+                  <label className="block text-[10px] uppercase font-mono text-zinc-400 mb-1">Place / Facility Name</label>
+                  <input type="text" value={newVenueForm.name} onChange={e => setNewVenueForm(p => ({ ...p, name: e.target.value }))} className="w-full bg-zinc-900 border border-zinc-800 rounded p-2.5 text-sm focus:outline-none focus:border-[#00ffcc]/50 text-white" placeholder="e.g., The Empty Bottle or Sunset Sound" />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase font-mono text-zinc-400 mb-1">Category / Place Type</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: 'venue', label: '🎸 Live Venue / Stage' },
+                      { id: 'studio', label: '🎙️ Recording Studio' },
+                      { id: 'rehearsal', label: '🥁 Rehearsal Space' },
+                      { id: 'other', label: '🏛️ Landmark / Other' }
+                    ].map(typeOpt => (
+                      <button
+                        key={`new-pt-${typeOpt.id}`}
+                        type="button"
+                        onClick={() => setNewVenueForm(p => ({ ...p, place_type: typeOpt.id }))}
+                        className={`py-2 px-2.5 rounded border text-xs font-mono font-bold text-left transition-all ${
+                          newVenueForm.place_type === typeOpt.id
+                            ? 'bg-teal-950/60 border-teal-400 text-teal-300'
+                            : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                        }`}
+                      >
+                        {typeOpt.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 
                 {/* State, Province & Country Inputs */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="sm:col-span-1">
-                    <label className="block text-[10px] uppercase font-mono text-zinc-500 mb-1">City</label>
-                    <input type="text" value={newVenueForm.city} onChange={e => setNewVenueForm(p => ({ ...p, city: e.target.value }))} className="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-sm focus:outline-none focus:border-[#a855f7]/50 text-white" placeholder="Chicago" />
+                    <label className="block text-[10px] uppercase font-mono text-zinc-400 mb-1">City</label>
+                    <input type="text" value={newVenueForm.city} onChange={e => setNewVenueForm(p => ({ ...p, city: e.target.value }))} className="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-sm focus:outline-none focus:border-[#00ffcc]/50 text-white" placeholder="Chicago" />
                   </div>
                   <div>
-                    <label className="block text-[10px] uppercase font-mono text-zinc-500 mb-1">State/Province</label>
-                    <input type="text" value={newVenueForm.state} onChange={e => setNewVenueForm(p => ({ ...p, state: e.target.value }))} className="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-sm focus:outline-none focus:border-[#a855f7]/50 text-white" placeholder="IL" />
+                    <label className="block text-[10px] uppercase font-mono text-zinc-400 mb-1">State/Province</label>
+                    <input type="text" value={newVenueForm.state} onChange={e => setNewVenueForm(p => ({ ...p, state: e.target.value }))} className="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-sm focus:outline-none focus:border-[#00ffcc]/50 text-white" placeholder="IL" />
                   </div>
                   <div>
-                    <label className="block text-[10px] uppercase font-mono text-zinc-500 mb-1">Country</label>
-                    <input type="text" value={newVenueForm.country} onChange={e => setNewVenueForm(p => ({ ...p, country: e.target.value }))} className="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-sm focus:outline-none focus:border-[#a855f7]/50 text-white" placeholder="USA" />
+                    <label className="block text-[10px] uppercase font-mono text-zinc-400 mb-1">Country</label>
+                    <input type="text" value={newVenueForm.country} onChange={e => setNewVenueForm(p => ({ ...p, country: e.target.value }))} className="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-sm focus:outline-none focus:border-[#00ffcc]/50 text-white" placeholder="USA" />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] uppercase font-mono text-zinc-500 mb-1">Capacity</label>
-                  <input type="number" value={newVenueForm.capacity} onChange={e => setNewVenueForm(p => ({ ...p, capacity: e.target.value }))} className="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-sm focus:outline-none focus:border-[#a855f7]/50 text-white" placeholder="400" />
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-[10px] uppercase font-mono text-zinc-400">Max Room Capacity</label>
+                    <span className="text-[10px] font-mono text-zinc-500">Set 0 for studios / rehearsals</span>
+                  </div>
+                  <input type="number" value={newVenueForm.capacity} onChange={e => setNewVenueForm(p => ({ ...p, capacity: e.target.value }))} className="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-sm focus:outline-none focus:border-[#00ffcc]/50 text-white font-mono" placeholder={newVenueForm.place_type === 'venue' ? '350' : '0'} />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase font-mono text-zinc-500 mb-1">Buyer Email</label>
-                  <input type="email" value={newVenueForm.email} onChange={e => setNewVenueForm(p => ({ ...p, email: e.target.value }))} className="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-sm focus:outline-none focus:border-[#a855f7]/50 text-white" placeholder="talent@venue.com" />
+                  <label className="block text-[10px] uppercase font-mono text-zinc-400 mb-1">Contact Email</label>
+                  <input type="email" value={newVenueForm.email} onChange={e => setNewVenueForm(p => ({ ...p, email: e.target.value }))} className="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-sm focus:outline-none focus:border-[#00ffcc]/50 text-white" placeholder="booking@venue.com" />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase font-mono text-zinc-500 mb-1">Talent Buyer Name</label>
-                  <input type="text" value={newVenueForm.buyers} onChange={e => setNewVenueForm(p => ({ ...p, buyers: e.target.value }))} className="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-sm focus:outline-none focus:border-[#a855f7]/50 text-white" placeholder="John Doe" />
+                  <label className="block text-[10px] uppercase font-mono text-zinc-400 mb-1">Contact / Talent Buyer Name</label>
+                  <input type="text" value={newVenueForm.buyers} onChange={e => setNewVenueForm(p => ({ ...p, buyers: e.target.value }))} className="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-sm focus:outline-none focus:border-[#00ffcc]/50 text-white" placeholder="Booking Coordinator / Studio Manager" />
                 </div>
               </div>
               <div className="p-4 border-t border-zinc-800 bg-[#0a0a0c]">
-                <button onClick={handleAddVenue} className="w-full bg-[#a855f7] text-white hover:bg-[#9333ea] py-3 rounded-lg font-bold tracking-wider uppercase text-sm transition-colors cursor-pointer">Submit to Community</button>
+                <button onClick={handleAddVenue} className="w-full bg-[#00ffcc] text-black hover:bg-[#00e6b8] py-3 rounded-lg font-bold tracking-wider uppercase text-xs font-mono transition-colors cursor-pointer shadow-[0_0_15px_rgba(0,255,204,0.3)]">Save Place to Directory</button>
               </div>
             </motion.div>
           </>
@@ -1480,6 +2291,717 @@ Representing ${activeBandName}`;
                 <div className="text-[9px] text-zinc-600 font-mono select-none uppercase text-center tracking-widest">
                   Secure Direct Promoter Link Established
                 </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+        {/* MusicBrainz Tour Hub Seeder Modal */}
+        {isSeederModalOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                if (!isSeedingActive) setIsSeederModalOpen(false);
+              }}
+              className="fixed inset-0 bg-black/85 backdrop-blur-md z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 40, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              className="fixed left-4 right-4 top-[10%] bottom-[10%] bg-[#0f1217] border border-teal-500/40 rounded-2xl z-50 overflow-hidden shadow-[0_0_50px_rgba(20,184,166,0.25)] flex flex-col max-w-2xl mx-auto"
+            >
+              {/* Modal Header */}
+              <div className="px-6 py-4 border-b border-teal-500/20 flex items-center justify-between bg-[#080a0d]">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-teal-950/80 border border-teal-500/50 flex items-center justify-center shadow-[0_0_12px_rgba(20,184,166,0.3)]">
+                    <Sparkles className="w-5 h-5 text-teal-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-bold text-white text-base tracking-wide flex items-center gap-2">
+                      MusicBrainz Tour Hub Seeder
+                    </h3>
+                    <p className="text-[11px] text-teal-400/70 font-mono">
+                      Query open place databases & geocode tour routing coordinates
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsSeederModalOpen(false)} 
+                  disabled={isSeedingActive}
+                  className="text-zinc-500 hover:text-white cursor-pointer disabled:opacity-30 p-1"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6 overflow-y-auto space-y-5 bg-[#0b0e12] flex-1 text-left">
+                {/* Info Protocol Note */}
+                <div className="text-xs text-zinc-300 font-mono bg-teal-950/20 border border-teal-500/30 p-3.5 rounded-xl leading-relaxed">
+                  <span className="text-teal-400 font-bold uppercase tracking-wider block mb-1">
+                    ⚡ // GEODATA HARVESTING PROTOCOL:
+                  </span>
+                  Queries MusicBrainz API for venues in designated metros with polite rate-limiting (1.1s intervals). Coordinates (<code className="text-teal-300">[lat, lng]</code>) and addresses are persisted directly to Supabase <code className="text-teal-300">venues</code> table with duplicate suppression (<code className="text-teal-300">onConflict: 'name,city'</code>).
+                </div>
+
+                {/* Hub Selection Matrix */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-[11px] uppercase font-mono font-bold text-teal-300 tracking-wider">
+                      Target Tour Hubs ({selectedHubs.length} Selected)
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedHubs(['Austin', 'Dallas', 'Oklahoma City', 'Houston'])}
+                        className="text-[10px] font-mono text-teal-400 hover:text-teal-300 underline cursor-pointer"
+                      >
+                        Reset Defaults
+                      </button>
+                      <span className="text-zinc-600">|</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedHubs(TOUR_HUB_PRESETS.map(h => h.city))}
+                        className="text-[10px] font-mono text-teal-400 hover:text-teal-300 underline cursor-pointer"
+                      >
+                        Select All
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {TOUR_HUB_PRESETS.map(hub => {
+                      const isSelected = selectedHubs.includes(hub.city);
+                      return (
+                        <button
+                          key={`hub-${hub.city}`}
+                          type="button"
+                          onClick={() => toggleHubSelection(hub.city)}
+                          disabled={isSeedingActive}
+                          className={`px-3 py-2 rounded-lg border text-xs font-mono font-bold text-left flex items-center justify-between transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-teal-950/60 border-teal-400 text-teal-200 shadow-[0_0_10px_rgba(45,212,191,0.2)]'
+                              : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                          }`}
+                        >
+                          <span className="truncate">{hub.label}</span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-teal-400 shrink-0 ml-1" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Custom Metro Input */}
+                <div>
+                  <label className="block text-[11px] uppercase font-mono font-bold text-zinc-400 mb-1.5 tracking-wider">
+                    Add Custom Metro / Region
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={customCityInput}
+                      onChange={e => setCustomCityInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') handleAddCustomHub(); }}
+                      disabled={isSeedingActive}
+                      placeholder="e.g. Portland, Minneapolis, London..."
+                      className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg px-3.5 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-teal-500 placeholder:text-zinc-600"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCustomHub}
+                      disabled={isSeedingActive || !customCityInput.trim()}
+                      className="px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 text-white rounded-lg text-xs font-mono font-bold uppercase transition-colors"
+                    >
+                      + Add Hub
+                    </button>
+                  </div>
+                </div>
+
+                {/* Live Seeding Terminal Logs */}
+                {seedingLogs.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-[10px] uppercase font-mono text-teal-400/80 font-bold tracking-wider">
+                        Live Execution Logs & Telemetry
+                      </label>
+                      {isSeedingActive && (
+                        <span className="text-[10px] font-mono text-teal-400 animate-pulse flex items-center gap-1">
+                          <RefreshCw className="w-3 h-3 animate-spin" /> Ingesting...
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Progress Bar */}
+                    <div className="w-full bg-zinc-900 rounded-full h-1.5 mb-2 overflow-hidden border border-zinc-800">
+                      <div 
+                        className="bg-gradient-to-r from-teal-500 to-emerald-400 h-full transition-all duration-300 rounded-full"
+                        style={{ width: `${seedingProgress}%` }}
+                      />
+                    </div>
+
+                    <div className="bg-black/90 border border-zinc-800 rounded-lg p-3 max-h-40 overflow-y-auto font-mono text-[11px] space-y-1 text-zinc-300 select-text">
+                      {seedingLogs.map((log, lIdx) => (
+                        <div key={`seed-log-${lIdx}`} className="leading-relaxed">
+                          {log.includes('[SUCCESS]') || log.includes('⚡') ? (
+                            <span className="text-emerald-400 font-bold">{log}</span>
+                          ) : log.includes('[ERROR]') || log.includes('⚠️') ? (
+                            <span className="text-red-400 font-bold">{log}</span>
+                          ) : log.includes('[DATABASE]') || log.includes('[SERVER]') ? (
+                            <span className="text-teal-400">{log}</span>
+                          ) : (
+                            <span className="text-zinc-400">{log}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer Actions */}
+              <div className="p-5 border-t border-teal-500/20 bg-[#080a0d] flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsSeederModalOpen(false)}
+                  disabled={isSeedingActive}
+                  className="px-4 py-3 bg-zinc-900 hover:bg-zinc-800 disabled:opacity-40 text-zinc-300 rounded-xl text-xs font-mono font-bold uppercase transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRunVenueSeeder}
+                  disabled={isSeedingActive || selectedHubs.length === 0}
+                  className="flex-1 py-3 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 disabled:opacity-50 text-black rounded-xl font-bold font-mono tracking-wider uppercase text-xs transition-all cursor-pointer shadow-[0_0_20px_rgba(20,184,166,0.4)] flex items-center justify-center gap-2"
+                >
+                  {isSeedingActive ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Seeding {selectedHubs.length} Hubs...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      <span>Start Pre-Seeding Tour Hubs</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+
+        {/* Edit Place / Venue Details Modal */}
+        {isEditVenueOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsEditVenueOpen(false)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 50, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              className="fixed left-4 right-4 top-[6%] bg-[#13161a] border border-zinc-800 rounded-xl z-50 overflow-hidden shadow-2xl max-h-[88vh] flex flex-col max-w-xl mx-auto"
+            >
+              <div className="px-5 py-4 border-b border-zinc-800 flex items-center justify-between bg-[#0a0a0c]">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded bg-purple-950/40 border border-purple-800/40 text-purple-400">
+                    <Edit2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-bold text-white text-sm">
+                      Edit Place Record
+                    </h3>
+                    <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
+                      Override & update custom details in your Black Book
+                    </p>
+                  </div>
+                </div>
+                <button onClick={() => setIsEditVenueOpen(false)} className="text-zinc-500 hover:text-white cursor-pointer">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-5 overflow-y-auto space-y-4 bg-[#0d0f12] text-left flex-1">
+                <div>
+                  <label className="block text-[10px] uppercase font-mono text-zinc-400 mb-1">Place Name</label>
+                  <input
+                    type="text"
+                    value={editVenueForm.name}
+                    onChange={e => setEditVenueForm(p => ({ ...p, name: e.target.value }))}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded p-2.5 text-sm focus:outline-none focus:border-purple-500/50 text-white font-medium"
+                    placeholder="Place name"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase font-mono text-zinc-400 mb-1">Place Category / Type</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {[
+                      { id: 'venue', label: 'Live Stage', icon: Music, color: 'text-teal-400' },
+                      { id: 'studio', label: 'Studio', icon: Mic2, color: 'text-purple-400' },
+                      { id: 'rehearsal', label: 'Rehearsal', icon: Building2, color: 'text-sky-400' },
+                      { id: 'other', label: 'Other', icon: Globe, color: 'text-zinc-400' }
+                    ].map(typeOpt => {
+                      const Icon = typeOpt.icon;
+                      const isSel = editVenueForm.place_type === typeOpt.id;
+                      return (
+                        <button
+                          key={`edit-pt-${typeOpt.id}`}
+                          type="button"
+                          onClick={() => setEditVenueForm(p => ({ ...p, place_type: typeOpt.id }))}
+                          className={`py-2 px-2.5 rounded border text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                            isSel
+                              ? 'bg-purple-950/60 border-purple-500 text-white shadow-sm'
+                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                          }`}
+                        >
+                          <Icon className={`w-3.5 h-3.5 ${isSel ? typeOpt.color : 'text-zinc-500'}`} />
+                          <span>{typeOpt.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-1">
+                    <label className="block text-[10px] uppercase font-mono text-zinc-400 mb-1">City</label>
+                    <input
+                      type="text"
+                      value={editVenueForm.city}
+                      onChange={e => setEditVenueForm(p => ({ ...p, city: e.target.value }))}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-sm focus:outline-none focus:border-purple-500/50 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase font-mono text-zinc-400 mb-1">State / Province</label>
+                    <input
+                      type="text"
+                      value={editVenueForm.state}
+                      onChange={e => setEditVenueForm(p => ({ ...p, state: e.target.value }))}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-sm focus:outline-none focus:border-purple-500/50 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase font-mono text-zinc-400 mb-1">Country</label>
+                    <input
+                      type="text"
+                      value={editVenueForm.country}
+                      onChange={e => setEditVenueForm(p => ({ ...p, country: e.target.value }))}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-sm focus:outline-none focus:border-purple-500/50 text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase font-mono text-zinc-400 mb-1">Address / Street</label>
+                  <input
+                    type="text"
+                    value={editVenueForm.address}
+                    onChange={e => setEditVenueForm(p => ({ ...p, address: e.target.value }))}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-sm focus:outline-none focus:border-purple-500/50 text-white"
+                    placeholder="123 Main St"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-[10px] uppercase font-mono text-zinc-400">Capacity</label>
+                      <span className="text-[10px] font-mono text-zinc-500">Heads</span>
+                    </div>
+                    <input
+                      type="number"
+                      value={editVenueForm.capacity}
+                      onChange={e => setEditVenueForm(p => ({ ...p, capacity: e.target.value }))}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-sm focus:outline-none focus:border-purple-500/50 text-white font-mono"
+                      placeholder="350"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase font-mono text-zinc-400 mb-1">Contact Email</label>
+                    <input
+                      type="email"
+                      value={editVenueForm.email}
+                      onChange={e => setEditVenueForm(p => ({ ...p, email: e.target.value }))}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-sm focus:outline-none focus:border-purple-500/50 text-white"
+                      placeholder="booking@venue.com"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase font-mono text-zinc-400 mb-1">Talent Buyer / Manager Name</label>
+                  <input
+                    type="text"
+                    value={editVenueForm.buyers}
+                    onChange={e => setEditVenueForm(p => ({ ...p, buyers: e.target.value }))}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-sm focus:outline-none focus:border-purple-500/50 text-white"
+                    placeholder="Talent Coordinator"
+                  />
+                </div>
+
+                {/* Rating Sliders */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-zinc-950 p-3 rounded-lg border border-zinc-900">
+                  <div>
+                    <label className="block text-[10px] uppercase font-mono text-amber-500 mb-1">
+                      Payout Rating: {editVenueForm.payoutRating} / 5
+                    </label>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map(val => (
+                        <button
+                          key={`ep-payout-${val}`}
+                          type="button"
+                          onClick={() => setEditVenueForm(p => ({ ...p, payoutRating: val }))}
+                          className={`flex-1 h-7 rounded text-xs font-mono font-bold cursor-pointer transition-colors ${
+                            editVenueForm.payoutRating >= val
+                              ? 'bg-amber-500 text-black font-black'
+                              : 'bg-zinc-900 text-zinc-500 border border-zinc-800'
+                          }`}
+                        >
+                          {val}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase font-mono text-amber-500 mb-1">
+                      Load-in Rating: {editVenueForm.loadInRating} / 5
+                    </label>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map(val => (
+                        <button
+                          key={`ep-loadin-${val}`}
+                          type="button"
+                          onClick={() => setEditVenueForm(p => ({ ...p, loadInRating: val }))}
+                          className={`flex-1 h-7 rounded text-xs font-mono font-bold cursor-pointer transition-colors ${
+                            editVenueForm.loadInRating >= val
+                              ? 'bg-amber-500 text-black font-black'
+                              : 'bg-zinc-900 text-zinc-500 border border-zinc-800'
+                          }`}
+                        >
+                          {val}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase font-mono text-zinc-400 mb-1">Intel & Production Notes</label>
+                  <textarea
+                    rows={3}
+                    value={editVenueForm.notes}
+                    onChange={e => setEditVenueForm(p => ({ ...p, notes: e.target.value }))}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded p-2.5 text-xs text-white resize-none font-mono focus:outline-none focus:border-purple-500/50"
+                    placeholder="Enter gear specs, load-in quirks, parking information..."
+                  />
+                </div>
+              </div>
+
+              <div className="p-4 border-t border-zinc-800 bg-[#0a0a0c] flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsEditVenueOpen(false)}
+                  className="px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 rounded-lg text-xs font-mono font-bold uppercase transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEditVenue}
+                  className="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-lg text-xs font-mono font-bold tracking-wider uppercase transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save Changes</span>
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+
+        {/* Audit & Purge Defunct Listings Modal */}
+        {isAuditModalOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsAuditModalOpen(false)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed left-4 right-4 top-1/2 -translate-y-1/2 bg-[#101216] border border-red-500/30 rounded-2xl z-50 overflow-hidden shadow-[0_0_50px_rgba(239,68,68,0.25)] max-w-2xl mx-auto max-h-[88vh] flex flex-col"
+            >
+              {/* Header */}
+              <div className="p-5 border-b border-zinc-850 bg-gradient-to-r from-red-950/40 via-zinc-900/60 to-zinc-950 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-red-950/80 border border-red-500/40 text-red-400 flex items-center justify-center shrink-0">
+                    <ShieldAlert className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-bold text-white text-base tracking-wide flex items-center gap-2">
+                      <span>Directory Health Audit</span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-red-950 border border-red-500/40 text-red-300">
+                        Defunct Cleaner
+                      </span>
+                    </h3>
+                    <p className="text-xs font-mono text-zinc-400 mt-0.5">
+                      Batch inspect and purge closed, defunct, or demolished venues
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAuditModalOpen(false)}
+                  className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="p-5 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
+                {/* Custom Search & Keyword Scanner */}
+                <div className="bg-zinc-950 p-3 rounded-xl border border-zinc-850 space-y-2">
+                  <label className="block text-[10px] uppercase font-mono font-bold text-zinc-400">
+                    Custom Defunct / Keyword Scanner
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={auditCustomTerm}
+                      onChange={e => setAuditCustomTerm(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddCustomAuditScan();
+                        }
+                      }}
+                      placeholder="Search closed venue name, city, or keyword (e.g. 'Al\'s Bar' or 'closed')..."
+                      className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500/60 font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCustomAuditScan}
+                      className="px-3.5 py-2 bg-red-950/60 hover:bg-red-900/60 border border-red-500/40 text-red-300 rounded-lg text-xs font-mono font-bold tracking-wider uppercase transition-colors cursor-pointer shrink-0 flex items-center gap-1.5"
+                    >
+                      <Search className="w-3.5 h-3.5" />
+                      <span>Scan</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filter in Audit Results */}
+                {auditFlaggedPlaces.length > 0 && (
+                  <div className="flex items-center justify-between gap-3 pt-1">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const filtered = auditFlaggedPlaces.filter(p => 
+                            p.venue.name.toLowerCase().includes(auditSearch.toLowerCase()) ||
+                            p.venue.city.toLowerCase().includes(auditSearch.toLowerCase())
+                          );
+                          handleToggleSelectAllAudit(filtered);
+                        }}
+                        className="text-xs font-mono font-bold text-red-400 hover:text-red-300 flex items-center gap-1.5 cursor-pointer bg-red-950/30 px-2.5 py-1 rounded border border-red-500/20"
+                      >
+                        {auditFlaggedPlaces.length > 0 && selectedAuditIds.size === auditFlaggedPlaces.length ? (
+                          <>
+                            <CheckSquare className="w-3.5 h-3.5" />
+                            <span>Deselect All</span>
+                          </>
+                        ) : (
+                          <>
+                            <Square className="w-3.5 h-3.5" />
+                            <span>Select All</span>
+                          </>
+                        )}
+                      </button>
+                      <span className="text-xs font-mono text-zinc-400">
+                        <strong className="text-white">{selectedAuditIds.size}</strong> of {auditFlaggedPlaces.length} selected for purge
+                      </span>
+                    </div>
+
+                    <input
+                      type="text"
+                      value={auditSearch}
+                      onChange={e => setAuditSearch(e.target.value)}
+                      placeholder="Filter audit list..."
+                      className="bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500/40 w-44 font-mono"
+                    />
+                  </div>
+                )}
+
+                {/* Flagged Places List */}
+                {auditFlaggedPlaces.length === 0 ? (
+                  <div className="p-8 text-center bg-zinc-950/60 rounded-xl border border-zinc-850 space-y-2">
+                    <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto opacity-80" />
+                    <div className="text-sm font-bold text-white">Your Directory Is Clean!</div>
+                    <p className="text-xs font-mono text-zinc-400 max-w-md mx-auto">
+                      No automated defunct or permanently closed venue patterns detected in your active listings. Use the custom scanner above to flag specific spots if needed.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-[340px] overflow-y-auto pr-1">
+                    {auditFlaggedPlaces
+                      .filter(p => 
+                        p.venue.name.toLowerCase().includes(auditSearch.toLowerCase()) ||
+                        p.venue.city.toLowerCase().includes(auditSearch.toLowerCase())
+                      )
+                      .map(({ venue, reason }) => {
+                        const isSelected = selectedAuditIds.has(venue.id);
+                        return (
+                          <div
+                            key={`audit-v-${venue.id}`}
+                            onClick={() => handleToggleAuditSelect(venue.id)}
+                            className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start justify-between gap-3 ${
+                              isSelected
+                                ? 'bg-red-950/30 border-red-500/50 text-white shadow-sm'
+                                : 'bg-zinc-950/60 border-zinc-850 text-zinc-400 hover:border-zinc-700'
+                            }`}
+                          >
+                            <div className="flex items-start gap-3 min-w-0">
+                              <div className="pt-0.5">
+                                {isSelected ? (
+                                  <CheckSquare className="w-4 h-4 text-red-400 shrink-0" />
+                                ) : (
+                                  <Square className="w-4 h-4 text-zinc-600 shrink-0" />
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="font-bold text-sm text-white truncate flex items-center gap-2">
+                                  <span>{venue.name}</span>
+                                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-red-900/60 border border-red-500/40 text-red-200">
+                                    {reason}
+                                  </span>
+                                </div>
+                                <div className="text-xs font-mono text-zinc-400 mt-0.5 truncate">
+                                  {venue.city}{venue.state ? `, ${venue.state}` : ''} • Cap: {venue.capacity || 'N/A'} {venue.address ? `• ${venue.address}` : ''}
+                                </div>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenDeleteVenue(venue.id, venue.name, venue);
+                              }}
+                              className="p-1.5 rounded text-zinc-500 hover:text-red-400 hover:bg-red-950/40 transition-colors"
+                              title="Inspect / Single Delete"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-zinc-850 bg-[#0c0d10] flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsAuditModalOpen(false)}
+                  className="px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 rounded-xl text-xs font-mono font-bold uppercase transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  disabled={selectedAuditIds.size === 0 || isPurging}
+                  onClick={handlePurgeSelectedDefunct}
+                  className="flex-1 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-xs font-mono font-bold tracking-wider uppercase transition-all shadow-[0_0_20px_rgba(239,68,68,0.35)] flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>
+                    {isPurging
+                      ? 'Purging Records...'
+                      : `Purge Selected (${selectedAuditIds.size}) Listings`}
+                  </span>
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {isDeleteConfirmOpen && venueToDelete && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsDeleteConfirmOpen(false)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 20 }}
+              className="fixed left-4 right-4 top-1/2 -translate-y-1/2 bg-[#13161a] border border-red-500/30 rounded-2xl z-50 overflow-hidden shadow-[0_0_40px_rgba(239,68,68,0.2)] max-w-md mx-auto"
+            >
+              <div className="p-6 text-left space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-red-950/60 border border-red-500/40 text-red-400 flex items-center justify-center shrink-0">
+                    <Trash2 className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-bold text-white text-base">
+                      Remove from Black Book?
+                    </h3>
+                    <p className="text-xs font-mono text-zinc-400 mt-0.5">
+                      Exclude from directory & routing engine
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-zinc-950/80 border border-zinc-850 p-3.5 rounded-xl text-left space-y-1">
+                  <div className="text-white font-bold text-sm">{venueToDelete.name}</div>
+                  <div className="text-xs font-mono text-zinc-400">
+                    {venueToDelete.city}{venueToDelete.state ? `, ${venueToDelete.state}` : ''} • Cap: {venueToDelete.capacity || 'N/A'}
+                  </div>
+                  <div className="text-[10px] font-mono text-zinc-500 pt-1">
+                    Source: {venueToDelete.source || 'Local Database'}
+                  </div>
+                </div>
+
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  This place will be permanently hidden from your Nexus Core database and will not appear in tour optimization suggestions.
+                </p>
+              </div>
+
+              <div className="p-4 border-t border-zinc-800 bg-[#0a0a0c] flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteConfirmOpen(false)}
+                  className="flex-1 py-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-xl text-xs font-mono font-bold uppercase transition-colors cursor-pointer"
+                >
+                  Keep Place
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(239,68,68,0.4)] flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Delete Place</span>
+                </button>
               </div>
             </motion.div>
           </>

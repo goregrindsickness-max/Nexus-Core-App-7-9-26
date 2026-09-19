@@ -28,7 +28,7 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
     custom_slug: 'cordyceps',
     youtube_url: 'https://www.youtube.com/watch?v=0hY48qHjM7I',
     featured_youtube_url: 'https://www.youtube.com/watch?v=0hY48qHjM7I',
-    verification_status: 'verified_official',
+    verification_status: 'community_archive',
     curated_by: '@slam_archivist',
     curator_name: 'Vegas Death Metal Society',
     created_at: '2026-01-01T10:00:00Z',
@@ -119,7 +119,7 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
     custom_slug: 'devourment',
     youtube_url: 'https://www.youtube.com/watch?v=kY6A7yL9t6Y',
     featured_youtube_url: 'https://www.youtube.com/watch?v=kY6A7yL9t6Y',
-    verification_status: 'verified_official',
+    verification_status: 'community_archive',
     curated_by: '@slam_king',
     curator_name: 'Texas Slam Coalition',
     created_at: '2026-01-05T12:00:00Z',
@@ -190,7 +190,7 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
     banner_url: 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/community-bands/5403162d-1947-43aa-b5f6-38a1bd2a1b80/community-banner_1787857006637.jpg?t=1787857006637',
     metal_archives_url: 'https://www.metal-archives.com/bands/Defeated_Sanity/11052',
     custom_slug: 'defeated-sanity',
-    verification_status: 'verified_official',
+    verification_status: 'community_archive',
     curated_by: '@slam_archivist',
     curator_name: 'European Death Metal Vault',
     created_at: '2026-01-08T12:00:00Z',
@@ -254,7 +254,7 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
     banner_url: 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/community-bands/5403162d-1947-43aa-b5f6-38a1bd2a1b80/community-banner_1787849712763.jpg?t=1787849712763',
     metal_archives_url: 'https://www.metal-archives.com/bands/Lividity/1173',
     custom_slug: 'lividity',
-    verification_status: 'verified_official',
+    verification_status: 'community_archive',
     curated_by: '@slam_archivist',
     curator_name: 'Midwest Pit Crew',
     created_at: '2026-01-10T12:00:00Z',
@@ -303,7 +303,7 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
     banner_url: 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/community-bands/5403162d-1947-43aa-b5f6-38a1bd2a1b80/community-banner_1787797483781.jpg?t=1787797483781',
     metal_archives_url: 'https://www.metal-archives.com/bands/Stabbing/3540498762',
     custom_slug: 'stabbing',
-    verification_status: 'verified_official',
+    verification_status: 'community_archive',
     curated_by: '@texas_bdm',
     curator_name: 'Texas Brutal Death',
     created_at: '2026-01-12T12:00:00Z',
@@ -353,7 +353,7 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
     banner_url: 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/community-bands/5403162d-1947-43aa-b5f6-38a1bd2a1b80/community-banner_1787807883534.jpg?t=1787807883534',
     metal_archives_url: 'https://www.metal-archives.com/bands/Gorgasm/1175',
     custom_slug: 'gorgasm',
-    verification_status: 'verified_official',
+    verification_status: 'community_archive',
     curated_by: '@chicago_gore',
     curator_name: 'Chicago Death Vault',
     created_at: '2026-01-14T12:00:00Z',
@@ -402,7 +402,7 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
     banner_url: 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/community-bands/5403162d-1947-43aa-b5f6-38a1bd2a1b80/community-banner_1787897696648_1787897696652.jpg?t=1787897696652',
     metal_archives_url: 'https://www.metal-archives.com/bands/Brodequin/327',
     custom_slug: 'brodequin',
-    verification_status: 'verified_official',
+    verification_status: 'community_archive',
     curated_by: '@torture_records',
     curator_name: 'Historical Torture Archive',
     created_at: '2026-01-16T12:00:00Z',
@@ -450,7 +450,7 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
     banner_url: 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/community-bands/5403162d-1947-43aa-b5f6-38a1bd2a1b80/community-banner_1787798355413.jpg?t=1787798355413',
     metal_archives_url: 'https://www.metal-archives.com/bands/Putrid_Pile/1393',
     custom_slug: 'putrid-pile',
-    verification_status: 'verified_official',
+    verification_status: 'community_archive',
     curated_by: '@midwest_slammer',
     curator_name: 'Midwest Pit Crew',
     created_at: '2026-01-18T12:00:00Z',
@@ -496,7 +496,7 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
     banner_url: 'https://cyjnpuneruonskfzpmqo.supabase.co/storage/v1/object/public/community-bands/5403162d-1947-43aa-b5f6-38a1bd2a1b80/community-banner_1787869083014.jpg?t=1787869083014',
     metal_archives_url: 'https://www.metal-archives.com/bands/Origin/155',
     custom_slug: 'origin',
-    verification_status: 'verified_official',
+    verification_status: 'community_archive',
     curated_by: '@technical_death',
     curator_name: 'Tech Death Hub',
     created_at: '2026-01-20T12:00:00Z',
@@ -549,7 +549,7 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
     custom_slug: 'necrophagist',
     youtube_url: 'https://www.youtube.com/watch?v=0hY48qHjM7I',
     featured_youtube_url: 'https://www.youtube.com/watch?v=0hY48qHjM7I',
-    verification_status: 'verified_official',
+    verification_status: 'community_archive',
     curated_by: '@goregrinder',
     curator_name: 'Goregrind Archivist',
     created_at: '2026-01-10T12:00:00Z',
@@ -622,7 +622,7 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
     custom_slug: 'dying-fetus',
     youtube_url: 'https://www.youtube.com/watch?v=0hY48qHjM7I',
     featured_youtube_url: 'https://www.youtube.com/watch?v=0hY48qHjM7I',
-    verification_status: 'verified_official',
+    verification_status: 'community_archive',
     curated_by: '@maryland_pit_lord',
     curator_name: 'DMV Death Metal Society',
     created_at: '2026-01-12T10:00:00Z',
@@ -689,7 +689,7 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
     custom_slug: 'sanguisugabogg',
     youtube_url: 'https://www.youtube.com/watch?v=1F2b_dEvFqg',
     featured_youtube_url: 'https://www.youtube.com/watch?v=1F2b_dEvFqg',
-    verification_status: 'verified_official',
+    verification_status: 'community_archive',
     curated_by: '@midwest_slammer',
     curator_name: 'Midwest Pit Crew',
     created_at: '2026-02-14T08:30:00Z',
@@ -755,7 +755,7 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
     custom_slug: 'mortician',
     youtube_url: 'https://www.youtube.com/watch?v=kYyYV0K3x6Y',
     featured_youtube_url: 'https://www.youtube.com/watch?v=kYyYV0K3x6Y',
-    verification_status: 'verified_official',
+    verification_status: 'community_archive',
     curated_by: '@horror_grind_vault',
     curator_name: 'NY Death Metal Vault',
     created_at: '2026-03-01T15:00:00Z',
@@ -783,19 +783,19 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
     ]
   },
   {
-    id: 'suff0c41-9b23-41e8-b8d9-123456789abc',
+    id: '75c7cabd-eb63-4cf8-a591-9583ae41fc86',
     name: 'Suffocation',
     band_name: 'Suffocation',
     genre: 'Brutal Death Metal',
-    subgenres: ['Brutal Death Metal', 'Technical Death Metal', 'New York Death Metal'],
+    subgenres: ['Brutal Death Metal', 'Technical Death Metal', 'Death Metal', 'New York Death Metal'],
     founded_year: '1988',
-    city: 'Centereach, Long Island',
+    city: 'Centereach',
     state: 'NY',
     state_province: 'NY',
-    country: 'USA',
+    country: 'United States',
     record_label: 'Nuclear Blast',
     label: 'Nuclear Blast',
-    bio: 'Pioneers of brutal death metal and New York death metal (NYDM), Suffocation defined extreme metal subgenres with down-tuned brutality, complex time changes, intricate guitar work, and Frank Mullen’s iconic guttural vocal deliveries.',
+    bio: 'Suffocation is an American death metal band formed in 1988 in Centereach, New York. They are widely regarded as one of the pioneers of brutal death metal and technical death metal, crafting groundbreaking rhythmic syncopation, complex tempo shifts, and guttural vocal attacks that shaped modern extreme music.',
     avatar_url: 'https://cdn-images.dzcdn.net/images/artist/99bb44422204ef947c6b54a362a9c394/1000x1000-000000-80-0-0.jpg',
     logo_url: 'https://cdn-images.dzcdn.net/images/artist/99bb44422204ef947c6b54a362a9c394/1000x1000-000000-80-0-0.jpg',
     avatar: 'https://cdn-images.dzcdn.net/images/artist/99bb44422204ef947c6b54a362a9c394/1000x1000-000000-80-0-0.jpg',
@@ -804,20 +804,35 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
     banner_url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=1200',
     metal_archives_url: 'https://www.metal-archives.com/bands/Suffocation/384',
     custom_slug: 'suffocation',
-    verification_status: 'verified_official',
+    verification_status: 'community_archive',
     curated_by: '@nydm_vault',
     curator_name: 'NYDM Archivist',
     created_at: '2026-01-05T12:00:00Z',
     followers_count: 4890,
     lineup: [
-      { id: 'suff-1', name: 'Frank Mullen', role: 'Vocals', status: 'past', years: '1988–2018' },
-      { id: 'suff-2', name: 'Terrance Hobbs', role: 'Guitars', status: 'active', years: '1988–present' },
-      { id: 'suff-3', name: 'Guy Marchais', role: 'Guitars', status: 'active', years: '1990–1996, 2003–present' },
-      { id: 'suff-4', name: 'Derek Boyer', role: 'Bass', status: 'active', years: '2004–present' },
-      { id: 'suff-5', name: 'Eric Morotti', role: 'Drums', status: 'active', years: '2016–present' },
-      { id: 'suff-6', name: 'Ricky Myers', role: 'Vocals', status: 'active', years: '2019–present' }
+      { id: 'suff-hobbs', name: 'Terrance Hobbs', role: 'Lead Guitar', status: 'active', years: '1988–present' },
+      { id: 'suff-boyer', name: 'Derek Boyer', role: 'Bass', status: 'active', years: '2004–present' },
+      { id: 'suff-myers', name: 'Ricky Myers', role: 'Lead Vocals', status: 'active', years: '2019–present' },
+      { id: 'suff-errigo', name: 'Charlie Errigo', role: 'Rhythm Guitar', status: 'active', years: '2016–present' }
     ],
     discography: [
+      {
+        id: 'rel-suff-hw',
+        title: 'Human Waste',
+        year: '1991',
+        type: 'ep',
+        release_info: 'Relapse Records foundational EP.',
+        label: 'Relapse Records',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/99bb44422204ef947c6b54a362a9c394/500x500.jpg',
+        tracks: [
+          { number: 1, title: 'Infecting the Crypts', duration: '4:37' },
+          { number: 2, title: 'Synthetically Revived', duration: '3:38' },
+          { number: 3, title: 'Mass Obliteration', duration: '4:28' },
+          { number: 4, title: 'Catatonia', duration: '3:56' },
+          { number: 5, title: 'Jesus Wept', duration: '3:38' },
+          { number: 6, title: 'Human Waste', duration: '2:58' }
+        ]
+      },
       {
         id: 'rel-suff-1',
         title: 'Effigy of the Forgotten',
@@ -827,9 +842,29 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
         label: 'Roadrunner Records',
         cover_url: 'https://cdn-images.dzcdn.net/images/cover/b404d80a324395e54d37c95e1e5b19c2/1000x1000-000000-80-0-0.jpg',
         tracks: [
-          { number: 1, title: 'Infecting the Crypts', duration: '4:46' },
-          { number: 2, title: 'Mass Obliteration', duration: '4:31' },
-          { number: 3, title: 'Effigy of the Forgotten', duration: '3:48' }
+          { number: 1, title: 'Liege of Inveracity', duration: '4:30' },
+          { number: 2, title: 'Effigy of the Forgotten', duration: '3:50' },
+          { number: 3, title: 'Infecting the Crypts', duration: '4:49' },
+          { number: 4, title: 'Seeds of the Suffering', duration: '5:52' },
+          { number: 5, title: 'Habitual Infamy', duration: '4:16' },
+          { number: 6, title: 'Reincremation', duration: '2:54' },
+          { number: 7, title: 'Mass Obliteration', duration: '4:32' },
+          { number: 8, title: 'Involuntary Slaughter', duration: '3:02' },
+          { number: 9, title: 'Jesus Wept', duration: '3:42' }
+        ]
+      },
+      {
+        id: 'rel-suff-bts',
+        title: 'Breeding the Spawn',
+        year: '1993',
+        type: 'album',
+        release_info: 'Roadrunner Records sophomore release.',
+        label: 'Roadrunner Records',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/d06f0e4d7ea51000b0d36746efab8360/500x500.jpg',
+        tracks: [
+          { number: 1, title: 'Beginning of Sorrow', duration: '4:16' },
+          { number: 2, title: 'Breeding the Spawn', duration: '4:47' },
+          { number: 3, title: 'Epitaph of the Credulous', duration: '3:45' }
         ]
       },
       {
@@ -837,13 +872,118 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
         title: 'Pierced from Within',
         year: '1995',
         type: 'album',
-        release_info: 'Roadrunner Records sophomore masterpiece.',
+        release_info: 'Roadrunner Records technical death metal monument.',
         label: 'Roadrunner Records',
         cover_url: 'https://cdn-images.dzcdn.net/images/cover/90a2b8e39f37c34d40218b0f492b4500/1000x1000-000000-80-0-0.jpg',
         tracks: [
-          { number: 1, title: 'Pierced from Within', duration: '4:23' },
-          { number: 2, title: 'Thrones of Blood', duration: '5:13' },
-          { number: 3, title: 'Depths of Depravity', duration: '5:02' }
+          { number: 1, title: 'Pierced from Within', duration: '4:26' },
+          { number: 2, title: 'Thrones of Blood', duration: '5:14' },
+          { number: 3, title: 'Depths of Depravity', duration: '5:33' }
+        ]
+      },
+      {
+        id: 'rel-suff-dts',
+        title: 'Despise the Sun',
+        year: '1998',
+        type: 'ep',
+        release_info: 'Relapse Records landmark EP.',
+        label: 'Relapse Records',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/4bf8d1c9ef00523bb4e4e94119d6dff6/500x500.jpg',
+        tracks: [
+          { number: 1, title: 'Funeral Inception', duration: '3:57' },
+          { number: 2, title: 'Devoid of Truth', duration: '2:55' }
+        ]
+      },
+      {
+        id: 'rel-suff-std',
+        title: 'Souls to Deny',
+        year: '2004',
+        type: 'album',
+        release_info: 'Relapse Records triumphant comeback album.',
+        label: 'Relapse Records',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/4c6bb3f9df0c3d4a365f5a2f5f14e823/500x500.jpg',
+        tracks: [
+          { number: 1, title: 'Deceit', duration: '4:40' },
+          { number: 2, title: 'To Weep Once More', duration: '4:31' }
+        ]
+      },
+      {
+        id: 'rel-suff-self',
+        title: 'Suffocation',
+        year: '2006',
+        type: 'album',
+        release_info: 'Relapse Records self-titled release.',
+        label: 'Relapse Records',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/6c65b1b223ad0a153c391eb7ee0362f6/500x500.jpg',
+        tracks: [
+          { number: 1, title: 'Oblivion', duration: '0:40' },
+          { number: 2, title: 'Abomination Reborn', duration: '3:33' }
+        ]
+      },
+      {
+        id: 'rel-suff-bo',
+        title: 'Blood Oath',
+        year: '2009',
+        type: 'album',
+        release_info: 'Nuclear Blast crushing album.',
+        label: 'Nuclear Blast',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/28ba7f401ad84fb34e565935fba268c7/500x500.jpg',
+        tracks: [
+          { number: 1, title: 'Blood Oath', duration: '3:56' },
+          { number: 2, title: 'Dismal Failure', duration: '3:51' }
+        ]
+      },
+      {
+        id: 'rel-suff-pob',
+        title: 'Pinnacle of Bedlam',
+        year: '2013',
+        type: 'album',
+        release_info: 'Nuclear Blast technical fury.',
+        label: 'Nuclear Blast',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/03db942fe41b312b32b3531b402eb790/500x500.jpg',
+        tracks: [
+          { number: 1, title: 'Cycles of Suffering', duration: '3:56' },
+          { number: 2, title: 'Purgatorial Punishment', duration: '2:44' }
+        ]
+      },
+      {
+        id: 'rel-suff-otdl',
+        title: '...of the Dark Light',
+        year: '2017',
+        type: 'album',
+        release_info: 'Nuclear Blast ninth full-length.',
+        label: 'Nuclear Blast',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/b4dbceef098ec92723cfa0ff0498ebfc/500x500.jpg',
+        tracks: [
+          { number: 1, title: 'Clarity Through Deprivation', duration: '4:04' },
+          { number: 2, title: 'The Violation', duration: '3:41' }
+        ]
+      },
+      {
+        id: 'rel-suff-lbp',
+        title: 'Live Beyond the Pale',
+        year: '2021',
+        type: 'live',
+        release_info: 'Nuclear Blast official live concert archive.',
+        label: 'Nuclear Blast',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/3739bf89633e0d86fe8e22549d0ca6aa/500x500.jpg',
+        tracks: [
+          { number: 1, title: 'Intro (Live)', duration: '1:20' },
+          { number: 2, title: 'Thrones of Blood (Live)', duration: '5:10' }
+        ]
+      },
+      {
+        id: 'rel-suff-hfta',
+        title: 'Hymns from the Apocrypha',
+        year: '2023',
+        type: 'album',
+        release_info: 'Nuclear Blast monumental 2023 release with Ricky Myers.',
+        label: 'Nuclear Blast',
+        cover_url: 'https://cdn-images.dzcdn.net/images/cover/473ca59942a2753aeb8d867c21257416/500x500.jpg',
+        tracks: [
+          { number: 1, title: 'Hymns from the Apocrypha', duration: '5:14' },
+          { number: 2, title: 'Perpetual Deception', duration: '4:15' },
+          { number: 3, title: 'Dim Veil of Obscurity', duration: '4:19' }
         ]
       }
     ]
@@ -881,3 +1021,30 @@ export const INITIAL_COMMUNITY_BANDS: CommunityBandRecord[] = [
     discography: []
   }
 ];
+
+/**
+ * Checks if a band ID or name belongs to one of the 25 pre-seeded community band archives.
+ * Note: Virulent Excision (cbddb810-259b-4230-9968-3d402dfdb872) is the user's official registered band and NOT a community archive.
+ */
+export function isCommunityBandRecord(idOrName?: string): boolean {
+  if (!idOrName || typeof idOrName !== 'string') return false;
+  const clean = idOrName.toLowerCase().trim();
+  const cleanAlpha = clean.replace(/[^a-z0-9]/g, '');
+
+  // Virulent Excision is the user's official band workspace, never treated as community archive
+  if (clean === 'cbddb810-259b-4230-9968-3d402dfdb872' || cleanAlpha === 'virulentexcision') {
+    return false;
+  }
+
+  for (const b of INITIAL_COMMUNITY_BANDS) {
+    if (b.id === 'cbddb810-259b-4230-9968-3d402dfdb872' || (b.name || '').toLowerCase().trim() === 'virulent excision') {
+      continue;
+    }
+    if (b.id.toLowerCase() === clean) return true;
+    const bName = (b.name || '').toLowerCase().trim();
+    if (bName === clean || bName.replace(/[^a-z0-9]/g, '') === cleanAlpha) return true;
+    if (b.custom_slug && b.custom_slug.toLowerCase() === clean) return true;
+  }
+
+  return false;
+}

@@ -124,20 +124,50 @@ export default function EventsWorkspace(props: any) {
                     
                     {/* Band Name & Connection State Bar under main nav bar */}
                     <div className="w-full px-6 py-[6px] bg-[#090b0e] border-b border-zinc-900 flex flex-row items-center justify-between gap-4 select-none shrink-0">
-                      {/* Left side: Band Name, size 20 bold text, one line, auto scroll if too long */}
-                      <div className="flex-1 overflow-hidden">
-                        <div className="relative w-full max-w-xl group">
-                          <div className="overflow-hidden whitespace-nowrap">
-                            <span className="inline-block text-[20px] font-bold tracking-tight text-[#39ff14] uppercase select-text" style={{
-            display: 'inline-block',
-            animation: (activeBand?.name || 'ARTIST').length > 18 ? 'marquee 12s linear infinite' : 'none',
-            paddingRight: (activeBand?.name || 'ARTIST').length > 18 ? '2rem' : '0'
-          }}>
-                              {activeBand?.name || 'Artist'}
-                            </span>
+                      {/* Left side: Band Name or Tour Manager Identity */}
+                      {(() => {
+                        const isTourManager = props.userProfile?.band_role_mode === 'tour_manager' || props.userProfile?.role?.toLowerCase() === 'tour manager';
+                        const displayTitle = isTourManager ? 'TOUR MANAGER' : (activeBand?.name || 'Artist');
+                        
+                        return (
+                          <div className="flex-1 overflow-hidden flex items-center gap-3">
+                            <div className="relative max-w-xl group overflow-hidden">
+                              <div className="overflow-hidden whitespace-nowrap">
+                                <span 
+                                  className={`inline-block text-[20px] font-bold tracking-tight uppercase select-text ${isTourManager ? 'text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.35)]' : 'text-[#39ff14]'}`} 
+                                  style={{
+                                    display: 'inline-block',
+                                    animation: displayTitle.length > 18 ? 'marquee 12s linear infinite' : 'none',
+                                    paddingRight: displayTitle.length > 18 ? '2rem' : '0'
+                                  }}
+                                >
+                                  {displayTitle}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Context & Active Identity Badge */}
+                            {isTourManager ? (
+                              <div className="hidden sm:flex items-center gap-2 shrink-0">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-mono font-bold tracking-wider uppercase shadow-[0_0_12px_rgba(245,158,11,0.15)]">
+                                  <Compass className="w-3 h-3 text-amber-400" />
+                                  Executive Suite
+                                </span>
+                                {activeBand?.name && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-900/90 border border-zinc-800 text-zinc-400 text-[9.5px] font-mono uppercase">
+                                    <span className="text-zinc-500">Roster:</span> {activeBand.name}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold tracking-wider uppercase shrink-0">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                {props.userProfile?.role || 'Band Member'}
+                              </span>
+                            )}
                           </div>
-                        </div>
-                      </div>
+                        );
+                      })()}
 
                       {/* Right side: Text based Live Cloud Sync / Simulate Offline button */}
                       <div className="flex items-center shrink-0">

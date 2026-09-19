@@ -262,7 +262,7 @@ export const FeedTopHeader: React.FC<FeedTopHeaderProps> = ({
                       const isBand = activeKey === 'band';
                       const rawHandle = isBand 
                         ? resolveBandHandle(activeBand, userProfile)
-                        : (userProfile?.console_handle || userProfile?.username || userProfile?.handle || userProfile?.display_name?.toLowerCase().replace(/\s+/g, '_') || profileFullLegalName?.toLowerCase().replace(/\s+/g, '_') || 'user');
+                        : (userProfile?.console_handle || userProfile?.username || userProfile?.handle || userProfile?.display_name?.replace(/\s+/g, '_') || profileFullLegalName?.replace(/\s+/g, '_') || 'user');
                       const userHandle = isBand
                         ? (rawHandle.startsWith('@') ? rawHandle : `@${rawHandle}`)
                         : ((!rawHandle || rawHandle.toLowerCase().includes('virulent') || rawHandle === 'user' || rawHandle === '@user') ? '@bdmCEO' : (rawHandle.startsWith('@') ? rawHandle : `@${rawHandle}`));
